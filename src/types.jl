@@ -30,17 +30,17 @@ function (==)(p1::Polynomial, p2::Polynomial)
     length(p1.mons) != length(p2.mons) && return false
     all(pair->pair[1]==pair[2], zip(p1.mons,p2.mons))
 end
-function Base.print(io::IO, pos::Polynomial)
-    if length(pos.mons) == 0
+function Base.print(io::IO, pol::Polynomial)
+    if length(pol.mons) == 0
         print(io, "0")
-    elseif length(pos.mons) == 1
-        print(io, pos.mons[1])
+    elseif length(pol.mons) == 1
+        print(io, pol.mons[1])
     else
         print(io, "[")
-        for mon in pos.mons[1:end-1]
+        for mon in pol.mons[1:end-1]
             print(io, mon, " + ")
         end
-        print(io, pos.mons[end], "]")
+        print(io, pol.mons[end], "]")
     end
 end
 
