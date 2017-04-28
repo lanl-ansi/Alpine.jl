@@ -37,7 +37,7 @@ end
 # Create POD nonlinear model: can solve with nonlinear algorithm only
 function MathProgBase.NonlinearModel(s::PODSolver)
     if !applicable(MathProgBase.NonlinearModel, s.nlp_local_solver)
-        error("NLP local solver (nlp_local_solver) specified is not a NLP solver recognized by MathProgBase\n")
+        error("NLP local solver $(s.nlp_local_solver) specified is not a NLP solver recognized by POD\n")
     end
 
     # Translate options into old nonlinearmodel.jl fields

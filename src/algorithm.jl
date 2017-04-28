@@ -42,6 +42,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # local solution model extra data for each iteration
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
+    var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
@@ -109,189 +110,113 @@ function create_logs!(m)
     m.logs = logs
 end
 
-function MathProgBase.loadproblem!(m:PODNonlinearModel, numVar, numConstr, l, u, lb, ub, sense, d)
+function MathProgBase.loadproblem!(m::PODNonlinearModel,
+                                    num_var::Int, num_constr::Int,
+                                    l_var::Vector{Float64}, u_var::Vector{Float64},
+                                    l_constr::Vector{Float64}, u_constr::Vector{Float64},
+                                    sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
 
-    if !applicable(MathProgBase.NonlinearModel, m.nlp_local_solver)
-        error("$(m.nlp_local_solver) is not a nonlinear solver.")
-    end
-
-    m.num_var_orig = numVar
-    m.num_constr_orig = numConstr
-    m.l_var_orig = l
-    m.u_var_orig = u
-    m.l_var = l
-    m.u_var = u
-    m.l_constr_orig = lb
-    m.u_constr_orig = ub
+    m.num_var_orig = num_var
+    m.num_constr_orig = num_constr
+    m.l_var_orig = l_var
+    m.u_var_orig = u_var
+    m.l_constr_orig = l_constr
+    m.u_constr_orig = u_constr
     m.sense_orig = sense
     m.d_orig = d
+    MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess])
+
     # this should change later for an MINLP
     m.var_type_orig = fill(:Cont, m.num_var_orig)
 
     m.constr_type_orig = Array(Symbol, m.num_constr_orig)
     for i = 1:m.num_constr_orig
-        if lb[i] > -Inf && ub[i] < Inf
+        if l_constr[i] > -Inf && u_constr[i] < Inf
             m.constr_type_orig[i] = :(==)
-        elseif lb[i] > -Inf
+        elseif l_constr[i] > -Inf
             m.constr_type_orig[i] = :(>=)
         else
             m.constr_type_orig[i] = :(<=)
         end
     end
 
+    for i = 1:m.num_constr_orig
+        if MathProgBase.isconstrlinear(m.d_orig, i)
+            m.num_lconstr_orig += 1
+        end
+    end
+    m.num_nlconstr_orig = m.num_constr_orig - m.num_lconstr_orig
+
+
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
     m.best_sol = fill(NaN, m.num_var_orig)
+
+    if m.log_level > 0
+        @printf "full problem loaded into POD.\n"
+        @printf "number of constraints = %d.\n" m.num_constr_orig
+        @printf "number of non-linear constraints = %d.\n" m.num_nlconstr_orig
+        @printf "number of linear constraints = %d.\n" m.num_lconstr_orig
+        @printf "number of variables = %d.\n" m.num_var_orig
+    end
 end
 
-
-function populatelinearmatrix(m::PODNonlinearModel)
-    # set up map of linear rows
-    constrlinear = Array(Bool, m.num_constr)
-    numlinear = 0
-    constraint_to_linear = fill(-1,m.num_constr)
-    for i = 1:m.num_constr
-        constrlinear[i] = MathProgBase.isconstrlinear(m.d, i)
-        if constrlinear[i]
-            numlinear += 1
-            constraint_to_linear[i] = numlinear
-        end
-    end
-    m.num_nlconstr = m.num_constr - numlinear
-
-    # extract sparse jacobian structure
-    jac_I, jac_J = MathProgBase.jac_structure(m.d)
-
-    # evaluate jacobian at x = 0
-    c = zeros(m.num_var)
-    x = m.solution
-    jac_V = zeros(length(jac_I))
-    MathProgBase.eval_jac_g(m.d, jac_V, x)
-    MathProgBase.eval_grad_f(m.d, c, x)
-    m.objlinear = MathProgBase.isobjlinear(m.d)
-    if m.objlinear
-        (m.log_level > 0) && println("Objective function is linear")
-        m.c = c
-    else
-        (m.log_level > 0) && println("Objective function is nonlinear")
-        m.c = zeros(m.num_var)
-    end
-
-    # Build up sparse matrix for linear constraints
-    A_I = Int[]
-    A_J = Int[]
-    A_V = Float64[]
-
-    for k in 1:length(jac_I)
-        row = jac_I[k]
-        if !constrlinear[row]
-            continue
-        end
-        row = constraint_to_linear[row]
-        push!(A_I,row); push!(A_J, jac_J[k]); push!(A_V, jac_V[k])
-    end
-
-    m.A = sparse(A_I, A_J, A_V, m.num_constr-m.num_nlconstr, m.num_var)
-
-    # g(x) might have a constant, i.e., a'x + b
-    # let's find b
-    constraint_value = zeros(m.num_constr)
-    MathProgBase.eval_g(m.d, constraint_value, x)
-    b = constraint_value[constrlinear] - m.A * x
-    # so linear constraints are of the form lb ≤ a'x + b ≤ ub
-
-    # set up A_lb and A_ub vectors
-    m.A_lb = m.lb[constrlinear] - b
-    m.A_ub = m.ub[constrlinear] - b
-
-    # Now we have linear parts
-    m.constrlinear = constrlinear
-    return
-end
 
 function MathProgBase.optimize!(m::PODNonlinearModel)
     start = time()
-
-    cputime_nlp = 0.0
-    cputime_mip = 0.0
-
-    m.nlp_load_timer = 0.0
-
-    # if we haven't gotten a starting point,
-    # (e.g., if acting as MIQP solver) assume zero is okay
-    if any(isnan,m.solution)
-        m.solution = zeros(length(m.solution))
+    if any(isnan, m.best_sol)
+        m.best_sol = zeros(length(m.best_sol))
     end
 
-    populatelinearmatrix(m)
-    #MathProgBase.initialize(m.d, [:Grad, :Jac, :ExprGraph, :Hess, :HessVec])
-    jac_I, jac_J = MathProgBase.jac_structure(m.d)
-    jac_V = zeros(length(jac_I))
-    grad_f = zeros(m.num_var)
+    local_solve(m)
+end
 
-    ini_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
-    start_load = time()
-    MathProgBase.loadproblem!(ini_nlp_model, m.num_var, m.num_constr, m.l, m.u, m.lb, m.ub, m.objsense, m.d)
-    m.nlp_load_timer += time() - start_load
+MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.best_sol = x)
+MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
 
-    # pass in starting point
-    #MathProgBase.setwarmstart!(nlp_model, m.solution)
-    MathProgBase.setwarmstart!(ini_nlp_model, m.solution[1:m.num_var])
+MathProgBase.status(m::PODNonlinearModel) = m.status
+MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
+MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
+MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
+MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
 
-    start_nlp = time()
-    MathProgBase.optimize!(ini_nlp_model)
-    cputime_nlp += time() - start_nlp
+function local_solve(m::PODNonlinearModel)
+    local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+    MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, m.l_var_orig, m.u_var_orig, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
+    MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
 
-    ini_nlp_status = MathProgBase.status(ini_nlp_model)
-    if ini_nlp_status == :Optimal || ini_nlp_status == :Suboptimal
-        m.solution = MathProgBase.getsolution(ini_nlp_model)
-        m.objval = MathProgBase.getobjval(ini_nlp_model)
-        m.status = ini_nlp_status
+    start_local_solve = time()
+    MathProgBase.optimize!(local_solve_nlp_model)
+    cputime_local_solve = time() - start_local_solve
+    m.logs[:total_time] += cputime_local_solve
+
+    local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
+    if local_solve_nlp_status == :Optimal || local_solve_nlp_status == :Suboptimal
+        m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
+        m.best_obj = MathProgBase.getobjval(local_solve_nlp_model)
+        m.status = local_solve_nlp_status
         return
-    elseif ini_nlp_status == :Infeasible
-        (m.log_level > 0) && println("Initial NLP Infeasible.")
+    elseif local_solve_nlp_status == :Infeasible
+        (m.log_level > 0) && println("problem infeasible.")
         m.status = :Infeasible
         return
         # TODO Figure out the conditions for this to hold!
-    elseif ini_nlp_status == :Unbounded
-        warn("Initial NLP Relaxation Unbounded.")
+    elseif local_solve_nlp_status == :Unbounded
+        warn("initial problem unbounded.")
         m.status = :Unbounded
         return
     else
-        warn("NLP Solver Failure.")
+        warn("NLP solver failure.")
         m.status = :Error
         return
     end
-    ini_nlp_objval = MathProgBase.getobjval(ini_nlp_model)
+    local_solve_nlp_objval = MathProgBase.getobjval(local_solve_nlp_model)
 
-    (m.log_level > 0) && println("\nPOD started...\n")
-    (m.log_level > 0) && println("MINLP algorithm $(m.algorithm) is chosen.")
-    (m.log_level > 0) && println("MINLP has $(m.num_var) variables, $(m.num_constr - m.num_nlconstr) linear constraints, $(m.num_nlconstr) nonlinear constraints.")
-    (m.log_level > 0) && @printf "Initial objective = %13.5f.\n\n" ini_nlp_objval
+    (m.log_level > 0) && println("\nPOD algorithm started.\n")
+    (m.log_level > 0) && println("\nperforming local solve.\n")
+    (m.log_level > 0) && @printf "best feasible solution objective = %13.5f.\n\n" local_solve_nlp_objval
 
-    m.status = :UserLimit
-    m.objval = Inf
+    m.best_obj = local_solve_nlp_objval
 
-    m.total_time = time()-start
-
-    if m.log_level > 0
-        println("\nPOD finished...\n")
-        @printf "Status            = %13s.\n" m.status
-        (m.status == :Optimal) && @printf "Optimum objective = %13.5f.\n" m.objval
-        @printf "Total time        = %13.5f sec.\n" m.total_time
-        @printf "NLP total time    = %13.5f sec.\n" cputime_nlp
-        @printf "Subprob load time = %13.5f sec.\n" m.nlp_load_timer
-    end
 end
-
-MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.solution = x)
-MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.vartype = v)
-#MathProgBase.setvarUB!(m::IpoptMathProgModel, v::Vector{Float64}) = (m.u = v)
-#MathProgBase.setvarLB!(m::IpoptMathProgModel, v::Vector{Float64}) = (m.l = v)
-
-MathProgBase.status(m::PODNonlinearModel) = m.status
-MathProgBase.getobjval(m::PODNonlinearModel) = m.objval
-MathProgBase.getobjbound(m::PODNonlinearModel) = m.objbound
-MathProgBase.getsolution(m::PODNonlinearModel) = m.solution
-MathProgBase.getsolvetime(m::PODNonlinearModel) = m.total_time
