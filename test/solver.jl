@@ -1,8 +1,9 @@
 using POD
 using Ipopt
 using JuMP
+using CPLEX
 initval = [1,5,5,1]
-m = Model(solver = PODSolver(nlp_local_solver=IpoptSolver()))
+m = Model(solver = PODSolver(nlp_local_solver=IpoptSolver(), log_level=1))
 @variable(m, 1 <= x[i=1:4] <= 5, start=initval[i])
 @NLconstraint(m, x[1]*x[2]*x[3]*x[4] >= 25)
 @NLconstraint(m, sum(x[i]^2 for i=1:4) == 40)
