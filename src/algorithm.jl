@@ -2,89 +2,149 @@ using JuMP
 
 type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # solver parameters
-    verbose::Int
-    time_limit::Float64
-    opt_tolerance::Float64
+    log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
+    timeout::Float64                                            # Time limit for algorithm (in seconds)
+    rel_gap::Float64                                            # Relative optimality gap termination condition
 
     # add all the solver options
-    nlp_local_solver::MathProgBase.AbstractMathProgSolver
-    minlp_local_solver::MathProgBase.AbstractMathProgSolver
-    mip_solver::MathProgBase.AbstractMathProgSolver
+    nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
+    minlp_local_solver::MathProgBase.AbstractMathProgSolver     # Local MINLP solver for solving MINLPs at each iteration
+    mip_solver::MathProgBase.AbstractMathProgSolver             # MILP solver for successive lower bound solves
 
     # other options go here
 
-    # initial data
-    num_var::Int
-    num_int_var::Int 
-    num_constr::Int
-    num_nlconstr::Int
-    solution::Vector{Float64}
-    status
-    objval::Float64
-    objbound::Float64
-    iterations::Int
+    # initial data provided by user
+    num_var_orig::Int                                           # Initial number of variables
+    num_cont_var_orig::Int                                      # Initial number of continuous variables
+    num_int_var_orig::Int                                       # Initial number of binary/integer variables
+    num_constr_orig::Int                                        # Initial number of constraints
+    num_lconstr_orig::Int                                       # Initial number of linear constraints
+    num_nlconstr_orig::Int                                      # Initial number of non-linear constraints
+    var_type_orig::Vector{Symbol}                               # Variable type vector on original variables (only :Bin, :Cont, :Int)
+    var_start_orig::Vector{Float64}                             # Variable warm start vector on original variables
+    constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
 
-    A
-    A_lb
-    A_ub
-    lb::Vector{Float64}
-    ub::Vector{Float64}
-    l::Vector{Float64}
-    u::Vector{Float64}
-    c::Vector{Float64}
-    vartype::Vector{Symbol}
-    constrtype::Vector{Symbol}
-    constrlinear::Vector{Bool}
-    objsense::Symbol
-    objlinear::Bool
-    d # jacobian for NL solve
+    # extra initial data that is useful for non-linear local continuous solves
+    l_var_orig::Vector{Float64}                                 # Variable lower bounds
+    u_var_orig::Vector{Float64}                                 # Variable upper bounds
+    l_constr_orig::Vector{Float64}                              # Constraint lower bounds
+    u_constr_orig::Vector{Float64}                              # Constraint upper bounds
+    sense_orig::Symbol                                          # Problem type (:Min, :Max)
+    d_orig::JuMP.NLPEvaluator                                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
 
-    nlp_load_timer
-    total_time
+    # additional initial data that may be useful later on - non populated for now
+    A_orig                                                      # Linear constraint matrix
+    A_l_orig                                                    # Linear constraint matrix LHS
+    A_u_orig                                                    # Linear constraint matrix RHS
+    is_obj_linear_orig::Bool                                    # Bool variable for type of objective
+    c_orig::Vector{Float64}                                     # Coefficient vector for linear objective
+
+    # local solution model extra data for each iteration
+    l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
+    u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
+
+    # mixed-integer convex program bounding model
+    model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
+    x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
+    x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
+
+    # Solution and bound information
+    best_bound::Float64                                         # Best bound from MIP
+    best_obj::Float64                                           # Best feasible objective value
+    best_sol::Vector{Float64}                                   # Best feasible solution
+    gap_rel_opt::Float64                                        # Relative optimality gap = |best_bound - best_obj|/|best_obj|
+    final_soln::Vector{Float64}                                 # Final solution
+
+    # Logging information and status
+    logs::Dict{Symbol,Any}                                      # Logging information
+    status::Symbol                                              # Current POD status
 
     # constructor
-    function PODNonlinearModel(verbose, time_limit, opt_tolerance, nlp_local_solver, minlp_local_solver, mip_solver)
+    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver)
         m = new()
-        m.verbose = verbose
-        m.time_limit = time_limit
-        m.opt_tolerance = opt_tolerance
+        m.log_level = log_level
+        m.timeout = timeout
+        m.rel_gap = rel_gap
+
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
         m.mip_solver = mip_solver
-        m.total_time = 0.
+
+        m.num_var_orig = 0
+        m.num_cont_var_orig = 0
+        m.num_int_var_orig = 0
+        m.num_constr_orig = 0
+        m.num_lconstr_orig = 0
+        m.num_nlconstr_orig = 0
+        m.var_type_orig = Symbol[]
+        m.var_start_orig = Float64[]
+        m.constr_type_orig = Symbol[]
+
+        m.best_obj = Inf
+        m.best_bound = -Inf
+        m.gap_rel_opt = NaN
+        m.status = :NotLoaded
+
+        create_logs!(m)
+
         return m
     end
 end
 
-function MathProgBase.loadproblem!(m::PODNonlinearModel, numVar, numConstr, l, u, lb, ub, sense, d)
+#=========================================================
+ Logging and printing functions
+=========================================================#
 
-    #if !applicable(MathProgBase.NonlinearModel, m.nlp_local_solver)
-    #    error("$(m.nlp_local_solver) is not a nonlinear solver.")
-    #end
-    m.num_var = numVar
-    m.num_constr = numConstr
-    m.lb = lb
-    m.ub = ub
-    m.l = l
-    m.u = u
-    m.objsense = sense
-    m.d = d
-    m.vartype = fill(:Cont,numVar)
+# Create dictionary of logs for timing and iteration counts
+function create_logs!(m)
+    logs = Dict{Symbol,Any}()
 
-    MathProgBase.initialize(d, [:Grad,:Jac,:Hess])
+    # Timers
+    logs[:total_time] = 0.  # Total run-time of the algorithm
 
-    m.constrtype = Array(Symbol, numConstr)
-    for i = 1:numConstr
+    # Counters
+    logs[:n_iter] = 0       # Number of iterations in iterative
+    logs[:n_feas] = 0       # Number of times get a new feasible solution
+
+    m.logs = logs
+end
+
+function MathProgBase.loadproblem!(m:PODNonlinearModel, numVar, numConstr, l, u, lb, ub, sense, d)
+
+    if !applicable(MathProgBase.NonlinearModel, m.nlp_local_solver)
+        error("$(m.nlp_local_solver) is not a nonlinear solver.")
+    end
+
+    m.num_var_orig = numVar
+    m.num_constr_orig = numConstr
+    m.l_var_orig = l
+    m.u_var_orig = u
+    m.l_var = l
+    m.u_var = u
+    m.l_constr_orig = lb
+    m.u_constr_orig = ub
+    m.sense_orig = sense
+    m.d_orig = d
+    # this should change later for an MINLP
+    m.var_type_orig = fill(:Cont, m.num_var_orig)
+
+    m.constr_type_orig = Array(Symbol, m.num_constr_orig)
+    for i = 1:m.num_constr_orig
         if lb[i] > -Inf && ub[i] < Inf
-            m.constrtype[i] = :(==)
+            m.constr_type_orig[i] = :(==)
         elseif lb[i] > -Inf
-            m.constrtype[i] = :(>=)
+            m.constr_type_orig[i] = :(>=)
         else
-            m.constrtype[i] = :(<=)
+            m.constr_type_orig[i] = :(<=)
         end
     end
-    m.solution = fill(NaN, m.num_var)
+
+    # not using this any where (in optional fields)
+    m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
+
+    m.best_sol = fill(NaN, m.num_var_orig)
 end
+
 
 function populatelinearmatrix(m::PODNonlinearModel)
     # set up map of linear rows
@@ -111,10 +171,10 @@ function populatelinearmatrix(m::PODNonlinearModel)
     MathProgBase.eval_grad_f(m.d, c, x)
     m.objlinear = MathProgBase.isobjlinear(m.d)
     if m.objlinear
-        (m.verbose > 0) && println("Objective function is linear")
+        (m.log_level > 0) && println("Objective function is linear")
         m.c = c
     else
-        (m.verbose > 0) && println("Objective function is nonlinear")
+        (m.log_level > 0) && println("Objective function is nonlinear")
         m.c = zeros(m.num_var)
     end
 
@@ -169,7 +229,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     jac_I, jac_J = MathProgBase.jac_structure(m.d)
     jac_V = zeros(length(jac_I))
     grad_f = zeros(m.num_var)
-    
+
     ini_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
     start_load = time()
     MathProgBase.loadproblem!(ini_nlp_model, m.num_var, m.num_constr, m.l, m.u, m.lb, m.ub, m.objsense, m.d)
@@ -190,7 +250,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
         m.status = ini_nlp_status
         return
     elseif ini_nlp_status == :Infeasible
-        (m.verbose > 0) && println("Initial NLP Infeasible.")
+        (m.log_level > 0) && println("Initial NLP Infeasible.")
         m.status = :Infeasible
         return
         # TODO Figure out the conditions for this to hold!
@@ -205,17 +265,17 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     end
     ini_nlp_objval = MathProgBase.getobjval(ini_nlp_model)
 
-    (m.verbose > 0) && println("\nPOD started...\n")
-    (m.verbose > 0) && println("MINLP algorithm $(m.algorithm) is chosen.")
-    (m.verbose > 0) && println("MINLP has $(m.num_var) variables, $(m.num_constr - m.num_nlconstr) linear constraints, $(m.num_nlconstr) nonlinear constraints.")
-    (m.verbose > 0) && @printf "Initial objective = %13.5f.\n\n" ini_nlp_objval
+    (m.log_level > 0) && println("\nPOD started...\n")
+    (m.log_level > 0) && println("MINLP algorithm $(m.algorithm) is chosen.")
+    (m.log_level > 0) && println("MINLP has $(m.num_var) variables, $(m.num_constr - m.num_nlconstr) linear constraints, $(m.num_nlconstr) nonlinear constraints.")
+    (m.log_level > 0) && @printf "Initial objective = %13.5f.\n\n" ini_nlp_objval
 
     m.status = :UserLimit
     m.objval = Inf
 
     m.total_time = time()-start
 
-    if m.verbose > 0
+    if m.log_level > 0
         println("\nPOD finished...\n")
         @printf "Status            = %13s.\n" m.status
         (m.status == :Optimal) && @printf "Optimum objective = %13.5f.\n" m.objval
