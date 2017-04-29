@@ -1,7 +1,5 @@
-function pod_formulate_liftmodel(m, verbose=false)
-
-	d = JuMP.NLPEvaluator(m)
-	MathProgBase.initialize(d, [:ExprGraph])
+# This is a function under development
+function pod_formulate_liftmodel(d, verbose=false)
 
 	# Collect all expressions
 	expr_obj = MathProgBase.obj_expr(d)

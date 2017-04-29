@@ -3,7 +3,7 @@
 
         include("../examples/bi1.jl")
         include("../src/nlexpr.jl")
-        
+
         m = pod_example_bi1()
         d = JuMP.NLPEvaluator(m)
         MathProgBase.initialize(d, [:ExprGraph])

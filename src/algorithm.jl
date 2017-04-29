@@ -15,7 +15,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # initial data
     num_var::Int
-    num_int_var::Int 
+    num_int_var::Int
     num_constr::Int
     num_nlconstr::Int
     solution::Vector{Float64}
@@ -169,7 +169,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     jac_I, jac_J = MathProgBase.jac_structure(m.d)
     jac_V = zeros(length(jac_I))
     grad_f = zeros(m.num_var)
-    
+
     ini_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
     start_load = time()
     MathProgBase.loadproblem!(ini_nlp_model, m.num_var, m.num_constr, m.l, m.u, m.lb, m.ub, m.objsense, m.d)
