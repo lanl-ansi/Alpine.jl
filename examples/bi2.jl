@@ -1,7 +1,7 @@
-function pod_example_bi2(verbose=false)
+function example_model(verbose=false)
 
 	m = Model(solver=IpoptSolver())
-	@variable(m, 1<=x[i=1:10]<=5)
+	@variable(m, x[i=1:10]>=1)
 
 	@NLconstraint(m, sum((i+100)*x[i]^2 for i=1:10) >= 128)
 	@NLconstraint(m, x[1]*2*x[2]*(89-13) - 4*(1-5)*x[1]*x[5] >= 222)
@@ -17,5 +17,6 @@ function pod_example_bi2(verbose=false)
     if verbose
         print(m)
     end
+
 	return m
 end

@@ -10,4 +10,7 @@ include("expr.jl")
 include("solver.jl")
 include("algorithm.jl")
 
+# Developing scripts
+include("dev/model.jl")
+
 end # module
