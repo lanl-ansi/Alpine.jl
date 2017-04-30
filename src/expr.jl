@@ -17,7 +17,6 @@ function pod_expr_rebuild(d::JuMP.NLPEvaluator, h, term::Array=[], t2y::Dict=Dic
 	term, non = _pod_expr_traversal(h, term)
 	t2y = _pod_expr_t2y(d.m.numCols, term, t2y)
 	_pod_expr_lift(h, t2y)
-
 	return term, t2y
 end
 
@@ -57,7 +56,6 @@ function _pod_expr_lift(h, t2y::Dict; kwargs...)
 
 	@assert _pod_expr_mark(deepcopy(h)) <= 2 # Not focusing on multi-linear terms
 	_pod_expr_flatten(h)	# Preproces the expression
-
 	if h.args[1] in [:+,:-]  || !isempty([i for i in 1:length(h.args) if (isa(h.args[i], Expr) && h.args[i].head == :call)])
 		for i in 2:length(h.args) # Reserved 1 with operator
 			if isa(h.args[i], Expr) && h.args[i].head == :call
@@ -100,23 +98,28 @@ end
 
 """
 	Recursivly pre-process expression by treating the coefficients
+	TODO: this function requires a lot of refining.
+	Most issues can be caused by this function.
 """
-function _pod_expr_flatten(h; kwargs...)
+function _pod_expr_flatten(h, level=0; kwargs...)
 
-	flat = _pod_expr_arrangeargs(h.args)
-	if isa(flat, Float64)
-		return flat
-	else
-		h.args = flat
+	if level > 0  # No trivial constraint is allowed "3>5"
+		flat = _pod_expr_arrangeargs(h.args)
+		if isa(flat, Float64)
+			return flat
+		else
+			h.args = flat
+		end
 	end
 
 	for i in 2:length(h.args)
 		if isa(h.args[i], Expr) && h.args[i].head == :call
-			h.args[i] = _pod_expr_flatten(h.args[i])
+			h.args[i] = _pod_expr_flatten(h.args[i], level+1)
 		end
 	end
-
-	h.args = _pod_expr_arrangeargs(h.args)
+	if level > 0 #Root level process, no additional operators
+		h.args = _pod_expr_arrangeargs(h.args)
+	end
 
 	return h
 end

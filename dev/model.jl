@@ -32,7 +32,7 @@ function _pod_formulate_liftmodel(d, verbose=false)
         println("----------------------------------")
     end
 
-	pod = Model(solver=IpoptSolver()) # Leave this as an option of the configuration
+	pod = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0))) # Leave this as an option of the configuration
 	podxdim = d.m.numCols + length(T2Y)
 	@variable(pod, x[1:podxdim+1])
 
@@ -57,7 +57,7 @@ function _pod_formulate_liftmodel(d, verbose=false)
 		print(pod)
 	end
 
-	pod.ext = T2Y
+	pod.ext[:map] = T2Y
 
 	return pod
 end

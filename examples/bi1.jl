@@ -1,7 +1,7 @@
-function example_model(verbose=false)
+function pod_example_bi1(verbose=false)
 
-	m = Model(solver=IpoptSolver())
-	@variable(m, px[i=1:6]>=0) # At some point if an initial value is given, keep them
+	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0)))
+	@variable(m, px[i=1:6]>=1) # At some point if an initial value is given, keep them
 
 	@NLconstraint(m, sum(3*px[i]^2 for i=1:4) >= 111)
 	@NLconstraint(m,  - px[1]*px[2] + 4*5*px[3]*px[4] >= 222)
