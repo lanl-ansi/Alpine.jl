@@ -23,6 +23,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_type_orig::Vector{Symbol}                               # Variable type vector on original variables (only :Bin, :Cont, :Int)
     var_start_orig::Vector{Float64}                             # Variable warm start vector on original variables
     constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
+    constr_expr_orig::Vector{Expr}                              # Constraint expressions
+    obj_expr_orig::Expr                                         # Objective expression
 
     # extra initial data that is useful for non-linear local continuous solves
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
@@ -38,6 +40,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     A_u_orig                                                    # Linear constraint matrix RHS
     is_obj_linear_orig::Bool                                    # Bool variable for type of objective
     c_orig::Vector{Float64}                                     # Coefficient vector for linear objective
+    num_lconstr_updated::Int                                    # Updated number of linear constraints - includes linear constraints added via @NLconstraint macro
+    num_nlconstr_updated::Int                                   # Updated number of non-linear constraints
+    indexes_lconstr_updated::Vector{Int}                        # Indexes of updated linear constraints
 
     # local solution model extra data for each iteration
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
@@ -48,6 +53,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
+    map_nonlinear_terms::Dict{Expr,Expr}                        # Map of lifted terms
+    var_discretization::Vector{Any}                             # Variables on which discretization is performed
+    discretization::Dict{Any,Set{Float64}}                      # Discretization points keyed by the variables
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -80,34 +88,22 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.var_type_orig = Symbol[]
         m.var_start_orig = Float64[]
         m.constr_type_orig = Symbol[]
+        m.constr_expr_orig = Expr[]
+        m.num_lconstr_updated = 0
+        m.num_nlconstr_updated = 0
+        m.indexes_lconstr_updated = Int[]
 
         m.best_obj = Inf
         m.best_bound = -Inf
         m.gap_rel_opt = NaN
-        m.status = :NotLoaded
 
+        m.status = :NotLoaded
+        #create_status!(m)
         create_logs!(m)
+
 
         return m
     end
-end
-
-#=========================================================
- Logging and printing functions
-=========================================================#
-
-# Create dictionary of logs for timing and iteration counts
-function create_logs!(m)
-    logs = Dict{Symbol,Any}()
-
-    # Timers
-    logs[:total_time] = 0.  # Total run-time of the algorithm
-
-    # Counters
-    logs[:n_iter] = 0       # Number of iterations in iterative
-    logs[:n_feas] = 0       # Number of times get a new feasible solution
-
-    m.logs = logs
 end
 
 function MathProgBase.loadproblem!(m::PODNonlinearModel,
@@ -123,14 +119,21 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.l_constr_orig = l_constr
     m.u_constr_orig = u_constr
     m.sense_orig = sense
+    if m.sense_orig == :Max
+        m.best_obj = -Inf
+        m.best_bound = Inf
+    end
     m.d_orig = d
-    MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess])
+    MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess,:ExprGraph])
+    for i in 1:m.num_constr_orig
+        push!(m.constr_expr_orig, MathProgBase.constr_expr(d, i))
+    end
 
     # this should change later for an MINLP
     m.var_type_orig = fill(:Cont, m.num_var_orig)
 
     m.constr_type_orig = Array(Symbol, m.num_constr_orig)
-    for i = 1:m.num_constr_orig
+    for i in 1:m.num_constr_orig
         if l_constr[i] > -Inf && u_constr[i] < Inf
             m.constr_type_orig[i] = :(==)
         elseif l_constr[i] > -Inf
@@ -162,14 +165,27 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
 end
 
-
 function MathProgBase.optimize!(m::PODNonlinearModel)
     start = time()
     if any(isnan, m.best_sol)
         m.best_sol = zeros(length(m.best_sol))
     end
 
-    local_solve(m)
+    presolve(m)
+    # presolve(m)
+    # bounding tightening
+    # bounding solve
+    # compute gap and update the gap
+
+    #=
+    while (gap > tol)
+        local_solve(m)
+        bounding_solve(m)
+        update_gap(m)
+    end
+    =#
+
+    # create a bounding convex mip model (JuMP)
 end
 
 MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.best_sol = x)
@@ -180,6 +196,12 @@ MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
 MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
 MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
 MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
+
+function presolve(m::PODNonlinearModel)
+    (m.log_level > 0) && println("\nPOD algorithm presolver started.")
+    (m.log_level > 0) && println("1. performing local solve to obtain a feasible solution.")
+    local_solve(m)
+end
 
 function local_solve(m::PODNonlinearModel)
     local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
@@ -196,6 +218,7 @@ function local_solve(m::PODNonlinearModel)
         m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
         m.best_obj = MathProgBase.getobjval(local_solve_nlp_model)
         m.status = local_solve_nlp_status
+        (m.log_level > 0) && @printf "best feasible solution objective = %13.5f.\n" m.best_obj
         return
     elseif local_solve_nlp_status == :Infeasible
         (m.log_level > 0) && println("problem infeasible.")
@@ -213,10 +236,38 @@ function local_solve(m::PODNonlinearModel)
     end
     local_solve_nlp_objval = MathProgBase.getobjval(local_solve_nlp_model)
 
-    (m.log_level > 0) && println("\nPOD algorithm started.\n")
-    (m.log_level > 0) && println("\nperforming local solve.\n")
-    (m.log_level > 0) && @printf "best feasible solution objective = %13.5f.\n\n" local_solve_nlp_objval
-
     m.best_obj = local_solve_nlp_objval
 
+    return
+
+end
+
+#=========================================================
+ Logging and printing functions
+=========================================================#
+
+# Create dictionary of logs for timing and iteration counts
+function create_logs!(m)
+    logs = Dict{Symbol,Any}()
+
+    # Timers
+    logs[:total_time] = 0.  # Total run-time of the algorithm
+
+    # Counters
+    logs[:n_iter] = 0       # Number of iterations in iterative
+    logs[:n_feas] = 0       # Number of times get a new feasible solution
+
+    m.logs = logs
+end
+
+# Create dictionary of statuses for POD algorithm
+function create_status!(m)
+    status = Dict{Symbol,Symbol}()
+
+    status[:local_solve] = :none            # Status of local solve
+    status[:bounding_solve] = :none         # Status of bounding solve
+    status[:bnd_tightening_solve] = :none   # Status of bound-tightening solve
+    status[:pod] = :none                    # Status of POD algorithm
+
+    m.status = status
 end
