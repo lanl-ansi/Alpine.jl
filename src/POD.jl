@@ -4,7 +4,7 @@ using JuMP
 using MathProgBase
 
 # package code goes here
-include("expr.jl")
+include("nlexpr.jl")
 include("solver.jl")
 include("algorithm.jl")
 
