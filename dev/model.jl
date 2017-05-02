@@ -2,7 +2,7 @@
 	This is an experimental function that rebuilds the model with lifted variables.
 	Later move this function to POD-based environment.
 """
-function _pod_formulate_liftmodel(d, verbose=false)
+function _pod_formulate_liftmodel(p:PODNonliearModel, verbose=false)
 
 	# !!!!!! Highly Experimental !!!!!! #
 
