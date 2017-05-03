@@ -11,6 +11,7 @@
 """
 function expr_traversal(h, T::Array=[], buffer::Array=[]; kwargs...)
 
+
 	if isa(h, Float64) || isa(h, Int64)
 		return T, buffer  # Continue to collect
 	elseif h == :+ || h == :-
@@ -32,6 +33,7 @@ function expr_traversal(h, T::Array=[], buffer::Array=[]; kwargs...)
 
 	for t in 1:length(h.args)
 		T, buffer = expr_traversal(h.args[t], T, buffer)
+
 		if h.args[1] == :+ || h.args[1] == :-
 			if !(buffer in T) && !isempty(buffer)
 				push!(T, buffer)
@@ -358,5 +360,3 @@ function expr_islinear(h)
 		return True
 	end
 end
-
-

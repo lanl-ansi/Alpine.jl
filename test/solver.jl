@@ -1,4 +1,3 @@
-
 @testset "Solver Function Tests" begin
 
     using POD

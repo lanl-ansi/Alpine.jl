@@ -59,6 +59,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     obj_expr_mip::Expr                                          # Lifted objective expression, if linear, same as obj_expr_orig [SW]
     constr_expr_mip::Vector{Expr}                               # Lifted constraints, if linear, same as corresponding constr_expr_orig [SW]
 
+
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
     best_obj::Float64                                           # Best feasible objective value
@@ -97,6 +98,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         # Need to be initialized [SW]
         m.map_nonlinear_terms = Dict()
 
+
         m.best_obj = Inf
         m.best_bound = -Inf
         m.gap_rel_opt = NaN
@@ -104,6 +106,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.status = :NotLoaded
         #create_status!(m)
         create_logs!(m)
+
 
         return m
     end
@@ -132,6 +135,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
         push!(m.constr_expr_orig, MathProgBase.constr_expr(d, i))
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
+
 
     # this should change later for an MINLP
     m.var_type_orig = fill(:Cont, m.num_var_orig)
