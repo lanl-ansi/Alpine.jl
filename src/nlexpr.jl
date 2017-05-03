@@ -60,16 +60,16 @@ end
 function populate_map(m::PODNonlinearModel; kwargs...)
 
 	options = Dict(kwargs)
-	
-	m.obj_expr_mip = deepcopy(m.obj_expr_orig)
-	m.constr_expr_mip = [] # Refresh this given this is a one-time deal
+
+	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
+	m.lifted_constr_expr_mip = [] # Refresh this given this is a one-time deal
  	for i in 1:m.num_constr_orig
-		push!(m.constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
+		push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
 	end
 
-	T, m.map_nonlinear_terms = expr_analyze(m.obj_expr_mip, [], m.map_nonlinear_terms, m.num_var_orig)
+	T, m.dict_nonlinear_terms = expr_analyze(m.lifted_obj_expr_mip, [], m.dict_nonlinear_terms, m.num_var_orig)
 	for i in 1:m.num_constr_orig
-		T, m.map_nonlinear_terms = expr_analyze(m.constr_expr_mip[i].args[2], T, m.map_nonlinear_terms)
+		T, m.dict_nonlinear_terms = expr_analyze(m.lifted_constr_expr_mip[i].args[2], T, m.dict_nonlinear_terms)
 	end
 
 	return m
@@ -113,9 +113,9 @@ end
 	Output: updated mapping dictionary::Dict
 
 	Naming : x[1:numCols] > [x;lifted x] > lifted x still use name x
-	Mapping : [:Expr, :Expr] => Dict(:podref::Expr, :key::Expr, :link::Expr)
+	Mapping : [:Expr, :Expr] => Dict(:lifted_var_ref::Expr, :key::Expr, :lifted_constr_ref::Expr)
 		[:(x[1]),:(x[2])] => [:refpod] = :(x[5]) <==> x[5] = x[1] * x[2]
-		link is the lift constraint Expr
+		lifted_constr_ref is the lift constraint Expr
 """
 function expr_t2y(T::Array=[], t2y=Dict(), xdim::Int=0; kwargs...)
 
@@ -127,7 +127,7 @@ function expr_t2y(T::Array=[], t2y=Dict(), xdim::Int=0; kwargs...)
 		if length(i) > 1 && !(i in keys(t2y)) && !(reverse(i) in keys(t2y)) #Perform lifting on multi-linear terms
 			liftvarref = Expr(:ref, :x, yidx)
             liftconstr = Expr(:call, :(==), liftvarref, Expr(:call, :*, i[1], i[2])) # Bilinear
-			t2y[i] = Dict(:podref=>liftvarref, :ref=>i, :link=>liftconstr)
+			t2y[i] = Dict(:lifted_var_ref=>liftvarref, :ref=>i, :lifted_constr_ref=>liftconstr)
 			yidx += 1
 		end
 	end
@@ -162,10 +162,10 @@ function expr_lift(h, t2y::Dict; kwargs...)
 		end
 		if haskey(t2y, refs)
 			deleteat!(h.args, idxs)
-			push!(h.args, t2y[refs][:podref]) # In-place Lift
+			push!(h.args, t2y[refs][:lifted_var_ref]) # In-place Lift
 		elseif haskey(t2y, reverse(refs)) # No duplicates
 			deleteat!(h.args, idxs)
-			push!(h.args, t2y[reverse(refs)][:podref]) # Place Lift
+			push!(h.args, t2y[reverse(refs)][:lifted_var_ref]) # Place Lift
 		end
 
 	elseif h.args[1] == :^  # with assumption :: square
@@ -176,7 +176,7 @@ function expr_lift(h, t2y::Dict; kwargs...)
 		@assert power[1] == 2
 		refs = [refs;refs]
 		@assert haskey(t2y, refs)
-		h = t2y[refs][:podref] # Lift
+		h = t2y[refs][:lifted_var_ref] # Lift
 	else
 		error("Unspported operator for variable lifting $(h.args[1])")
 	end
