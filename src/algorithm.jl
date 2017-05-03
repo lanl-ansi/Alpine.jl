@@ -53,7 +53,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    dict_nonlinear_terms::Dict{Any,Any}                          # Dictionary containing details of lifted terms
+    dict_nonlinear_info::Dict{Any,Any}                          # Dictionary containing details of lifted terms
     var_discretization::Vector{Any}                             # Variables on which discretization is performed
     discretization::Dict{Any,Set{Float64}}                      # Discretization points keyed by the variables
     lifted_obj_expr_mip::Expr                                   # Lifted objective expression, if linear, same as obj_expr_orig [SW]
@@ -96,7 +96,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
         # Need to be initialized [SW]
-        m.dict_nonlinear_terms = Dict()
+        m.dict_nonlinear_info = Dict()
 
 
         m.best_obj = Inf
@@ -136,7 +136,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
 
-    
+
 
     # this should change later for an MINLP
     m.var_type_orig = fill(:Cont, m.num_var_orig)
@@ -197,7 +197,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     # create a bounding convex mip model (JuMP)
 end
 
-MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.best_sol = x)
+MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.var_start_orig = x)
 MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
 
 MathProgBase.status(m::PODNonlinearModel) = m.status
