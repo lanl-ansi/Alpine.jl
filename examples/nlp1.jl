@@ -1,3 +1,5 @@
+using POD, JuMP, Ipopt, MathProgBase 
+
 function pod_example_nlp1(verbose=false)
 
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0)))

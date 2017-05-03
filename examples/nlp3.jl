@@ -1,3 +1,5 @@
+using POD, JuMP, Ipopt, MathProgBase 
+
 function pod_example_nlp3(verbose=false)
 
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0)))
@@ -21,9 +23,9 @@ function pod_example_nlp3(verbose=false)
 	setupperbound(x[7], 1000)
 	setupperbound(x[8], 1000)
 
-	@NLconstraint(m, 0.0025*(x[4]+x[6]) <= 1)
-	@NLconstraint(m, 0.0025*(-x[4] + x[5] + x[7]) <= 1)
-	@NLconstraint(m, 0.01(-x[5]+x[8]) <= 0)
+	@constraint(m, 0.0025*(x[4]+x[6]) <= 1)
+	@constraint(m, 0.0025*(-x[4] + x[5] + x[7]) <= 1)
+	@constraint(m, 0.01(-x[5]+x[8]) <= 0)
 	@NLconstraint(m, 100*x[1] - x[1]*x[6] + 833.33252*x[4] <= 83333.333)
 	@NLconstraint(m, x[2]*x[4] - x[2]*x[7] - 1250*x[4] + 1250*x[5] <= 0)
 	@NLconstraint(m, x[3]*x[5] - x[3]*x[8] - 2500*x[5] + 1250000 <= 0)

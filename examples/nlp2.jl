@@ -1,4 +1,5 @@
-# Example Model nlp2
+using POD, JuMP, Ipopt, MathProgBase 
+
 function pod_example_nlp2(verbose=false)
 
 	info("This model is currently not suitable for expression operations...")

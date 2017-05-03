@@ -14,7 +14,6 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
     # other options to be added later on
-
 end
 
 function PODSolver(;
@@ -48,7 +47,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
-
 
     return PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver)
 end

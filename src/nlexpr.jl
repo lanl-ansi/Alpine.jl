@@ -1,4 +1,87 @@
 """
+	Tree traversal for bi-linear term detection and marking
+	Input: expression subtree | terms::Array | buffer::Array
+	Output: Found terms and an empty buffer
+
+	Algorithm: DFS tree traversal to collect bi-linear terms using a buffer.
+		When collected buffer encouter a breaker :(+) :(-), finish recognizing a term
+		and collect it into T.
+
+	NOTE: This function may change a lot when working on a multi-linear term version
+"""
+function expr_traversal(h, T::Array=[], buffer::Array=[]; kwargs...)
+
+	if isa(h, Float64) || isa(h, Int64)
+		return T, buffer  # Continue to collect
+	elseif h == :+ || h == :-
+		if !(buffer in T) && !isempty(buffer)
+			push!(T,buffer)
+		end
+		buffer = []
+		return T, buffer  # Term collecing
+	elseif h == :*
+		return T, buffer  # Continue to collect
+	elseif h == :^
+		return T, buffer # Continue to collect
+	elseif h == :/
+		error("Unspported operator $(h)")
+	elseif h.head == :ref
+		push!(buffer, h)
+		return T, buffer
+	end
+
+	for t in 1:length(h.args)
+		T, buffer = expr_traversal(h.args[t], T, buffer)
+		if h.args[1] == :+ || h.args[1] == :-
+			if !(buffer in T) && !isempty(buffer)
+				push!(T, buffer)
+			end
+			buffer = []
+		end
+	end
+
+	# Post Process on special operators
+	if h.args[1] == :^
+		push!(buffer, buffer[1])
+		if !(buffer in T) && !isempty(buffer)
+			push!(T, buffer)
+		end
+		buffer = []
+	end
+
+	return T, buffer
+end
+
+"""
+	This function analyze the stored expression. Perform a analyze and populated the nonlinear map
+"""
+function populate_map(m::PODNonlinearModel; kwargs...)
+
+	options = Dict(kwargs)
+	
+	m.obj_expr_mip = deepcopy(m.obj_expr_orig)
+	m.constr_expr_mip = [] # Refresh this given this is a one-time deal
+ 	for i in 1:m.num_constr_orig
+		push!(m.constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
+	end
+
+	T, m.map_nonlinear_terms = expr_analyze(m.obj_expr_mip, [], m.map_nonlinear_terms, m.num_var_orig)
+	for i in 1:m.num_constr_orig
+		T, m.map_nonlinear_terms = expr_analyze(m.constr_expr_mip[i].args[2], T, m.map_nonlinear_terms)
+	end
+
+	return m
+end
+
+
+"""
+	New functions to be established.
+"""
+function expr_dereferencing()
+
+end
+
+"""
 	Main Expression Conversion Function :: for one expression
 	Convert an expression to POD-like format with lifted variables in places
 
@@ -11,14 +94,15 @@
 
 	Variable Convention : Operation base => MathProgBase :: x
 """
-function pod_expr_rebuild(d::JuMP.NLPEvaluator, h, term::Array=[], t2y::Dict=Dict(); kwargs...)
+function expr_analyze(h, term::Array=[], t2y::Dict=Dict(), colCnt::Int=0; kwargs...)
 
 	options = Dict(kwargs)
-	term, non = _pod_expr_traversal(h, term)
-	t2y = _pod_expr_t2y(d.m.numCols, term, t2y)
-	_pod_expr_lift(h, t2y)
+	term, non = expr_traversal(h, term)
+	t2y = expr_t2y(term, t2y, colCnt)
+
 	return term, t2y
 end
+
 
 """
 	Lift variable mapping :: initialize or continue build variable mapping
@@ -31,10 +115,12 @@ end
 		[:(x[1]),:(x[2])] => [:refpod] = :(x[5]) <==> x[5] = x[1] * x[2]
 		link is the lift constraint Expr
 """
-function _pod_expr_t2y(xdim::Int, T::Array=[], t2y=Dict(); kwargs...)
+function expr_t2y(T::Array=[], t2y=Dict(), xdim::Int=0; kwargs...)
 
-	@assert xdim > 0
-	yidx = xdim + length(t2y) + 1
+	if xdim > 0
+		t2y[:xdim] = xdim
+	end
+	yidx = t2y[:xdim] + length(t2y)
 	for i in T
 		if length(i) > 1 && !(i in keys(t2y)) && !(reverse(i) in keys(t2y)) #Perform lifting on multi-linear terms
 			liftvarref = Expr(:ref, :x, yidx)
@@ -52,14 +138,14 @@ end
 	Input: expression::Expr | t2y::Dict
 	Output: recursive in-place operation
 """
-function _pod_expr_lift(h, t2y::Dict; kwargs...)
+function expr_lift(h, t2y::Dict; kwargs...)
 
-	@assert _pod_expr_mark(deepcopy(h)) <= 2 # Not focusing on multi-linear terms
-	_pod_expr_flatten(h)	# Preproces the expression
+	@assert expr_mark(deepcopy(h)) <= 2 # Not focusing on multi-linear terms
+	expr_flatten(h)	# Preproces the expression
 	if h.args[1] in [:+,:-]  || !isempty([i for i in 1:length(h.args) if (isa(h.args[i], Expr) && h.args[i].head == :call)])
 		for i in 2:length(h.args) # Reserved 1 with operator
 			if isa(h.args[i], Expr) && h.args[i].head == :call
-				rep = _pod_expr_lift(h.args[i], t2y) # Continue with sub-tree
+				rep = expr_lift(h.args[i], t2y) # Continue with sub-tree
 				h.args[i] = rep
 			elseif isa(h.args[i], Float64) || h.args[i].head == :ref
 				h.args[i] = h.args[i]
@@ -101,10 +187,10 @@ end
 	TODO: this function requires a lot of refining.
 	Most issues can be caused by this function.
 """
-function _pod_expr_flatten(h, level=0; kwargs...)
+function expr_flatten(h, level=0; kwargs...)
 
 	if level > 0  # No trivial constraint is allowed "3>5"
-		flat = _pod_expr_arrangeargs(h.args)
+		flat = expr_arrangeargs(h.args)
 		if isa(flat, Float64)
 			return flat
 		else
@@ -114,11 +200,11 @@ function _pod_expr_flatten(h, level=0; kwargs...)
 
 	for i in 2:length(h.args)
 		if isa(h.args[i], Expr) && h.args[i].head == :call
-			h.args[i] = _pod_expr_flatten(h.args[i], level+1)
+			h.args[i] = expr_flatten(h.args[i], level+1)
 		end
 	end
 	if level > 0 #Root level process, no additional operators
-		h.args = _pod_expr_arrangeargs(h.args)
+		h.args = expr_arrangeargs(h.args)
 	end
 
 	return h
@@ -129,7 +215,7 @@ end
 	Only consider 3 types: coefficients(Int64, Float64), :ref, :calls
 	Sequence arrangement is dependent on operator
 """
-function _pod_expr_arrangeargs(args::Array; kwargs...)
+function expr_arrangeargs(args::Array; kwargs...)
 
 	# A mapping used for operator treatments
 	reverter = Dict(true=>:-, false=>:+)
@@ -210,7 +296,7 @@ end
 """
 	Mark expression with "dimensions" of the variable. Augment the tree.
 """
-function _pod_expr_mark(h; kwargs...)
+function expr_mark(h; kwargs...)
 
 	p = 0
 	for i in 2:length(h.args)
@@ -222,17 +308,17 @@ function _pod_expr_mark(h; kwargs...)
 				p = +(p, 1)
 				h.args[i].typ = 1
 			elseif h.args[1] in [:^] # Consider leaf when encounter :^
-				p = _pod_expr_dim_enquiry(h)
+				p = expr_dim_enquiry(h)
 			elseif h.args[1] in [:/]
 				error("Does not support :/ and :^ yet.")
 			end
 		elseif isa(h.args[i], Expr) && h.args[i].head == :call
 			if h.args[1] in [:+,:-]
-				innerp = _pod_expr_mark(h.args[i])
+				innerp = expr_mark(h.args[i])
 				p = max(p, innerp)
 				h.args[i].typ = innerp
 			elseif h.args[1] in [:*]
-				innerp = _pod_expr_mark(h.args[i])
+				innerp = expr_mark(h.args[i])
 				p = +(p, innerp)
 				h.args[i].typ = innerp
 			elseif h.args[1] in [:/, :^]
@@ -251,7 +337,7 @@ end
 """
 	A special check when encouter :^. Cleaner function
 """
-function _pod_expr_dim_enquiry(h)
+function expr_dim_enquiry(h)
 
 	@assert h.args[1] == :^
 	@assert length(h.args) == 3 # Don't take cray :call with :^
@@ -260,70 +346,17 @@ function _pod_expr_dim_enquiry(h)
 	else
 		return h.args[3]
 	end
-
 end
 
 """
 	Check if a sub-tree is linear or not
 """
-function pod_expr_islinear(h)
-	if _pod_expr_mark(h) > 1
+function expr_islinear(h)
+	if expr_mark(h) > 1
 		return False
 	else
 		return True
 	end
 end
 
-"""
-	Tree traversal for bi-linear term detection and marking
-	Input: expression subtree | terms::Array | buffer::Array
-	Output: Found terms and an empty buffer
 
-	Algorithm: DFS tree traversal to collect bi-linear terms using a buffer.
-		When collected buffer encouter a breaker :(+) :(-), finish recognizing a term
-		and collect it into T.
-
-	NOTE: This function may change a lot when working on a multi-linear term version
-"""
-function _pod_expr_traversal(h, T::Array=[], buffer::Array=[]; kwargs...)
-
-	if isa(h, Float64) || isa(h, Int64)
-		return T, buffer  # Continue to collect
-	elseif h == :+ || h == :-
-		if !(buffer in T) && !isempty(buffer)
-			push!(T,buffer)
-		end
-		buffer = []
-		return T, buffer  # Term collecing
-	elseif h == :*
-		return T, buffer  # Continue to collect
-	elseif h == :^
-		return T, buffer # Continue to collect
-	elseif h == :/
-		error("Unspported operator $(h)")
-	elseif h.head == :ref
-		push!(buffer, h)
-		return T, buffer
-	end
-
-	for t in 1:length(h.args)
-		T, buffer = _pod_expr_traversal(h.args[t], T, buffer)
-		if h.args[1] == :+ || h.args[1] == :-
-			if !(buffer in T) && !isempty(buffer)
-				push!(T, buffer)
-			end
-			buffer = []
-		end
-	end
-
-	# Post Process on special operators
-	if h.args[1] == :^
-		push!(buffer, buffer[1])
-		if !(buffer in T) && !isempty(buffer)
-			push!(T, buffer)
-		end
-		buffer = []
-	end
-
-	return T, buffer
-end
