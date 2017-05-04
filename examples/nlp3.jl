@@ -1,4 +1,4 @@
-using POD, JuMP, Ipopt, MathProgBase 
+using POD, JuMP, Ipopt, MathProgBase
 
 function pod_example_nlp3(verbose=false)
 
