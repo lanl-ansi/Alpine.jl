@@ -136,7 +136,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
 
-
+    populate_dict_nonlinear_info(m)
 
     # this should change later for an MINLP
     m.var_type_orig = fill(:Cont, m.num_var_orig)
@@ -183,7 +183,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     presolve(m)
     # presolve(m)
     # bounding tightening
-    # bounding solve
+    # bounding solve (ATMC)
     # compute gap and update the gap
 
     #=
