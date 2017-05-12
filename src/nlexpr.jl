@@ -82,7 +82,20 @@ end
 """
 	Dereferencing function: splice and dereference
 """
-function expr_dereferencing()
+function expr_dereferencing(expr, m)
+
+	for i in 2:length(expr.args)
+		if isa(expr.args[i], Float64)
+			k = 0
+		elseif expr.args[i].head == :ref)
+			@assert isa(expr.args[i].args[2], Float64)
+			expr.args[i].head = Variable(m, expr.args[i].args[2])
+		elseif expr.args[i].head == :call)
+			expr_dereferencing(expr.args[i], m)
+		else
+			error("expr_dereferencing :: Unexpected term in expression tree.")
+		end
+	end
 
 end
 
