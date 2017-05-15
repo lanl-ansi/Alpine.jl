@@ -13,25 +13,25 @@
         @test isapprox(m.objVal, 17.014; atol = 1e-3)
 
         # Random Model 1
-        m = pod_example_bi1()
+        m = example_bi1()
         status = solve(m)
         @test status == :Optimal
         @test isapprox(m.objVal, 222.0744; atol = 1e-3)
 
         # NLP 1
-        m = pod_example_nlp1()
+        m = example_nlp1()
         status = solve(m)
         @test status == :Optimal
         @test isapprox(m.objVal, 58.38366169; atol = 1e-3)
 
         # NLP 2
-        m = pod_example_nlp2()
+        m = example_nlp2()
         status = solve(m)
         @test status == :Optimal
         @test isapprox(m.objVal, 5.00; atol = 1e-3)
 
         # NLP3
-        m = pod_example_nlp3()
+        m = example_nlp3()
         status = solve(m)
         @test status == :Infeasible
     end

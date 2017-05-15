@@ -7,6 +7,6 @@ using MathProgBase
 include("algorithm.jl")
 include("nlexpr.jl")
 include("solver.jl")
-
+include("model.jl")
 
 end # module

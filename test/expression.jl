@@ -2,7 +2,7 @@
 
     @testset " Expression Test || Bilinear || Simple || bi1.jl " begin
 
-        bi1 = pod_example_bi1()
+        bi1 = example_bi1()
         solve(bi1) # Setup internal model
         POD.populate_map(bi1.internalModel)
 

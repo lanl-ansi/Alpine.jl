@@ -50,15 +50,15 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
-    model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
+    basic_model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding     
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     dict_nonlinear_info::Dict{Any,Any}                          # Dictionary containing details of lifted terms
     var_discretization::Vector{Any}                             # Variables on which discretization is performed
     discretization::Dict{Any,Set{Float64}}                      # Discretization points keyed by the variables
-    lifted_obj_expr_mip::Expr                                   # Lifted objective expression, if linear, same as obj_expr_orig [SW]
-    lifted_constr_expr_mip::Vector{Expr}                         # Lifted constraints, if linear, same as corresponding constr_expr_orig [SW]
-
+    lifted_obj_expr_mip::Expr                                   # Lifted objective expression, if linear, same as obj_expr_orig
+    lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints, if linear, same as corresponding constr_expr_orig
+    lifted_x_cont::Int                                          # Count of lifted variables
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -136,11 +136,11 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
 
-    populate_dict_nonlinear_info(m)
-
     # this should change later for an MINLP
-    m.var_type_orig = fill(:Cont, m.num_var_orig)
+    # m.var_type_orig = fill(:Cont, m.num_var_orig)
+    m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig] #[SW] getting ready for MINLP
 
+    # Summarize constraints information in original model
     m.constr_type_orig = Array(Symbol, m.num_constr_orig)
     for i in 1:m.num_constr_orig
         if l_constr[i] > -Inf && u_constr[i] < Inf
@@ -159,9 +159,14 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.num_nlconstr_orig = m.num_constr_orig - m.num_lconstr_orig
 
-
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
+
+    # POD_MIP model 
+    populate_dict_nonlinear_info(m)
+    get_basic_lifted_expressions(m)
+    m.lifted_x_cont = length(m.dict_nonlinear_info)
+    setup_basic_bounding_mip(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
 
@@ -234,6 +239,11 @@ function local_solve(m::PODNonlinearModel)
         m.status = :Infeasible
         return
         # TODO Figure out the conditions for this to hold!
+        # [SW] Past experience, given different solver utilized, 
+        # BOMIN -> Resolve multiple times at root relaxation will help
+        # KNITRO -> Use multi-start will help
+        # Ipopt -> Unknown method
+        # This may need to be conducted given specific NLP solver utilized
     elseif local_solve_nlp_status == :Unbounded
         warn("initial problem unbounded.")
         m.status = :Unbounded

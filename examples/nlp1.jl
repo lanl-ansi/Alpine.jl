@@ -1,8 +1,8 @@
-using POD, JuMP, Ipopt, MathProgBase 
+using POD, JuMP, Ipopt, CPLEX, MathProgBase 
 
-function pod_example_nlp1(verbose=false)
+function example_nlp1(verbose=false)
 
-	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0)))
+	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=CplexSolver()))
 	@variable(m, 1<=x[1:2]<=10)
 
 	@NLconstraint(m, x[1]*x[2] >= 8)
