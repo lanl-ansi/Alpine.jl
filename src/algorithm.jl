@@ -95,7 +95,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_lconstr_updated = 0
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
-        # Need to be initialized [SW]
         m.dict_nonlinear_info = Dict()
 
 
@@ -166,7 +165,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     populate_dict_nonlinear_info(m)
     get_basic_lifted_expressions(m)
     m.lifted_x_cont = length(m.dict_nonlinear_info)
-    setup_basic_bounding_mip(m)
+    # setup_basic_bounding_mip(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
 

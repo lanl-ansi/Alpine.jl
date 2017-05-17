@@ -103,7 +103,6 @@ end
 """
 function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, level=0; kwargs...)
 
-	@show expr
 	reversor = Dict(true => -1.0, false => 1.0)
 
 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
@@ -131,7 +130,6 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 			traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and close the previous term
 			if bufferVal != 0.0 && bufferVar != nothing
-				@show bufferVal, bufferVar, expr.args[1], i, (expr.args[1]==:- && i<=2)
 				push!(lhscoeffs, reversor[(expr.args[1]==:- && i<=2)]*eval(expr.args[1])(bufferVal))
 				push!(lhsvars, bufferVar)
 				bufferVal = 0.0
@@ -142,13 +140,11 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 				bufferVal = 0.0
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
-				@show 1.0, bufferVar
 				push!(lhscoeffs, 1.0)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
-				@show -1.0, bufferVar, i
 				push!(lhscoeffs, reversor[(i<=2)]*(-1.0))
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
