@@ -7,7 +7,6 @@ function populate_dict_nonlinear_info(m::PODNonlinearModel; kwargs...)
 	# options = Dict(kwargs)
 
 	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
-	m.lifted_constr_expr_mip = []
  	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
 	end
@@ -21,6 +20,7 @@ function populate_dict_nonlinear_info(m::PODNonlinearModel; kwargs...)
 		analyze_expr(m.lifted_constr_expr_mip[i].args[2], terms, m.dict_nonlinear_info)
 	end
 
+	delete!(m.dict_nonlinear_info,:xdim)
 	return m
 end
 
@@ -82,20 +82,48 @@ function traverse_expr(expr, terms::Array=[], buffer::Array=[]; kwargs...)
 end
 
 """
+	This is warpper for generating the affine functions of POD-mip model
+	It requires the lifted mip expression to be stored.
+"""
+function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
+
+	# Populate the objective affine function
+	m.lifted_obj_aff_mip = expr_to_affine(m.lifted_obj_expr_mip)
+
+	# Populate the constraints affin function
+	for i in 1:m.num_constr_orig
+		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
+	end
+
+end
+
+"""
 	This function takes a constrain expression and convert it into a affine expression constraint
 	Wraps around function traverse_expr_to_affine()
 """
 function expr_to_affine(expr)
 
 	# The input should follow :(<=, LHS, RHS)
-	@assert expr.args[1] in [:(==), :(>=), :(<=)]
-	@assert isa(expr.args[3], Float64) || isa(expr.args[3], Int)
-	@assert isa(expr.args[2], Expr)
-	# non are buffer spaces, not used anywhere
-	lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr.args[2])
-	rhs = -rhs + expr.args[3]
+	affdict = Dict()
+	if expr.args[1] in [:(==), :(>=), :(<=)] # For a constraint expression
+		@assert isa(expr.args[3], Float64) || isa(expr.args[3], Int)
+		@assert isa(expr.args[2], Expr)
+		# non are buffer spaces, not used anywhere
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr.args[2])
+		rhs = -rhs + expr.args[3]
+		affdict[:sense] = expr.args[1]
+	else # For an objective expression
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr)
+		affdict[:sense] = nothing
+	end
 
-	return lhscoeff, lhsvars, rhs
+	affdict[:coefs] = lhscoeff
+	affdict[:vars]	= lhsvars
+	affdict[:rhs]	= rhs
+	@assert length(affdict[:coefs]) == length(affdict[:vars])
+	affdict[:cnt]	= length(affdict[:coefs])
+
+	return affdict
 end
 
 """
@@ -124,9 +152,9 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 		bufferVar = expr
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	end
-		
+
 	for i in 1:length(expr.args)
-		lhscoeff, lhsvars, rhs, bufferVal, bufferVar= 
+		lhscoeff, lhsvars, rhs, bufferVal, bufferVar=
 			traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and close the previous term
 			if bufferVal != 0.0 && bufferVar != nothing
@@ -169,10 +197,7 @@ end
 """
 	Formulate the pod mip model lifted constraints
 """
-function get_basic_lifted_expressions(m::PODNonlinearModel; kwargs...)
-
-	# options is not used anywhere
-	# options = Dict(kwargs)
+function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
 
 	expr_lift(m.lifted_obj_expr_mip, m.dict_nonlinear_info)
 	for i in 1:m.num_constr_orig
@@ -258,7 +283,7 @@ end
 	Output: recursive in-place operation
 """
 function expr_lift(expr, dict_nonlinear_info::Dict; kwargs...)
-	
+
 	@assert expr_mark(deepcopy(expr)) <= 2 # Not focusing on multi-linear terms
 	expr_flatten(expr)	# Preproces the expression
 	if expr.args[1] in [:+,:-]  || !isempty([i for i in 1:length(expr.args) if (isa(expr.args[i], Expr) && expr.args[i].head == :call)])
@@ -330,7 +355,7 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 			elseif expr.args[i].head == :call
 				expr_resolve_sign(expr.args[i], level+1)
 			end
-		end 
+		end
 	end
 
 end

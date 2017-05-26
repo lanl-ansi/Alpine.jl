@@ -5,6 +5,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     rel_gap::Float64                                            # Relative optimality gap termination condition
+    discrete_vars_choice::Int                                   # [SW] 1: Minimum vertex cover, 0:Max cover
 
     # add all the solver options
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
@@ -50,15 +51,19 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
-    basic_model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding     
+    basic_model_mip::JuMP.Model                                 # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     dict_nonlinear_info::Dict{Any,Any}                          # Dictionary containing details of lifted terms
     var_discretization::Vector{Any}                             # Variables on which discretization is performed
-    discretization::Dict{Any,Set{Float64}}                      # Discretization points keyed by the variables
+    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
     lifted_obj_expr_mip::Expr                                   # Lifted objective expression, if linear, same as obj_expr_orig
     lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints, if linear, same as corresponding constr_expr_orig
     lifted_x_cont::Int                                          # Count of lifted variables
+    lifted_obj_aff_mip::Dict{Any, Any}                          # Affine function of the lifted objective expression
+    lifted_constr_aff_mip::Vector{Dict{Any, Any}}               # Affine function of the lifted constraints
+    discrete_x_cnt::Int                                         # Number of variables got discretized
+    discrete_x::Vector{Any}                                     # A vector of variables references that needs to be discretized
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -77,6 +82,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.log_level = log_level
         m.timeout = timeout
         m.rel_gap = rel_gap
+        m.discrete_vars_choice = 0          #[SW] Added
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -97,6 +103,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.indexes_lconstr_updated = Int[]
         m.dict_nonlinear_info = Dict()
 
+        m.lifted_constr_expr_mip = []       # [SW] added
+        m.lifted_constr_aff_mip = []        # [SW] added
+        m.discrete_x = []                   # [SW] added
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -161,11 +170,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
-    # POD_MIP model 
+    # POD_MIP model
     populate_dict_nonlinear_info(m)
-    get_basic_lifted_expressions(m)
+    populate_lifted_expr(m)
     m.lifted_x_cont = length(m.dict_nonlinear_info)
-    # setup_basic_bounding_mip(m)
+    populate_lifted_affine(m)
+    mcbi_pick_discretize_vars(m)
+    # mc_bounding_mip(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
 
@@ -238,7 +249,7 @@ function local_solve(m::PODNonlinearModel)
         m.status = :Infeasible
         return
         # TODO Figure out the conditions for this to hold!
-        # [SW] Past experience, given different solver utilized, 
+        # [SW] Past experience, given different solver utilized,
         # BOMIN -> Resolve multiple times at root relaxation will help
         # KNITRO -> Use multi-start will help
         # Ipopt -> Unknown method

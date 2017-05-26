@@ -3,6 +3,7 @@
     using POD
 
     @testset " Local Solve Tests => Function solve() " begin
+        # This model currently doesn't suit the expression manipulation function given the complexity of the expressions
         # initval = [1,5,5,1]
         # m = Model(solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0)))
         # @variable(m, 1 <= x[i=1:4] <= 5, start=initval[i])
