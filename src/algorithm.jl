@@ -51,19 +51,23 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
+    # [SW] is managing this section ----------------------------
     basic_model_mip::JuMP.Model                                 # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     dict_nonlinear_info::Dict{Any,Any}                          # Dictionary containing details of lifted terms
-    var_discretization::Vector{Any}                             # Variables on which discretization is performed
-    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
+
+
     lifted_obj_expr_mip::Expr                                   # Lifted objective expression, if linear, same as obj_expr_orig
     lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints, if linear, same as corresponding constr_expr_orig
     lifted_x_cont::Int                                          # Count of lifted variables
     lifted_obj_aff_mip::Dict{Any, Any}                          # Affine function of the lifted objective expression
     lifted_constr_aff_mip::Vector{Dict{Any, Any}}               # Affine function of the lifted constraints
+    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
     discrete_x_cnt::Int                                         # Number of variables got discretized
-    discrete_x::Vector{Any}                                     # A vector of variables references that needs to be discretized
+    discrete_x::Vector{Any}                                     # Variables on which discretization is performed
+    discrete_ratio::Float64                                     # Discretization ratio (use a fixed value for now, later switch to a function)
+    # [SW] is managing this section ----------------------------
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -82,7 +86,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.log_level = log_level
         m.timeout = timeout
         m.rel_gap = rel_gap
-        m.discrete_vars_choice = 0          #[SW] Added
+        m.discrete_vars_choice = 1          #[SW] Added default value on how to choose discretize variables
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -106,6 +110,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.lifted_constr_expr_mip = []       # [SW] added
         m.lifted_constr_aff_mip = []        # [SW] added
         m.discrete_x = []                   # [SW] added
+        m.discretization = Dict()           # [SW] added
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -170,13 +175,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
-    # POD_MIP model
+    # [SW] POD_MIP model
     populate_dict_nonlinear_info(m)
     populate_lifted_expr(m)
     m.lifted_x_cont = length(m.dict_nonlinear_info)
     populate_lifted_affine(m)
-    mcbi_pick_discretize_vars(m)
-    # mc_bounding_mip(m)
+    initialize_discretization(m)
+    mcbi_bounding_mip(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
 

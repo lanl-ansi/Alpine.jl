@@ -1,33 +1,20 @@
-"""
-    Set up a basic lifted mip model without any additional infromations.
-    This model intends to be deep-copied at each iteration for a new MIP model.
-    All non-linear term in the original model is lifted with a variable.
-
-    This function is a prototype for mc-based bilinear model.
-"""
-function mcbi_bounding_mip(m::PODNonlinearModel; kwargs...)
-
-    m.basic_model_mip = Model(solver=m.mip_solver)
-
-    mcbi_post_basic_vars(m)
-    mcbi_post_lifted_aff_constraints(m)
-    mcbi_post_lifted_aff_obj(m)
-
-    mcbi_post_mc_all(m)
+function pick_discretize_vars(m::PODNonlinearModel)
+    # Figure out which are the variables that needs to be partitioned
+    if m.discrete_vars_choice == 0
+        max_cover(m)
+    elseif m.discrete_vars_choice == 1
+        min_vertex_cover(m)
+    else
+        error("Unsupported method for picking variables for discretization")
+    end
 end
 
-function tightmccormick_one(m,xy,xz,y,xˡ,xᵘ,yˡ,yᵘ,z)
-    @constraint(m, xy .>= xˡ*y + yˡ'*xz - xˡ*yˡ'*z)
-    @constraint(m, xy .>= xᵘ*y + yᵘ'*xz - xᵘ*yᵘ'*z)
-    @constraint(m, xy .<= xˡ*y + yᵘ'*xz - xˡ*yᵘ'*z)
-    @constraint(m, xy .<= xᵘ*y + yˡ'*xz - xᵘ*yˡ'*z)
-end
-
-function tightmccormick_two(m,xy,xz,yz,xˡ,xᵘ,yˡ,yᵘ,zxy)
-    @constraint(m, xy .>= xˡ'*yz + yˡ'*xz - xˡ'*zxy*yˡ)
-    @constraint(m, xy .>= xᵘ'*yz + yᵘ'*xz - xᵘ'*zxy*yᵘ)
-    @constraint(m, xy .<= xˡ'*yz + yᵘ'*xz - xˡ'*zxy*yᵘ)
-    @constraint(m, xy .<= xᵘ'*yz + yˡ'*xz - xᵘ'*zxy*yˡ)
+function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
+    @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
+    @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
+    @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
+    @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
+    return m
 end
 
 function mccormick_bin(m,xy,x,y)
@@ -59,4 +46,15 @@ function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, ti
     A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
     @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
     return m
+end
+
+function initialize_discretization(m::PODNonlinearModel; kwargs...)
+    pick_discretize_vars(m)
+    for var in 1:m.num_var_orig
+        if var in m.discrete_x
+            m.discretization[var] = [m.l_var_orig[var], m.l_var_orig[var]+(m.u_var_orig[var]-m.l_var_orig[var])/2, m.u_var_orig[var]]
+        else
+            m.discretization[var] = [m.l_var_orig[var], m.u_var_orig[var]]
+        end
+    end
 end
