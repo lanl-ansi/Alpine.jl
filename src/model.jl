@@ -1,3 +1,21 @@
+"""
+    Set up a basic lifted mip model without any additional infromations.
+    This model intends to be deep-copied at each iteration for a new MIP model.
+    All non-linear term in the original model is lifted with a variable.
+
+    This function is a prototype for mc-based bilinear model.
+"""
+function lower_bounding_mip(m::PODNonlinearModel; kwargs...)
+
+    m.basic_model_mip = Model(solver=m.mip_solver) # Construct model
+
+    mcbi_post_basic_vars(m)             # Post original and lifted variables
+    mcbi_post_lifted_aff_constraints(m) # Post lifted constraints
+    mcbi_post_lifted_aff_obj(m)         # Post objective
+    mcbi_post_mc(m)                     # Post all mccormick problem
+
+end
+
 function pick_discretize_vars(m::PODNonlinearModel)
     # Figure out which are the variables that needs to be partitioned
     if m.discrete_vars_choice == 0
@@ -51,10 +69,134 @@ end
 function initialize_discretization(m::PODNonlinearModel; kwargs...)
     pick_discretize_vars(m)
     for var in 1:m.num_var_orig
+        lb = m.l_var_orig[var]
+        ub = m.u_var_orig[var]
         if var in m.discrete_x
-            m.discretization[var] = [m.l_var_orig[var], m.l_var_orig[var]+(m.u_var_orig[var]-m.l_var_orig[var])/2, m.u_var_orig[var]]
+            m.discretization[var] = [lb, m.sol_incumb_ub[var], ub]
         else
-            m.discretization[var] = [m.l_var_orig[var], m.u_var_orig[var]]
+            m.discretization[var] = [lb, ub]
         end
     end
+end
+
+function add_discretization(m::PODNonlinearModel; kwargs...)
+
+    #=
+    Consider original partition [0, 3, 7, 9], where LB solution is 4.
+    Use ^ as the new partition, | as the original partition
+
+    A case when discretize ratio = 8
+    | -------- | - ^ -- * -- ^ ---- | -------- |
+    0          3  3.5   4   4.5     7          9
+
+    A special case when discretize ratio = 4
+    | -------- | --- * --- ^ ---- | -------- |
+    0          3     4     5      7          9
+    =#
+
+    for i in 1:m.num_var_orig
+        point = m.sol_incumb_lb[i]
+        if i in m.discrete_x  # Only construct when discretized
+            # @show point
+            # @show "Before ", i, m.discretization[i]
+            for j in 1:length(m.discretization[i])
+                if point >= m.discretization[i][j]  # Locating the right location
+                    @assert j < length(m.discretization[i])
+                    lb_local = m.discretization[i][j]
+                    ub_local = m.discretization[i][j+1]
+                    distance = ub_local - lb_local
+                    radius = distance / m.discrete_ratio
+                    lb_new = max(point - radius/2, lb_local)
+                    ub_new = min(point + radius/2, ub_local)
+                    # @show radius, lb_new, ub_new
+                    if ub_new < ub_local  # Insert new UB-based partition
+                        insert!(m.discretization[i], j+1, ub_new)
+                    end
+                    if lb_new > lb_local  # Insert new LB-based partition
+                        insert!(m.discretization[i], j+1, lb_new)
+                    end
+                    break
+                end
+            end
+            # @show "After ", i, m.discretization[i]
+        end
+    end
+
+end
+
+
+"""
+    Use lower bound solution active interval to tight upper bound variable bounds
+"""
+function tight_ub_bounds(m::PODNonlinearModel; kwargs...)
+
+    l_var = copy(m.l_var_orig)
+    u_var = copy(m.u_var_orig)
+    for i in 1:m.num_var_orig
+        if i in m.discrete_x
+            point = m.sol_incumb_lb[i]
+            for j in 1:length(m.discretization[i])
+                if point >= m.discretization[i][j]
+                    @assert j < length(m.discretization[i])
+                    l_var[i] = m.discretization[i][j]
+                    u_var[i] = m.discretization[i][j+1]
+                end
+            end
+        end
+    end
+    return l_var, u_var
+end
+
+
+"""
+    Perform a minimum vertex cover for selecting variables for discretization
+"""
+function min_vertex_cover(m::PODNonlinearModel; kwargs...)
+
+    # Collect the information for arcs and nodes
+    nodes = Set()
+    arcs = Set()
+    for pair in keys(m.dict_nonlinear_info)
+        arc = []
+        for i in pair
+            @assert isa(i.args[2], Int)
+            push!(nodes, i.args[2])
+            push!(arc, i.args[2])
+        end
+        push!(arcs, arc)
+    end
+    nodes = collect(nodes)
+    arcs = collect(arcs)
+
+    # Set up minimum vertex cover problem
+    minvertex = Model(solver=m.mip_solver)
+    @variable(minvertex, x[nodes], Bin)
+    for arc in arcs
+        @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
+    end
+    @objective(minvertex, Min, sum(x))
+    status = solve(minvertex, suppress_warnings=true)
+
+    xVal = getvalue(x)
+
+    # Getting required information
+    m.discrete_x_cnt = Int(sum(xVal))
+    m.discrete_x = [i for i in nodes if xVal[i]>0]
+
+end
+
+"""
+    Collect all envolved variables as a max cover for generate discretization
+"""
+function max_cover(m::PODNonlinearModel; kwargs...)
+    nodes = Set()
+    for pair in keys(m.dict_nonlinear_info)
+        for i in pair
+            @assert isa(i.args[2], Int)
+            push!(nodes, i.args[2])
+        end
+    end
+    nodes = collect(nodes)
+    m.discrete_x_cnt = length(nodes)
+    m.discrete_x = nodes
 end

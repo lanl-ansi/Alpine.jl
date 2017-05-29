@@ -1,8 +1,10 @@
-using POD, JuMP, Ipopt, CPLEX, MathProgBase
+using POD, JuMP, Ipopt, CPLEX, Gurobi, MathProgBase
 
 function example_nlp3(verbose=false)
 
-	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=CplexSolver()))
+	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0,resto_max_iter=10,expect_infeasible_problem="no"),
+							   mip_solver=GurobiSolver(TimeLimit=10, OutputFlag=1)))
+
 	@variable(m, x[1:8])
 
 	setlowerbound(x[1], 100)

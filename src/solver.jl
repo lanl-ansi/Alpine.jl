@@ -50,3 +50,61 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     return PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver)
 end
+
+"""
+    A small function used to fetch differnt MIP solver setting code
+"""
+function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
+    if string(m.mip_solver)[1:10] == "CPLEX.Cple"
+        return :CPX_PARAM_TILIM
+    elseif string(m.mip_solver)[1:10] == "Gurobi.Gur"
+        return :TimeLimit
+    elseif string(m.mip_solver)[1:10] == "Cbc.CbcMat"
+        return :seconds
+    else found == nothing
+        error("Needs support for this MIP solver")
+    end
+end
+
+function set_mip_time_limit(m::PODNonlinearModel)
+    for i in 1:length(m.mip_solver.options)
+        if fetch_timeleft_symbol(m) in collect(m.mip_solver.options[i])
+            deleteat!(m.mip_solver.options, i)
+            break
+        end
+    end
+    push!(m.mip_solver.options, (fetch_timeleft_symbol(m), m.timeleft))
+end
+
+function print_iis_gurobi(m::Model)
+
+    grb = MathProgBase.getrawsolver(internalmodel(m))
+    Gurobi.computeIIS(grb)
+    numconstr = Gurobi.num_constrs(grb)
+    numvar = Gurobi.num_vars(grb)
+
+    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+
+    info("Irreducible Inconsistent Subsystem (IIS)")
+    info("Variable bounds:")
+    for i in 1:numvar
+        v = Variable(m, i)
+        if iislb[i] != 0 && iisub[i] != 0
+            println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+        elseif iislb[i] != 0
+            println(getname(v), " >= ", getlowerbound(v))
+        elseif iisub[i] != 0
+            println(getname(v), " <= ", getupperbound(v))
+        end
+    end
+
+    info("Constraints:")
+    for i in 1:numconstr
+        if iisconstr[i] != 0
+            println(m.linconstr[i])
+        end
+    end
+
+end
