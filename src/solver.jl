@@ -22,7 +22,7 @@ end
 function PODSolver(;
     log_level = 1,
     timeout = Inf,
-    rel_gap = 1e-5,
+    rel_gap = 1e-4,
 
     nlp_local_solver = UnsetSolver(),
     minlp_local_solver = UnsetSolver(),
@@ -87,38 +87,38 @@ function set_mip_time_limit(m::PODNonlinearModel)
             break
         end
     end
-    push!(m.mip_solver.options, (fetch_timeleft_symbol(m), m.timeleft))
+    push!(m.mip_solver.options, (fetch_timeleft_symbol(m), (m.timeout - m.logs[:total_time])))
 end
 
-function print_iis_gurobi(m::Model)
-
-    grb = MathProgBase.getrawsolver(internalmodel(m))
-    Gurobi.computeIIS(grb)
-    numconstr = Gurobi.num_constrs(grb)
-    numvar = Gurobi.num_vars(grb)
-
-    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
-    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
-    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
-
-    info("Irreducible Inconsistent Subsystem (IIS)")
-    info("Variable bounds:")
-    for i in 1:numvar
-        v = Variable(m, i)
-        if iislb[i] != 0 && iisub[i] != 0
-            println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
-        elseif iislb[i] != 0
-            println(getname(v), " >= ", getlowerbound(v))
-        elseif iisub[i] != 0
-            println(getname(v), " <= ", getupperbound(v))
-        end
-    end
-
-    info("Constraints:")
-    for i in 1:numconstr
-        if iisconstr[i] != 0
-            println(m.linconstr[i])
-        end
-    end
-
-end
+# function print_iis_gurobi(m::Model)
+#
+#     grb = MathProgBase.getrawsolver(internalmodel(m))
+#     Gurobi.computeIIS(grb)
+#     numconstr = Gurobi.num_constrs(grb)
+#     numvar = Gurobi.num_vars(grb)
+#
+#     iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+#     iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+#     iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+#
+#     info("Irreducible Inconsistent Subsystem (IIS)")
+#     info("Variable bounds:")
+#     for i in 1:numvar
+#         v = Variable(m, i)
+#         if iislb[i] != 0 && iisub[i] != 0
+#             println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+#         elseif iislb[i] != 0
+#             println(getname(v), " >= ", getlowerbound(v))
+#         elseif iisub[i] != 0
+#             println(getname(v), " <= ", getupperbound(v))
+#         end
+#     end
+#
+#     info("Constraints:")
+#     for i in 1:numconstr
+#         if iisconstr[i] != 0
+#             println(m.linconstr[i])
+#         end
+#     end
+#
+# end

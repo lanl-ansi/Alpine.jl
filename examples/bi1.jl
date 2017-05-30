@@ -1,4 +1,4 @@
-using POD, JuMP, Ipopt, CPLEX, MathProgBase 
+using POD, JuMP, Ipopt, CPLEX, MathProgBase
 
 function example_bi1(verbose=false)
 

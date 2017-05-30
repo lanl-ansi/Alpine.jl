@@ -2,8 +2,7 @@
 
     @testset "Expression Test || bilinear || Affine || exprs.jl" begin
         m=example_exprs()
-        solve(m)
-        @test isapprox(m.objVal, 306.8500; atol = 1e-3)
+        JuMP.build(m)
 
         # -1.0 * x[1] <= 109.0
         ex = m.internalModel.lifted_constr_expr_mip[1]
@@ -11,13 +10,11 @@
         @test affdict[:coefs] == [-1.0]
         @test affdict[:coefs] == m.internalModel.lifted_constr_aff_mip[1][:coefs]
         @test affdict[:vars] == [:(x[1])]
-        @show m.internalModel.lifted_constr_aff_mip[1][:vars]
         @test affdict[:vars] == m.internalModel.lifted_constr_aff_mip[1][:vars]
         @test isapprox(affdict[:rhs], 109.0; atol = 1e-3)
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[1][:rhs]
         @test affdict[:sense] == :(<=)
         @test affdict[:sense] == m.internalModel.lifted_constr_aff_mip[1][:sense]
-        
 
         # (-1.0 * x[12] + 20.0 * x[13]) - 222.0 >= 0.0
         ex = m.internalModel.lifted_constr_expr_mip[2]
@@ -48,7 +45,7 @@
         affdict = POD.expr_to_affine(ex)
         @test affdict[:coefs] == [-1.0]
         @test affdict[:coefs] == m.internalModel.lifted_constr_aff_mip[4][:coefs]
-        @test affdict[:vars] == [:(x[12])]     
+        @test affdict[:vars] == [:(x[12])]
         @test affdict[:vars] == m.internalModel.lifted_constr_aff_mip[4][:vars]
         @test isapprox(affdict[:rhs], 115.0; atol = 1e-3)
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[4][:rhs]
@@ -166,7 +163,7 @@
         @test affdict[:coefs] == m.internalModel.lifted_constr_aff_mip[3][:coefs]
         @test affdict[:vars] == [:(x[5]),:(x[8])]
         @test affdict[:vars] == m.internalModel.lifted_constr_aff_mip[3][:vars]
-        @test isapprox(affdict[:rhs], 0.0; atol = 1e-3)
+        @test isapprox(affdict[:rhs], 1.0; atol = 1e-3)
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[3][:rhs]
         @test affdict[:sense] == :(<=)
         @test affdict[:sense] == m.internalModel.lifted_constr_aff_mip[3][:sense]
@@ -176,7 +173,7 @@
         @test (affdict[:coefs] .== Any[100.0, -1.0, 833.33252]) == [true, true, true]
         @test affdict[:coefs] == m.internalModel.lifted_constr_aff_mip[4][:coefs]
         @test affdict[:vars] == [:(x[1]),:(x[9]),:(x[4])]
-        @test affdict[:vars] == m.internalModel.lifted_constr_aff_mip[4][:vars] 
+        @test affdict[:vars] == m.internalModel.lifted_constr_aff_mip[4][:vars]
         @test isapprox(affdict[:rhs], 83333.333; atol = 1e-3)
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[4][:rhs]
         @test affdict[:sense] == :(<=)
@@ -212,12 +209,12 @@
         POD.populate_dict_nonlinear_info(bi1.internalModel)
 
         @test length(keys(bi1.internalModel.dict_nonlinear_info)) == 8
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 1), Expr(:ref, :x, 1)]) 
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 2)]) 
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 3)]) 
+        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 1), Expr(:ref, :x, 1)])
+        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 2)])
+        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 3)])
         @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 4), Expr(:ref, :x, 4)])
         @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 3)])
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)]) 
+        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)])
 
     end
 end

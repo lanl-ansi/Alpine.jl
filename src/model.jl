@@ -9,10 +9,13 @@ function lower_bounding_mip(m::PODNonlinearModel; kwargs...)
 
     m.basic_model_mip = Model(solver=m.mip_solver) # Construct model
 
+    start_lb_build = time()
     mcbi_post_basic_vars(m)             # Post original and lifted variables
     mcbi_post_lifted_aff_constraints(m) # Post lifted constraints
     mcbi_post_lifted_aff_obj(m)         # Post objective
     mcbi_post_mc(m)                     # Post all mccormick problem
+    cputime_lb_build = time() - start_lb_build
+    m.logs[:total_time] += cputime_lb_build
 
 end
 
@@ -32,7 +35,6 @@ function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
     @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
     @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
     @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
-    return m
 end
 
 function mccormick_bin(m,xy,x,y)
@@ -67,18 +69,27 @@ function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, ti
 end
 
 function initialize_discretization(m::PODNonlinearModel; kwargs...)
+    options = Dict(kwargs)
     pick_discretize_vars(m)
     for var in 1:m.num_var_orig
         lb = m.l_var_orig[var]
         ub = m.u_var_orig[var]
         if var in m.discrete_x
-            m.discretization[var] = [lb, m.sol_incumb_ub[var], ub]
+            # m.discretization[var] = [lb, m.sol_incumb_ub[var], ub]  # Alternative way to construct
+            point = m.sol_incumb_ub[var]
+            radius = (ub-lb)/m.discrete_ratio
+            local_lb = max(lb, point-radius)
+            local_ub = min(ub, point+radius)
+            m.discretization[var] = unique([lb, local_lb, local_ub, ub])
         else
             m.discretization[var] = [lb, ub]
         end
     end
 end
 
+"""
+    Notice there are other ways to construct partitions
+"""
 function add_discretization(m::PODNonlinearModel; kwargs...)
 
     #=
@@ -107,7 +118,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     radius = distance / m.discrete_ratio
                     lb_new = max(point - radius/2, lb_local)
                     ub_new = min(point + radius/2, ub_local)
-                    # @show j, point, lb_new, ub_new
+                    # @show j, point, lb_new, ub_new, lb_local, ub_local
                     if ub_new < ub_local  # Insert new UB-based partition
                         insert!(m.discretization[i], j+1, ub_new)
                     end

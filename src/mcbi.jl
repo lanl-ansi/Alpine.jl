@@ -129,8 +129,6 @@ function mcbi_post_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::Dic
 	for i in 1:dim_λ
 		lb_X = getlowerbound(Variable(m, ind_X))
 		ub_X = getupperbound(Variable(m, ind_X))
-        # lb_X = lb[ind_X][i]
-        # ub_X = ub[ind_X][i]
 		lb_λ = getlowerbound(λ[ind_λ][i])
 		ub_λ = getupperbound(λ[ind_λ][i])
         @assert (lb_λ == 0.0) && (ub_λ == 1.0)

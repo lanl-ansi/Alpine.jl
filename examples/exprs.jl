@@ -1,5 +1,5 @@
 # Contains a basic model with various expressions for testing
-using POD, JuMP, Ipopt, CPLEX, MathProgBase 
+using POD, JuMP, Ipopt, CPLEX, MathProgBase
 
 function example_exprs(verbose=false)
 
@@ -17,7 +17,7 @@ function example_exprs(verbose=false)
 	@NLconstraint(m, 13*px[1] - px[2] + 5*px[3]*6 + px[4] >= 77)
 
 	@NLobjective(m, Min, 7*px[1]*6*px[4]*2+5+17+px[1]+px[2]+px[3]+8+3*5*px[1]^2*4)
-	
+
 	if verbose
 		print(m)
 	end

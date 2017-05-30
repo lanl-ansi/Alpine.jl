@@ -268,6 +268,11 @@ function add_info_using_terms(terms::Array=[], dict_nonlinear_info=Dict(); kwarg
 			lifted_var_ref = Expr(:ref, :x, yidx)
             lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, term[1], term[2]))
 			dict_nonlinear_info[term] = Dict(:lifted_var_ref => lifted_var_ref, :ref => term, :lifted_constr_ref => lifted_constr_ref)
+			if term[1] == term[2]
+				dict_nonlinear_info[term][:monomial] = true
+			else
+				dict_nonlinear_info[term][:monomial] = false
+			end
 			yidx += 1
 		end
 	end

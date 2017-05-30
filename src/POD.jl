@@ -1,7 +1,6 @@
 module POD
 
 using JuMP
-using Gurobi
 using MathProgBase
 
 # package code goes here
