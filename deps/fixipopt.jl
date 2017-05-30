@@ -1,4 +1,4 @@
-# Used for Windows Users
+# Used for Windows
 # https://github.com/JuliaOpt/Ipopt.jl/issues/77
 using WinRPM
 pkgs = String[]
