@@ -52,7 +52,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # mixed-integer convex program bounding model
     # [SW] is managing this section ----------------------------
     basic_model_mip::JuMP.Model                                 # JuMP convex MIP model for bounding
-    iter::Int                                                   # Iteration count
     timeleft::Float64                                           # Parameters used for algorithm
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
@@ -83,12 +82,12 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     lb_status::Symbol                                           # [SW] Lower bound status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver)
+    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, discrete_vars_choice, discrete_ratio)
         m = new()
         m.log_level = log_level
         m.timeout = timeout
         m.rel_gap = rel_gap
-        m.discrete_vars_choice = 0          #[SW] Added default value on how to choose discretize variables
+        m.discrete_vars_choice = discrete_vars_choice    #[SW] Added default value on how to choose discretize variables
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -113,9 +112,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.lifted_constr_aff_mip = []        # [SW] added
         m.discrete_x = []                   # [SW] added
         m.discretization = Dict()           # [SW] added
-        m.discrete_ratio = 4                # [SW] added
+        m.discrete_ratio = discrete_ratio   # [SW] added
         m.timeleft = m.timeout              # [SW] added
-        m.iter = 0                          # [SW] added
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -194,6 +192,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
         @printf "number of non-linear constraints = %d.\n" m.num_nlconstr_orig
         @printf "number of linear constraints = %d.\n" m.num_lconstr_orig
         @printf "number of variables = %d.\n" m.num_var_orig
+        @printf "method chosen for selecting discretize variable = %d\n" m.discrete_vars_choice
     end
 end
 
@@ -227,17 +226,22 @@ end
     Main Adaptive Partitioning (AP) Algorithm.
 =#
 function global_solve(m::PODNonlinearModel;kwargs...)
+    row_head_logging()
     while (m.best_obj - m.best_bound)/m.best_obj < m.gap_rel_opt || m.timeleft > 0.0
-        m.iter += 1
+        m.logs[:n_iter] += 1
         set_mip_time_limit(m)       # Regulates timing
         lower_bounding_mip(m)       # Build lower bounding model
         lb_solve(m)                 # Solve lower bounding model
-        # print(m.basic_model_mip)
+        if m.log_level > 1
+            print(m.basic_model_mip)
+        end
         add_discretization(m)       # Manage discretization
         ub_solve(m)                 # Solve upper bounding model
         m.rel_gap = (m.best_obj - m.best_bound)/m.best_obj
-        @printf "gap updates %13.5f.\n" m.rel_gap
-        if m.iter > 5
+        if m.log_level > 0
+            row_entry_logging(m)
+        end
+        if m.logs[:n_iter] > 10
             error("TESTING...")
         end
     end
@@ -259,7 +263,6 @@ function local_solve(m::PODNonlinearModel)
         m.sol_incumb_ub = copy(m.best_sol)  # [SW] added for temp holder
         m.best_obj = MathProgBase.getobjval(local_solve_nlp_model)
         m.status = local_solve_nlp_status
-        (m.log_level > 0) && @printf "best feasible solution objective = %13.5f.\n" m.best_obj
         return
     elseif local_solve_nlp_status == :Infeasible
         (m.log_level > 0) && println("problem infeasible.")
@@ -299,7 +302,7 @@ function ub_solve(m::PODNonlinearModel; kwargs...)
     MathProgBase.optimize!(ub_solve_nlp_model)
     cputime_ub_solve = time() - start_ub_solve
     m.logs[:total_time] += cputime_ub_solve
-    m.timeleft -= cputime_ub_solve
+    m.timeleft = max(0.0, m.timeleft - cputime_ub_solve)
 
     status = MathProgBase.status(ub_solve_nlp_model)
     if status == :Optimal || status == :Suboptimal || status == :UserLimit  # [SW] Added :UserLimit for feasibility tuning
@@ -307,9 +310,6 @@ function ub_solve(m::PODNonlinearModel; kwargs...)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj)
             m.best_sol = MathProgBase.getsolution(ub_solve_nlp_model)
             m.sol_incumb_ub = copy(m.best_sol)  # [SW] added for temp holder
-            (m.log_level > 0) && @printf "[+] best feasible solution objective = %13.5f.\n" m.best_obj
-        else
-            @printf "[-] best feasible solution objective = %13.5f.\n" m.best_obj
         end
     elseif ub_solve_nlp_status == :Infeasible
         (m.log_level > 0) && println("Incumbent unchanged due to infeasible UB solve.")
@@ -328,14 +328,14 @@ function lb_solve(m::PODNonlinearModel; kwargs...)
     status = solve(m.basic_model_mip, suppress_warnings=true)
     cputime_lb_solve = time() - start_lb_solve
     m.logs[:total_time] += cputime_lb_solve
-    m.timeleft -= cputime_lb_solve
+    m.timeleft = max(0.0, m.timeleft - cputime_lb_solve)
+
     if status == :Optimal || status == :Suboptimal || status == :UserLimit
         candidate_bound = getobjectivevalue(m.basic_model_mip)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound)
             m.best_bound = candidate_bound
             m.sol_incumb_lb = [getvalue(Variable(m.basic_model_mip, i)) for i in 1:m.num_var_orig]
             m.lb_status = status
-            (m.log_level > 0) && @printf "[+] LB incumbent = %13.5f.\n" m.best_bound
         end
     elseif status == :Infeasible
         print_iis_gurobi(m.basic_model_mip)
@@ -358,15 +358,31 @@ end
 # Create dictionary of logs for timing and iteration counts
 function create_logs!(m)
     logs = Dict{Symbol,Any}()
-
     # Timers
     logs[:total_time] = 0.  # Total run-time of the algorithm
-
+    logs[:remain_time] = m.timeout
     # Counters
-    logs[:n_iter] = 0       # Number of iterations in iterative
-    logs[:n_feas] = 0       # Number of times get a new feasible solution
+    logs[:n_iter] = 0           # Number of iterations in iterative
+    logs[:n_feas] = 0           # Number of times get a new feasible solution
+    logs[:ub_incumb_cnt] = 0    # Number of incumbents detected on upper bound
+    logs[:lb_incumb_cnt] = 0    # Number of incumebnts detected on lower bound
 
     m.logs = logs
+end
+
+function row_head_logging()
+    println(" | UB        | LB        | GAP\%      | USED TIME | TIME LEFT | Iter ")
+end
+
+function row_entry_logging(m::PODNonlinearModel; kwargs...)
+    b_len = 10
+    UB_block = string(" ", round(m.best_obj,2), " " ^ (b_len - length(string(round(m.best_obj, 2)))))
+    LB_block = string(" ", round(m.best_bound,2), " " ^ (b_len - length(string(round(m.best_bound, 2)))))
+    GAP_block = string(" ", round(m.rel_gap,3), " " ^ (b_len - length(string(round(m.rel_gap,3)))))
+    UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
+    LTIME_block = string(" ", round(m.timeleft,2), "s", " " ^ (b_len - 1 - length(string(round(m.timeleft,2)))))
+    ITER_block = string(" ", m.logs[:n_iter])
+    println(" |",UB_block,"|",LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
 end
 
 # Create dictionary of statuses for POD algorithm

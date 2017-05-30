@@ -13,6 +13,9 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     minlp_local_solver::MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
+    discrete_vars_choice::Int
+    discrete_ratio::Any
+
     # other options to be added later on
 end
 
@@ -24,14 +27,23 @@ function PODSolver(;
     nlp_local_solver = UnsetSolver(),
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
+
+    discrete_vars_choice = 0,
+    discrete_ratio = 4,
     )
 
     if nlp_local_solver == UnsetSolver()
         error("No NLP local solver specified (set nlp_local_solver)\n")
     end
 
+    if mip_solver == UnsetSolver()
+        error("NO MIP solver specififed (set mip_solver)\n")
+    end
+
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(log_level, timeout, rel_gap, deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver))
+    PODSolver(log_level, timeout, rel_gap,
+        deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver),
+        discrete_vars_choice, discrete_ratio)
 end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -47,8 +59,10 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
+    discrete_vars_choice = s.discrete_vars_choice
+    discrete_ratio = s.discrete_ratio
 
-    return PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver)
+    return PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, discrete_vars_choice, discrete_ratio)
 end
 
 """

@@ -97,10 +97,9 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     for i in 1:m.num_var_orig
         point = m.sol_incumb_lb[i]
         if i in m.discrete_x  # Only construct when discretized
-            # @show point
             # @show "Before ", i, m.discretization[i]
             for j in 1:length(m.discretization[i])
-                if point >= m.discretization[i][j]  # Locating the right location
+                if point >= m.discretization[i][j] && point <= m.discretization[i][j+1]  # Locating the right location
                     @assert j < length(m.discretization[i])
                     lb_local = m.discretization[i][j]
                     ub_local = m.discretization[i][j+1]
@@ -108,7 +107,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     radius = distance / m.discrete_ratio
                     lb_new = max(point - radius/2, lb_local)
                     ub_new = min(point + radius/2, ub_local)
-                    # @show radius, lb_new, ub_new
+                    # @show j, point, lb_new, ub_new
                     if ub_new < ub_local  # Insert new UB-based partition
                         insert!(m.discretization[i], j+1, ub_new)
                     end
@@ -118,7 +117,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     break
                 end
             end
-            # @show "After ", i, m.discretization[i]
+            # @show "After ", i, m.discretization[i], "\n"
         end
     end
 
@@ -136,7 +135,7 @@ function tight_ub_bounds(m::PODNonlinearModel; kwargs...)
         if i in m.discrete_x
             point = m.sol_incumb_lb[i]
             for j in 1:length(m.discretization[i])
-                if point >= m.discretization[i][j]
+                if point >= m.discretization[i][j] && point <= m.discretization[i][j+1]
                     @assert j < length(m.discretization[i])
                     l_var[i] = m.discretization[i][j]
                     u_var[i] = m.discretization[i][j+1]
