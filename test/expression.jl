@@ -206,15 +206,15 @@
 
         bi1 = example_bi1()
         solve(bi1) # Setup internal model
-        POD.populate_dict_nonlinear_info(bi1.internalModel)
+        POD.populate_nonlinear_info(bi1.internalModel)
 
-        @test length(keys(bi1.internalModel.dict_nonlinear_info)) == 8
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 1), Expr(:ref, :x, 1)])
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 2)])
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 3)])
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 4), Expr(:ref, :x, 4)])
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 3)])
-        @test haskey(bi1.internalModel.dict_nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)])
+        @test length(keys(bi1.internalModel.nonlinear_info)) == 8
+        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 1), Expr(:ref, :x, 1)])
+        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 2)])
+        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 3)])
+        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 4), Expr(:ref, :x, 4)])
+        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 3)])
+        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)])
 
     end
 end

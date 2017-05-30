@@ -9,14 +9,14 @@ function mcbi_post_mc(m::PODNonlinearModel; kwargs...)
     lb = Dict()
     ub = Dict()
 
-    for bi in keys(m.dict_nonlinear_info)
+    for bi in keys(m.nonlinear_info)
 
         # Consider a general bilinear framework c = a * b
         # part -> short for partitions
         @assert length(bi) == 2
         idx_a = bi[1].args[2]
         idx_b = bi[2].args[2]
-        idx_ab = m.dict_nonlinear_info[bi][:lifted_var_ref].args[2]
+        idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
 
         part_cnt_a = length(m.discretization[idx_a]) - 1
         part_cnt_b = length(m.discretization[idx_b]) - 1
@@ -28,34 +28,34 @@ function mcbi_post_mc(m::PODNonlinearModel; kwargs...)
 
         # Partitioning on left
         if (idx_a in m.discrete_x) && !(idx_b in m.discrete_x)
-            λ = mcbi_post_λ(m.basic_model_mip, λ, lb, ub, part_cnt_a, idx_a)
-            λX = mcbi_post_λX(m.basic_model_mip, λX, part_cnt_a, idx_a, idx_b)
-            λX[(idx_b,idx_a)] = [Variable(m.basic_model_mip, idx_a)]
-            λλ = mcbi_post_λλ(m.basic_model_mip, λλ, λ, idx_a, idx_b)
-            mcbi_post_λxX_mc(m.basic_model_mip, λX, λ, lb, ub, idx_a, idx_b)
-            mcbi_post_XX_mc(m.basic_model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+            λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+            λX = mcbi_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+            λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
+            λλ = mcbi_post_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
+            mcbi_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+            mcbi_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
         end
         # Partitioning of right
         if !(idx_a in m.discrete_x) && (idx_b in m.discrete_x)
-            λ = mcbi_post_λ(m.basic_model_mip, λ, lb, ub, part_cnt_b, idx_b)
-            λX = mcbi_post_λX(m.basic_model_mip, λX, part_cnt_b, idx_b, idx_a)
-            λX[(idx_a,idx_b)] = [Variable(m.basic_model_mip, idx_b)]
-            λλ = mcbi_post_λλ(m.basic_model_mip, λλ, λ, idx_b, idx_a)
-            mcbi_post_λxX_mc(m.basic_model_mip, λX, λ, lb, ub, idx_b, idx_a)
-            mcbi_post_XX_mc(m.basic_model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
+            λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+            λX = mcbi_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+            λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
+            λλ = mcbi_post_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
+            mcbi_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+            mcbi_post_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
         end
 
         # Partitioning on both variables
         if (idx_a in m.discrete_x) && (idx_b in m.discrete_x)
-            λ = mcbi_post_λ(m.basic_model_mip, λ, lb, ub, part_cnt_a, idx_a)
-            λ = mcbi_post_λ(m.basic_model_mip, λ, lb, ub, part_cnt_b, idx_b)
-            λX = mcbi_post_λX(m.basic_model_mip, λX, part_cnt_a, idx_a, idx_b)
-            λX = mcbi_post_λX(m.basic_model_mip, λX, part_cnt_b, idx_b, idx_a)
-            λλ = mcbi_post_λλ(m.basic_model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
-            mcbi_post_λxX_mc(m.basic_model_mip, λX, λ, lb, ub, idx_a, idx_b)
-            mcbi_post_λxX_mc(m.basic_model_mip, λX, λ, lb, ub, idx_b, idx_a)
-            mcbi_post_λxλ_mc(m.basic_model_mip, λλ, λ, idx_a, idx_b)
-            mcbi_post_XX_mc(m.basic_model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+            λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+            λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+            λX = mcbi_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+            λX = mcbi_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+            λλ = mcbi_post_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
+            mcbi_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+            mcbi_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+            mcbi_post_λxλ_mc(m.model_mip, λλ, λ, idx_a, idx_b)
+            mcbi_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
         end
 
         # Error condition
@@ -163,7 +163,7 @@ function mcbi_post_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, ind
 end
 
 function mcbi_post_basic_vars(m::PODNonlinearModel)
-    @variable(m.basic_model_mip, x[i=1:m.num_var_orig+m.lifted_x_cont])
+    @variable(m.model_mip, x[i=1:m.num_var_orig+m.lifted_x_count])
     for i in 1:m.num_var_orig
         setcategory(x[i], m.var_type_orig[i])
         setlowerbound(x[i], m.l_var_orig[i])
@@ -174,18 +174,18 @@ end
 function mcbi_post_lifted_aff_constraints(m::PODNonlinearModel)
     for i in 1:m.num_constr_orig
         if m.constr_type_orig[i] == :(>=)
-            @constraint(m.basic_model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.basic_model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) >= m.lifted_constr_aff_mip[i][:rhs])
+            @constraint(m.model_mip,
+                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) >= m.lifted_constr_aff_mip[i][:rhs])
         elseif m.constr_type_orig[i] == :(<=)
-            @constraint(m.basic_model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.basic_model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) <= m.lifted_constr_aff_mip[i][:rhs])
+            @constraint(m.model_mip,
+                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) <= m.lifted_constr_aff_mip[i][:rhs])
         elseif m.constr_type_orig[i] == :(==)
-            @constraint(m.basic_model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.basic_model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) == m.lifted_constr_aff_mip[i][:rhs])
+            @constraint(m.model_mip,
+                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) == m.lifted_constr_aff_mip[i][:rhs])
         end
     end
 end
 
 function mcbi_post_lifted_aff_obj(m::PODNonlinearModel)
-    @objective(m.basic_model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.basic_model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
+    @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
 end

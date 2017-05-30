@@ -1,7 +1,7 @@
 """
 	Populate the dictionary that contains the information of all the non-linear terms
 """
-function populate_dict_nonlinear_info(m::PODNonlinearModel; kwargs...)
+function populate_nonlinear_info(m::PODNonlinearModel; kwargs...)
 
 	# options is not used anywhere
 	# options = Dict(kwargs)
@@ -11,16 +11,16 @@ function populate_dict_nonlinear_info(m::PODNonlinearModel; kwargs...)
 		push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
 	end
 
-	m.dict_nonlinear_info[:xdim] = m.num_var_orig
+	m.nonlinear_info[:xdim] = m.num_var_orig
 	terms = []
 	expr_resolve_sign(m.lifted_obj_expr_mip)
-	analyze_expr(m.lifted_obj_expr_mip, terms, m.dict_nonlinear_info)
+	analyze_expr(m.lifted_obj_expr_mip, terms, m.nonlinear_info)
 	for i in 1:m.num_constr_orig
 		expr_resolve_sign(m.lifted_constr_expr_mip[i])
-		analyze_expr(m.lifted_constr_expr_mip[i].args[2], terms, m.dict_nonlinear_info)
+		analyze_expr(m.lifted_constr_expr_mip[i].args[2], terms, m.nonlinear_info)
 	end
 
-	delete!(m.dict_nonlinear_info,:xdim)
+	delete!(m.nonlinear_info,:xdim)
 	return m
 end
 
@@ -199,9 +199,9 @@ end
 """
 function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
 
-	expr_lift(m.lifted_obj_expr_mip, m.dict_nonlinear_info)
+	expr_lift(m.lifted_obj_expr_mip, m.nonlinear_info)
 	for i in 1:m.num_constr_orig
-		expr_lift(m.lifted_constr_expr_mip[i].args[2], m.dict_nonlinear_info)
+		expr_lift(m.lifted_constr_expr_mip[i].args[2], m.nonlinear_info)
 	end
 
 	return m
@@ -230,20 +230,20 @@ end
 """
 	Analyze a single expression and create lifted terms and in-place lifted expression
 
-	Input: expression | existing terms already parsed | dict_nonlinear_info
-	Output: Updated terms array and dict_nonlinear_info (not returned, updated data structures)
+	Input: expression | existing terms already parsed | nonlinear_info
+	Output: Updated terms array and nonlinear_info (not returned, updated data structures)
 	Algorithm:
 		1) traverse the expression for term detection using traverse_expr
 		2) lift the original expression in place
 
 """
-function analyze_expr(expr, terms::Array=[], dict_nonlinear_info::Dict=Dict(); kwargs...)
+function analyze_expr(expr, terms::Array=[], nonlinear_info::Dict=Dict(); kwargs...)
 
 	# options not being used anywhere
 	# options = Dict(kwargs)
 
 	terms, buffer = traverse_expr(expr, terms)
-	add_info_using_terms(terms, dict_nonlinear_info)
+	add_info_using_terms(terms, nonlinear_info)
 
 	return
 end
@@ -252,27 +252,26 @@ end
 """
 	Adding the lifted variable map using the non-linear terms
 
-	Input: array of non-linear terms | dict_nonlinear_info
-	Output: updated dict_nonlinear_info (no explicit return)
+	Input: array of non-linear terms | nonlinear_info
+	Output: updated nonlinear_info (no explicit return)
 
 	Mapping : term => Dict(:lifted_var_ref::Expr, :key::Expr, :lifted_constr_ref::Expr)
 
 """
-function add_info_using_terms(terms::Array=[], dict_nonlinear_info=Dict(); kwargs...)
+function add_info_using_terms(terms::Array=[], nonlinear_info=Dict(); kwargs...)
 
-	@assert haskey(dict_nonlinear_info, :xdim)
-	yidx = dict_nonlinear_info[:xdim] + length(dict_nonlinear_info)
+	@assert haskey(nonlinear_info, :xdim)
+	yidx = nonlinear_info[:xdim] + length(nonlinear_info)
 	# Logic only works for bi-linear terms
 	for term in terms
-		if length(term) > 1 && !(term in keys(dict_nonlinear_info)) && !(reverse(term) in keys(dict_nonlinear_info)) # Check for duplicates
+		if length(term) > 1 && !(term in keys(nonlinear_info)) && !(reverse(term) in keys(nonlinear_info)) # Check for duplicates
 			lifted_var_ref = Expr(:ref, :x, yidx)
             lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, term[1], term[2]))
-			dict_nonlinear_info[term] = Dict(:lifted_var_ref => lifted_var_ref, :ref => term, :lifted_constr_ref => lifted_constr_ref)
-			if term[1] == term[2]
-				dict_nonlinear_info[term][:monomial] = true
-			else
-				dict_nonlinear_info[term][:monomial] = false
-			end
+            monomial_status = false
+            if term[1] == term[2]
+                monomial_status = true
+            end
+            nonlinear_info[term] = Dict(:lifted_var_ref => lifted_var_ref, :ref => term, :lifted_constr_ref => lifted_constr_ref, :monomial_status => monomial_status)
 			yidx += 1
 		end
 	end
@@ -284,17 +283,17 @@ end
 
 """
 	Replace expression variable with lifted variable in-place
-	Input: expression::Expr | dict_nonlinear_info::Dict
+	Input: expression::Expr | nonlinear_info::Dict
 	Output: recursive in-place operation
 """
-function expr_lift(expr, dict_nonlinear_info::Dict; kwargs...)
+function expr_lift(expr, nonlinear_info::Dict; kwargs...)
 
 	@assert expr_mark(deepcopy(expr)) <= 2 # Not focusing on multi-linear terms
 	expr_flatten(expr)	# Preproces the expression
 	if expr.args[1] in [:+,:-]  || !isempty([i for i in 1:length(expr.args) if (isa(expr.args[i], Expr) && expr.args[i].head == :call)])
 		for i in 2:length(expr.args) # Reserved 1 with operator
 			if isa(expr.args[i], Expr) && expr.args[i].head == :call
-				rep = expr_lift(expr.args[i], dict_nonlinear_info) # Continue with sub-tree
+				rep = expr_lift(expr.args[i], nonlinear_info) # Continue with sub-tree
 				expr.args[i] = rep
 			elseif isa(expr.args[i], Float64) || expr.args[i].head == :ref
 				expr.args[i] = expr.args[i]
@@ -307,12 +306,12 @@ function expr_lift(expr, dict_nonlinear_info::Dict; kwargs...)
 		if length(refs) == length(expr.args) - 1  # (*)->[(x),(x)] ==> (*)->[(1),(y)]
 			push!(expr.args, 1.0)
 		end
-		if haskey(dict_nonlinear_info, refs)
+		if haskey(nonlinear_info, refs)
 			deleteat!(expr.args, idxs)
-			push!(expr.args, dict_nonlinear_info[refs][:lifted_var_ref]) # In-place Lift
-		elseif haskey(dict_nonlinear_info, reverse(refs)) # No duplicates
+			push!(expr.args, nonlinear_info[refs][:lifted_var_ref]) # In-place Lift
+		elseif haskey(nonlinear_info, reverse(refs)) # No duplicates
 			deleteat!(expr.args, idxs)
-			push!(expr.args, dict_nonlinear_info[reverse(refs)][:lifted_var_ref]) # Place Lift
+			push!(expr.args, nonlinear_info[reverse(refs)][:lifted_var_ref]) # Place Lift
 		end
 
 	elseif expr.args[1] == :^  # with assumption :: square
@@ -322,8 +321,8 @@ function expr_lift(expr, dict_nonlinear_info::Dict; kwargs...)
 		@assert length(power) == 1
 		@assert power[1] == 2
 		refs = [refs;refs]
-		@assert haskey(dict_nonlinear_info, refs)
-		expr = dict_nonlinear_info[refs][:lifted_var_ref] # Lift
+		@assert haskey(nonlinear_info, refs)
+		expr = nonlinear_info[refs][:lifted_var_ref] # Lift
 	else
 		error("Unspported operator for variable lifting $(expr.args[1])")
 	end

@@ -7,7 +7,7 @@
 """
 function lower_bounding_mip(m::PODNonlinearModel; kwargs...)
 
-    m.basic_model_mip = Model(solver=m.mip_solver) # Construct model
+    m.model_mip = Model(solver=m.mip_solver) # Construct model
 
     start_lb_build = time()
     mcbi_post_basic_vars(m)             # Post original and lifted variables
@@ -21,9 +21,9 @@ end
 
 function pick_discretize_vars(m::PODNonlinearModel)
     # Figure out which are the variables that needs to be partitioned
-    if m.discrete_vars_choice == 0
+    if m.var_discretization_algo == 0
         max_cover(m)
-    elseif m.discrete_vars_choice == 1
+    elseif m.var_discretization_algo == 1
         min_vertex_cover(m)
     else
         error("Unsupported method for picking variables for discretization")
@@ -166,7 +166,7 @@ function min_vertex_cover(m::PODNonlinearModel; kwargs...)
     # Collect the information for arcs and nodes
     nodes = Set()
     arcs = Set()
-    for pair in keys(m.dict_nonlinear_info)
+    for pair in keys(m.nonlinear_info)
         arc = []
         for i in pair
             @assert isa(i.args[2], Int)
@@ -190,7 +190,7 @@ function min_vertex_cover(m::PODNonlinearModel; kwargs...)
     xVal = getvalue(x)
 
     # Getting required information
-    m.discrete_x_cnt = Int(sum(xVal))
+    m.discrete_x_count = Int(sum(xVal))
     m.discrete_x = [i for i in nodes if xVal[i]>0]
 
 end
@@ -200,13 +200,13 @@ end
 """
 function max_cover(m::PODNonlinearModel; kwargs...)
     nodes = Set()
-    for pair in keys(m.dict_nonlinear_info)
+    for pair in keys(m.nonlinear_info)
         for i in pair
             @assert isa(i.args[2], Int)
             push!(nodes, i.args[2])
         end
     end
     nodes = collect(nodes)
-    m.discrete_x_cnt = length(nodes)
+    m.discrete_x_count = length(nodes)
     m.discrete_x = nodes
 end

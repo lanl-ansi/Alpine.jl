@@ -5,7 +5,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     rel_gap::Float64                                            # Relative optimality gap termination condition
-    discrete_vars_choice::Int                                   # [SW] 1: Minimum vertex cover, 0:Max cover
+    var_discretization_algo::Int                                   # [SW] 1: Minimum vertex cover, 0:Max cover
+    discrete_ratio::Float64                                     # Discretization ratio (use a fixed value for now, later switch to a function)
 
     # add all the solver options
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
@@ -51,20 +52,19 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # mixed-integer convex program bounding model
     # [SW] is managing this section ----------------------------
-    basic_model_mip::JuMP.Model                                 # JuMP convex MIP model for bounding
+    model_mip::JuMP.Model                                 # JuMP convex MIP model for bounding
     timeleft::Float64                                           # Parameters used for algorithm
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    dict_nonlinear_info::Dict{Any,Any}                          # Dictionary containing details of lifted terms
+    nonlinear_info::Dict{Any,Any}                               # Dictionary containing details of lifted terms
     lifted_obj_expr_mip::Expr                                   # Lifted objective expression, if linear, same as obj_expr_orig
     lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints, if linear, same as corresponding constr_expr_orig
-    lifted_x_cont::Int                                          # Count of lifted variables
+    lifted_x_count::Int                                          # Count of lifted variables
     lifted_obj_aff_mip::Dict{Any, Any}                          # Affine function of the lifted objective expression
     lifted_constr_aff_mip::Vector{Dict{Any, Any}}               # Affine function of the lifted constraints
     discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
-    discrete_x_cnt::Int                                         # Number of variables got discretized
+    discrete_x_count::Int                                         # Number of variables got discretized
     discrete_x::Vector{Any}                                     # Variables on which discretization is performed
-    discrete_ratio::Float64                                     # Discretization ratio (use a fixed value for now, later switch to a function)
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     sol_incumb_ub::Vector{Float64}                              # Incumbent upper bounding solution
     # [SW] is managing this section ----------------------------
@@ -73,22 +73,21 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     best_bound::Float64                                         # Best bound from MIP
     best_obj::Float64                                           # Best feasible objective value
     best_sol::Vector{Float64}                                   # Best feasible solution
-    best_gap::Float64                                           # Relative optimality gap = |best_bound - best_obj|/|best_obj|
+    best_rel_gap::Float64                                           # Relative optimality gap = |best_bound - best_obj|/|best_obj|
     final_soln::Vector{Float64}                                 # Final solution
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
     status::Dict{Symbol,Symbol}                                 # [SW] Detailed status of each different phases in algorithm
     pod_status::Symbol                                          # [SW] Current POD status
-    lb_status::Symbol                                           # [SW] Lower bound status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, discrete_vars_choice, discrete_ratio)
+    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discrete_ratio)
         m = new()
         m.log_level = log_level
         m.timeout = timeout
         m.rel_gap = rel_gap
-        m.discrete_vars_choice = discrete_vars_choice    #[SW] Added default value on how to choose discretize variables
+        m.var_discretization_algo = var_discretization_algo    #[SW] Added default value on how to choose discretize variables
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -107,7 +106,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_lconstr_updated = 0
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
-        m.dict_nonlinear_info = Dict()
+        m.nonlinear_info = Dict()
 
         m.lifted_constr_expr_mip = []       # [SW] added
         m.lifted_constr_aff_mip = []        # [SW] added
@@ -117,7 +116,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.best_obj = Inf
         m.best_bound = -Inf
-        m.best_gap = Inf
+        m.best_rel_gap = Inf
         m.pod_status = :NotLoaded
 
         create_status!(m)
@@ -178,9 +177,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
     # [SW] POD_MIP model
-    populate_dict_nonlinear_info(m)
+    populate_nonlinear_info(m)
     populate_lifted_expr(m)
-    m.lifted_x_cont = length(m.dict_nonlinear_info)
+    m.lifted_x_count = length(m.nonlinear_info)
     populate_lifted_affine(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
@@ -212,7 +211,9 @@ function presolve(m::PODNonlinearModel)
     start_presolve = time()
     (m.log_level > 0) && println("\nPOD algorithm presolver started.")
     (m.log_level > 0) && println("1. performing local solve to obtain a feasible solution.")
+    # bound tightening goes here
     local_solve(m)
+    # have to do a bounding solve here and update gap
     initialize_discretization(m) # [SW] initialize discretization here
     cputime_presolve = time() - start_presolve
     m.logs[:total_time] += cputime_presolve
@@ -225,14 +226,14 @@ end
 function global_solve(m::PODNonlinearModel;kwargs...)
 
     logging_row_head()
-    while m.best_gap > m.rel_gap && m.logs[:time_left] > 0.0
+    while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0
         m.logs[:n_iter] += 1
         set_mip_time_limit(m)       # Regulates timing
         lower_bounding_mip(m)       # Build lower bounding model
         lb_solve(m)                 # Solve lower bounding model
         add_discretization(m)       # Manage discretization
         ub_solve(m)                 # Solve upper bounding model
-        m.best_gap = (m.best_obj - m.best_bound)/m.best_obj
+        m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
         if m.log_level > 0
             logging_row_entry(m)
         end
@@ -325,20 +326,20 @@ function lb_solve(m::PODNonlinearModel; kwargs...)
     convertor = Dict(:Max=>:<, :Min=>:>)
     set_mip_time_limit(m)
     start_lb_solve = time()
-    status = solve(m.basic_model_mip, suppress_warnings=true)
+    status = solve(m.model_mip, suppress_warnings=true)
     cputime_lb_solve = time() - start_lb_solve
     m.logs[:total_time] += cputime_lb_solve
 
     if status == :Optimal || status == :Suboptimal || status == :UserLimit
-        candidate_bound = getobjectivevalue(m.basic_model_mip)
+        candidate_bound = getobjectivevalue(m.model_mip)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound)
             m.best_bound = candidate_bound
-            m.sol_incumb_lb = [getvalue(Variable(m.basic_model_mip, i)) for i in 1:m.num_var_orig]
+            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig]
             m.status[:lower_bounding_solve] = status
             m.status[:lower_bound] = :Detected
         end
     elseif status == :Infeasible
-        # print_iis_gurobi(m.basic_model_mip)  # Used for debugging
+        # print_iis_gurobi(m.model_mip)  # Used for debugging
         #= Case when this happens::
             1) :UserLimits ? but will this return :UserLimits?
             2) :Numerical Difficult
@@ -383,8 +384,8 @@ function logging_head_summary(m::PODNonlinearModel)
         @printf "number of linear constraints = %d.\n" m.num_lconstr_orig
         @printf "number of variables = %d.\n" m.num_var_orig
 
-        @printf "Relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
-        @printf "method chosen for selecting discretize variable = %d\n" m.discrete_vars_choice
+        @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
+        @printf "algorithm chosen for selecting variables to discretize = %d\n" m.var_discretization_algo
     end
 end
 
@@ -396,7 +397,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     b_len = 10
     UB_block = string(" ", round(m.best_obj,4), " " ^ (b_len - length(string(round(m.best_obj, 4)))))
     LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))
-    GAP_block = string(" ", round(m.best_gap*100,5), " " ^ (b_len - length(string(round(m.best_gap*100,5)))))
+    GAP_block = string(" ", round(m.best_rel_gap*100,5), " " ^ (b_len - length(string(round(m.best_rel_gap*100,5)))))
     UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
     LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
     ITER_block = string(" ", m.logs[:n_iter])
@@ -422,7 +423,7 @@ end
 function summary_status(m::PODNonlinearModel)
 
     if m.status[:lower_bound] == :Detected && m.status[:upper_bound] == :Detected
-        if m.best_gap >= m.rel_gap
+        if m.best_rel_gap >= m.rel_gap
             m.pod_status = :UserLimits
         else
             m.pod_status = :Optimal
