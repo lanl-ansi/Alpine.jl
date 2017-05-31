@@ -52,7 +52,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # mixed-integer convex program bounding model
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
-    timeleft::Float64                                           # Parameters used for algorithm - this needs to go some place else
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     nonlinear_info::Dict{Any,Any}                               # Dictionary containing details of lifted terms
@@ -85,7 +84,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.log_level = log_level
         m.timeout = timeout
         m.rel_gap = rel_gap
-        m.var_discretization_algo = var_discretization_algo    
+        m.var_discretization_algo = var_discretization_algo
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -104,13 +103,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_lconstr_updated = 0
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
-        
+
         m.nonlinear_info = Dict()
-        m.lifted_constr_expr_mip = []       
-        m.lifted_constr_aff_mip = []        
-        m.discrete_x = []                   
-        m.discretization = Dict()           
-        m.discretization_ratio = discretization_ratio   
+        m.lifted_constr_expr_mip = []
+        m.lifted_constr_aff_mip = []
+        m.discrete_x = []
+        m.discretization = Dict()
+        m.discretization_ratio = discretization_ratio
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -148,7 +147,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
 
-    m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig] 
+    m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
 
     # Summarize constraints information in original model
     m.constr_type_orig = Array(Symbol, m.num_constr_orig)
@@ -172,7 +171,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
-    # populate data to create the bounding model 
+    # populate data to create the bounding model
     populate_nonlinear_info(m)
     populate_lifted_expr(m)
     m.lifted_x_count = length(m.nonlinear_info)
@@ -180,7 +179,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     m.best_sol = fill(NaN, m.num_var_orig)
 
-    logging_head_summary(m)
+    logging_summary(m)
 end
 
 function MathProgBase.optimize!(m::PODNonlinearModel)
@@ -207,19 +206,25 @@ function presolve(m::PODNonlinearModel)
     start_presolve = time()
     (m.log_level > 0) && println("\nPOD algorithm presolver started.")
     (m.log_level > 0) && println("1. performing local solve to obtain a feasible solution.")
-    local_solve(m)
-    # bound tightening goes here - done if local solve is feasible 
-    # have to do a bounding solve here and update gap
-    initialize_discretization(m) # [SW] initialize discretization here
+    local_solve(m, presolve = true)
+
+    if m.status[:local_solve] == :Optimal || m.status[:local_solve] == :Suboptimal || m.status[:local_solve] == :UserLimit
+        a = 1 # bound tightening goes here - done if local solve is feasible
+    else
+        # do a bounding solve, update best bound solution
+        # do bound tightening with bounding solve solution
+    end
+
+    initialize_discretization(m) 
     cputime_presolve = time() - start_presolve
-    m.logs[:total_time] += cputime_presolve
+    m.logs[:presolve_time] += cputime_presolve
 
 end
 
 #=
     Main Adaptive Partitioning (AP) Algorithm.
 =#
-function global_solve(m::PODNonlinearModel;kwargs...)
+function global_solve(m::PODNonlinearModel; kwargs...)
 
     logging_row_head()
     while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0
@@ -240,40 +245,31 @@ function global_solve(m::PODNonlinearModel;kwargs...)
 
 end
 
-function local_solve(m::PODNonlinearModel)
+function local_solve(m::PODNonlinearModel; presolve = false)
     local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, m.l_var_orig, m.u_var_orig, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
 
-    start_local_solve = time()
     MathProgBase.optimize!(local_solve_nlp_model)
-    cputime_local_solve = time() - start_local_solve
-    m.logs[:total_time] += cputime_local_solve
 
     local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
-    if local_solve_nlp_status == :Optimal || local_solve_nlp_status == :Suboptimal || local_solve_nlp_status == :UserLimit  # [SW] Added :UserLimit for feasibility tuning
+    if local_solve_nlp_status == :Optimal || local_solve_nlp_status == :Suboptimal || local_solve_nlp_status == :UserLimit
         m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
-        m.sol_incumb_ub = copy(m.best_sol)  # [SW] added for temp holder
+        m.sol_incumb_ub = copy(m.best_sol)  # can be merged with best_sol
         m.best_obj = MathProgBase.getobjval(local_solve_nlp_model)
         m.status[:local_solve] = local_solve_nlp_status
         m.status[:upper_bound] = :Detected
         return
     elseif local_solve_nlp_status == :Infeasible
-        (m.log_level > 0) && println("problem infeasible.")
+        (m.log_level > 0) && println("[PRESOLVE] NLP local solve is infeasible.")
         m.status[:local_solve] = :Infeasible
         return
-        # TODO Figure out the conditions for this to hold!
-        # [SW] Past experience, given different solver utilized,
-        # BOMIN -> Resolve multiple times at root relaxation will help
-        # KNITRO -> Use multi-start will help
-        # Ipopt -> Unknown method
-        # This may need to be conducted given specific NLP solver utilized
     elseif local_solve_nlp_status == :Unbounded
-        warn("[PROBLEM] Presolve | Local Solve | initial problem unbounded.")
+        warn(" [PRESOLVE] NLP local solve is unbounded.")
         m.status[:local_solve] = :Unbounded
         return
     else
-        error("[UNEXPECTED] Presolve | Local Solve | NLP solver failure.")
+        error(" [PRESOLVE] Initial NLP solve failure.")
         m.status[:local_solve] = :Error
         return
     end
@@ -360,8 +356,9 @@ function create_logs!(m)
     logs = Dict{Symbol,Any}()
 
     # Timers
-    logs[:total_time] = 0.  # Total run-time of the algorithm
-    logs[:time_left] = m.timeout
+    logs[:presolve_time] = 0.       # Total presolve-time of the algorithm
+    logs[:total_time] = 0.          # Total run-time of the algorithm
+    logs[:time_left] = m.timeout    # Total remaining time of the algorithm if timeout is specified
 
     # Counters
     logs[:n_iter] = 0           # Number of iterations in iterative
@@ -372,7 +369,7 @@ function create_logs!(m)
     m.logs = logs
 end
 
-function logging_head_summary(m::PODNonlinearModel)
+function logging_summary(m::PODNonlinearModel)
     if m.log_level > 0
         @printf "full problem loaded into POD.\n"
         @printf "number of constraints = %d.\n" m.num_constr_orig
@@ -381,7 +378,7 @@ function logging_head_summary(m::PODNonlinearModel)
         @printf "number of variables = %d.\n" m.num_var_orig
 
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
-        @printf "algorithm chosen for selecting variables to discretize = %d\n" m.var_discretization_algo
+        @printf "algorithm for selecting variables to discretize = %d\n" m.var_discretization_algo
     end
 end
 
@@ -407,7 +404,7 @@ function create_status!(m)
 
     status[:presolve] = :none                   # Status of presolve
     status[:local_solve] = :none                # Status of local solve
-    status[:lower_bounding_solve] = :none       # Status of lower bonding solve
+    status[:lower_bounding_solve] = :none                # Status of lower bonding solve
     status[:upper_bounding_solve] = :none       # Status of bounding solve
     status[:upper_bound] = :none                # Status of whether a upper bound is detected or not
     status[:lower_bound] = :none                # Status of whether a lower bound is detected or not

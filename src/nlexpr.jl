@@ -3,9 +3,6 @@
 """
 function populate_nonlinear_info(m::PODNonlinearModel; kwargs...)
 
-	# options is not used anywhere
-	# options = Dict(kwargs)
-
 	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
  	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
@@ -82,15 +79,15 @@ function traverse_expr(expr, terms::Array=[], buffer::Array=[]; kwargs...)
 end
 
 """
-	This is warpper for generating the affine functions of POD-mip model
-	It requires the lifted mip expression to be stored.
+	This is wrapper generating an affine data structure from a lifted linear expression
+	The lifted expressions are stored in the POD model as lifted_obj_expr_mip and lifted_constr_expr_mip
 """
 function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 
-	# Populate the objective affine function
+	# Populate the affine data structure for the objective
 	m.lifted_obj_aff_mip = expr_to_affine(m.lifted_obj_expr_mip)
 
-	# Populate the constraints affin function
+	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
 	end
@@ -98,8 +95,8 @@ function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 end
 
 """
-	This function takes a constrain expression and convert it into a affine expression constraint
-	Wraps around function traverse_expr_to_affine()
+	This function takes a constraint/objective expression and converts it into a affine expression data structure
+	Use the function to traverse linear expressions traverse_expr_to_affine()
 """
 function expr_to_affine(expr)
 
@@ -208,7 +205,7 @@ function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
 end
 
 """
-	Dereferencing function: splice and dereference
+	Dereferencing function: splice and dereference (not used anywhere)
 """
 function expr_dereferencing(expr, m)
 
@@ -239,9 +236,6 @@ end
 """
 function analyze_expr(expr, terms::Array=[], nonlinear_info::Dict=Dict(); kwargs...)
 
-	# options not being used anywhere
-	# options = Dict(kwargs)
-
 	terms, buffer = traverse_expr(expr, terms)
 	add_info_using_terms(terms, nonlinear_info)
 
@@ -255,7 +249,7 @@ end
 	Input: array of non-linear terms | nonlinear_info
 	Output: updated nonlinear_info (no explicit return)
 
-	Mapping : term => Dict(:lifted_var_ref::Expr, :key::Expr, :lifted_constr_ref::Expr)
+	Mapping : term => Dict(:lifted_var_ref::Expr, :ref::Expr, :lifted_constr_ref::Expr, :monomial_status::Bool)
 
 """
 function add_info_using_terms(terms::Array=[], nonlinear_info=Dict(); kwargs...)
@@ -342,10 +336,10 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 
 	resolver = Dict(:- => -1, :+ => 1)
 	for i in 2:length(expr.args)
-		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) # Skip the coefficients
+		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 								# Skip the coefficients
 			if length(expr.args[i].args) == 2 && expr.args[i].head == :call
-				if expr.args[i].args[1] == :- # Treatment for :(-x), replace with :(x*-1)
-					if expr.args[1] in [:*] # Only perform the treatment when connected with *
+				if expr.args[i].args[1] == :- 													# Treatment for :(-x), replace with :(x*-1)
+					if expr.args[1] in [:*] 													# Only perform the treatment when connected with *
 						push!(expr.args, resolver[expr.args[i].args[1]])
 						expr.args[i] = expr.args[i].args[2]
 					elseif expr.args[1] in [:+, :-, :(==), :(<=), :(>=)]
@@ -353,7 +347,7 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 					else
 						error("Unexpected operator $(expr.args[1]) during resolving sign")
 					end
-				elseif expr.args[i].args[1] == :+ # Treatement for :(+x) replace with :x
+				elseif expr.args[i].args[1] == :+ 												# Treatement for :(+x) replace with :x
 					expr.args[i] = expr.args[i].args[2]
 				end
 			elseif expr.args[i].head == :call

@@ -1,9 +1,7 @@
 """
-    Set up a basic lifted mip model without any additional infromations.
-    This model intends to be deep-copied at each iteration for a new MIP model.
-    All non-linear term in the original model is lifted with a variable.
-
-    This function is a prototype for mc-based bilinear model.
+    Set up a basic lifted mip model without any additional information
+    Certain parts model is intended to be deep-copied at each iteration to create a new MIP model.
+    Each non-linear term in the original model is lifted with a variable.
 """
 function lower_bounding_mip(m::PODNonlinearModel; kwargs...)
 
@@ -19,7 +17,7 @@ function lower_bounding_mip(m::PODNonlinearModel; kwargs...)
 
 end
 
-function pick_discretize_vars(m::PODNonlinearModel)
+function pick_vars_discretization(m::PODNonlinearModel)
     # Figure out which are the variables that needs to be partitioned
     if m.var_discretization_algo == 0
         max_cover(m)
@@ -70,7 +68,9 @@ end
 
 function initialize_discretization(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
-    pick_discretize_vars(m)
+    @printf "running algorithm for choosing the variables to discretize\n"
+    pick_vars_discretization(m)
+    @printf "variables to discretize chosen\n"
     for var in 1:m.num_var_orig
         lb = m.l_var_orig[var]
         ub = m.u_var_orig[var]
@@ -191,7 +191,7 @@ function min_vertex_cover(m::PODNonlinearModel; kwargs...)
 
     # Getting required information
     m.discrete_x_count = Int(sum(xVal))
-    m.discrete_x = [i for i in nodes if xVal[i]>0]
+    m.discrete_x = [i for i in nodes if xVal[i]>1e-5]
 
 end
 
