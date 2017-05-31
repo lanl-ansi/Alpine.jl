@@ -5,8 +5,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     rel_gap::Float64                                            # Relative optimality gap termination condition
-    var_discretization_algo::Int                                   # [SW] 1: Minimum vertex cover, 0:Max cover
-    discrete_ratio::Float64                                     # Discretization ratio (use a fixed value for now, later switch to a function)
+    var_discretization_algo::Int                                # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
+    discrete_ratio::Float64                                     # Discretization ratio parameter (use a fixed value for now, later switch to a function)
 
     # add all the solver options
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
@@ -51,35 +51,33 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
-    # [SW] is managing this section ----------------------------
-    model_mip::JuMP.Model                                 # JuMP convex MIP model for bounding
-    timeleft::Float64                                           # Parameters used for algorithm
+    model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
+    timeleft::Float64                                           # Parameters used for algorithm - this needs to go some place else
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     nonlinear_info::Dict{Any,Any}                               # Dictionary containing details of lifted terms
-    lifted_obj_expr_mip::Expr                                   # Lifted objective expression, if linear, same as obj_expr_orig
-    lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints, if linear, same as corresponding constr_expr_orig
-    lifted_x_count::Int                                          # Count of lifted variables
-    lifted_obj_aff_mip::Dict{Any, Any}                          # Affine function of the lifted objective expression
-    lifted_constr_aff_mip::Vector{Dict{Any, Any}}               # Affine function of the lifted constraints
+    lifted_obj_expr_mip::Expr                                   # Lifted objective expression; if linear, same as obj_expr_orig
+    lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints; if linear, same as corresponding constr_expr_orig
+    lifted_x_count::Int                                         # Number of lifted variables
+    lifted_obj_aff_mip::Dict{Any, Any}                          # Lifted objective expression in affine form
+    lifted_constr_aff_mip::Vector{Dict{Any, Any}}               # Lifted constraint expressions in affine form
     discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
-    discrete_x_count::Int                                         # Number of variables got discretized
+    discrete_x_count::Int                                       # Number of variables on which discretization is performed
     discrete_x::Vector{Any}                                     # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     sol_incumb_ub::Vector{Float64}                              # Incumbent upper bounding solution
-    # [SW] is managing this section ----------------------------
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
     best_obj::Float64                                           # Best feasible objective value
     best_sol::Vector{Float64}                                   # Best feasible solution
-    best_rel_gap::Float64                                           # Relative optimality gap = |best_bound - best_obj|/|best_obj|
+    best_rel_gap::Float64                                       # Relative optimality gap = |best_bound - best_obj|/|best_obj|
     final_soln::Vector{Float64}                                 # Final solution
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
-    status::Dict{Symbol,Symbol}                                 # [SW] Detailed status of each different phases in algorithm
-    pod_status::Symbol                                          # [SW] Current POD status
+    status::Dict{Symbol,Symbol}                                 # Detailed status of each different phases in algorithm
+    pod_status::Symbol                                          # Current POD status
 
     # constructor
     function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discrete_ratio)
@@ -87,7 +85,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.log_level = log_level
         m.timeout = timeout
         m.rel_gap = rel_gap
-        m.var_discretization_algo = var_discretization_algo    #[SW] Added default value on how to choose discretize variables
+        m.var_discretization_algo = var_discretization_algo    
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -106,13 +104,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_lconstr_updated = 0
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
+        
         m.nonlinear_info = Dict()
-
-        m.lifted_constr_expr_mip = []       # [SW] added
-        m.lifted_constr_aff_mip = []        # [SW] added
-        m.discrete_x = []                   # [SW] added
-        m.discretization = Dict()           # [SW] added
-        m.discrete_ratio = discrete_ratio   # [SW] added
+        m.lifted_constr_expr_mip = []       
+        m.lifted_constr_aff_mip = []        
+        m.discrete_x = []                   
+        m.discretization = Dict()           
+        m.discrete_ratio = discrete_ratio   
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -150,9 +148,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
 
-    # this should change later for an MINLP
-    # m.var_type_orig = fill(:Cont, m.num_var_orig)
-    m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig] #[SW] getting ready for MINLP
+    m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig] 
 
     # Summarize constraints information in original model
     m.constr_type_orig = Array(Symbol, m.num_constr_orig)
@@ -176,7 +172,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
-    # [SW] POD_MIP model
+    # populate data to create the bounding model 
     populate_nonlinear_info(m)
     populate_lifted_expr(m)
     m.lifted_x_count = length(m.nonlinear_info)
@@ -211,8 +207,8 @@ function presolve(m::PODNonlinearModel)
     start_presolve = time()
     (m.log_level > 0) && println("\nPOD algorithm presolver started.")
     (m.log_level > 0) && println("1. performing local solve to obtain a feasible solution.")
-    # bound tightening goes here
     local_solve(m)
+    # bound tightening goes here - done if local solve is feasible 
     # have to do a bounding solve here and update gap
     initialize_discretization(m) # [SW] initialize discretization here
     cputime_presolve = time() - start_presolve
