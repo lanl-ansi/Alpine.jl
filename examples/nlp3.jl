@@ -1,8 +1,10 @@
-using POD, JuMP, Ipopt, MathProgBase
+using POD, JuMP, Ipopt, Gurobi, MathProgBase
 
-function pod_example_nlp3(verbose=false)
+function example_nlp3(verbose=false)
 
-	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0)))
+	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0,resto_max_iter=10,expect_infeasible_problem="no"),
+							   mip_solver=GurobiSolver(OutputFlag=0)))
+
 	@variable(m, x[1:8])
 
 	setlowerbound(x[1], 100)
@@ -25,7 +27,7 @@ function pod_example_nlp3(verbose=false)
 
 	@constraint(m, 0.0025*(x[4]+x[6]) <= 1)
 	@constraint(m, 0.0025*(-x[4] + x[5] + x[7]) <= 1)
-	@constraint(m, 0.01(-x[5]+x[8]) <= 0)
+	@constraint(m, 0.01(-x[5]+x[8]) <= 1)
 	@NLconstraint(m, 100*x[1] - x[1]*x[6] + 833.33252*x[4] <= 83333.333)
 	@NLconstraint(m, x[2]*x[4] - x[2]*x[7] - 1250*x[4] + 1250*x[5] <= 0)
 	@NLconstraint(m, x[3]*x[5] - x[3]*x[8] - 2500*x[5] + 1250000 <= 0)

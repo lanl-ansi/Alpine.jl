@@ -1,4 +1,30 @@
 """
+	Populate the dictionary that contains the information of all the non-linear terms
+"""
+function populate_nonlinear_info(m::PODNonlinearModel; kwargs...)
+
+	# options is not used anywhere
+	# options = Dict(kwargs)
+
+	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
+ 	for i in 1:m.num_constr_orig
+		push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
+	end
+
+	m.nonlinear_info[:xdim] = m.num_var_orig
+	terms = []
+	expr_resolve_sign(m.lifted_obj_expr_mip)
+	analyze_expr(m.lifted_obj_expr_mip, terms, m.nonlinear_info)
+	for i in 1:m.num_constr_orig
+		expr_resolve_sign(m.lifted_constr_expr_mip[i])
+		analyze_expr(m.lifted_constr_expr_mip[i].args[2], terms, m.nonlinear_info)
+	end
+
+	delete!(m.nonlinear_info,:xdim)
+	return m
+end
+
+"""
 	Tree traversal for bi-linear term detection
 	Input: expression subtree | terms::Array | buffer::Array
 	Output: the non-linear terms and an empty buffer
@@ -10,14 +36,13 @@
 """
 function traverse_expr(expr, terms::Array=[], buffer::Array=[]; kwargs...)
 
-
 	if isa(expr, Float64) || isa(expr, Int64)
 		return terms, buffer
 	elseif expr == :+ || expr == :-
 		if !(buffer in terms) && !isempty(buffer)
 			push!(terms, buffer)
 		end
-		buffer = []
+		buffer = []  # Clear buffer
 		return terms, buffer
 	elseif expr == :*
 		return terms, buffer
@@ -32,7 +57,6 @@ function traverse_expr(expr, terms::Array=[], buffer::Array=[]; kwargs...)
 
 	for i in 1:length(expr.args)
 		terms, buffer = traverse_expr(expr.args[i], terms, buffer)
-
 		if expr.args[1] == :+ || expr.args[1] == :-
 			if !(buffer in terms) && !isempty(buffer)
 				push!(terms, buffer)
@@ -50,58 +74,176 @@ function traverse_expr(expr, terms::Array=[], buffer::Array=[]; kwargs...)
 		buffer = []
 	end
 
+	if expr.args[1] in [:/]
+		error("Unsupported expression operator $expr.args[1] during expression traversal")
+	end
+
 	return terms, buffer
 end
 
 """
-	Populate the dictionary that contains the information of all the non-linear terms
+	This is warpper for generating the affine functions of POD-mip model
+	It requires the lifted mip expression to be stored.
 """
-function populate_dict_nonlinear_info(m::PODNonlinearModel; kwargs...)
+function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 
-	# options is not used anywhere
-	# options = Dict(kwargs)
+	# Populate the objective affine function
+	m.lifted_obj_aff_mip = expr_to_affine(m.lifted_obj_expr_mip)
 
-	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
-	m.lifted_constr_expr_mip = []
- 	for i in 1:m.num_constr_orig
-		push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
+	# Populate the constraints affin function
+	for i in 1:m.num_constr_orig
+		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
 	end
 
-	m.dict_nonlinear_info[:xdim] = m.num_var_orig
-	terms = []
-	analyze_expr(m.lifted_obj_expr_mip, terms, m.dict_nonlinear_info)
+end
 
+"""
+	This function takes a constrain expression and convert it into a affine expression constraint
+	Wraps around function traverse_expr_to_affine()
+"""
+function expr_to_affine(expr)
+
+	# The input should follow :(<=, LHS, RHS)
+	affdict = Dict()
+	if expr.args[1] in [:(==), :(>=), :(<=)] # For a constraint expression
+		@assert isa(expr.args[3], Float64) || isa(expr.args[3], Int)
+		@assert isa(expr.args[2], Expr)
+		# non are buffer spaces, not used anywhere
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr.args[2])
+		rhs = -rhs + expr.args[3]
+		affdict[:sense] = expr.args[1]
+	else # For an objective expression
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr)
+		affdict[:sense] = nothing
+	end
+
+	affdict[:coefs] = lhscoeff
+	affdict[:vars]	= lhsvars
+	affdict[:rhs]	= rhs
+	@assert length(affdict[:coefs]) == length(affdict[:vars])
+	affdict[:cnt]	= length(affdict[:coefs])
+
+	return affdict
+end
+
+"""
+	This function traverse a left hand side tree to collect affine terms
+"""
+function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, level=0; kwargs...)
+
+	reversor = Dict(true => -1.0, false => 1.0)
+
+	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
+		bufferVal = expr
+		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+	elseif expr in [:+, :-]
+		if bufferVal != 0.0 && bufferVar != nothing
+			push!(lhscoeffs, bufferVal)
+			push!(lhsvars, bufferVar)
+			bufferVal = 0.0
+			bufferVar = nothing
+		end
+		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+	elseif expr in [:*, :(<=), :(==), :(>=)]
+		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+	elseif expr in [:/, :^]
+		error("Unsupported operators $expr")
+	elseif expr.head == :ref
+		bufferVar = expr
+		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+	end
+
+	for i in 1:length(expr.args)
+		lhscoeff, lhsvars, rhs, bufferVal, bufferVar=
+			traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, level+1)
+		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and close the previous term
+			if bufferVal != 0.0 && bufferVar != nothing
+				push!(lhscoeffs, reversor[(expr.args[1]==:- && i<=2)]*eval(expr.args[1])(bufferVal))
+				push!(lhsvars, bufferVar)
+				bufferVal = 0.0
+				bufferVar = nothing
+			end
+			if bufferVal != 0.0 && bufferVar == nothing
+				rhs = eval(expr.args[1])(rhs, bufferVal)
+				bufferVal = 0.0
+			end
+			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
+				push!(lhscoeffs, 1.0)
+				push!(lhsvars, bufferVar)
+				bufferVar = nothing
+			end
+			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
+				push!(lhscoeffs, reversor[(i<=2)]*(-1.0))
+				push!(lhsvars, bufferVar)
+				bufferVar = nothing
+			end
+		elseif expr.args[1] in [:(<=), :(==), :(>=)]
+			rhs = expr.args[end]
+		end
+	end
+
+	if level == 0
+		if bufferVal != 0.0 && bufferVar != nothing
+			push!(lhscoeffs, bufferVal)
+			push!(lhsvars, bufferVar)
+			bufferVal = 0.0
+			bufferVar = nothing
+		end
+	end
+
+	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+end
+
+"""
+	Formulate the pod mip model lifted constraints
+"""
+function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
+
+	expr_lift(m.lifted_obj_expr_mip, m.nonlinear_info)
 	for i in 1:m.num_constr_orig
-		analyze_expr(m.lifted_constr_expr_mip[i].args[2], terms, m.dict_nonlinear_info)
+		expr_lift(m.lifted_constr_expr_mip[i].args[2], m.nonlinear_info)
 	end
 
 	return m
 end
 
-
 """
 	Dereferencing function: splice and dereference
 """
-function expr_dereferencing()
+function expr_dereferencing(expr, m)
+
+	for i in 2:length(expr.args)
+		if isa(expr.args[i], Float64)
+			k = 0
+		elseif expr.args[i].head == :ref
+			@assert isa(expr.args[i].args[2], Int)
+			expr.args[i] = Variable(m, expr.args[i].args[2])
+		elseif expr.args[i].head == :call
+			expr_dereferencing(expr.args[i], m)
+		else
+			error("expr_dereferencing :: Unexpected term in expression tree.")
+		end
+	end
 
 end
 
 """
 	Analyze a single expression and create lifted terms and in-place lifted expression
 
-	Input: expression | existing terms already parsed | dict_nonlinear_info
-	Output: Updated terms array and dict_nonlinear_info (not returned, updated data structures)
+	Input: expression | existing terms already parsed | nonlinear_info
+	Output: Updated terms array and nonlinear_info (not returned, updated data structures)
 	Algorithm:
 		1) traverse the expression for term detection using traverse_expr
 		2) lift the original expression in place
 
 """
-function analyze_expr(expr, terms::Array=[], dict_nonlinear_info::Dict=Dict(); kwargs...)
+function analyze_expr(expr, terms::Array=[], nonlinear_info::Dict=Dict(); kwargs...)
 
 	# options not being used anywhere
 	# options = Dict(kwargs)
+
 	terms, buffer = traverse_expr(expr, terms)
-	add_info_using_terms(terms, dict_nonlinear_info)
+	add_info_using_terms(terms, nonlinear_info)
 
 	return
 end
@@ -110,22 +252,26 @@ end
 """
 	Adding the lifted variable map using the non-linear terms
 
-	Input: array of non-linear terms | dict_nonlinear_info
-	Output: updated dict_nonlinear_info (no explicit return)
+	Input: array of non-linear terms | nonlinear_info
+	Output: updated nonlinear_info (no explicit return)
 
 	Mapping : term => Dict(:lifted_var_ref::Expr, :key::Expr, :lifted_constr_ref::Expr)
 
 """
-function add_info_using_terms(terms::Array=[], dict_nonlinear_info=Dict(); kwargs...)
+function add_info_using_terms(terms::Array=[], nonlinear_info=Dict(); kwargs...)
 
-	@assert haskey(dict_nonlinear_info, :xdim)
-	yidx = dict_nonlinear_info[:xdim] + length(dict_nonlinear_info)
+	@assert haskey(nonlinear_info, :xdim)
+	yidx = nonlinear_info[:xdim] + length(nonlinear_info)
 	# Logic only works for bi-linear terms
 	for term in terms
-		if length(term) > 1 && !(term in keys(dict_nonlinear_info)) && !(reverse(term) in keys(dict_nonlinear_info)) # Check for duplicates
+		if length(term) > 1 && !(term in keys(nonlinear_info)) && !(reverse(term) in keys(nonlinear_info)) # Check for duplicates
 			lifted_var_ref = Expr(:ref, :x, yidx)
             lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, term[1], term[2]))
-			dict_nonlinear_info[term] = Dict(:lifted_var_ref => lifted_var_ref, :ref => term, :lifted_constr_ref => lifted_constr_ref)
+            monomial_status = false
+            if term[1] == term[2]
+                monomial_status = true
+            end
+            nonlinear_info[term] = Dict(:lifted_var_ref => lifted_var_ref, :ref => term, :lifted_constr_ref => lifted_constr_ref, :monomial_status => monomial_status)
 			yidx += 1
 		end
 	end
@@ -137,17 +283,17 @@ end
 
 """
 	Replace expression variable with lifted variable in-place
-	Input: expression::Expr | dict_nonlinear_info::Dict
+	Input: expression::Expr | nonlinear_info::Dict
 	Output: recursive in-place operation
 """
-function expr_lift(expr, dict_nonlinear_info::Dict; kwargs...)
+function expr_lift(expr, nonlinear_info::Dict; kwargs...)
 
 	@assert expr_mark(deepcopy(expr)) <= 2 # Not focusing on multi-linear terms
 	expr_flatten(expr)	# Preproces the expression
 	if expr.args[1] in [:+,:-]  || !isempty([i for i in 1:length(expr.args) if (isa(expr.args[i], Expr) && expr.args[i].head == :call)])
 		for i in 2:length(expr.args) # Reserved 1 with operator
 			if isa(expr.args[i], Expr) && expr.args[i].head == :call
-				rep = expr_lift(expr.args[i], dict_nonlinear_info) # Continue with sub-tree
+				rep = expr_lift(expr.args[i], nonlinear_info) # Continue with sub-tree
 				expr.args[i] = rep
 			elseif isa(expr.args[i], Float64) || expr.args[i].head == :ref
 				expr.args[i] = expr.args[i]
@@ -160,12 +306,12 @@ function expr_lift(expr, dict_nonlinear_info::Dict; kwargs...)
 		if length(refs) == length(expr.args) - 1  # (*)->[(x),(x)] ==> (*)->[(1),(y)]
 			push!(expr.args, 1.0)
 		end
-		if haskey(dict_nonlinear_info, refs)
+		if haskey(nonlinear_info, refs)
 			deleteat!(expr.args, idxs)
-			push!(expr.args, dict_nonlinear_info[refs][:lifted_var_ref]) # In-place Lift
-		elseif haskey(dict_nonlinear_info, reverse(refs)) # No duplicates
+			push!(expr.args, nonlinear_info[refs][:lifted_var_ref]) # In-place Lift
+		elseif haskey(nonlinear_info, reverse(refs)) # No duplicates
 			deleteat!(expr.args, idxs)
-			push!(expr.args, dict_nonlinear_info[reverse(refs)][:lifted_var_ref]) # Place Lift
+			push!(expr.args, nonlinear_info[reverse(refs)][:lifted_var_ref]) # Place Lift
 		end
 
 	elseif expr.args[1] == :^  # with assumption :: square
@@ -175,13 +321,47 @@ function expr_lift(expr, dict_nonlinear_info::Dict; kwargs...)
 		@assert length(power) == 1
 		@assert power[1] == 2
 		refs = [refs;refs]
-		@assert haskey(dict_nonlinear_info, refs)
-		expr = dict_nonlinear_info[refs][:lifted_var_ref] # Lift
+		@assert haskey(nonlinear_info, refs)
+		expr = nonlinear_info[refs][:lifted_var_ref] # Lift
 	else
 		error("Unspported operator for variable lifting $(expr.args[1])")
 	end
 
 	return expr
+end
+
+
+"""
+	This function is trates the sign in expressions trees by cleaning the following structure:
+		args
+		::+ || ::-
+		::Call || ::ref
+	By separating the structure with some dummy treatments
+"""
+function expr_resolve_sign(expr, level=0; kwargs...)
+
+	resolver = Dict(:- => -1, :+ => 1)
+	for i in 2:length(expr.args)
+		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) # Skip the coefficients
+			if length(expr.args[i].args) == 2 && expr.args[i].head == :call
+				if expr.args[i].args[1] == :- # Treatment for :(-x), replace with :(x*-1)
+					if expr.args[1] in [:*] # Only perform the treatment when connected with *
+						push!(expr.args, resolver[expr.args[i].args[1]])
+						expr.args[i] = expr.args[i].args[2]
+					elseif expr.args[1] in [:+, :-, :(==), :(<=), :(>=)]
+						expr.args[i] = expr.args[i]
+					else
+						error("Unexpected operator $(expr.args[1]) during resolving sign")
+					end
+				elseif expr.args[i].args[1] == :+ # Treatement for :(+x) replace with :x
+					expr.args[i] = expr.args[i].args[2]
+				end
+			elseif expr.args[i].head == :call
+				expr_resolve_sign(expr.args[i], level+1)
+			end
+		end
+	end
+
 end
 
 """
@@ -205,7 +385,8 @@ function expr_flatten(expr, level=0; kwargs...)
 			expr.args[i] = expr_flatten(expr.args[i], level+1)
 		end
 	end
-	if level > 0 #Root level process, no additional operators
+
+	if level > 0  #Root level process, no additional operators
 		expr.args = expr_arrangeargs(expr.args)
 	end
 
@@ -244,7 +425,6 @@ function expr_arrangeargs(args::Array; kwargs...)
 	elseif args[1] in [:/]
 		error("Unspported operator $(args[1])")
 	elseif args[1] in [:*, :+, :-]
-
 		val = operator_coefficient_base[args[1]] # initialize
 		exprs = []
 		refs = []
@@ -254,7 +434,7 @@ function expr_arrangeargs(args::Array; kwargs...)
 		callinit = false
 
 		for i in 2:length(args)
-			if isa(args[i],Float64)
+			if isa(args[i],Float64) || isa(args[i], Int)
 				valinit += (i==2)
 				val = eval(args[1])(val, eval(reverter[(i==2) && (args[1]==:-)])(args[i])) # Revert the first sigh if (-)
 			elseif typeof(args[i]) == Expr
@@ -326,7 +506,7 @@ function expr_mark(expr; kwargs...)
 			elseif expr.args[1] in [:/, :^]
 				error("Does not support :/ and :^ yet.")
 			end
-		elseif isa(expr.args[i],Float64)
+		elseif isa(expr.args[i],Float64) || isa(expr.args[i],Int)
 			p = p
 		else
 			error("Unexpected expression node encouter $(expr.args[i])")
@@ -340,7 +520,6 @@ end
 	A special check when encouter :^. Cleaner function
 """
 function expr_dim_enquiry(expr)
-
 	@assert expr.args[1] == :^
 	@assert length(expr.args) == 3 # Don't take cray :call with :^
 	if isa(expr.args[2], Float64)
