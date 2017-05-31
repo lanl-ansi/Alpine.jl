@@ -77,7 +77,7 @@ function initialize_discretization(m::PODNonlinearModel; kwargs...)
         if var in m.discrete_x
             # m.discretization[var] = [lb, m.sol_incumb_ub[var], ub]  # Alternative way to construct
             point = m.sol_incumb_ub[var]
-            radius = (ub-lb)/m.discrete_ratio
+            radius = (ub-lb)/m.discretization_ratio
             local_lb = max(lb, point-radius)
             local_ub = min(ub, point+radius)
             m.discretization[var] = unique([lb, local_lb, local_ub, ub])
@@ -115,7 +115,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     lb_local = m.discretization[i][j]
                     ub_local = m.discretization[i][j+1]
                     distance = ub_local - lb_local
-                    radius = distance / m.discrete_ratio
+                    radius = distance / m.discretization_ratio
                     lb_new = max(point - radius/2, lb_local)
                     ub_new = min(point + radius/2, ub_local)
                     # @show j, point, lb_new, ub_new, lb_local, ub_local

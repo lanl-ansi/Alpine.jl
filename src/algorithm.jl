@@ -6,7 +6,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     rel_gap::Float64                                            # Relative optimality gap termination condition
     var_discretization_algo::Int                                # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
-    discrete_ratio::Float64                                     # Discretization ratio parameter (use a fixed value for now, later switch to a function)
+    discretization_ratio::Float64                                     # Discretization ratio parameter (use a fixed value for now, later switch to a function)
 
     # add all the solver options
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
@@ -80,7 +80,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discrete_ratio)
+    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
         m = new()
         m.log_level = log_level
         m.timeout = timeout
@@ -110,7 +110,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.lifted_constr_aff_mip = []        
         m.discrete_x = []                   
         m.discretization = Dict()           
-        m.discrete_ratio = discrete_ratio   
+        m.discretization_ratio = discretization_ratio   
 
         m.best_obj = Inf
         m.best_bound = -Inf
