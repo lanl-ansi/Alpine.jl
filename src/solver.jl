@@ -80,7 +80,7 @@ function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
     end
 end
 
-function set_mip_time_limit(m::PODNonlinearModel)
+function update_time_limit(m::PODNonlinearModel)
     for i in 1:length(m.mip_solver.options)
         if fetch_timeleft_symbol(m) in collect(m.mip_solver.options[i])
             deleteat!(m.mip_solver.options, i)
