@@ -206,7 +206,7 @@ function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
     (m.log_level > 0) && println("\nPOD algorithm presolver started.")
-    (m.log_level > 0) && println("1. performing local solve to obtain a feasible solution.")
+    (m.log_level > 0) && println("Performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
     if m.status[:local_solve] == :Optimal || m.status[:local_solve] == :Suboptimal || m.status[:local_solve] == :UserLimit
@@ -222,6 +222,9 @@ function presolve(m::PODNonlinearModel)
     initialize_discretization(m)
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
+    (m.log_level > 0) && println("Presolve ended.")
+    (m.log_level > 0) && println("Presolve time = $(round(m.logs[:total_time],2))s")
+    return
 
 end
 
