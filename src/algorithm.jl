@@ -222,6 +222,8 @@ function presolve(m::PODNonlinearModel)
     initialize_discretization(m)
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
+    m.logs[:total_time] = m.logs[:presolve_time]
+
     (m.log_level > 0) && println("Presolve ended.")
     (m.log_level > 0) && println("Presolve time = $(round(m.logs[:total_time],2))s")
     return
@@ -234,7 +236,7 @@ end
 function global_solve(m::PODNonlinearModel; kwargs...)
 
     logging_head()
-    while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0
+    while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0001
         m.logs[:n_iter] += 1
         update_time_limit(m)        # Updates the time limit, if that option is supplied, TILIM = TILIM - m.logs[:total_time]
         create_bounding_mip(m)      # Build the bounding ATMC model
@@ -244,9 +246,6 @@ function global_solve(m::PODNonlinearModel; kwargs...)
         m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
         if m.log_level > 0
             logging_row_entry(m)
-        end
-        if m.logs[:n_iter] > 10
-            error("TESTING...")
         end
     end
 
@@ -269,11 +268,12 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
-    m.logs[:time_left] = max(0.0, m.logs[:time_left] - cputime_local_solve)
+    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
     local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
     if local_solve_nlp_status == :Optimal || local_solve_nlp_status == :Suboptimal || local_solve_nlp_status == :UserLimit
         candidate_obj = MathProgBase.getobjval(local_solve_nlp_model)
+        m.logs[:obj] = candidate_obj
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-10)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
@@ -283,6 +283,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         m.status[:local_solve] = local_solve_nlp_status
         return
     elseif local_solve_nlp_status == :Infeasible
+        m.logs[:obj] = "-"
         (m.log_level > 0) && (presolve == true) && println("[PRESOLVE] NLP local solve is infeasible.")
         (m.log_level > 0) && (presolve == false) && println("Incumbent unchanged due to infeasible local solve.")
         m.status[:local_solve] = :Infeasible
@@ -310,9 +311,11 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     status = solve(m.model_mip, suppress_warnings=true)
     cputime_bounding_solve = time() - start_bounding_solve
     m.logs[:total_time] += cputime_bounding_solve
+    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
     if status == :Optimal || status == :Suboptimal || status == :UserLimit
         candidate_bound = getobjectivevalue(m.model_mip)
+        m.logs[:bound] = candidate_bound
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
             m.best_bound_sol = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig]
@@ -326,6 +329,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
             1) :UserLimits ? but will this return :UserLimits?
             2) :Numerical Difficult
         =#
+        m.logs[:bound] = "-"
         m.status[:bounding_solve] = status
         error("[MIP INFEASIBLE] There is some issue about LB problem")
     elseif status == :Unbounded
@@ -350,6 +354,10 @@ function create_logs!(m)
     logs[:total_time] = 0.          # Total run-time of the algorithm
     logs[:time_left] = m.timeout    # Total remaining time of the algorithm if timeout is specified
 
+    # Values
+    logs[:obj] = 0.             # Iteration based objective
+    logs[:bound] = 0.           # Iteration based objective
+
     # Counters
     logs[:n_iter] = 0           # Number of iterations in iterative
     logs[:n_feas] = 0           # Number of times get a new feasible solution
@@ -373,18 +381,24 @@ function logging_summary(m::PODNonlinearModel)
 end
 
 function logging_head()
-    println(" | FS        | BD        | GAP\%      | USED TIME | TIME LEFT | Iter ")
+    println(" | UB        | LB        || Incumb UB | Incumb LB | GAP\%      | CLOCK     | TIME LEFT | Iter ")
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)
     b_len = 10
-    UB_block = string(" ", round(m.best_obj,4), " " ^ (b_len - length(string(round(m.best_obj, 4)))))
-    LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))
+    if isa(m.logs[:obj], Float64)
+        UB_block = string(" ", round(m.logs[:obj],4), " " ^ (b_len - length(string(round(m.logs[:obj], 4)))))
+    else
+        UB_block = string(" ", string(m.logs[:obj]), " " ^ (b_len - length(string(m.logs[:obj]))))
+    end
+    LB_block = string(" ", round(m.logs[:bound],4), " " ^ (b_len - length(string(round(m.logs[:bound], 4)))))
+    incumb_UB_block = string(" ", round(m.best_obj,4), " " ^ (b_len - length(string(round(m.best_obj, 4)))))
+    incumb_LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))
     GAP_block = string(" ", round(m.best_rel_gap*100,5), " " ^ (b_len - length(string(round(m.best_rel_gap*100,5)))))
     UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
     LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
     ITER_block = string(" ", m.logs[:n_iter])
-    println(" |",UB_block,"|",LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
+    println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
 end
 
 # Create dictionary of statuses for POD algorithm

@@ -3,7 +3,7 @@ using POD, JuMP, Ipopt, Gurobi, MathProgBase
 function example_nlp3(verbose=false)
 
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0,resto_max_iter=10,expect_infeasible_problem="no"),
-							   mip_solver=GurobiSolver(OutputFlag=0)))
+							   mip_solver=GurobiSolver(OutputFlag=0), timeout=40))
 
 	@variable(m, x[1:8])
 
