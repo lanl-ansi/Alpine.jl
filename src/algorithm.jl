@@ -260,7 +260,10 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
 
     start_local_solve = time()
+    (!presolve) && (TT = STDOUT; redirect_stdout())
     MathProgBase.optimize!(local_solve_nlp_model)
+    (!presolve) && redirect_stdout(TT)
+
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.logs[:time_left] - cputime_local_solve)
