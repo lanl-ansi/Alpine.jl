@@ -3,7 +3,7 @@
 # Basic Usage with example of nlp1
 `Pkg.clone("https://github.com/lanl-ansi/POD.git")`
 
-`m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0))`
+`m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=GurobiSolver(),timeout=40, rel_gap=0.1, var_discretization_algo=0)`
 
 # NEED TO KNOW
 1. The algorithm is currently under development.
