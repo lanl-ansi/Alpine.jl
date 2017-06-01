@@ -367,7 +367,7 @@ function logging_summary(m::PODNonlinearModel)
 end
 
 function logging_head()
-    println(" | UB        | LB        | GAP\%      | USED TIME | TIME LEFT | Iter ")
+    println(" | FS        | BD        | GAP\%      | USED TIME | TIME LEFT | Iter ")
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)

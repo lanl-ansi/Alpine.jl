@@ -78,6 +78,7 @@ function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
     else found == nothing
         error("Needs support for this MIP solver")
     end
+    return
 end
 
 function update_time_limit(m::PODNonlinearModel)
@@ -87,7 +88,10 @@ function update_time_limit(m::PODNonlinearModel)
             break
         end
     end
-    push!(m.mip_solver.options, (fetch_timeleft_symbol(m), (m.timeout - m.logs[:total_time])))
+    if m.logs[:time_left] != Inf
+        push!(m.mip_solver.options, (fetch_timeleft_symbol(m), (m.timeout - m.logs[:total_time])))
+    end
+    return
 end
 
 # function print_iis_gurobi(m::Model)
