@@ -223,7 +223,7 @@ function presolve(m::PODNonlinearModel)
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
     (m.log_level > 0) && println("Presolve ended.")
-    (m.log_level > 0) && println("Presolve time = $(m.logs[:presolve_time])")
+    (m.log_level > 0) && println("Presolve time = $(round(m.logs[:total_time],2))s")
     return
 
 end
