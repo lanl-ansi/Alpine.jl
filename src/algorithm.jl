@@ -267,10 +267,10 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
     if local_solve_nlp_status == :Optimal || local_solve_nlp_status == :Suboptimal || local_solve_nlp_status == :UserLimit
-        candidate_obj = MathProgBase.getobjval(ub_solve_nlp_model)
+        candidate_obj = MathProgBase.getobjval(local_solve_nlp_model)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-10)
             m.best_obj = candidate_obj
-            m.best_sol = MathProgBase.getsolution(ub_solve_nlp_model)
+            m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
             m.sol_incumb_ub = copy(m.best_sol)  # temp holder can be removed
             m.status[:feasible_solution] = :Detected
         end
