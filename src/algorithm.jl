@@ -402,18 +402,18 @@ end
 
 function summary_status(m::PODNonlinearModel)
 
-    if m.status[:lower_bound] == :Detected && m.status[:upper_bound] == :Detected
+    if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
         if m.best_rel_gap >= m.rel_gap
             m.pod_status = :UserLimits
         else
             m.pod_status = :Optimal
         end
-    elseif m.status[:lower_bound] == :Detected && m.status[:upper_bound] == :none
+    elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
         m.pod_status = :Infeasible
-    elseif m.status[:lower_bound] == :none && m.status[:upper_bound] == :Detected
+    elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
         m.pod_status = :Heuristic
     else
-        error("[UNEXPECTED] Missing lower bound and upper bound during status summary.")
+        error("[UNEXPECTED] Missing bound and feasible solution during status summary.")
     end
 
 end
