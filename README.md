@@ -1,20 +1,18 @@
 # POD, the solver
 
-# Basic Usage
+# Basic Usage with example of nlp1
 `Pkg.clone("https://github.com/lanl-ansi/POD.git")`
-
-`using POD`
 
 `m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0))`
 
 # NEED TO KNOW
-1. To be able to do `Pkg.test("POD")`, disable line 242-244 in JuMP->parsenlp.jl.
-
-2. If not intend to test expression manipulation, it is not necessary.
+1. The algorithm is currently under development.
+2. Please limited usage of pranthese on constraints where non-linear terms exists.
+3. Currently, the algorithm only handles simpler form of the bilinear formulation.
 
 # Current Development
 ## Basic Solver Layout
-TODO
+Solver has a PODNonlinearModel structure that stores info utilized in the algorithm
 ## Basic POD Problem Type
 TODO
 ## Simple Manipulation
@@ -23,15 +21,24 @@ TODO
 TODO
 
 # Test Cases
-bi1, nlp1, nlp2, nlp3
+## Expression Parsing
+bi1, expr, nlp3,
+## Solving Testing
+nlp1, nlp3, util, castroEx02m2
 
-See examples folder
+See more in "examples" folder
 
-# Test Usage
+# Unit Test
+## Usage
 After installation do `Pkg.test("POD")`
-
-# Limitations
-1. Currently only handles bilinear constraints with limited usage of ()
-2. Building model using @addNLconstraint() only
+## Developed
+Basic bilinear expression parsing/lifting/affine conversion test cases built
+## TODO
+1. Build some initialization testing for a clean POD model
+2. Build more complex expressions for testing
+3. Build basic solve-objective checking tests
+4. Build formulation construction tests on tighten mccormicks
+5. Build functional features tests
+6. Build solver parameter tests
 
 # More documentation to come
