@@ -1,7 +1,7 @@
 """
     Compact function for all partioning variables. High-level wrapper for constructing all mccormick convexifications.
 """
-function mcbi_post_mc(m::PODNonlinearModel; kwargs...)
+function atmc_post_mccormick(m::PODNonlinearModel; kwargs...)
 
     λ = Dict()
     λλ = Dict()
@@ -27,7 +27,7 @@ function mcbi_post_mc(m::PODNonlinearModel; kwargs...)
         ub[idx_b] = m.discretization[idx_b][2:end]
 
         # Partitioning on left
-        if (idx_a in m.discrete_x) && !(idx_b in m.discrete_x)
+        if (idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
             λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
             λX = mcbi_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
             λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
@@ -36,7 +36,7 @@ function mcbi_post_mc(m::PODNonlinearModel; kwargs...)
             mcbi_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
         end
         # Partitioning of right
-        if !(idx_a in m.discrete_x) && (idx_b in m.discrete_x)
+        if !(idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
             λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
             λX = mcbi_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
             λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
@@ -46,7 +46,7 @@ function mcbi_post_mc(m::PODNonlinearModel; kwargs...)
         end
 
         # Partitioning on both variables
-        if (idx_a in m.discrete_x) && (idx_b in m.discrete_x)
+        if (idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
             λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
             λ = mcbi_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
             λX = mcbi_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
@@ -59,7 +59,7 @@ function mcbi_post_mc(m::PODNonlinearModel; kwargs...)
         end
 
         # Error condition
-        if !(idx_a in m.discrete_x) && !(idx_b in m.discrete_x)
+        if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
             error("Error case. At least one term should show up in discretization choices.")
         end
     end
@@ -162,8 +162,8 @@ function mcbi_post_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, ind
 	end
 end
 
-function mcbi_post_basic_vars(m::PODNonlinearModel)
-    @variable(m.model_mip, x[i=1:m.num_var_orig+m.lifted_x_count])
+function atmc_post_vars(m::PODNonlinearModel)
+    @variable(m.model_mip, x[i=1:m.num_var_orig+m.num_var_lifted_mip])
     for i in 1:m.num_var_orig
         setcategory(x[i], m.var_type_orig[i])
         setlowerbound(x[i], m.l_var_orig[i])
@@ -171,7 +171,7 @@ function mcbi_post_basic_vars(m::PODNonlinearModel)
     end
 end
 
-function mcbi_post_lifted_aff_constraints(m::PODNonlinearModel)
+function atmc_post_lifted_constraints(m::PODNonlinearModel)
     for i in 1:m.num_constr_orig
         if m.constr_type_orig[i] == :(>=)
             @constraint(m.model_mip,
@@ -186,6 +186,6 @@ function mcbi_post_lifted_aff_constraints(m::PODNonlinearModel)
     end
 end
 
-function mcbi_post_lifted_aff_obj(m::PODNonlinearModel)
+function atmc_post_lifted_obj(m::PODNonlinearModel)
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
 end

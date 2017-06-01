@@ -14,7 +14,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
     var_discretization_algo::Int
-    discrete_ratio::Any
+    discretization_ratio::Any
 
     # other options to be added later on
 end
@@ -29,7 +29,7 @@ function PODSolver(;
     mip_solver = UnsetSolver(),
 
     var_discretization_algo = 0,
-    discrete_ratio = 4,
+    discretization_ratio = 4,
     )
 
     if nlp_local_solver == UnsetSolver()
@@ -43,7 +43,7 @@ function PODSolver(;
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(log_level, timeout, rel_gap,
         deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver),
-        var_discretization_algo, discrete_ratio)
+        var_discretization_algo, discretization_ratio)
 end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -60,9 +60,9 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
     var_discretization_algo = s.var_discretization_algo
-    discrete_ratio = s.discrete_ratio
+    discretization_ratio = s.discretization_ratio
 
-    return PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discrete_ratio)
+    return PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
 end
 
 """
@@ -80,7 +80,7 @@ function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
     end
 end
 
-function set_mip_time_limit(m::PODNonlinearModel)
+function update_time_limit(m::PODNonlinearModel)
     for i in 1:length(m.mip_solver.options)
         if fetch_timeleft_symbol(m) in collect(m.mip_solver.options[i])
             deleteat!(m.mip_solver.options, i)
