@@ -120,7 +120,7 @@ function mcbi_post_XX_mc(m, ab, λX, λλ, LB, UB, a, b)
 end
 
 function mcbi_post_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::Dict, ind_λ::Int, ind_X::Int)
-
+    
     # X_u and λ here are vectors, and X is one variable,
 	# After the product, we have a polynomial to multiply X,
 	# forming |λ| new variables stored in λX dictionary

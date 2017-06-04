@@ -11,9 +11,9 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
     atmc_post_vars(m)                       # Post original and lifted variables
     atmc_post_lifted_constraints(m)         # Post lifted constraints
     atmc_post_lifted_obj(m)                 # Post objective
-    atmc_post_mccormick(m)                         # Post all mccormick constraints
+    atmc_post_mccormick(m)                  # Post all mccormick constraints
     cputime_build = time() - start_build
-    m.logs[:total_time] += cputime_build
+    m.logs[:total_time] += cputime_build    # TODO: This time check needs a second look
 
 end
 
