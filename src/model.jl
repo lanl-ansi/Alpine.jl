@@ -108,7 +108,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     for i in 1:m.num_var_orig
         point = m.best_bound_sol[i]
         if i in m.var_discretization_mip  # Only construct when discretized
-            # @show "Before ", i, m.discretization[i]
+            # println("Disjunction var ", i, "--", m.discretization[i])
             for j in 1:length(m.discretization[i])
                 if point >= m.discretization[i][j] && point <= m.discretization[i][j+1]  # Locating the right location
                     @assert j < length(m.discretization[i])
@@ -116,8 +116,10 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     ub_local = m.discretization[i][j+1]
                     distance = ub_local - lb_local
                     radius = distance / m.discretization_ratio
-                    lb_new = max(point - radius/2, lb_local)
-                    ub_new = min(point + radius/2, ub_local)
+                    # lb_new = max(point - radius/2, lb_local)
+                    # ub_new = min(point + radius/2, ub_local)
+                    lb_new = max(point - radius, lb_local)
+                    ub_new = min(point + radius, ub_local)
                     # @show j, point, lb_new, ub_new, lb_local, ub_local
                     if ub_new < ub_local  # Insert new UB-based partition
                         insert!(m.discretization[i], j+1, ub_new)

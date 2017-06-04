@@ -205,7 +205,7 @@
     @testset "Expression Test || bilinear || Simple || bi1.jl " begin
 
         bi1 = example_bi1()
-        solve(bi1) # Setup internal model
+        JuMP.build(bi1) # Setup internal model
         POD.populate_nonlinear_info(bi1.internalModel)
 
         @test length(keys(bi1.internalModel.nonlinear_info)) == 8

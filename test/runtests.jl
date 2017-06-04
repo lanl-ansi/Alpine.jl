@@ -10,3 +10,4 @@ include("../examples/nlp3.jl")
 
 include("solver.jl")
 include("expression.jl")
+include("algorithm.jl")
