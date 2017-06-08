@@ -7,6 +7,7 @@ end
 type PODSolver <: MathProgBase.AbstractMathProgSolver
     log_level::Int
     timeout::Float64
+    iterout::Int
     rel_gap::Float64
 
     nlp_local_solver::MathProgBase.AbstractMathProgSolver
@@ -22,6 +23,7 @@ end
 function PODSolver(;
     log_level = 1,
     timeout = Inf,
+    iterout = 9999,
     rel_gap = 1e-4,
 
     nlp_local_solver = UnsetSolver(),
@@ -41,7 +43,7 @@ function PODSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(log_level, timeout, rel_gap,
+    PODSolver(log_level, timeout, iterout, rel_gap,
         deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver),
         var_discretization_algo, discretization_ratio)
 end
@@ -55,6 +57,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     # Translate options into old nonlinearmodel.jl fields
     log_level = s.log_level
     timeout = s.timeout
+    iterout = s.iterout
     rel_gap = s.rel_gap
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
@@ -62,7 +65,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     var_discretization_algo = s.var_discretization_algo
     discretization_ratio = s.discretization_ratio
 
-    return PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
+    return PODNonlinearModel(log_level, timeout, iterout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
 end
 
 """

@@ -4,6 +4,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
+    iterout::Int                                                # Target Maximum Iterations
     rel_gap::Float64                                            # Relative optimality gap termination condition
     var_discretization_algo::Int                                # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
@@ -80,10 +81,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
+    function PODNonlinearModel(log_level, timeout, iterout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
         m = new()
         m.log_level = log_level
         m.timeout = timeout
+        m.iterout = iterout
         m.rel_gap = rel_gap
         m.var_discretization_algo = var_discretization_algo
 
@@ -241,12 +243,11 @@ function global_solve(m::PODNonlinearModel; kwargs...)
         update_time_limit(m)        # Updates the time limit, if that option is supplied, TILIM = TILIM - m.logs[:total_time]
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
+        m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
+        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] > m.iterout) && break
+        m.log_level>0 && logging_row_entry(m)
         add_discretization(m)       # Add extra discretizations
         local_solve(m)              # Solve upper bounding model
-        m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
-        if m.log_level > 0
-            logging_row_entry(m)
-        end
     end
 
 end
