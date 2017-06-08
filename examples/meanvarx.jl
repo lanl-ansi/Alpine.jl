@@ -1,14 +1,15 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function example_meanvarx()
+function meanvarx()
 
+    error("This testing problem requires further investiation.")
     m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.oa_log_level=0",
                                                                 "bonmin.nlp_log_level=0",
                                                                 "bonmin.bb_log_level=0",
                                                                 "bonmin.milp_log_level=0",
                                                                 "bonmin.milp_solver=Cplex",
-                                                                "bonmin.algorithm=B-iFP"]),
-                                mip_solver=GurobiSolver(OutputFlag=0), rel_gap=0.01))
+                                                                "bonmin.algorithm=B-OA"]),
+                                mip_solver=GurobiSolver(OutputFlag=0), rel_gap=0.001))
 
     @variable(m, x[1:35]>=0)
     for i=22:35
@@ -16,9 +17,9 @@ function example_meanvarx()
     end
 
     # Artifical upper bounds
-    for i=1:7
-        setupperbound(x[i], 1)
-    end
+    # for i=1:7
+    #     setupperbound(x[i], 1.)
+    # end
     # Artifical upper bounds
 
     @NLobjective(m, Min, 42.18*x[1]*x[1] + 40.36*x[1]*x[2] + 21.76*x[1]*x[3] + 10.6*x[1]*x[4] + 24.64*x[1]*x[5] + 47.68*x[1]*x[6] + 34.82*x[1]*x[7] + 70.89*x[2]*x[2] + 43.16*x[2]*x[3] + 30.82*x[2]*x[4] + 46.48*x[2]*x[5] + 47.6*x[2]*x[6] + 25.24*x[2]*x[7] + 25.51*x[3]*x[3] + 19.2*x[3]*x[4] + 45.26*x[3]*x[5] + 26.44*x[3]*x[6] + 9.4*x[3]*x[7] + 22.33*x[4]*x[4] + 20.64*x[4]*x[5] + 20.92*x[4]*x[6] + 2*x[4]*x[7] + 30.01*x[5]*x[5] + 32.72*x[5]*x[6] + 14.4*x[5]*x[7] + 42.23*x[6]*x[6] + 19.8*x[6]*x[7] + 16.42*x[7]*x[7] - 0.06435*x[1] - 0.0548*x[2] - 0.02505*x[3] - 0.0762*x[4] - 0.03815*x[5] - 0.0927*x[6] - 0.031*x[7])

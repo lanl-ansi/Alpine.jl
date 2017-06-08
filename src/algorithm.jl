@@ -8,6 +8,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     rel_gap::Float64                                            # Relative optimality gap termination condition
     var_discretization_algo::Int                                # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
+    tract_presolve_time::Bool                                   # Keep presolve time as a part in timeout
 
     # add all the solver options
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
@@ -244,10 +245,10 @@ function global_solve(m::PODNonlinearModel; kwargs...)
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
         m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
-        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] > m.iterout) && break
         m.log_level>0 && logging_row_entry(m)
-        add_discretization(m)       # Add extra discretizations
         local_solve(m)              # Solve upper bounding model
+        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.iterout) && break
+        add_discretization(m)       # Add extra discretizations
     end
 
 end
@@ -295,7 +296,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         m.status[:local_solve] = :Unbounded
         return
     else
-        (presolve == true) && error("[PRESOLVE] NLP local solve failure.")
+        (presolve == true) && error("[PRESOLVE] NLP solve failure.")
         (presolve == false) && warn("[LOCAL SOLVE] NLP local solve failure.")
         m.status[:local_solve] = :Error
         return
@@ -367,7 +368,7 @@ end
 function summary_status(m::PODNonlinearModel)
 
     if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
-        if m.best_rel_gap >= m.rel_gap
+        if m.best_rel_gap > m.rel_gap
             m.pod_status = :UserLimits
         else
             m.pod_status = :Optimal

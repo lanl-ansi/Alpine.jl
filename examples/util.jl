@@ -1,6 +1,6 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function example_util()
+function util()
 
     m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.oa_log_level=0",
                                                                 "bonmin.nlp_log_level=0",

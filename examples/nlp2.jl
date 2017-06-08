@@ -1,6 +1,6 @@
 using POD, JuMP, Ipopt, CPLEX, MathProgBase 
 
-function example_nlp2(verbose=false)
+function nlp2(verbose=false)
 
 	info("This model is currently not suitable for expression operations...")
 

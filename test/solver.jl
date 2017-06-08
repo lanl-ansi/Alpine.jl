@@ -3,14 +3,13 @@
     using POD
 
     @testset "PODNonlinearModel loading tests" begin
-
         # Random Model 1
-        m = example_bi1()
+        m = bi1()
         status = JuMP.build(m)
         @test isa(m.internalModel, POD.PODNonlinearModel)
 
         # Expression Model 1
-        m = example_exprs()
+        m = exprstest()
         status = JuMP.build(m)
         @test isa(m.internalModel, POD.PODNonlinearModel)
 
