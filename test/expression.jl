@@ -1,7 +1,7 @@
 @testset "Expression Parser Test" begin
 
     @testset "Expression Test || bilinear || Affine || exprs.jl" begin
-        m=example_exprs()
+        m=exprstest()
         JuMP.build(m)
 
         # -1.0 * x[1] <= 109.0
@@ -115,7 +115,7 @@
 
     @testset "Expression Test || bilinear || Affine || nlp1.jl" begin
 
-        m=example_nlp1()
+        m=nlp1()
         solve(m)
 
         ex = m.internalModel.lifted_constr_expr_mip[1]
@@ -132,7 +132,7 @@
 
     @testset "Expression Test || bilinear || Affine || nlp3.jl" begin
 
-        m=example_nlp3()
+        m=nlp3()
         solve(m)
 
         ex = m.internalModel.lifted_constr_expr_mip[1]
@@ -204,17 +204,17 @@
 
     @testset "Expression Test || bilinear || Simple || bi1.jl " begin
 
-        bi1 = example_bi1()
-        solve(bi1) # Setup internal model
-        POD.populate_nonlinear_info(bi1.internalModel)
+        m = bi1()
+        JuMP.build(m) # Setup internal model
+        POD.populate_nonlinear_info(m.internalModel)
 
-        @test length(keys(bi1.internalModel.nonlinear_info)) == 8
-        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 1), Expr(:ref, :x, 1)])
-        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 2)])
-        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 3)])
-        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 4), Expr(:ref, :x, 4)])
-        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 3)])
-        @test haskey(bi1.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)])
+        @test length(keys(m.internalModel.nonlinear_info)) == 8
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 1), Expr(:ref, :x, 1)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 2)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 3)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 4), Expr(:ref, :x, 4)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 2), Expr(:ref, :x, 3)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)])
 
     end
 end

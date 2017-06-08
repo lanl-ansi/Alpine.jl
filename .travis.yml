@@ -1,0 +1,31 @@
+language: julia
+julia:
+  - 0.5
+#  - 0.4
+#  - release
+#  - nightly
+
+# this will save build time, once it is working
+cache:
+  directories:
+    - /home/travis/.julia
+
+before_script:
+  # install dependencies
+  # ideally these should be installed from a REQUIRE file in the root of the repository
+  - julia -e 'Pkg.add("JuMP")'
+  # - julia -e 'Pkg.add("Coverage")'  # Not until coverage is set to be tested
+  # much easiers to test with an open source solver
+  - julia -e 'Pkg.add("Cbc")'
+  - julia -e 'Pkg.add("Ipopt")'
+
+script:  # core code tests
+  - julia --code-coverage=user --inline=no -e 'include("test/runtests.jl")'
+
+after_success:  # post-processing, if the script passes with no errors
+  - echo $TRAVIS_JULIA_VERSION  # just useful to know what version of Julia was used
+  # submits the code coverage report
+  # - julia -e 'using Coverage; cd("src"); Codecov.submit(process_folder("."), codecov_url="https://cov.lanlytics.com", token="aad3f5c6-a4c4-4216-ac42-fe9250f5f226");'
+  # - julia -e 'Pkg.rm("Cbc")'
+  # - julia -e 'Pkg.rm("Ipopt")'
+  # - julia -e 'Pkg.rm("JuMP")'
