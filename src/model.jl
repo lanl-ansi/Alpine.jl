@@ -5,15 +5,18 @@
 """
 function create_bounding_mip(m::PODNonlinearModel; kwargs...)
 
-    m.model_mip = Model(solver=m.mip_solver) # Construct model
+    m.model_mip = Model(solver=m.mip_solver) # Construct jump model
 
     start_build = time()
+    # ------- Algorithm ------ #
     atmc_post_vars(m)                       # Post original and lifted variables
     atmc_post_lifted_constraints(m)         # Post lifted constraints
     atmc_post_lifted_obj(m)                 # Post objective
     atmc_post_mccormick(m)                  # Post all mccormick constraints
+    # ------------------------ #
     cputime_build = time() - start_build
-    m.logs[:total_time] += cputime_build    # TODO: This time check needs a second look
+    m.logs[:total_time] += cputime_build
+    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
 end
 
@@ -23,6 +26,9 @@ function pick_vars_discretization(m::PODNonlinearModel)
         max_cover(m)
     elseif m.var_discretization_algo == 1
         min_vertex_cover(m)
+    elseif m.var_discretization_algo == 99
+        # User function
+        error("[You need to give me something to make this work...]Unsupported method for picking variables for discretization")
     else
         error("Unsupported method for picking variables for discretization")
     end
@@ -92,18 +98,20 @@ end
 """
 function add_discretization(m::PODNonlinearModel; kwargs...)
 
-    #=
+    #===============================================================
     Consider original partition [0, 3, 7, 9], where LB solution is 4.
     Use ^ as the new partition, | as the original partition
 
-    A case when discretize ratio = 8
+    A case when discretize ratio = 4
     | -------- | - ^ -- * -- ^ ---- | -------- |
     0          3  3.5   4   4.5     7          9
 
-    A special case when discretize ratio = 4
+    A special case when discretize ratio = 2
     | -------- | --- * --- ^ ---- | -------- |
     0          3     4     5      7          9
-    =#
+    ===============================================================#
+
+    # ? Perform discretization base on type of nonlinear terms
 
     for i in 1:m.num_var_orig
         point = m.best_bound_sol[i]
@@ -120,6 +128,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     # ub_new = min(point + radius/2, ub_local)
                     lb_new = max(point - radius, lb_local)
                     ub_new = min(point + radius, ub_local)
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(point) RATIO=$(m.discretization_ratio)   |$(round(lb_local,2)) |$(round(lb_new,2)) <- * -> $(round(ub_new,2))| $(round(ub_local,2))|")
                     # @show j, point, lb_new, ub_new, lb_local, ub_local
                     if ub_new < ub_local  # Insert new UB-based partition
                         insert!(m.discretization[i], j+1, ub_new)
@@ -154,8 +163,12 @@ function tighten_bounds(m::PODNonlinearModel; kwargs...)
                     u_var[i] = m.discretization[i][j+1]
                 end
             end
+        elseif m.var_type_orig[i] == :Bin || m.var_type_orig[i] == :Int
+            l_var[i] = round(m.sol_incumb_lb[i])
+            u_var[i] = round(m.sol_incumb_lb[i])
         end
     end
+
     return l_var, u_var
 end
 

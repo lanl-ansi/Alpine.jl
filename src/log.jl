@@ -9,33 +9,38 @@ function create_logs!(m)
     logs[:time_left] = m.timeout    # Total remaining time of the algorithm if timeout is specified
 
     # Values
-    logs[:obj] = []             # Iteration based objective
-    logs[:bound] = []           # Iteration based objective
+    logs[:obj] = []                 # Iteration based objective
+    logs[:bound] = []               # Iteration based objective
 
     # Counters
-    logs[:n_iter] = 0           # Number of iterations in iterative
-    logs[:n_feas] = 0           # Number of times get a new feasible solution
-    logs[:ub_incumb_cnt] = 0    # Number of incumbents detected on upper bound
-    logs[:lb_incumb_cnt] = 0    # Number of incumebnts detected on lower bound
+    logs[:n_iter] = 0               # Number of iterations in iterative
+    logs[:n_feas] = 0               # Number of times get a new feasible solution
+    logs[:ub_incumb_cnt] = 0        # Number of incumbents detected on upper bound
+    logs[:lb_incumb_cnt] = 0        # Number of incumebnts detected on lower bound
 
     m.logs = logs
 end
 
 function logging_summary(m::PODNonlinearModel)
     if m.log_level > 0
+
         @printf "full problem loaded into POD.\n"
         @printf "number of constraints = %d.\n" m.num_constr_orig
         @printf "number of non-linear constraints = %d.\n" m.num_nlconstr_orig
         @printf "number of linear constraints = %d.\n" m.num_lconstr_orig
         @printf "number of variables = %d.\n" m.num_var_orig
+        println("NLP solver = ", string(m.nlp_local_solver))
+        println("MIP solver = ", string(m.mip_solver))
 
+        println("regulated maximum solution time = ", m.timeout)
+        println("regulated maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
         @printf "algorithm for selecting variables to discretize = %d\n" m.var_discretization_algo
     end
 end
 
 function logging_head()
-    println(" | UB        | LB        || Incumb UB | Incumb LB | GAP\%      | CLOCK     | TIME LEFT | Iter ")
+    println(" | NLP       | MIP       || Objective | Bound     | GAP\%      | CLOCK     | TIME LEFT | Iter ")
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)

@@ -3,7 +3,7 @@ using POD, JuMP, Ipopt, Gurobi, MathProgBase, Cbc
 function nlp3(verbose=false)
 
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0,resto_max_iter=10,expect_infeasible_problem="no"),
-							   mip_solver=CbcSolver(seconds=99), iterout=5, rel_gap=0.01, var_discretization_algo=0))
+							   mip_solver=CbcSolver(seconds=99), log_level=100, maxiter=5, rel_gap=0.01, var_discretization_algo=0))
 
 	@variable(m, x[1:8])
 

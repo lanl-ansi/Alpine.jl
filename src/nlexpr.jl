@@ -265,7 +265,12 @@ function add_info_using_terms(terms::Array=[], nonlinear_info=Dict(); kwargs...)
             if term[1] == term[2]
                 monomial_status = true
             end
-            nonlinear_info[term] = Dict(:lifted_var_ref => lifted_var_ref, :ref => term, :lifted_constr_ref => lifted_constr_ref, :monomial_status => monomial_status)
+            nonlinear_info[term] = Dict(:lifted_var_ref => lifted_var_ref,
+                                        :ref => term,
+                                        :lifted_constr_ref => lifted_constr_ref,
+                                        :monomial_status => monomial_status,
+										:cos_status => false,
+										:sin_status => false)
 			yidx += 1
 		end
 	end

@@ -4,7 +4,7 @@ using POD
 
 # Expression Testing Instances
 include("../examples/bi1.jl")
-include("../examples/exprs.jl")
+include("../examples/exprstest.jl")
 
 # NLP Testing Instances
 include("../examples/nlp1.jl")

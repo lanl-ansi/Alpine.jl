@@ -4,7 +4,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
-    iterout::Int                                                # Target Maximum Iterations
+    maxiter::Int                                                # Target Maximum Iterations
     rel_gap::Float64                                            # Relative optimality gap termination condition
     var_discretization_algo::Int                                # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
@@ -82,11 +82,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, iterout, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
+    function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
         m = new()
         m.log_level = log_level
         m.timeout = timeout
-        m.iterout = iterout
+        m.maxiter = maxiter
         m.rel_gap = rel_gap
         m.var_discretization_algo = var_discretization_algo
 
@@ -230,7 +230,6 @@ function presolve(m::PODNonlinearModel)
     (m.log_level > 0) && println("Presolve ended.")
     (m.log_level > 0) && println("Presolve time = $(round(m.logs[:total_time],2))s")
     return
-
 end
 
 #=
@@ -247,10 +246,9 @@ function global_solve(m::PODNonlinearModel; kwargs...)
         m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
         m.log_level>0 && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
-        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.iterout) && break
+        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
         add_discretization(m)       # Add extra discretizations
     end
-
 end
 
 function local_solve(m::PODNonlinearModel; presolve = false)
@@ -259,8 +257,11 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
     if presolve == false
         l_var, u_var = tighten_bounds(m)
+    else
+        l_var, u_var = m.l_var_orig, m.u_var_orig
     end
-    MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, m.l_var_orig, m.u_var_orig, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
+    MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
+    presolve && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
 
     start_local_solve = time()
@@ -380,5 +381,4 @@ function summary_status(m::PODNonlinearModel)
     else
         error("[UNEXPECTED] Missing bound and feasible solution during status summary.")
     end
-
 end

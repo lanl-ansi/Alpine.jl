@@ -11,7 +11,7 @@ function exprstest(verbose=false)
 	@NLconstraint(m, -px[1]*px[2] <= 115)
 	@NLconstraint(m, -px[1]*-px[2] >= 115)
 	@NLconstraint(m, px[1]*-px[2] <= 115)
-	@constraint(m, -px[1] + (-5) - 4<= 100)
+	@constraint(m, -px[1] + (-5) - 4 <= 100)
 	@NLconstraint(m, px[1]+ px[2]*px[3] >= 555) # => px[1] + x23 >= 555 && x23 == px[2]*px[3]
 	@NLconstraint(m, px[1]^2 - 7*px[2]^2 + px[3]^2 + px[4] <= 6666)
 	@NLconstraint(m, 13*px[1] - px[2] + 5*px[3]*6 + px[4] >= 77)
