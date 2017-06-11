@@ -232,9 +232,10 @@ function presolve(m::PODNonlinearModel)
     return
 end
 
-#=
+
+@doc """
     Main Adaptive Partitioning (AP) Algorithm.
-=#
+""" ->
 function global_solve(m::PODNonlinearModel; kwargs...)
 
     logging_head()
