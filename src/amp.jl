@@ -1,7 +1,7 @@
 """
     Compact function for all partioning variables. High-level wrapper for constructing all mccormick convexifications.
 """
-function atmc_post_mccormick(m::PODNonlinearModel; kwargs...)
+function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
     λ = Dict()
     λλ = Dict()
@@ -26,43 +26,51 @@ function atmc_post_mccormick(m::PODNonlinearModel; kwargs...)
         ub[idx_b] = m.discretization[idx_b][2:end]
 
         if m.nonlinear_info[bi][:monomial_status]
-            # Perform a tighten moccormick on monomial term y = x * x
-            λ = atmc_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-            λX = atmc_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-            atmc_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-            atmc_post_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
+            # if part_cnt_a == 1 && part_cnt_b == 1  # Basic Mccormick
+            #     λ[idx_a] = [1]
+            #     λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_a)]
+            # else
+                # Perform a tighten moccormick on monomial term y = x * x
+                λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+            # end
+            amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+            amp_post_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
         else
             # Partitioning on left
             if (idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
-                λ = atmc_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                λX = atmc_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+                # @assert (lb[idx_b] == 1) && (ub[idx_b] == 1)
+                λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                 λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
-                λλ = atmc_post_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
-                atmc_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                atmc_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+                λλ = amp_post_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
+                amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+                amp_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
             end
 
             # Partitioning of right
             if !(idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                λ = atmc_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                λX = atmc_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+                # @assert (lb[idx_a] == 1) && (ub[idx_a] == 1)
+                λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+                λX = amp_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                 λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
-                λλ = atmc_post_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
-                atmc_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
-                atmc_post_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
+                λλ = amp_post_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
+                amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+                amp_post_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
             end
 
             # Partitioning on both variables
             if (idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                λ = atmc_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                λ = atmc_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                λX = atmc_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-                λX = atmc_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
-                λλ = atmc_post_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
-                atmc_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                atmc_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
-                atmc_post_λxλ_mc(m.model_mip, λλ, λ, idx_a, idx_b)
-                atmc_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+                # @assert (lb[idx_a] > 1) && (lb[idx_b] > 1) && (ub[idx_a] > 1) && (ub[idx_b] > 1)
+                λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+                λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+                λX = amp_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+                λλ = amp_post_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
+                amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+                amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+                amp_post_λxλ_mc(m.model_mip, λλ, λ, idx_a, idx_b)
+                amp_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
             end
 
             # Error condition
@@ -74,7 +82,7 @@ function atmc_post_mccormick(m::PODNonlinearModel; kwargs...)
     return
 end
 
-function atmc_post_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, idx::Int, relax=false)
+function amp_post_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, idx::Int, relax=false)
     if !haskey(λ, idx)
         λ[idx] = @variable(m, [1:dim], Bin, basename=string("L",idx))
         @constraint(m, sum(λ[idx]) == 1) # The SOS-1 Constraints, not all MIP solver has SOS feature
@@ -84,20 +92,20 @@ function atmc_post_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, idx
     return λ
 end
 
-function atmc_post_monomial_mc(m::JuMP.Model, idx_aa::Int, λ::Dict, λX::Dict, LB::Dict, UB::Dict, dim::Int, idx_a::Int)
+function amp_post_monomial_mc(m::JuMP.Model, idx_aa::Int, λ::Dict, λX::Dict, LB::Dict, UB::Dict, dim::Int, idx_a::Int)
     @constraint(m, Variable(m, idx_aa) >= Variable(m, idx_a)^(2))
     @constraint(m, Variable(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(diagm(LB[idx_a]), UB[idx_a])))
     return
 end
 
-function atmc_post_λX(m::JuMP.Model, λX::Dict, dim::Int, idx_a::Int, idx_b::Int)
+function amp_post_λX(m::JuMP.Model, λX::Dict, dim::Int, idx_a::Int, idx_b::Int)
     if !haskey(λX, (idx_a,idx_b))
         λX[(idx_a,idx_b)] = @variable(m, [1:dim], basename=string("L",idx_a,"X",idx_b))
     end
     return λX
 end
 
-function atmc_post_λλ(m::JuMP.Model, λλ::Dict, dim_a::Int, dim_b::Int, idx_a::Int, idx_b::Int)
+function amp_post_λλ(m::JuMP.Model, λλ::Dict, dim_a::Int, dim_b::Int, idx_a::Int, idx_b::Int)
     if !haskey(λλ, (idx_a, idx_b))
         λλ[(idx_a,idx_b)] = @variable(m, [1:dim_a, 1:dim_b], basename=string("L",idx_a,"L",idx_b))
         for i in 1:dim_a
@@ -114,7 +122,7 @@ end
 """
     Partial partioning for the last mc term
 """
-function atmc_post_λλ(m::JuMP.Model, λλ::Dict, λ::Dict, idx_a::Int, idx_b::Int)
+function amp_post_λλ(m::JuMP.Model, λλ::Dict, λ::Dict, idx_a::Int, idx_b::Int)
     if !haskey(λλ, (idx_a, idx_b))
         λλ[(idx_a,idx_b)] = λ[idx_a]
         λλ[(idx_a,idx_b)] = reshape(λλ[(idx_a,idx_b)], (length(λ[idx_a]), 1))
@@ -123,7 +131,7 @@ function atmc_post_λλ(m::JuMP.Model, λλ::Dict, λ::Dict, idx_a::Int, idx_b::
     return λλ
 end
 
-function atmc_post_XX_mc(m, ab, λX, λλ, LB, UB, a, b)
+function amp_post_XX_mc(m, ab, λX, λλ, LB, UB, a, b)
     @assert length(LB[a]) == length(UB[a])
     @assert length(LB[b]) == length(UB[b])
     dim_A = length(LB[a])
@@ -135,7 +143,7 @@ function atmc_post_XX_mc(m, ab, λX, λλ, LB, UB, a, b)
     return
 end
 
-function atmc_post_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::Dict, ind_λ::Int, ind_X::Int)
+function amp_post_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::Dict, ind_λ::Int, ind_X::Int)
 
     # X_u and λ here are vectors, and X is one variable,
 	# After the product, we have a polynomial to multiply X,
@@ -153,7 +161,7 @@ function atmc_post_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::Dic
     return
 end
 
-function atmc_post_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, ind_B::Int)
+function amp_post_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, ind_B::Int)
 
 	#=
     A 3 x 2 example, some new variables are formed
@@ -181,7 +189,7 @@ function atmc_post_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, ind
     return
 end
 
-function atmc_post_vars(m::PODNonlinearModel)
+function amp_post_vars(m::PODNonlinearModel)
     @variable(m.model_mip, x[i=1:m.num_var_orig+m.num_var_lifted_mip])
     for i in 1:m.num_var_orig
         setcategory(x[i], m.var_type_orig[i])
@@ -191,7 +199,7 @@ function atmc_post_vars(m::PODNonlinearModel)
     return
 end
 
-function atmc_post_lifted_constraints(m::PODNonlinearModel)
+function amp_post_lifted_constraints(m::PODNonlinearModel)
     for i in 1:m.num_constr_orig
         if m.constr_type_orig[i] == :(>=)
             @constraint(m.model_mip,
@@ -207,7 +215,7 @@ function atmc_post_lifted_constraints(m::PODNonlinearModel)
     return
 end
 
-function atmc_post_lifted_obj(m::PODNonlinearModel)
+function amp_post_lifted_obj(m::PODNonlinearModel)
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
     return
 end

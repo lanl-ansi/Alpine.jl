@@ -9,15 +9,16 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
 
     start_build = time()
     # ------- Algorithm ------ #
-    atmc_post_vars(m)                       # Post original and lifted variables
-    atmc_post_lifted_constraints(m)         # Post lifted constraints
-    atmc_post_lifted_obj(m)                 # Post objective
-    atmc_post_mccormick(m)                  # Post all mccormick constraints
+    amp_post_vars(m)                       # Post original and lifted variables
+    amp_post_lifted_constraints(m)         # Post lifted constraints
+    amp_post_lifted_obj(m)                 # Post objective
+    amp_post_mccormick(m)                  # Post all mccormick constraints
     # ------------------------ #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
+    return
 end
 
 function pick_vars_discretization(m::PODNonlinearModel)
@@ -27,24 +28,32 @@ function pick_vars_discretization(m::PODNonlinearModel)
     elseif m.var_discretization_algo == 1
         min_vertex_cover(m)
     elseif m.var_discretization_algo == 99
-        # User function
+        # User-defined function
         error("[You need to give me something to make this work...]Unsupported method for picking variables for discretization")
     else
         error("Unsupported method for picking variables for discretization")
     end
+
+    return
 end
 
 function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
+
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
     @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
     @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
     @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
+
+    return
 end
 
 function mccormick_bin(m,xy,x,y)
+
     @constraint(m, xy <= x)
     @constraint(m, xy <= y)
     @constraint(m, xy >= x+y-1)
+
+    return
 end
 
 function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
@@ -72,34 +81,17 @@ function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, ti
     return m
 end
 
-function initialize_discretization(m::PODNonlinearModel; kwargs...)
-    options = Dict(kwargs)
-    @printf "running algorithm for choosing the variables to discretize\n"
-    pick_vars_discretization(m)
-    @printf "variables to discretize chosen\n"
-    for var in 1:m.num_var_orig
-        lb = m.l_var_orig[var]
-        ub = m.u_var_orig[var]
-        if var in m.var_discretization_mip
-            # m.discretization[var] = [lb, m.sol_incumb_ub[var], ub]  # Alternative way to construct
-            point = m.best_sol[var]
-            radius = (ub-lb)/m.discretization_ratio
-            local_lb = max(lb, point-radius)
-            local_ub = min(ub, point+radius)
-            m.discretization[var] = unique([lb, local_lb, local_ub, ub])
-        else
-            m.discretization[var] = [lb, ub]
-        end
-    end
-end
-
 """
     Notice there are other ways to construct partitions
 """
 function add_discretization(m::PODNonlinearModel; kwargs...)
 
+    options = Dict(kwargs)
+
+    haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
+
     #===============================================================
-    Consider original partition [0, 3, 7, 9], where LB solution is 4.
+    Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
     Use ^ as the new partition, | as the original partition
 
     A case when discretize ratio = 4
@@ -114,9 +106,8 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     # ? Perform discretization base on type of nonlinear terms
 
     for i in 1:m.num_var_orig
-        point = m.best_bound_sol[i]
+        point = point_vec[i]
         if i in m.var_discretization_mip  # Only construct when discretized
-            # println("Disjunction var ", i, "--", m.discretization[i])
             for j in 1:length(m.discretization[i])
                 if point >= m.discretization[i][j] && point <= m.discretization[i][j+1]  # Locating the right location
                     @assert j < length(m.discretization[i])
@@ -139,7 +130,6 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     break
                 end
             end
-            # @show "After ", i, m.discretization[i], "\n"
         end
     end
 

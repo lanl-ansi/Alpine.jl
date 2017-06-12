@@ -180,6 +180,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     populate_lifted_expr(m)
     m.num_var_lifted_mip = length(m.nonlinear_info)
     populate_lifted_affine(m)
+    initialize_discretization(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
 
@@ -210,7 +211,7 @@ function presolve(m::PODNonlinearModel)
     start_presolve = time()
     (m.log_level > 0) && println("\nPOD algorithm presolver started.")
     (m.log_level > 0) && println("Performing local solve to obtain a feasible solution.")
-    local_solve(m, presolve = true)
+    local_solve(m, presolve = true)  # An attempt
 
     if m.status[:local_solve] == :Optimal || m.status[:local_solve] == :Suboptimal || m.status[:local_solve] == :UserLimit
         # bound tightening goes here - done if local solve is feasible - requires only obj value
@@ -222,7 +223,7 @@ function presolve(m::PODNonlinearModel)
         # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
     end
 
-    initialize_discretization(m)
+    add_discretization(m, use_solution=m.best_sol)
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
@@ -262,7 +263,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         l_var, u_var = m.l_var_orig, m.u_var_orig
     end
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
-    presolve && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
+    (presolve && (:Bin in m.var_type_orig || :Int in m.var_type_orig)) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
 
     start_local_solve = time()
