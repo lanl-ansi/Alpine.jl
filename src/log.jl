@@ -17,6 +17,7 @@ function create_logs!(m)
     logs[:n_feas] = 0               # Number of times get a new feasible solution
     logs[:ub_incumb_cnt] = 0        # Number of incumbents detected on upper bound
     logs[:lb_incumb_cnt] = 0        # Number of incumebnts detected on lower bound
+    logs[:bt_iter] = 0
 
     m.logs = logs
 end
@@ -58,4 +59,45 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
     ITER_block = string(" ", m.logs[:n_iter])
     println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
+end
+
+
+#=========================================================
+ Logging and printing functions
+=========================================================#
+
+# Create dictionary of statuses for POD algorithm
+function create_status!(m)
+
+    status = Dict{Symbol,Symbol}()
+
+    status[:presolve] = :none                   # Status of presolve
+    status[:local_solve] = :none                # Status of local solve
+    status[:bounding_solve] = :none              # Status of bounding solve
+    status[:lower_bounding_solve] = :none        # Status of lower bonding solve
+    status[:upper_bounding_solve] = :none       # Status of bounding solve
+    status[:feasible_solution] = :none          # Status of whether a upper bound is detected or not
+    status[:upper_bound] = :none                # Status of whether a upper bound has been detected
+    status[:lower_bound] = :none                # Status of whether a lower bound has been detected
+    status[:bound] = :none                      # Status of whether a bound has been detected
+    status[:bound_tightening_solve] = :none    # Status of bound-tightening solve
+
+    m.status = status
+end
+
+function summary_status(m::PODNonlinearModel)
+
+    if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
+        if m.best_rel_gap > m.rel_gap
+            m.pod_status = :UserLimits
+        else
+            m.pod_status = :Optimal
+        end
+    elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
+        m.pod_status = :Infeasible
+    elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
+        m.pod_status = :Heuristic
+    else
+        error("[UNEXPECTED] Missing bound and feasible solution during status summary.")
+    end
 end

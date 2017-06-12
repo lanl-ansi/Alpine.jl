@@ -1,7 +1,14 @@
 """
     Compact function for all partioning variables. High-level wrapper for constructing all mccormick convexifications.
 """
-function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
+function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+
+    # detect whether to use specific discretization information
+    haskey(kwargs, :use_discretization) ? discretization = options[:discretization] : discretization = m.discretization
+
+    # TODO: should be adaptive when no basic mccormick is applied
 
     λ = Dict()
     λλ = Dict()
@@ -17,29 +24,22 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
         idx_b = bi[2].args[2]
         idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
 
-        part_cnt_a = length(m.discretization[idx_a]) - 1
-        part_cnt_b = length(m.discretization[idx_b]) - 1
+        part_cnt_a = length(discretization[idx_a]) - 1
+        part_cnt_b = length(discretization[idx_b]) - 1
 
-        lb[idx_a] = m.discretization[idx_a][1:(end-1)]
-        ub[idx_a] = m.discretization[idx_a][2:end]
-        lb[idx_b] = m.discretization[idx_b][1:(end-1)]
-        ub[idx_b] = m.discretization[idx_b][2:end]
+        lb[idx_a] = discretization[idx_a][1:(end-1)]
+        ub[idx_a] = discretization[idx_a][2:end]
+        lb[idx_b] = discretization[idx_b][1:(end-1)]
+        ub[idx_b] = discretization[idx_b][2:end]
 
         if m.nonlinear_info[bi][:monomial_status]
-            # if part_cnt_a == 1 && part_cnt_b == 1  # Basic Mccormick
-            #     λ[idx_a] = [1]
-            #     λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_a)]
-            # else
-                # Perform a tighten moccormick on monomial term y = x * x
-                λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-            # end
+            λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+            λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
             amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
             amp_post_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
         else
             # Partitioning on left
             if (idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
-                # @assert (lb[idx_b] == 1) && (ub[idx_b] == 1)
                 λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                 λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                 λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
@@ -50,7 +50,6 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
             # Partitioning of right
             if !(idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                # @assert (lb[idx_a] == 1) && (ub[idx_a] == 1)
                 λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                 λX = amp_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                 λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
@@ -61,7 +60,6 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
             # Partitioning on both variables
             if (idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                # @assert (lb[idx_a] > 1) && (lb[idx_b] > 1) && (ub[idx_a] > 1) && (ub[idx_b] > 1)
                 λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                 λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                 λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
@@ -75,6 +73,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
             # Error condition
             if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
+                @show idx_a, idx_b, m.var_discretization_mip
                 error("Error case. At least one term should show up in discretization choices.")
             end
         end
@@ -189,7 +188,7 @@ function amp_post_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, ind_
     return
 end
 
-function amp_post_vars(m::PODNonlinearModel)
+function post_amp_vars(m::PODNonlinearModel)
     @variable(m.model_mip, x[i=1:m.num_var_orig+m.num_var_lifted_mip])
     for i in 1:m.num_var_orig
         setcategory(x[i], m.var_type_orig[i])
@@ -199,7 +198,7 @@ function amp_post_vars(m::PODNonlinearModel)
     return
 end
 
-function amp_post_lifted_constraints(m::PODNonlinearModel)
+function post_amp_lifted_constraints(m::PODNonlinearModel)
     for i in 1:m.num_constr_orig
         if m.constr_type_orig[i] == :(>=)
             @constraint(m.model_mip,
@@ -215,7 +214,7 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
     return
 end
 
-function amp_post_lifted_obj(m::PODNonlinearModel)
+function post_amp_lifted_obj(m::PODNonlinearModel)
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
     return
 end

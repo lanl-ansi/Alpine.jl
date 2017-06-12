@@ -1,19 +1,19 @@
-"""
+@doc """
     Set up a basic lifted mip model without any additional information
     Certain parts model is intended to be deep-copied at each iteration to create a new MIP model.
     Each non-linear term in the original model is lifted with a variable.
-"""
+""" ->
 function create_bounding_mip(m::PODNonlinearModel; kwargs...)
 
     m.model_mip = Model(solver=m.mip_solver) # Construct jump model
 
     start_build = time()
-    # ------- Algorithm ------ #
-    amp_post_vars(m)                       # Post original and lifted variables
-    amp_post_lifted_constraints(m)         # Post lifted constraints
-    amp_post_lifted_obj(m)                 # Post objective
-    amp_post_mccormick(m)                  # Post all mccormick constraints
-    # ------------------------ #
+    # ------- Model Construction ------ #
+    post_amp_vars(m)                       # Post original and lifted variables
+    post_amp_lifted_constraints(m)         # Post lifted constraints
+    post_amp_lifted_obj(m)                 # Post objective
+    post_amp_mccormick(m)                  # Post all mccormick constraints
+    # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
@@ -21,6 +21,9 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
     return
 end
 
+@doc """
+    Deprecated function used to direct algorihtm in pick variables for discretization
+""" ->
 function pick_vars_discretization(m::PODNonlinearModel)
     # Figure out which are the variables that needs to be partitioned
     if m.var_discretization_algo == 0
@@ -37,6 +40,10 @@ function pick_vars_discretization(m::PODNonlinearModel)
     return
 end
 
+
+@doc """
+    Basic utility function that adds basic McCormick constriant to the JuMP model.
+""" ->
 function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
 
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
@@ -47,6 +54,9 @@ function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
     return
 end
 
+@doc """
+    Basic utility function that adds basic McCormick for binary multiplication to the JuMP model
+""" ->
 function mccormick_bin(m,xy,x,y)
 
     @constraint(m, xy <= x)
@@ -78,63 +88,9 @@ function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, ti
 
     A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
     @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
-    return m
+
+    return
 end
-
-"""
-    Notice there are other ways to construct partitions
-"""
-function add_discretization(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-
-    haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
-
-    #===============================================================
-    Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
-    Use ^ as the new partition, | as the original partition
-
-    A case when discretize ratio = 4
-    | -------- | - ^ -- * -- ^ ---- | -------- |
-    0          3  3.5   4   4.5     7          9
-
-    A special case when discretize ratio = 2
-    | -------- | --- * --- ^ ---- | -------- |
-    0          3     4     5      7          9
-    ===============================================================#
-
-    # ? Perform discretization base on type of nonlinear terms
-
-    for i in 1:m.num_var_orig
-        point = point_vec[i]
-        if i in m.var_discretization_mip  # Only construct when discretized
-            for j in 1:length(m.discretization[i])
-                if point >= m.discretization[i][j] && point <= m.discretization[i][j+1]  # Locating the right location
-                    @assert j < length(m.discretization[i])
-                    lb_local = m.discretization[i][j]
-                    ub_local = m.discretization[i][j+1]
-                    distance = ub_local - lb_local
-                    radius = distance / m.discretization_ratio
-                    # lb_new = max(point - radius/2, lb_local)
-                    # ub_new = min(point + radius/2, ub_local)
-                    lb_new = max(point - radius, lb_local)
-                    ub_new = min(point + radius, ub_local)
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(point) RATIO=$(m.discretization_ratio)   |$(round(lb_local,2)) |$(round(lb_new,2)) <- * -> $(round(ub_new,2))| $(round(ub_local,2))|")
-                    # @show j, point, lb_new, ub_new, lb_local, ub_local
-                    if ub_new < ub_local  # Insert new UB-based partition
-                        insert!(m.discretization[i], j+1, ub_new)
-                    end
-                    if lb_new > lb_local  # Insert new LB-based partition
-                        insert!(m.discretization[i], j+1, lb_new)
-                    end
-                    break
-                end
-            end
-        end
-    end
-
-end
-
 
 """
     Use lower bound solution active interval to tight upper bound variable bounds
@@ -162,10 +118,10 @@ function tighten_bounds(m::PODNonlinearModel; kwargs...)
     return l_var, u_var
 end
 
-
-"""
+@doc """
+    Default utility method for picking variables for discretization
     Perform a minimum vertex cover for selecting variables for discretization
-"""
+""" ->
 function min_vertex_cover(m::PODNonlinearModel; kwargs...)
 
     # Collect the information for arcs and nodes
@@ -200,10 +156,12 @@ function min_vertex_cover(m::PODNonlinearModel; kwargs...)
 
 end
 
-"""
+@doc """
+    Default method used to pick variables for discretization
     Collect all envolved variables as a max cover for generate discretization
-"""
+""" ->
 function max_cover(m::PODNonlinearModel; kwargs...)
+
     nodes = Set()
     for pair in keys(m.nonlinear_info)
         for i in pair
@@ -214,4 +172,6 @@ function max_cover(m::PODNonlinearModel; kwargs...)
     nodes = collect(nodes)
     m.num_var_discretization_mip = length(nodes)
     m.var_discretization_mip = nodes
+
+    return
 end

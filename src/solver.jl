@@ -9,6 +9,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     timeout::Float64
     maxiter::Int
     rel_gap::Float64
+    tolerance::Float64
 
     nlp_local_solver::MathProgBase.AbstractMathProgSolver
     minlp_local_solver::MathProgBase.AbstractMathProgSolver
@@ -16,6 +17,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     var_discretization_algo::Int
     discretization_ratio::Any
+    method_pick_vars_discretization::Function
 
     # other options to be added later on
 end
@@ -25,6 +27,7 @@ function PODSolver(;
     timeout = Inf,
     maxiter = 99,
     rel_gap = 1e-4,
+    tolerance = 1e-4,
 
     nlp_local_solver = UnsetSolver(),
     minlp_local_solver = UnsetSolver(),
@@ -32,6 +35,7 @@ function PODSolver(;
 
     var_discretization_algo = 0,
     discretization_ratio = 4,
+    method_pick_vars_discretization = min_vertex_cover,
     )
 
     if nlp_local_solver == UnsetSolver()
@@ -43,9 +47,10 @@ function PODSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(log_level, timeout, maxiter, rel_gap,
+    PODSolver(log_level, timeout, maxiter, rel_gap, tolerance,
         deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver),
-        var_discretization_algo, discretization_ratio)
+        var_discretization_algo, discretization_ratio,
+        method_pick_vars_discretization)
 end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -59,13 +64,18 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     timeout = s.timeout
     maxiter = s.maxiter
     rel_gap = s.rel_gap
+    tolerance = s.tolerance
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
     var_discretization_algo = s.var_discretization_algo
     discretization_ratio = s.discretization_ratio
+    method_pick_vars_discretization = s.method_pick_vars_discretization
 
-    return PODNonlinearModel(log_level, timeout, maxiter, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
+    return PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
+                            nlp_local_solver, minlp_local_solver, mip_solver,
+                            var_discretization_algo, discretization_ratio,
+                            method_pick_vars_discretization)
 end
 
 """

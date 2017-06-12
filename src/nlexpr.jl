@@ -18,6 +18,16 @@ function populate_nonlinear_info(m::PODNonlinearModel; kwargs...)
 	end
 
 	delete!(m.nonlinear_info,:xdim)
+
+	for i in keys(m.nonlinear_info)
+		for var in i
+			@assert isa(var.args[2], Int)
+			if !(var.args[2] in m.all_nonlinear_vars)
+				push!(m.all_nonlinear_vars, var.args[2])
+			end
+		end
+	end
+
 	return m
 end
 
@@ -191,9 +201,12 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 end
 
-"""
-	Formulate the pod mip model lifted constraints
-"""
+@doc """
+	Warpper for populating lifted expressions.
+	It populate .lifted_obj_expr_mip and .lifted_constr_expr_mip from .obj_expr_orig and .constr_expr_orig.
+	This procedure is adpative to the .nonlinear_info.
+	Limitations on acceptable expressions is posted.
+""" ->
 function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
 
 	expr_lift(m.lifted_obj_expr_mip, m.nonlinear_info)
@@ -201,12 +214,12 @@ function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
 		expr_lift(m.lifted_constr_expr_mip[i].args[2], m.nonlinear_info)
 	end
 
-	return m
+	return
 end
 
-"""
-	Dereferencing function: splice and dereference (not used anywhere)
-"""
+@doc """
+	Recursive dereferencing of variables in expression graph to overcome JuMP.addNLconstraints() difficulties
+""" ->
 function expr_dereferencing(expr, m)
 
 	for i in 2:length(expr.args)

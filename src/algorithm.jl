@@ -9,6 +9,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_discretization_algo::Int                                # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     tract_presolve_time::Bool                                   # Keep presolve time as a part in timeout
+    tolerance::Float64                                          # Numerical tolerance used in the algorithmic process
 
     # add all the solver options
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
@@ -57,6 +58,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     nonlinear_info::Dict{Any,Any}                               # Dictionary containing details of lifted terms
+    all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
     lifted_obj_expr_mip::Expr                                   # Lifted objective expression; if linear, same as obj_expr_orig
     lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints; if linear, same as corresponding constr_expr_orig
     num_var_lifted_mip::Int                                     # Number of lifted variables
@@ -67,6 +69,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     sol_incumb_ub::Vector{Float64}                              # Incumbent upper bounding solution
+    method_pick_vars_discretization::Function                   # ???
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -82,13 +85,17 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, nlp_local_solver, minlp_local_solver, mip_solver, var_discretization_algo, discretization_ratio)
+    function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,      # Basic parameters
+                                nlp_local_solver, minlp_local_solver, mip_solver,   # Sub-solvers setup
+                                var_discretization_algo, discretization_ratio,      # Algorihtmic tuning parameters
+                                method_pick_vars_discretization)
         m = new()
         m.log_level = log_level
         m.timeout = timeout
         m.maxiter = maxiter
         m.rel_gap = rel_gap
         m.var_discretization_algo = var_discretization_algo
+        m.tolerance = tolerance
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -109,11 +116,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.indexes_lconstr_updated = Int[]
 
         m.nonlinear_info = Dict()
+        m.all_nonlinear_vars = Int[]
         m.lifted_constr_expr_mip = []
         m.lifted_constr_aff_mip = []
         m.var_discretization_mip = []
         m.discretization = Dict()
         m.discretization_ratio = discretization_ratio
+        m.method_pick_vars_discretization = min_vertex_cover
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -181,6 +190,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.num_var_lifted_mip = length(m.nonlinear_info)
     populate_lifted_affine(m)
     initialize_discretization(m)
+    m.method_pick_vars_discretization(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
 
@@ -211,10 +221,13 @@ function presolve(m::PODNonlinearModel)
     start_presolve = time()
     (m.log_level > 0) && println("\nPOD algorithm presolver started.")
     (m.log_level > 0) && println("Performing local solve to obtain a feasible solution.")
-    local_solve(m, presolve = true)  # An attempt
+    local_solve(m, presolve = true)
 
     if m.status[:local_solve] == :Optimal || m.status[:local_solve] == :Suboptimal || m.status[:local_solve] == :UserLimit
         # bound tightening goes here - done if local solve is feasible - requires only obj value
+        add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
+    elseif m.status[:local_solve] == :Infeasible
+        error("NLP local solve is infeasible - need implementation")
     else
         error("NLP local solve is $(m.status[:local_solve]) - quitting solve.")
         quit()
@@ -223,13 +236,13 @@ function presolve(m::PODNonlinearModel)
         # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
     end
 
-    add_discretization(m, use_solution=m.best_sol)
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
 
     (m.log_level > 0) && println("Presolve ended.")
     (m.log_level > 0) && println("Presolve time = $(round(m.logs[:total_time],2))s")
+
     return
 end
 
@@ -342,45 +355,5 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         error("[MIP UNBOUNDED] MIP solver failure")
     else
         error("[MIP UNEXPECTED] MIP solver failure.")
-    end
-end
-
-#=========================================================
- Logging and printing functions
-=========================================================#
-
-# Create dictionary of statuses for POD algorithm
-function create_status!(m)
-
-    status = Dict{Symbol,Symbol}()
-
-    status[:presolve] = :none                   # Status of presolve
-    status[:local_solve] = :none                # Status of local solve
-    status[:bounding_solve] = :none              # Status of bounding solve
-    status[:lower_bounding_solve] = :none        # Status of lower bonding solve
-    status[:upper_bounding_solve] = :none       # Status of bounding solve
-    status[:feasible_solution] = :none          # Status of whether a upper bound is detected or not
-    status[:upper_bound] = :none                # Status of whether a upper bound has been detected
-    status[:lower_bound] = :none                # Status of whether a lower bound has been detected
-    status[:bound] = :none                      # Status of whether a bound has been detected
-    status[:bound_tightening_solve] = :none    # Status of bound-tightening solve
-
-    m.status = status
-end
-
-function summary_status(m::PODNonlinearModel)
-
-    if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
-        if m.best_rel_gap > m.rel_gap
-            m.pod_status = :UserLimits
-        else
-            m.pod_status = :Optimal
-        end
-    elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
-        m.pod_status = :Infeasible
-    elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
-        m.pod_status = :Heuristic
-    else
-        error("[UNEXPECTED] Missing bound and feasible solution during status summary.")
     end
 end

@@ -1,9 +1,25 @@
 using POD, JuMP, Ipopt, Gurobi, MathProgBase, Cbc
 
+function max_cover_var_picker(m::POD.PODNonlinearModel)
+	nodes = Set()
+	for pair in keys(m.nonlinear_info)
+		for i in pair
+			@assert isa(i.args[2], Int)
+			push!(nodes, i.args[2])
+		end
+	end
+	nodes = collect(nodes)
+	m.num_var_discretization_mip = length(nodes)
+	m.var_discretization_mip = nodes
+	return
+end
+
+
 function nlp3(verbose=false)
 
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0,resto_max_iter=10,expect_infeasible_problem="no"),
-							   mip_solver=CbcSolver(seconds=99), log_level=100, maxiter=5, rel_gap=0.01, var_discretization_algo=0))
+							   mip_solver=CbcSolver(seconds=99), log_level=1, maxiter=5, rel_gap=0.01, var_discretization_algo=0,
+							   method_pick_vars_discretization=POD.max_cover))
 
 	@variable(m, x[1:8])
 
