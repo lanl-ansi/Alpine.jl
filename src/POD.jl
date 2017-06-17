@@ -11,7 +11,8 @@ include("solver.jl")
 include("model.jl")
 include("log.jl")
 include("amp.jl")
-include("bounds.jl")
+include("presolve.jl")
 include("operators.jl")
+include("utility.jl")
 
 end # module

@@ -1,6 +1,7 @@
 using JuMP
 
 type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
+
     # solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
@@ -8,8 +9,12 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     rel_gap::Float64                                            # Relative optimality gap termination condition
     var_discretization_algo::Int                                # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
-    tract_presolve_time::Bool                                   # Keep presolve time as a part in timeout
+    track_presolve_time::Bool                                   # Keep presolve time as a part in timeout
     tolerance::Float64                                          # Numerical tolerance used in the algorithmic process
+    do_bound_tightening::Bool                                   # Perform bound tightening procedure before main algorithm
+    pick_var_discretization_method::Any                         # functional method used for picking variable for discretization
+    bound_tightening_method::Any                                # The method used for bound tightening procedures, can either be index of default methods or functional inputs
+    add_discretization_method::Any                              # Additional methods to add discretization
 
     # add all the solver options
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
@@ -69,7 +74,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     sol_incumb_ub::Vector{Float64}                              # Incumbent upper bounding solution
-    method_pick_vars_discretization::Function                   # ???
+    l_var_tight::Vector{Float64}                                # Tighten Variable upper bounds
+    u_var_tight::Vector{Float64}                                # Tighten Variable Lower Bounds
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -85,10 +91,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,      # Basic parameters
-                                nlp_local_solver, minlp_local_solver, mip_solver,   # Sub-solvers setup
-                                var_discretization_algo, discretization_ratio,      # Algorihtmic tuning parameters
-                                method_pick_vars_discretization)
+    function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,                     # Basic parameters
+                                nlp_local_solver, minlp_local_solver, mip_solver,                   # Sub-solvers setup
+                                var_discretization_algo, discretization_ratio, do_bound_tightening, # Algorihtmic tuning parameters
+                                pick_var_discretization_method, bound_tightening_method)
+
         m = new()
         m.log_level = log_level
         m.timeout = timeout
@@ -96,6 +103,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.rel_gap = rel_gap
         m.var_discretization_algo = var_discretization_algo
         m.tolerance = tolerance
+        m.do_bound_tightening = do_bound_tightening
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -122,7 +130,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.var_discretization_mip = []
         m.discretization = Dict()
         m.discretization_ratio = discretization_ratio
-        m.method_pick_vars_discretization = min_vertex_cover
+        m.pick_var_discretization_method = pick_var_discretization_method
+        m.bound_tightening_method = bound_tightening_method
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -189,8 +198,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     populate_lifted_expr(m)
     m.num_var_lifted_mip = length(m.nonlinear_info)
     populate_lifted_affine(m)
+
+    # Setup the tight bound vector for future usage
+    m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_lifted_mip);]
+    m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_lifted_mip);]
+
     initialize_discretization(m)
-    m.method_pick_vars_discretization(m)
+    m.pick_var_discretization_method(m)
 
     m.best_sol = fill(NaN, m.num_var_orig)
 
@@ -223,23 +237,38 @@ function presolve(m::PODNonlinearModel)
     (m.log_level > 0) && println("Performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
-    if m.status[:local_solve] == :Optimal || m.status[:local_solve] == :Suboptimal || m.status[:local_solve] == :UserLimit
-        # bound tightening goes here - done if local solve is feasible - requires only obj value
-        add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
-    elseif m.status[:local_solve] == :Infeasible
-        error("NLP local solve is infeasible - need implementation")
+    # Regarding upcoming changes in status
+    status_pass = [:Optimal, :Suboptimal, :UserLimit]
+    status_reroute = [:Infeasible]
+
+    if m.status[:local_solve] in status_pass
+        presolve_bounds_tightening(m)    # bound tightening goes here - done if local solve is feasible - requires only obj value
+        m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
+    elseif m.status[:local_solve] in status_reroute
+        (m.log_level > 0) && println("first-attemp local solve infeasible, performing bound tighting without upper bound...")
+        presolve_bounds_tightening(m, use_bound=Inf)    # do bound tightening without objective value
+
+        (m.log_level > 0) && println("re-attempting on locating initial feasible solution...")
+        local_solve(m, presolve = true)  # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
+
+        if m.status in status_pass       # successful second try
+            m.discretization = add_discretization(m, use_solution=m.best_sol)
+        else # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
+            (m.log_level > 0) && println("re-attemp local solve failed, initialize discretization with lower bound solution \nproblem remain infeasible")
+            create_bounding_mip(m)       # Build the bounding ATMC model
+            bounding_solve(m)            # Solve bounding model
+            m.discretization = add_discretization(m, use_solution=m.best_bound_sol)
+        end
     else
         error("NLP local solve is $(m.status[:local_solve]) - quitting solve.")
         quit()
-        # do bound tightening without objective value
-        # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
-        # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
     end
+
+    # There should be a exiting scheme due to time out if user wants to track presolve
 
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
-
     (m.log_level > 0) && println("Presolve ended.")
     (m.log_level > 0) && println("Presolve time = $(round(m.logs[:total_time],2))s")
 
@@ -247,13 +276,15 @@ function presolve(m::PODNonlinearModel)
 end
 
 
-@doc """
+"""
     Main Adaptive Partitioning (AP) Algorithm.
-""" ->
+"""
 function global_solve(m::PODNonlinearModel; kwargs...)
 
     logging_head()
+    initialize_discretization(m)
     while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0001
+        @show m.discretization
         m.logs[:n_iter] += 1
         update_time_limit(m)        # Updates the time limit, if that option is supplied, TILIM = TILIM - m.logs[:total_time]
         create_bounding_mip(m)      # Build the bounding ATMC model
@@ -262,13 +293,18 @@ function global_solve(m::PODNonlinearModel; kwargs...)
         m.log_level>0 && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        add_discretization(m)       # Add extra discretizations
+        m.discretizations = add_discretization(m)       # Add extra discretizations
+        @show m.discretization
+        error("STOP")
     end
+
+    return
 end
 
 function local_solve(m::PODNonlinearModel; presolve = false)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
+    # TODO: Need to add update solver time
     local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
     if presolve == false
         l_var, u_var = tighten_bounds(m)
@@ -283,13 +319,15 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     (!presolve) && (TT = STDOUT; redirect_stdout())
     MathProgBase.optimize!(local_solve_nlp_model)
     (!presolve) && redirect_stdout(TT)
-
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
+    status_pass = [:Optimal, :Suboptimal, :UserLimit]
+    status_reroute = [:Infeasible]
+
     local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
-    if local_solve_nlp_status == :Optimal || local_solve_nlp_status == :Suboptimal || local_solve_nlp_status == :UserLimit
+    if local_solve_nlp_status in status_pass
         candidate_obj = MathProgBase.getobjval(local_solve_nlp_model)
         push!(m.logs[:obj], candidate_obj)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-10)
@@ -300,10 +338,8 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         end
         m.status[:local_solve] = local_solve_nlp_status
         return
-    elseif local_solve_nlp_status == :Infeasible
+    elseif local_solve_nlp_status in status_reroute
         push!(m.logs[:obj], "-")
-        (m.log_level > 0) && (presolve == true) && println("[PRESOLVE] NLP local solve is infeasible.")
-        (m.log_level > 0) && (presolve == false) && println("Incumbent unchanged due to infeasible local solve.")
         m.status[:local_solve] = :Infeasible
         return
     elseif local_solve_nlp_status == :Unbounded

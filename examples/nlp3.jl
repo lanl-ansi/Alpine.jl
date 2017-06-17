@@ -1,4 +1,4 @@
-using POD, JuMP, Ipopt, Gurobi, MathProgBase, Cbc
+using POD, JuMP, Ipopt, CPLEX, MathProgBase, Cbc
 
 function max_cover_var_picker(m::POD.PODNonlinearModel)
 	nodes = Set()
@@ -17,9 +17,11 @@ end
 
 function nlp3(verbose=false)
 
-	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0,resto_max_iter=10,expect_infeasible_problem="no"),
-							   mip_solver=CbcSolver(seconds=99), log_level=1, maxiter=5, rel_gap=0.01, var_discretization_algo=0,
-							   method_pick_vars_discretization=POD.max_cover))
+	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+							   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0), do_bound_tightening=true,
+							   log_level=100, rel_gap=0.01,
+                               bound_tightening_method=2,
+							   pick_var_discretization_method=POD.max_cover))
 
 	@variable(m, x[1:8])
 

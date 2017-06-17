@@ -17,7 +17,9 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     var_discretization_algo::Int
     discretization_ratio::Any
-    method_pick_vars_discretization::Function
+    do_bound_tightening::Bool
+    pick_var_discretization_method::Function
+    bound_tightening_method::Any
 
     # other options to be added later on
 end
@@ -27,7 +29,7 @@ function PODSolver(;
     timeout = Inf,
     maxiter = 99,
     rel_gap = 1e-4,
-    tolerance = 1e-4,
+    tolerance = 1e-6,
 
     nlp_local_solver = UnsetSolver(),
     minlp_local_solver = UnsetSolver(),
@@ -35,7 +37,9 @@ function PODSolver(;
 
     var_discretization_algo = 0,
     discretization_ratio = 4,
-    method_pick_vars_discretization = min_vertex_cover,
+    do_bound_tightening = true,
+    pick_var_discretization_method = nothing,
+    bound_tightening_method = 1,
     )
 
     if nlp_local_solver == UnsetSolver()
@@ -49,8 +53,8 @@ function PODSolver(;
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(log_level, timeout, maxiter, rel_gap, tolerance,
         deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver),
-        var_discretization_algo, discretization_ratio,
-        method_pick_vars_discretization)
+        var_discretization_algo, discretization_ratio, do_bound_tightening,
+        pick_var_discretization_method, bound_tightening_method)
 end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -70,12 +74,14 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     mip_solver = s.mip_solver
     var_discretization_algo = s.var_discretization_algo
     discretization_ratio = s.discretization_ratio
-    method_pick_vars_discretization = s.method_pick_vars_discretization
+    pick_var_discretization_method = s.pick_var_discretization_method
+    bound_tightening_method = s.bound_tightening_method
+    do_bound_tightening = s.do_bound_tightening
 
     return PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
                             nlp_local_solver, minlp_local_solver, mip_solver,
-                            var_discretization_algo, discretization_ratio,
-                            method_pick_vars_discretization)
+                            var_discretization_algo, discretization_ratio,do_bound_tightening,
+                            pick_var_discretization_method, bound_tightening_method)
 end
 
 """

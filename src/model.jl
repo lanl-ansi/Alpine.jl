@@ -1,18 +1,21 @@
-@doc """
+"""
     Set up a basic lifted mip model without any additional information
     Certain parts model is intended to be deep-copied at each iteration to create a new MIP model.
     Each non-linear term in the original model is lifted with a variable.
-""" ->
+"""
 function create_bounding_mip(m::PODNonlinearModel; kwargs...)
 
-    m.model_mip = Model(solver=m.mip_solver) # Construct jump model
+    options = Dict(kwargs)
 
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+
+    m.model_mip = Model(solver=m.mip_solver) # Construct JuMP Model
     start_build = time()
     # ------- Model Construction ------ #
-    post_amp_vars(m)                       # Post original and lifted variables
-    post_amp_lifted_constraints(m)         # Post lifted constraints
-    post_amp_lifted_obj(m)                 # Post objective
-    post_amp_mccormick(m)                  # Post all mccormick constraints
+    post_amp_vars(m)                                            # Post original and lifted variables
+    post_amp_lifted_constraints(m)                              # Post lifted constraints
+    post_amp_lifted_obj(m)                                      # Post objective
+    post_amp_mccormick(m, use_discretization=discretization)    # Post all mccormick constraints
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
@@ -21,29 +24,33 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
     return
 end
 
-@doc """
+"""
     Deprecated function used to direct algorihtm in pick variables for discretization
-""" ->
+"""
 function pick_vars_discretization(m::PODNonlinearModel)
-    # Figure out which are the variables that needs to be partitioned
-    if m.var_discretization_algo == 0
-        max_cover(m)
-    elseif m.var_discretization_algo == 1
-        min_vertex_cover(m)
-    elseif m.var_discretization_algo == 99
-        # User-defined function
-        error("[You need to give me something to make this work...]Unsupported method for picking variables for discretization")
+
+    if m.pick_var_discretization_method == nothing
+        # Figure out which are the variables that needs to be partitioned
+        if m.var_discretization_algo == 0
+            max_cover(m)
+        elseif m.var_discretization_algo == 1
+            min_vertex_cover(m)
+        else
+            error("Unsupported default method for picking variables for discretization")
+        end
     else
-        error("Unsupported method for picking variables for discretization")
+        (m.log_level > 0) && println("method for picking discretization variable provided... overiding the parameter input...")
+        eval(m.pick_var_discretization_method)(m)
+        # TODO: Perform generic validation for user-defined method
     end
 
     return
 end
 
 
-@doc """
+"""
     Basic utility function that adds basic McCormick constriant to the JuMP model.
-""" ->
+"""
 function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
 
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
@@ -54,14 +61,24 @@ function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
     return
 end
 
-@doc """
+"""
     Basic utility function that adds basic McCormick for binary multiplication to the JuMP model
-""" ->
+"""
 function mccormick_bin(m,xy,x,y)
 
     @constraint(m, xy <= x)
     @constraint(m, xy <= y)
     @constraint(m, xy >= x+y-1)
+
+    return
+end
+
+"""
+    Basic utility function that adds basic McCormick constraints for monomial terms
+"""
+function mccormick_monomial(m,xy,x,xˡ,xᵘ)
+    @constraint(m, xy >= x^2)
+    @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
 
     return
 end
@@ -118,10 +135,10 @@ function tighten_bounds(m::PODNonlinearModel; kwargs...)
     return l_var, u_var
 end
 
-@doc """
+"""
     Default utility method for picking variables for discretization
     Perform a minimum vertex cover for selecting variables for discretization
-""" ->
+"""
 function min_vertex_cover(m::PODNonlinearModel; kwargs...)
 
     # Collect the information for arcs and nodes
@@ -156,10 +173,10 @@ function min_vertex_cover(m::PODNonlinearModel; kwargs...)
 
 end
 
-@doc """
+"""
     Default method used to pick variables for discretization
     Collect all envolved variables as a max cover for generate discretization
-""" ->
+"""
 function max_cover(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
