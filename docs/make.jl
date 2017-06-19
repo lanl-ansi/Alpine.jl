@@ -6,8 +6,10 @@ makedocs(
     pages = [
         "Introduction" => "intro.md",
         "Installation" => "installation.md",
-        "Demo" => "firstdemo.md",
-        "Choosing Solvers" => "choosingsolver.md"
+        "Demo" => "demo.md",
+        "Parameters" => "parameters.md",
+        "Choosing Solvers" => "choosingsolver.md",
+        "Methods" => "functions.md"
     ]
 )
 
@@ -15,6 +17,7 @@ makedocs(
 deploydocs(
     repo = "github.com/lanl-ansi/POD.git",
     target = "build",
+    branch = "monomial",
     osname = "linux",
     julia  = "0.6",
     deps   = nothing,

@@ -103,7 +103,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 end
 
 """
-    A small function used to fetch differnt MIP solver setting code
+    A small utility function used to recognize differnt sub-solvers return the timelimit setup keywords.
 """
 function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
     if string(m.mip_solver)[1:10] == "CPLEX.Cple"

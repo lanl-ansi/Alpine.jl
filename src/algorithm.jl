@@ -250,6 +250,20 @@ MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
 MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
 MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
 
+
+"""
+
+    presolve(m::PODNonlinearModel)
+
+Algorithmic function that ask a loaded POD problem to perform the presolving process.
+It first conduct a local solve for a initial starting point followed by the bound tightening process.
+In cases when a local solve is infeasible, the bound tightening will continue with the bound tightening.
+However, as the bound tightening finishes, a second try of the local solve will be performed on a tigher domain for a initial feasible solution.
+The problem will be position the partitioning to the initial feasible solution or a relaxation root McCormick solution.
+
+See Algorithm ... for details implementation.
+
+"""
 function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
@@ -297,13 +311,22 @@ end
 
 
 """
-    Main Adaptive Partitioning (AP) Algorithm.
+
+    global_solve(m::PODNonlinearModel)
+
+Perform the global algorithm that is based on the adaptive conexification scheme.
+This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) for converging lower bound (relaxed problem) and upper bound (feasible problem).
+Each [`bounding_solve`](@ref) provides a lower bound solution that is used as a partioning point for next iteration (this feature can be modified given different `add_discretization`).
+Each [`local_solve`](@ref) provides a local serach of incumbent feasible solution. The algrithm terminates given time limits, optimality condition, or iteration limits.
+
+The algorithm is can be reformed when `add_discretization` is replaced with user-defined functional input.
+For example, this algorithm can easily be reformed as a uniform-partitioning algorithm in other literature.
+
 """
-function global_solve(m::PODNonlinearModel; kwargs...)
+function global_solve(m::PODNonlinearModel)
 
     logging_head()
-    initialize_discretization(m)
-    while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0001
+    while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0001 && m.logs[:n_iter] < m.maxiter
         m.logs[:n_iter] += 1
         update_mip_time_limit(m)        # Updates the time limit, if that option is supplied, TILIM = TILIM - m.logs[:total_time]
         create_bounding_mip(m)      # Build the bounding ATMC model
@@ -318,6 +341,15 @@ function global_solve(m::PODNonlinearModel; kwargs...)
 
     return
 end
+
+"""
+
+    local_solve(m::PODNonlinearModel, presolve::Bool=false)
+
+Perform a local NLP or MINLP solve to detect feasible solution. When `presolve=true`, this function is utilized in the [`presolve`](@ref) for a MINLP local solve.
+Otherwise, a NLP problem is solved by fixing the integer variables base on the lower bound solution from [`bounding_solve`](@ref).
+
+"""
 
 function local_solve(m::PODNonlinearModel; presolve = false)
 
@@ -375,6 +407,17 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     return
 end
 
+
+"""
+
+    bounding_solve(m::PODNonlinearModel; kwargs...)
+
+This is a solving process usually deal with a MIP or MIQCP problem for lower bounds of problems.
+It solves the problem built upon a convexification base on a discretization Dictionary of some variables.
+The convexification utilized is Tighten McCormick scheme.
+See `create_bounding_mip` for more details of the problem solved here.
+
+"""
 function bounding_solve(m::PODNonlinearModel; kwargs...)
 
     convertor = Dict(:Max=>:<, :Min=>:>)
