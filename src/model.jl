@@ -29,19 +29,21 @@ end
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
-    if m.pick_var_discretization_method == nothing
+    if isa(m.discretization_var_pick_algo, Function)
+        (m.log_level > 0) && println("method for picking discretization variable provided... overiding the parameter input...")
+        eval(m.discretization_var_pick_algo)(m)
+        # TODO: Perform generic validation for user-defined method
+    elseif isa(m.discretization_var_pick_algo, Int)
         # Figure out which are the variables that needs to be partitioned
-        if m.var_discretization_algo == 0
+        if m.discretization_var_pick_algo == 0
             max_cover(m)
-        elseif m.var_discretization_algo == 1
+        elseif m.discretization_var_pick_algo == 1
             min_vertex_cover(m)
         else
             error("Unsupported default method for picking variables for discretization")
         end
     else
-        (m.log_level > 0) && println("method for picking discretization variable provided... overiding the parameter input...")
-        eval(m.pick_var_discretization_method)(m)
-        # TODO: Perform generic validation for user-defined method
+        error("Input for parameter :discretization_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
     end
 
     return
@@ -133,6 +135,21 @@ function tighten_bounds(m::PODNonlinearModel; kwargs...)
     end
 
     return l_var, u_var
+end
+
+"""
+    Take the objective expression and post an limitation bound on it.
+"""
+function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
+    if m.sense_orig == :Max
+        @constraint(m.model_mip,
+            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) >= bound)
+    elseif m.sense_orig == :Min
+        @constraint(m.model_mip,
+            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) <= bound)
+    end
+
+    return
 end
 
 """

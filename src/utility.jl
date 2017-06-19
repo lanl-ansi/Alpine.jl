@@ -52,7 +52,7 @@ function initialize_discretization(m::PODNonlinearModel; kwargs...)
     return
 end
 
-function copy_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64}; kwargs...)
+function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64}; kwargs...)
 
     options = Dict(kwargs)
 
@@ -70,6 +70,16 @@ function copy_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Ve
     end
 
     return var_discretization
+end
+
+function flatten_discretization(discretization::Dict; kwargs...)
+
+    flatten_discretization = Dict()
+    for var in keys(discretization)
+        flatten_discretization[var] = [discretization[var][1],discretization[var][end]]
+    end
+
+    return flatten_discretization
 end
 
 """
@@ -114,7 +124,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     radius = distance / m.discretization_ratio
                     lb_new = max(point - radius, lb_local)
                     ub_new = min(point + radius, ub_local)
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio)  |$(round(lb_local,2)) |$(round(lb_new,2)) <- * -> $(round(ub_new,2))| $(round(ub_local,2))|")
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                     if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tolerance)  # Insert new UB-based partition
                         insert!(discretization[i], j+1, ub_new)
                     end
@@ -128,4 +138,24 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     end
 
     return discretization
+end
+
+
+function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    for i in 1:length(m.mip_solver.options)
+        if fetch_timeleft_symbol(m) in collect(m.mip_solver.options[i])
+            deleteat!(m.mip_solver.options, i)
+            break
+        end
+    end
+
+    if m.timeout != Inf
+        push!(m.mip_solver.options, (fetch_timeleft_symbol(m), timelimit))
+    end
+
+    return
 end

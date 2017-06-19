@@ -36,7 +36,7 @@ function logging_summary(m::PODNonlinearModel)
         println("regulated maximum solution time = ", m.timeout)
         println("regulated maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
-        @printf "algorithm for selecting variables to discretize = %d\n" m.var_discretization_algo
+        println("algorithm for selecting variables to discretize = $(m.discretization_var_pick_algo)")
     end
 end
 

@@ -1,4 +1,4 @@
-using POD, JuMP, Ipopt, CPLEX, MathProgBase 
+using POD, JuMP, Ipopt, CPLEX, MathProgBase
 
 function nlp2(verbose=false)
 

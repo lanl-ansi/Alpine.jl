@@ -27,6 +27,7 @@ function populate_nonlinear_info(m::PODNonlinearModel; kwargs...)
 			end
 		end
 	end
+	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
 
 	return m
 end
