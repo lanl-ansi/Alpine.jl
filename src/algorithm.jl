@@ -84,8 +84,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     sol_incumb_ub::Vector{Float64}                              # Incumbent upper bounding solution
-    l_var_tight::Vector{Float64}                                # Tighten Variable upper bounds
-    u_var_tight::Vector{Float64}                                # Tighten Variable Lower Bounds
+    l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
+    u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -218,7 +218,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.num_var_lifted_mip = length(m.nonlinear_info)
     populate_lifted_affine(m)
 
-    # Setup the tight bound vector for future usage
+    # Initialize tightened bound vectors for future usage
     m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_lifted_mip);]
     m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_lifted_mip);]
 
@@ -254,13 +254,16 @@ MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
 
     presolve(m::PODNonlinearModel)
 
-Algorithmic function that ask a loaded POD problem to perform the presolving process.
-It first conduct a local solve for a initial starting point followed by the bound tightening process.
-In cases when a local solve is infeasible, the bound tightening will continue with the bound tightening.
-However, as the bound tightening finishes, a second try of the local solve will be performed on a tigher domain for a initial feasible solution.
-The problem will be position the partitioning to the initial feasible solution or a relaxation root McCormick solution.
+Function that perfoms a presolve on the user-supplied nonlinear program.
+The presolve first provides the model to a local solver to obtain an initial feasible solution.
+If the local solver returns a feasible solution then the objective value of the feasible solution
+is used in conjunction with the original model for a bound-tightening procedure.
+If the local solver reports infeasibililty the bound-tightening procedure does not use
+the objective value. Furthermore, in this case, a second local solve is attempted using the tightened bounds.
 
-See Algorithm ... for details implementation.
+If a local solution is not obtained eved after the second solve then an initial McCormick solve is performed.
+The local solution (if available) or the initial McCormick solution (if infeasible after two local solve tries)
+is then used to partition the variables for the subsequent Adaptive Multivariate Partitioning algorithm iterations. 
 
 """
 function presolve(m::PODNonlinearModel)
