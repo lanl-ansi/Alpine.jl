@@ -101,19 +101,3 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
                             presolve_track_time, presolve_do_bound_tightening, presolve_maxiter, presolve_tolerance,presolve_bound_tightening_method,presolve_mip_relaxation,presolve_mip_timelimit)
 end
-
-"""
-    A small utility function used to recognize differnt sub-solvers return the timelimit setup keywords.
-"""
-function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
-    if string(m.mip_solver)[1:10] == "CPLEX.Cple"
-        return :CPX_PARAM_TILIM
-    elseif string(m.mip_solver)[1:10] == "Gurobi.Gur"
-        return :TimeLimit
-    elseif string(m.mip_solver)[1:10] == "Cbc.CbcMat"
-        return :seconds
-    else found == nothing
-        error("Needs support for this MIP solver")
-    end
-    return
-end

@@ -1,5 +1,16 @@
 """
-    Index function of the bound tightening method
+
+    presolve_bounds_tightening(m::PODNonlinearModel)
+
+High-level presolve caller that activate the presolve process. The built-in presolve
+procedure is bound tightening method in constraint programming. The goal of these built-in
+methods is to contract variable feasible domains using constraint programming scheme.
+
+Currently, two bounding tightening method is implemented [`minmax_bounds_tightening`](@ref).
+
+    * Min-Max McCormick Bounds Tightening
+    * Min-Max Tighten McCormick Bounds Tightening
+
 """
 function presolve_bounds_tightening(m::PODNonlinearModel; kwargs...)
 
@@ -21,9 +32,21 @@ function presolve_bounds_tightening(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    Sequential version of the bound tightening procedure.
-    Algorithm layout goes here...
-    Main implementation target...
+
+    minmax_bounds_tightening(m:PODNonlinearModel; use_bound::Float64, use_tmc::Bool)
+
+This function implements the algorithm used to tight variable feasible domains using constraint programming shceme.
+It utilize McCormick or Tighten McCormick Realxation to creat MILP and solve by optimizing on variable bounds.
+
+The algorithm iteratively walk through all variables involved in non-linear terms (discretizating variables) and solve
+min-max problems for optimal lower-upper bounds. During the procedure, any tighten bounds will be utilized for further
+bound tightening operations. For better bounds contraction quality, `use_tmc` can be assigned `true` to use a slightly
+tighter formulation while in sacrificing the solution time. The bound tightening algirthm terminates base on improvements,
+time limits, and iteration limits.
+
+It is highly recommended that `use_bound` is available for best quality ensurance. Several other options is available
+for the algorithm tuning. For more details, see [Parameters](@ref).
+
 """
 function minmax_bounds_tightening(m::PODNonlinearModel; kwargs...)
 
@@ -93,9 +116,12 @@ function minmax_bounds_tightening(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    This function takes in the initial discretization information and builds a bound tighting model that is connected to .model_mip
-    It is an algorithm specific function
-"""
+    create_bound_tightening_model(m::PODNonlinearModel, discretization::Dict, bound::Float64)
+
+This function takes in the initial discretization information and builds a bound tighting model that is connected to .model_mip
+It is an algorithm specific function in [`minmax_bounds_tightening`](@ref) for best felxibility in tuning and hacking.
+
+ """
 function create_bound_tightening_model(m::PODNonlinearModel, discretization, bound; kwargs...)
 
     options = Dict(kwargs)
@@ -115,6 +141,13 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     return
 end
 
+"""
+
+    solve_bound_tightening_model(m::PODNonlinearModels)
+
+A function that solves the min-max model used in built-in presolve algorithm.
+
+"""
 function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
 
     # ========= MIP Solve ========= #
@@ -134,7 +167,14 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
     return
 end
 
+"""
+    resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict)
 
+For discretization to be performed, it is not allowed for a discretizing variable to have inifinate bounds.
+This violation can be seen in new lifted proposed for multi-variant non-linear terms. This functions resolve
+these issues by use the problem information to reason some lifted variables bounds. Such bounds reasoning
+can also speed up the bounding problem during the main algorithm by providing trivial information to the solver.
+"""
 function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; kwargs...)
 
     options = Dict(kwargs)

@@ -1,14 +1,9 @@
-"""
-    Compact function for all partioning variables. High-level wrapper for constructing all mccormick convexifications.
-"""
 function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
     # detect whether to use specific discretization information
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
-
-    # TODO: should be adaptive when no basic mccormick is applied
 
     λ = Dict()
     λλ = Dict()
@@ -32,7 +27,7 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
         lb[idx_b] = discretization[idx_b][1:(end-1)]
         ub[idx_b] = discretization[idx_b][2:end]
 
-        if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)
+        if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
             if m.nonlinear_info[bi][:monomial_status]
                 mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
             else
@@ -127,9 +122,7 @@ function amp_post_λλ(m::JuMP.Model, λλ::Dict, dim_a::Int, dim_b::Int, idx_a:
     return λλ
 end
 
-"""
-    Partial partioning for the last mc term
-"""
+
 function amp_post_λλ(m::JuMP.Model, λλ::Dict, λ::Dict, idx_a::Int, idx_b::Int)
     if !haskey(λλ, (idx_a, idx_b))
         λλ[(idx_a,idx_b)] = λ[idx_a]

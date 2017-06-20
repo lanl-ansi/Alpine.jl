@@ -24,7 +24,6 @@ end
 
 function logging_summary(m::PODNonlinearModel)
     if m.log_level > 0
-
         @printf "full problem loaded into POD.\n"
         @printf "number of constraints = %d.\n" m.num_constr_orig
         @printf "number of non-linear constraints = %d.\n" m.num_nlconstr_orig

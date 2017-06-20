@@ -24,13 +24,17 @@ function update_var_bounds(discretization; kwargs...)
     return l_var, u_var
 end
 
+"""
+    discretization_to_bounds(d::Dict, l::Int)
+
+Same as [`update_var_bounds`](@ref)
+"""
 discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 
 """
     initialize_discretization(m::PODNonlinearModel)
 
 This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
-
 The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
 """
 function initialize_discretization(m::PODNonlinearModel; kwargs...)
@@ -52,6 +56,14 @@ function initialize_discretization(m::PODNonlinearModel; kwargs...)
     return
 end
 
+"""
+
+    to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+
+Utility functions to convert bounds vectors to Dictionary based structures that is more suitable for
+partition operations.
+
+"""
 function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64}; kwargs...)
 
     options = Dict(kwargs)
@@ -72,6 +84,12 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
     return var_discretization
 end
 
+"""
+    flatten_discretization(discretization::Dict)
+
+Utility functions to eliminate all partition on discretizing variable and keep the loose bounds.
+
+"""
 function flatten_discretization(discretization::Dict; kwargs...)
 
     flatten_discretization = Dict()
@@ -83,10 +101,28 @@ function flatten_discretization(discretization::Dict; kwargs...)
 end
 
 """
-    Basic method used to add a new partition.
-    This method make modiciation in .discretization
-    Keyward arguments:
-        use_solution :: Vector{Float64}  -> Solution vector
+    add_discretization(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
+
+Basic built-in method used to add a new partition on feasible domains of discretizing variables.
+This method make modification in .discretization
+
+Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
+Use ^ as the new partition, "|" as the original partition
+
+A case when discretize ratio = 4
+| -------- | - ^ -- * -- ^ ---- | -------- |
+0          3  3.5   4   4.5     7          9
+
+A special case when discretize ratio = 2
+| -------- | ---- * ---- ^ ---- | -------- |
+0          3      4      5      7          9
+
+There are two options for this function,
+
+    * `use_discretization(default=m.discretization)`:: to regulate which is the base to add new partitions on
+    * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
+
+This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
 """
 function add_discretization(m::PODNonlinearModel; kwargs...)
 
@@ -95,18 +131,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
 
-    #===============================================================
-    Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
-    Use ^ as the new partition, "|" as the original partition
 
-    A case when discretize ratio = 4
-    | -------- | - ^ -- * -- ^ ---- | -------- |
-    0          3  3.5   4   4.5     7          9
-
-    A special case when discretize ratio = 2
-    | -------- | ---- * ---- ^ ---- | -------- |
-    0          3      4      5      7          9
-    ===============================================================#
 
     # ? Perform discretization base on type of nonlinear terms
 
@@ -140,7 +165,13 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     return discretization
 end
 
+"""
 
+    update_mip_time_limit(m::PODNonlinearModel)
+
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+
+"""
 function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
@@ -157,5 +188,24 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
         push!(m.mip_solver.options, (fetch_timeleft_symbol(m), timelimit))
     end
 
+    return
+end
+
+"""
+
+    fetch_timeleft_symbol(m::PODNonlinearModel)
+
+An utility function used to recognize differnt sub-solvers return the timelimit setup keywords.
+"""
+function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
+    if string(m.mip_solver)[1:10] == "CPLEX.Cple"
+        return :CPX_PARAM_TILIM
+    elseif string(m.mip_solver)[1:10] == "Gurobi.Gur"
+        return :TimeLimit
+    elseif string(m.mip_solver)[1:10] == "Cbc.CbcMat"
+        return :seconds
+    else found == nothing
+        error("Needs support for this MIP solver")
+    end
     return
 end

@@ -1,7 +1,37 @@
 """
-    Set up a basic lifted mip model without any additional information
-    Certain parts model is intended to be deep-copied at each iteration to create a new MIP model.
-    Each non-linear term in the original model is lifted with a variable.
+
+    create_bounding_mip(m::PODNonlinearModel; use_discretization::Dict)
+
+Set up a JuMP MILP bounding model base on variable domain partitioning information stored in `use_discretization`.
+By default, if `use_discretization is` not provided, it will use `m.discretizations` store in the POD model.
+The basic idea of this MILP bounding model is to use Tighten McCormick to convexify the original Non-convex region.
+Among all presented partitionings, the bounding model will choose one specific partition as the lower bound solution.
+The more partitions there are, the better or finer bounding model relax the original MINLP while the more
+efforts required to solve this MILP is required.
+
+This function is implemented in the following manner:
+
+    * [`post_amp_vars`](@ref): post original and lifted variables
+    * [`post_amp_lifted_constraints`](@ref): post original and lifted constraints
+    * [`post_amp_lifted_obj`](@ref): post original or lifted objective function
+    * [`post_amp_mccormick`](@ref): post Tighen McCormick variables and constraints base on `discretization` information
+
+More specifically, the Tightening McCormick used here can be genealized in the following mathematcial formulation. Consider a nonlinear term
+```math
+\\begin{subequations}
+\\begin{align}
+   &\\widehat{x_{ij}} \\geq (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) \\\\
+   &\\widehat{x_{ij}} \\geq (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) \\\\
+   &\\widehat{x_{ij}} \\leq (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) \\\\
+   &\\widehat{x_{ij}} \\leq (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) \\\\
+   & \\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i) \\geq x_{i} \\geq \\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i) \\\\
+   & \\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) \\geq x_{j} \\geq \\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) \\\\
+   &\\sum \\hat{\\mathbf{y}_i} = 1, \\ \\ \\sum \\hat{\\mathbf{y}_j}_k = 1 \\\\
+   &\\hat{\\mathbf{y}}_i \\in \\{0,1\\}, \\hat{\\mathbf{y}}_j \\in \\{0,1\\}
+\\end{align}
+\\end{subequations}
+```
+
 """
 function create_bounding_mip(m::PODNonlinearModel; kwargs...)
 
@@ -25,7 +55,18 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    Deprecated function used to direct algorihtm in pick variables for discretization
+    pick_vars_discretization(m::PODNonlinearModel)
+
+This function helps pick the variables for discretization. The method chosen depends on user-inputs.
+In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
+there exist two built-in method:
+
+    * `max-cover(m.discretization_var_pick_algo=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover(m.discretization_var_pick_algo=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+
+For advance usage, `m.discretization_var_pick_algo` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
+For more information, read more details at [Hacking Solver](@ref).
+
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
@@ -50,9 +91,6 @@ function pick_vars_discretization(m::PODNonlinearModel)
 end
 
 
-"""
-    Basic utility function that adds basic McCormick constriant to the JuMP model.
-"""
 function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
 
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
@@ -63,9 +101,6 @@ function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
     return
 end
 
-"""
-    Basic utility function that adds basic McCormick for binary multiplication to the JuMP model
-"""
 function mccormick_bin(m,xy,x,y)
 
     @constraint(m, xy <= x)
@@ -75,9 +110,6 @@ function mccormick_bin(m,xy,x,y)
     return
 end
 
-"""
-    Basic utility function that adds basic McCormick constraints for monomial terms
-"""
 function mccormick_monomial(m,xy,x,xˡ,xᵘ)
     @constraint(m, xy >= x^2)
     @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
@@ -112,7 +144,13 @@ function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, ti
 end
 
 """
-    Use lower bound solution active interval to tight upper bound variable bounds
+
+    tighten_bounds(m::PODNonlinearModel)
+
+This function is used to fix variables to certain domains during the local solve process in the [`global_solve`](@ref).
+More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
+and discretizing varibles to the active domain according to lower bound solution.
+
 """
 function tighten_bounds(m::PODNonlinearModel; kwargs...)
 
@@ -137,9 +175,6 @@ function tighten_bounds(m::PODNonlinearModel; kwargs...)
     return l_var, u_var
 end
 
-"""
-    Take the objective expression and post an limitation bound on it.
-"""
 function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
     if m.sense_orig == :Max
         @constraint(m.model_mip,
@@ -153,10 +188,13 @@ function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
 end
 
 """
-    Default utility method for picking variables for discretization
-    Perform a minimum vertex cover for selecting variables for discretization
+
+    min_vertex_cover(m:PODNonlinearModel)
+
+A built-in method for selecting variables for discretization.
+
 """
-function min_vertex_cover(m::PODNonlinearModel; kwargs...)
+function min_vertex_cover(m::PODNonlinearModel)
 
     # Collect the information for arcs and nodes
     nodes = Set()
@@ -191,8 +229,11 @@ function min_vertex_cover(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    Default method used to pick variables for discretization
-    Collect all envolved variables as a max cover for generate discretization
+
+    max_cover(m:PODNonlinearModel)
+
+A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
+
 """
 function max_cover(m::PODNonlinearModel; kwargs...)
 

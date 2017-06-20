@@ -9,7 +9,8 @@ makedocs(
         "Demo" => "demo.md",
         "Parameters" => "parameters.md",
         "Choosing Solvers" => "choosingsolver.md",
-        "Methods" => "functions.md"
+        "Methods" => "functions.md",
+        "Hacking" => "hacking.md"
     ]
 )
 
