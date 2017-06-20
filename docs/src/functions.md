@@ -17,7 +17,7 @@ bounding_solve
 ```@docs
 create_bounding_mip
 pick_vars_discretization
-tighten_bounds
+fix_domains
 min_vertex_cover
 max_cover
 ```

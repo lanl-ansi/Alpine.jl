@@ -143,38 +143,6 @@ function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, ti
     return
 end
 
-"""
-
-    tighten_bounds(m::PODNonlinearModel)
-
-This function is used to fix variables to certain domains during the local solve process in the [`global_solve`](@ref).
-More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
-and discretizing varibles to the active domain according to lower bound solution.
-
-"""
-function tighten_bounds(m::PODNonlinearModel; kwargs...)
-
-    l_var = copy(m.l_var_orig)
-    u_var = copy(m.u_var_orig)
-    for i in 1:m.num_var_orig
-        if i in m.var_discretization_mip
-            point = m.sol_incumb_lb[i]
-            for j in 1:length(m.discretization[i])
-                if point >= m.discretization[i][j] && point <= m.discretization[i][j+1]
-                    @assert j < length(m.discretization[i])
-                    l_var[i] = m.discretization[i][j]
-                    u_var[i] = m.discretization[i][j+1]
-                end
-            end
-        elseif m.var_type_orig[i] == :Bin || m.var_type_orig[i] == :Int
-            l_var[i] = round(m.sol_incumb_lb[i])
-            u_var[i] = round(m.sol_incumb_lb[i])
-        end
-    end
-
-    return l_var, u_var
-end
-
 function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
     if m.sense_orig == :Max
         @constraint(m.model_mip,

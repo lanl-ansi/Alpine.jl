@@ -225,7 +225,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     pick_vars_discretization(m)
     initialize_discretization(m)
 
-
     m.best_sol = fill(NaN, m.num_var_orig)
 
     logging_summary(m)
@@ -277,6 +276,7 @@ function presolve(m::PODNonlinearModel)
 
     if m.status[:local_solve] in status_pass
         presolve_bounds_tightening(m)    # bound tightening goes here - done if local solve is feasible - requires only obj value
+        initialize_discretization(m)
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first-attemp local solve infeasible, performing bound tighting without upper bound...")
@@ -328,15 +328,13 @@ function global_solve(m::PODNonlinearModel)
     logging_head()
     while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0001 && m.logs[:n_iter] < m.maxiter
         m.logs[:n_iter] += 1
-        update_mip_time_limit(m)        # Updates the time limit, if that option is supplied, TILIM = TILIM - m.logs[:total_time]
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
         m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
         m.log_level>0 && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        m.discretizations = add_discretization(m)       # Add extra discretizations
-        error("STOP")
+        m.discretization = add_discretization(m)       # Add extra discretizations
     end
 
     return
@@ -357,7 +355,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     # TODO: Need to add update solver time
     local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
     if presolve == false
-        l_var, u_var = tighten_bounds(m)
+        l_var, u_var = fix_domains(m)
     else
         l_var, u_var = m.l_var_orig, m.u_var_orig
     end

@@ -131,8 +131,6 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
 
-
-
     # ? Perform discretization base on type of nonlinear terms
 
     for i in 1:m.num_var_orig
@@ -208,4 +206,38 @@ function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
         error("Needs support for this MIP solver")
     end
     return
+end
+
+"""
+
+    fix_domains(m::PODNonlinearModel)
+
+This function is used to fix variables to certain domains during the local solve process in the [`global_solve`](@ref).
+More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
+and discretizing varibles to the active domain according to lower bound solution.
+
+"""
+function fix_domains(m::PODNonlinearModel; kwargs...)
+
+    l_var = copy(m.l_var_orig)
+    u_var = copy(m.u_var_orig)
+    for i in 1:m.num_var_orig
+        if i in m.var_discretization_mip
+            point = m.sol_incumb_lb[i]
+            for j in 1:length(m.discretization[i])
+                @show point, j, m.discretization[i], m.tolerance
+                if point >= (m.discretization[i][j] - m.tolerance) && (point <= m.discretization[i][j+1] + m.tolerance)
+                    @assert j < length(m.discretization[i])
+                    l_var[i] = m.discretization[i][j]
+                    u_var[i] = m.discretization[i][j+1]
+                    break
+                end
+            end
+        elseif m.var_type_orig[i] == :Bin || m.var_type_orig[i] == :Int
+            l_var[i] = round(m.sol_incumb_lb[i])
+            u_var[i] = round(m.sol_incumb_lb[i])
+        end
+    end
+
+    return l_var, u_var
 end
