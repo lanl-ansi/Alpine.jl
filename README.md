@@ -1,44 +1,41 @@
-# POD, the solver
+# AMP(POD), a novel MINLP solver
 
-# Basic Usage with example of nlp1
+Adaptive Multi-variant Partitioning (AMP/POD) is a novel global algorithm that use adaptive convexification scheme and constraints programming methods to solve mixed-integer non-linear programming problems (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [Library](http://www.gamsworld.org/minlp/minlplib2/html/) for problem instances). AMP is also a fit for many relaxations of the MINLPs, such as Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
+
+Unlike many other state-of-the-art MINLP solvers, AMP is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
+
+AMP solves MINLP by:
+
+* analyzing the problem expressions (objective & constraints) to obtain a convexify-able formulation
+
+* perform bound tightening algorithm to contract variable feasible domains
+    
+* perform adaptive partitioning-based convexification to improve problem bounds for global convergence
+
+
+# Installation
+
+Currently, AMP is a private repository that is used by LANL-ANSI group, the proposed publication is unknown given the upcoming changes in JuMP and MathProgBase that AMP needs to adapt to. To install AMP,
+
 `Pkg.clone("https://github.com/lanl-ansi/POD.git")`
 
-`m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=GurobiSolver(),timeout=40, rel_gap=0.1, var_discretization_algo=0)`
+For developers, it is highly recommend that any further development on POD is conducted on a new branch or a forked repo.
 
-# NEED TO KNOW
-1. The algorithm is currently under development.
-2. Please limited usage of pranthese on constraints where non-linear terms exists.
-3. Currently, the algorithm only handles simpler form of the bilinear formulation.
+# Usage
 
-# Current Development
-## Basic Solver Layout
-Solver has a PODNonlinearModel structure that stores info utilized in the algorithm
-## Basic POD Problem Type
-TODO
-## Simple Manipulation
-TODO
-## Local Solve
-TODO
+The design of the AMP solver requires a variety of programming problems to be solved underneath the surface. For algorithmic performance, it's recommend that dedicated solvers to be used for these operations. The design of AMP takes advantage of MathProgBase to allow a majority of optimization softwares to be utilized easily with simple development. Currently, the following sub-solvers with Julia Interface is supported by AMP:
 
-# Test Cases
-## Expression Parsing
-bi1, expr, nlp3,
-## Solving Testing
-nlp1, nlp3, util, castroEx02m2
+| Solver                                                                         | Julia Package                                                |
+|--------------------------------------------------------------------------------|--------------------------------------------------------------|
+| [CPLEX](http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/) | [CPLEX.jl](https://github.com/JuliaOpt/CPLEX.jl)             |
+| [Cbc](https://projects.coin-or.org/Cbc)                                        | [Cbc.jl](https://github.com/JuliaOpt/Clp.jl)                 |
+| [Gurobi](http://gurobi.com/)                                                   | [Gurobi.jl](https://github.com/JuliaOpt/Gurobi.jl)           |
+| [Ipopt](https://projects.coin-or.org/Ipopt)                                    | [Ipopt.jl](https://github.com/JuliaOpt/Ipopt.jl)             |
+| [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/JackDunnNZ/AmplNLWriter.jl)   |
+| [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/JuliaOpt/KNITRO.jl)           |
 
-See more in "examples" folder
+As the development of AMP contineous, supports fo [Mosek](http://www.mosek.com/), [Pajarito](https://github.com/JuliaOpt/Pajarito.jl), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt), [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) is already scheduled for the roadmap.
 
-# Unit Test
-## Usage
-After installation do `Pkg.test("POD")`
-## Developed
-Basic bilinear expression parsing/lifting/affine conversion test cases built
-## TODO
-1. Build some initialization testing for a clean POD model
-2. Build more complex expressions for testing
-3. Build basic solve-objective checking tests
-4. Build formulation construction tests on tighten mccormicks
-5. Build functional features tests
-6. Build solver parameter tests
+# Citation
 
-# More documentation to come
+If you find AMP useful in your work, we kindly request your citation.

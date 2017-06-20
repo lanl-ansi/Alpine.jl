@@ -1,9 +1,9 @@
 using POD, JuMP, Ipopt, Gurobi, MathProgBase
 
-function example_nlp1(verbose=false)
+function nlp1(verbose=false)
 
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0,expect_infeasible_problem="no"),
-							   mip_solver=GurobiSolver(OutputFlag=0)))
+							   mip_solver=GurobiSolver(OutputFlag=0), presolve_do_bound_tightening=true, log_level=100))
 
     @variable(m, 1<=x[1:2]<=10)
 

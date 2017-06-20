@@ -1,6 +1,6 @@
 using POD, JuMP, Ipopt, CPLEX, MathProgBase
 
-function example_bi1(verbose=false)
+function bi1(verbose=false)
 
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=CplexSolver()))
 	@variable(m, px[i=1:6]>=1) # At some point if an initial value is given, keep them

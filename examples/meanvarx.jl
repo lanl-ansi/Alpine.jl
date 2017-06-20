@@ -1,14 +1,15 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function example_meanvarx()
+function meanvarx()
 
+    # error("This testing problem requires further investiation.")
     m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.oa_log_level=0",
                                                                 "bonmin.nlp_log_level=0",
                                                                 "bonmin.bb_log_level=0",
                                                                 "bonmin.milp_log_level=0",
                                                                 "bonmin.milp_solver=Cplex",
-                                                                "bonmin.algorithm=B-iFP"]),
-                                mip_solver=GurobiSolver(OutputFlag=0), rel_gap=0.01))
+                                                                "bonmin.algorithm=B-OA"]),
+                                mip_solver=GurobiSolver(OutputFlag=0), rel_gap=0.001, log_level=100))
 
     @variable(m, x[1:35]>=0)
     for i=22:35
@@ -17,7 +18,7 @@ function example_meanvarx()
 
     # Artifical upper bounds
     for i=1:7
-        setupperbound(x[i], 1)
+        setupperbound(x[i], 1.0)
     end
     # Artifical upper bounds
 

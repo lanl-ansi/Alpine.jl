@@ -1,13 +1,8 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function example_util()
+function util()
 
-    m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.oa_log_level=0",
-                                                                "bonmin.nlp_log_level=0",
-                                                                "bonmin.bb_log_level=0",
-                                                                "bonmin.milp_log_level=0",
-                                                                "bonmin.milp_solver=Cplex",
-                                                                "bonmin.algorithm=B-iFP"]),
+    m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
 							   mip_solver=GurobiSolver(OutputFlag=0)))
 
     @variable(m, x[1:145])
