@@ -1,14 +1,16 @@
-# AMP, a novel MINLP solver
+# AMP(POD), a novel MINLP solver
 
-Adaptive Multi-variant Partitioning (AMP) is a novel global algorithm that use adaptive convexification scheme and constraints programming methods to solve mixed-integer non-linear programming problems (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [Library](http://www.gamsworld.org/minlp/minlplib2/html/) for problem instances). AMP is also a fit for many relaxations of the MINLPs, such as Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
+Adaptive Multi-variant Partitioning (AMP/POD) is a novel global algorithm that use adaptive convexification scheme and constraints programming methods to solve mixed-integer non-linear programming problems (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [Library](http://www.gamsworld.org/minlp/minlplib2/html/) for problem instances). AMP is also a fit for many relaxations of the MINLPs, such as Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
 
 Unlike many other state-of-the-art MINLP solvers, AMP is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
 
 AMP solves MINLP by:
 
-    * analyzing the problem expressions (objective & constraints) to obtain a convexify-able formulation
-    * perform bound tightening algorithm to contract variable feasible domains
-    * perform adaptive partitioning-based convexification to improve problem bounds for global convergence
+* analyzing the problem expressions (objective & constraints) to obtain a convexify-able formulation
+
+* perform bound tightening algorithm to contract variable feasible domains
+    
+* perform adaptive partitioning-based convexification to improve problem bounds for global convergence
 
 
 # Installation
@@ -32,7 +34,7 @@ The design of the AMP solver requires a variety of programming problems to be so
 | [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/JackDunnNZ/AmplNLWriter.jl)   |
 | [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/JuliaOpt/KNITRO.jl)           |
 
-As the development of AMP contineous, supports fo [Mosek](http://www.mosek.com/), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt), [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) is already scheduled for the roadmap.
+As the development of AMP contineous, supports fo [Mosek](http://www.mosek.com/), [Pajarito](https://github.com/JuliaOpt/Pajarito.jl), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt), [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) is already scheduled for the roadmap.
 
 # Citation
 
