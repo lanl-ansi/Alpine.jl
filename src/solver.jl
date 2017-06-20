@@ -22,7 +22,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     presolve_track_time::Bool
     presolve_perform_bound_tightening::Bool
     presolve_maxiter::Int
-    presolve_tolerance::Float64
+    presolve_bt_width_tolerance::Float64
     presolve_bound_tightening_algo::Any
     presolve_mip_relaxation::Bool
     presolve_mip_timelimit::Float64
@@ -48,7 +48,8 @@ function PODSolver(;
     presolve_track_time = false,
     presolve_perform_bound_tightening = false,
     presolve_maxiter = 9999,
-    presolve_tolerance = 1e-3,
+    presolve_bt_width_tolerance = 1e-3,
+    presolve_bt_output_tolerance = 1e-5,
     presolve_bound_tightening_algo = 1,
     presolve_mip_relaxation = false,
     presolve_mip_timelimit = Inf,
@@ -66,7 +67,7 @@ function PODSolver(;
     PODSolver(log_level, timeout, maxiter, rel_gap, tolerance,
         deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver),
         discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-        presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_tolerance, presolve_bound_tightening_algo,presolve_mip_relaxation,presolve_mip_timelimit)
+        presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance, presolve_bound_tightening_algo,presolve_mip_relaxation,presolve_mip_timelimit)
     end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -91,7 +92,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_track_time = s.presolve_track_time
     presolve_perform_bound_tightening = s.presolve_perform_bound_tightening
     presolve_maxiter = s.presolve_maxiter
-    presolve_tolerance = s.presolve_tolerance
+    presolve_bt_width_tolerance = s.presolve_bt_width_tolerance
     presolve_bound_tightening_algo = s.presolve_bound_tightening_algo
     presolve_mip_relaxation = s.presolve_mip_relaxation
     presolve_mip_timelimit = s.presolve_mip_timelimit
@@ -99,5 +100,5 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     return PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
                             nlp_local_solver, minlp_local_solver, mip_solver,
                             discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-                            presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_tolerance,presolve_bound_tightening_algo,presolve_mip_relaxation,presolve_mip_timelimit)
+                            presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance,presolve_bound_tightening_algo,presolve_mip_relaxation,presolve_mip_timelimit)
 end

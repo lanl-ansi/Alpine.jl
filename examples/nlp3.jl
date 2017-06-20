@@ -20,7 +20,7 @@ function nlp3(verbose=false)
 	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 							   mip_solver=GurobiSolver(OutputFlag=0),
 							   log_level=100, rel_gap=0.01, tolerance=1e-6,
-							   presolve_tolerance=1e-3,
+							   presolve_bt_width_tolerance=1e-3,
 							   presolve_perform_bound_tightening=true,
                                presolve_bound_tightening_algo=2,
 							   discretization_var_pick_algo=max_cover_var_picker))

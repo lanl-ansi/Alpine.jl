@@ -18,8 +18,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_perform_bound_tightening::Bool                     # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
-    presolve_tolerance::Float64                                 # Numerical tolerance specified for presolve_tolerance
-    presolve_bound_tightening_algo::Any                       # Method used for bound tightening procedures, can either be index of default methods or functional inputs
+    presolve_bt_width_tolerance::Float64                        # Numerical tolerance bound-tightening width
+    presolve_bt_output_tolerance::Float64                       # Variable bounds truncation tolerance
+    presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
     presolve_mip_relaxation::Bool                               # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_mip_timelimit::Float64                             # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
 
@@ -103,7 +104,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
                                 nlp_local_solver, minlp_local_solver, mip_solver,
                                 discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
+                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
 
         m = new()
         m.log_level = log_level
@@ -119,7 +120,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.presolve_track_time = presolve_track_time
         m.presolve_perform_bound_tightening = presolve_perform_bound_tightening
         m.presolve_maxiter = presolve_maxiter
-        m.presolve_tolerance = presolve_tolerance
+        m.presolve_bt_width_tolerance = presolve_bt_width_tolerance
+        presolve_bt_output_tolerance = presolve_bt_output_tolerance
         m.presolve_bound_tightening_algo = presolve_bound_tightening_algo
         m.presolve_mip_relaxation = presolve_mip_relaxation
         m.presolve_mip_timelimit = presolve_mip_timelimit
@@ -277,12 +279,12 @@ function presolve(m::PODNonlinearModel)
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass
-        bound_tightening(m)     # performs bound-tightening with the local solve objective value
+        bound_tightening(m, use_bound = true)                     # performs bound-tightening with the local solve objective value
         initialize_discretization(m)
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
-        (m.log_level > 0) && println("first-attemp local solve infeasible, performing bound tighting without upper bound...")
-        bound_tightening(m, use_bound=Inf)    # do bound tightening without objective value
+        (m.log_level > 0) && println("first attemp at local solve failed, performing bound tightening without objective value...")
+        bound_tightening(m, use_bound = false)    # do bound tightening without objective value
 
         (m.log_level > 0) && println("re-attempting on locating initial feasible solution...")
         local_solve(m, presolve = true)  # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve

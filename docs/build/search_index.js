@@ -85,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Parameters",
     "title": "Presolve Parameters",
     "category": "section",
-    "text": "presolve_track_time(default=false): consier presolve time as the total time or not\npresolve_do_bound_tightening(default=false): perform built-in bound tightening presolve procedure\npresolve_maxiter(default=9999): maximum iteration allowed using presolve process\npresolve_tolerance(default=1e-3): independent numerical tolerance used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tolerance in here. Small tolerance is more likely to results in strange presolve behvaior.\npresolve_bound_tightening_method(default=1): method used to do built-in bound tightening, choose 1 for regular bounding tightening,  2 for Tighten McCormick bound tightening.\npresolve_mip_relaxation(default=false): whether to relax the bounding tightening MILP solved or not\npresolve_mip_timelimit(default=Inf): time limit used for invidiual MILP solved during bound tightening presolveMore parameter descriptions to come..."
+    "text": "presolve_track_time(default=false): consier presolve time as the total time or not\npresolve_perform_bound_tightening(default=false): perform built-in bound tightening presolve procedure\npresolve_maxiter(default=9999): maximum iteration allowed using presolve process\npresolve_bt_width_tolerance(default=1e-3): independent numerical tolerance used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tolerance in here. Small tolerance is more likely to results in strange presolve behvaior.\npresolve_bound_tightening_algo(default=1): method used to do built-in bound tightening, choose 1 for regular bounding tightening,  2 for Tighten McCormick bound tightening.\npresolve_mip_relaxation(default=false): whether to relax the bounding tightening MILP solved or not\npresolve_mip_timelimit(default=Inf): time limit used for invidiual MILP solved during bound tightening presolveMore parameter descriptions to come..."
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.bound_tightening",
     "category": "Function",
-    "text": "bound_tightening(m::PODNonlinearModel)\n\nHigh-level presolve caller that activate the presolve process. The built-in presolve procedure is bound tightening method in constraint programming. The goal of these built-in methods is to contract variable feasible domains using constraint programming scheme.\n\nCurrently, two bounding tightening method is implemented minmax_bound_tightening.\n\n* Min-Max McCormick Bounds Tightening\n* Min-Max Tighten McCormick Bounds Tightening\n\n\n\n"
+    "text": "bound_tightening(m::PODNonlinearModel)\n\nEntry point for the bound-tightening algorithm. The aim of the bound-tightening algorithm is to tighten the variable bounds, if possible.\n\nCurrently, two bounding tightening method is implemented minmax_bound_tightening.\n\n* Bound-tightening with basic McCormick\n* Bound-tightening with McCormick partitions: (3 partitions around the local feasible solution)\nIf no local feasible solution is obtained, the algorithm defaults to bound-tightening with basic McCormick\n\n\n\n"
 },
 
 {
@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.minmax_bound_tightening",
     "category": "Function",
-    "text": "minmax_bound_tightening(m:PODNonlinearModel; use_bound::Float64, use_tmc::Bool)\n\nThis function implements the algorithm used to tight variable feasible domains using constraint programming shceme. It utilize McCormick or Tighten McCormick Realxation to creat MILP and solve by optimizing on variable bounds.\n\nThe algorithm iteratively walk through all variables involved in non-linear terms (discretizating variables) and solve min-max problems for optimal lower-upper bounds. During the procedure, any tighten bounds will be utilized for further bound tightening operations. For better bounds contraction quality, use_tmc can be assigned true to use a slightly tighter formulation while in sacrificing the solution time. The bound tightening algirthm terminates base on improvements, time limits, and iteration limits.\n\nIt is highly recommended that use_bound is available for best quality ensurance. Several other options is available for the algorithm tuning. For more details, see Parameters.\n\n\n\n"
+    "text": "minmax_bound_tightening(m:PODNonlinearModel; use_bound::Bool=true, use_tmc::Bool)\n\nThis function implements the bound-tightening algorithm to tighten the variable bounds. It utilizes either the basic McCormick relaxation or the Tightened McCormick relaxation (TMC) to tighten the bounds. The TMC has additional binary variables for partitioning.\n\nThe algorithm as two main parameters. The first is the use_tmc, which when set to true invokes the algorithm on the TMC relaxation. The second parameter use_bound takes in the objective value of the local solve solution stored in best_sol. The use_bound option is set to true when the local solve is successful is obtaining a feasible solution and the bound-tightening is to be performed using the objective value of the feasible solution, else this parameter is set to false\n\nSeveral other parameters are available for the presolve algorithm tuning. For more details, see Parameters.\n\n\n\n"
 },
 
 {
@@ -229,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.create_bound_tightening_model",
     "category": "Function",
-    "text": "create_bound_tightening_model(m::PODNonlinearModel, discretization::Dict, bound::Float64)\n\nThis function takes in the initial discretization information and builds a bound tighting model that is connected to .model_mip It is an algorithm specific function in minmax_bound_tightening for best felxibility in tuning and hacking.\n\n\n\n\n\n"
+    "text": "create_bound_tightening_model(m::PODNonlinearModel, discretization::Dict, bound::Float64)\n\nThis function takes in the initial discretization information and builds a bound-tightening model. It is an algorithm specific function called by minmax_bound_tightening\n\n\n\n\n\n"
 },
 
 {
@@ -237,7 +237,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.solve_bound_tightening_model",
     "category": "Function",
-    "text": "solve_bound_tightening_model(m::PODNonlinearModels)\n\nA function that solves the min-max model used in built-in presolve algorithm.\n\n\n\n"
+    "text": "solve_bound_tightening_model(m::PODNonlinearModels)\n\nA function that solves the min and max bound-tightening model.\n\n\n\n"
 },
 
 {
@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.resolve_lifted_var_bounds",
     "category": "Function",
-    "text": "resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict)\n\nFor discretization to be performed, it is not allowed for a discretizing variable to have inifinate bounds. This violation can be seen in new lifted proposed for multi-variant non-linear terms. This functions resolve these issues by use the problem information to reason some lifted variables bounds. Such bounds reasoning can also speed up the bounding problem during the main algorithm by providing trivial information to the solver.\n\n\n\n"
+    "text": "resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict)\n\nFor discretization to be performed, we do not allow for a variable being discretized to have infinite bounds. The lifted variables will have infinite bounds and the function infers bounds on these variables. This process can help speed up the subsequent solve in subsequent iterations.\n\n\n\n"
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "Presolve Methods",
     "category": "section",
-    "text": "bound_tightening\nminmax_bounds_tightening\ncreate_bound_tightening_model\nsolve_bound_tightening_model\nresolve_lifted_var_bounds"
+    "text": "bound_tightening\nminmax_bound_tightening\ncreate_bound_tightening_model\nsolve_bound_tightening_model\nresolve_lifted_var_bounds"
 },
 
 {
