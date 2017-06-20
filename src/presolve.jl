@@ -1,6 +1,6 @@
 """
 
-    presolve_bounds_tightening(m::PODNonlinearModel)
+    bound_tightening(m::PODNonlinearModel)
 
 High-level presolve caller that activate the presolve process. The built-in presolve
 procedure is bound tightening method in constraint programming. The goal of these built-in
@@ -12,7 +12,7 @@ Currently, two bounding tightening method is implemented [`minmax_bounds_tighten
     * Min-Max Tighten McCormick Bounds Tightening
 
 """
-function presolve_bounds_tightening(m::PODNonlinearModel; kwargs...)
+function bound_tightening(m::PODNonlinearModel; kwargs...)
 
     if !m.presolve_do_bound_tightening
         return

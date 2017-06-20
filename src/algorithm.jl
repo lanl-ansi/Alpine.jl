@@ -83,7 +83,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
     var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
-    sol_incumb_ub::Vector{Float64}                              # Incumbent upper bounding solution
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
     u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
 
@@ -263,7 +262,7 @@ the objective value. Furthermore, in this case, a second local solve is attempte
 
 If a local solution is not obtained eved after the second solve then an initial McCormick solve is performed.
 The local solution (if available) or the initial McCormick solution (if infeasible after two local solve tries)
-is then used to partition the variables for the subsequent Adaptive Multivariate Partitioning algorithm iterations. 
+is then used to partition the variables for the subsequent Adaptive Multivariate Partitioning algorithm iterations.
 
 """
 function presolve(m::PODNonlinearModel)
@@ -278,12 +277,12 @@ function presolve(m::PODNonlinearModel)
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass
-        presolve_bounds_tightening(m)    # bound tightening goes here - done if local solve is feasible - requires only obj value
+        bound_tightening(m)     # performs bound-tightening with the local solve objective value
         initialize_discretization(m)
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first-attemp local solve infeasible, performing bound tighting without upper bound...")
-        presolve_bounds_tightening(m, use_bound=Inf)    # do bound tightening without objective value
+        bound_tightening(m, use_bound=Inf)    # do bound tightening without objective value
 
         (m.log_level > 0) && println("re-attempting on locating initial feasible solution...")
         local_solve(m, presolve = true)  # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
@@ -347,8 +346,9 @@ end
 
     local_solve(m::PODNonlinearModel, presolve::Bool=false)
 
-Perform a local NLP or MINLP solve to detect feasible solution. When `presolve=true`, this function is utilized in the [`presolve`](@ref) for a MINLP local solve.
-Otherwise, a NLP problem is solved by fixing the integer variables base on the lower bound solution from [`bounding_solve`](@ref).
+Perform a local NLP or MINLP solve to obtain a feasible solution.
+The `presolve` option is set to `true` when the function is invoked in [`presolve`](@ref).
+Otherwise, the function is invoked from [`bounding_solve`](@ref).
 
 """
 
@@ -367,7 +367,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
 
     start_local_solve = time()
-    (!presolve) && (TT = STDOUT; redirect_stdout())
+    (!presolve) && (TT = STDOUT; redirect_stdout()) # this will change with the updated version of MathProgBase
     MathProgBase.optimize!(local_solve_nlp_model)
     (!presolve) && redirect_stdout(TT)
     cputime_local_solve = time() - start_local_solve
@@ -384,7 +384,6 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-10)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
-            m.sol_incumb_ub = copy(m.best_sol)  # temp holder can be removed
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
