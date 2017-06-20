@@ -25,7 +25,7 @@ max_cover
 ## Presolve Methods
 ```@docs
 bound_tightening
-minmax_bounds_tightening
+minmax_bound_tightening
 create_bound_tightening_model
 solve_bound_tightening_model
 resolve_lifted_var_bounds

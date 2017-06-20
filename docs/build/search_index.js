@@ -213,15 +213,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.bound_tightening",
     "category": "Function",
-    "text": "bound_tightening(m::PODNonlinearModel)\n\nHigh-level presolve caller that activate the presolve process. The built-in presolve procedure is bound tightening method in constraint programming. The goal of these built-in methods is to contract variable feasible domains using constraint programming scheme.\n\nCurrently, two bounding tightening method is implemented minmax_bounds_tightening.\n\n* Min-Max McCormick Bounds Tightening\n* Min-Max Tighten McCormick Bounds Tightening\n\n\n\n"
+    "text": "bound_tightening(m::PODNonlinearModel)\n\nHigh-level presolve caller that activate the presolve process. The built-in presolve procedure is bound tightening method in constraint programming. The goal of these built-in methods is to contract variable feasible domains using constraint programming scheme.\n\nCurrently, two bounding tightening method is implemented minmax_bound_tightening.\n\n* Min-Max McCormick Bounds Tightening\n* Min-Max Tighten McCormick Bounds Tightening\n\n\n\n"
 },
 
 {
-    "location": "functions.html#POD.minmax_bounds_tightening",
+    "location": "functions.html#POD.minmax_bound_tightening",
     "page": "Methods",
-    "title": "POD.minmax_bounds_tightening",
+    "title": "POD.minmax_bound_tightening",
     "category": "Function",
-    "text": "minmax_bounds_tightening(m:PODNonlinearModel; use_bound::Float64, use_tmc::Bool)\n\nThis function implements the algorithm used to tight variable feasible domains using constraint programming shceme. It utilize McCormick or Tighten McCormick Realxation to creat MILP and solve by optimizing on variable bounds.\n\nThe algorithm iteratively walk through all variables involved in non-linear terms (discretizating variables) and solve min-max problems for optimal lower-upper bounds. During the procedure, any tighten bounds will be utilized for further bound tightening operations. For better bounds contraction quality, use_tmc can be assigned true to use a slightly tighter formulation while in sacrificing the solution time. The bound tightening algirthm terminates base on improvements, time limits, and iteration limits.\n\nIt is highly recommended that use_bound is available for best quality ensurance. Several other options is available for the algorithm tuning. For more details, see Parameters.\n\n\n\n"
+    "text": "minmax_bound_tightening(m:PODNonlinearModel; use_bound::Float64, use_tmc::Bool)\n\nThis function implements the algorithm used to tight variable feasible domains using constraint programming shceme. It utilize McCormick or Tighten McCormick Realxation to creat MILP and solve by optimizing on variable bounds.\n\nThe algorithm iteratively walk through all variables involved in non-linear terms (discretizating variables) and solve min-max problems for optimal lower-upper bounds. During the procedure, any tighten bounds will be utilized for further bound tightening operations. For better bounds contraction quality, use_tmc can be assigned true to use a slightly tighter formulation while in sacrificing the solution time. The bound tightening algirthm terminates base on improvements, time limits, and iteration limits.\n\nIt is highly recommended that use_bound is available for best quality ensurance. Several other options is available for the algorithm tuning. For more details, see Parameters.\n\n\n\n"
 },
 
 {
@@ -229,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.create_bound_tightening_model",
     "category": "Function",
-    "text": "create_bound_tightening_model(m::PODNonlinearModel, discretization::Dict, bound::Float64)\n\nThis function takes in the initial discretization information and builds a bound tighting model that is connected to .model_mip It is an algorithm specific function in minmax_bounds_tightening for best felxibility in tuning and hacking.\n\n\n\n\n\n"
+    "text": "create_bound_tightening_model(m::PODNonlinearModel, discretization::Dict, bound::Float64)\n\nThis function takes in the initial discretization information and builds a bound tighting model that is connected to .model_mip It is an algorithm specific function in minmax_bound_tightening for best felxibility in tuning and hacking.\n\n\n\n\n\n"
 },
 
 {

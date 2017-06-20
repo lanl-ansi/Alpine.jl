@@ -5,7 +5,7 @@
 Entry point for the bound-tightening algorithm. The aim of the bound-tightening algorithm
 is to tighten the variable bounds, if possible.
 
-Currently, two bounding tightening method is implemented [`minmax_bounds_tightening`](@ref).
+Currently, two bounding tightening method is implemented [`minmax_bound_tightening`](@ref).
 
     * Bound-tightening with basic McCormick
     * Bound-tightening with McCormick partitions: (3 partitions around the local feasible solution)
@@ -19,13 +19,13 @@ function bound_tightening(m::PODNonlinearModel; kwargs...)
     end
 
     if m.presolve_bound_tightening_algo == 1
-        minmax_bounds_tightening(m)         # Conduct basic min-max bound tightening scheme
+        minmax_bound_tightening(m)
     elseif m.presolve_bound_tightening_algo == 2
-        minmax_bounds_tightening(m, use_tmc=true)
+        minmax_bound_tightening(m, use_tmc=true)
     elseif isa(m.presolve_bound_tightening_algo, Function)
         eval(m.presolve_bound_tightening_algo)(m)
     else
-        error("Unrecognized bound tightening scheme")
+        error("Unrecognized bound-tightening algorithm")
     end
 
     return
@@ -33,22 +33,23 @@ end
 
 """
 
-    minmax_bounds_tightening(m:PODNonlinearModel; use_bound::Float64, use_tmc::Bool)
+    minmax_bound_tightening(m:PODNonlinearModel; use_bound::Float64, use_tmc::Bool)
 
-This function implements the algorithm used to tight variable feasible domains using constraint programming shceme.
-It utilize McCormick or Tighten McCormick Realxation to creat MILP and solve by optimizing on variable bounds.
+This function implements the bound-tightening algorithm to tighten the variable bounds.
+It utilizes either the basic McCormick relaxation or the Tightened McCormick relaxation (TMC)
+to tighten the bounds. The TMC has additional binary variables for partitioning.
 
-The algorithm iteratively walk through all variables involved in non-linear terms (discretizating variables) and solve
-min-max problems for optimal lower-upper bounds. During the procedure, any tighten bounds will be utilized for further
-bound tightening operations. For better bounds contraction quality, `use_tmc` can be assigned `true` to use a slightly
-tighter formulation while in sacrificing the solution time. The bound tightening algirthm terminates base on improvements,
-time limits, and iteration limits.
+The algorithm as two main parameters. The first is the `use_tmc`, which when set to `true`
+invokes the algorithm on the TMC relaxation. The second parameter `use_bound` takes in the
+objective value of the local solve solution stored in `best_sol`. The `use_bound` option is set
+to `true` when the local solve is successful is obtaining a feasible solution, else this parameter
+is set to `false`
 
-It is highly recommended that `use_bound` is available for best quality ensurance. Several other options is available
-for the algorithm tuning. For more details, see [Parameters](@ref).
+Several other parameters are available for the presolve algorithm tuning.
+For more details, see [Parameters](@ref).
 
 """
-function minmax_bounds_tightening(m::PODNonlinearModel; kwargs...)
+function minmax_bound_tightening(m::PODNonlinearModel; kwargs...)
 
     # Some functinal constants
     both_senses = [:Min, :Max]             # Senses during bound tightening procedures
@@ -63,7 +64,7 @@ function minmax_bounds_tightening(m::PODNonlinearModel; kwargs...)
     discretization = resolve_lifted_var_bounds(m.nonlinear_info, discretization)
     # TODO: Potential risk above :: TMC with no feasible solution
 
-    (m.log_level > 0) && println("start tightening bounds ...")
+    (m.log_level > 0) && println("starting the bound-tightening algorithm ...")
     (m.log_level > 99) && [println("[DEBUG] VAR $(var_idx) Original Bound [$(round(m.l_var_tight[var_idx],4)) < - > $(round(m.u_var_tight[var_idx],4))]") for var_idx in m.all_nonlinear_vars]
 
     # ======= Algorithm Starts ======= #
@@ -119,7 +120,7 @@ end
     create_bound_tightening_model(m::PODNonlinearModel, discretization::Dict, bound::Float64)
 
 This function takes in the initial discretization information and builds a bound tighting model that is connected to .model_mip
-It is an algorithm specific function in [`minmax_bounds_tightening`](@ref) for best felxibility in tuning and hacking.
+It is an algorithm specific function in [`minmax_bound_tightening`](@ref) for best felxibility in tuning and hacking.
 
  """
 function create_bound_tightening_model(m::PODNonlinearModel, discretization, bound; kwargs...)
