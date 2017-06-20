@@ -2,28 +2,28 @@
 
     bound_tightening(m::PODNonlinearModel)
 
-High-level presolve caller that activate the presolve process. The built-in presolve
-procedure is bound tightening method in constraint programming. The goal of these built-in
-methods is to contract variable feasible domains using constraint programming scheme.
+Entry point for the bound-tightening algorithm. The aim of the bound-tightening algorithm
+is to tighten the variable bounds, if possible.
 
 Currently, two bounding tightening method is implemented [`minmax_bounds_tightening`](@ref).
 
-    * Min-Max McCormick Bounds Tightening
-    * Min-Max Tighten McCormick Bounds Tightening
+    * Bound-tightening with basic McCormick
+    * Bound-tightening with McCormick partitions: (3 partitions around the local feasible solution)
+    If no local feasible solution is obtained, the algorithm defaults to bound-tightening with basic McCormick
 
 """
 function bound_tightening(m::PODNonlinearModel; kwargs...)
 
-    if !m.presolve_do_bound_tightening
+    if !m.presolve_perform_bound_tightening
         return
     end
 
-    if m.presolve_bound_tightening_method == 1
+    if m.presolve_bound_tightening_algo == 1
         minmax_bounds_tightening(m)         # Conduct basic min-max bound tightening scheme
-    elseif m.presolve_bound_tightening_method == 2
+    elseif m.presolve_bound_tightening_algo == 2
         minmax_bounds_tightening(m, use_tmc=true)
-    elseif isa(m.presolve_bound_tightening_method, Function)
-        eval(m.presolve_bound_tightening_method)(m)
+    elseif isa(m.presolve_bound_tightening_algo, Function)
+        eval(m.presolve_bound_tightening_algo)(m)
     else
         error("Unrecognized bound tightening scheme")
     end

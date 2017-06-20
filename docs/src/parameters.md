@@ -30,13 +30,13 @@ There are some general paremters that controls the behavior of the AMP:
 
 * `presolve_track_time(default=false)`: consier presolve time as the total time or not
 
-* `presolve_do_bound_tightening(default=false)`: perform built-in bound tightening presolve procedure
+* `presolve_perform_bound_tightening(default=false)`: perform built-in bound tightening presolve procedure
 
 * `presolve_maxiter(default=9999)`: maximum iteration allowed using presolve process
 
 * `presolve_tolerance(default=1e-3)`: independent numerical tolerance used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tolerance in here. Small tolerance is more likely to results in strange presolve behvaior.
 
-* `presolve_bound_tightening_method(default=1)`: method used to do built-in bound tightening, choose `1` for regular bounding tightening,  `2` for Tighten McCormick bound tightening.
+* `presolve_bound_tightening_algo(default=1)`: method used to do built-in bound tightening, choose `1` for regular bounding tightening,  `2` for Tighten McCormick bound tightening.
 
 * `presolve_mip_relaxation(default=false)`: whether to relax the bounding tightening MILP solved or not
 

@@ -16,10 +16,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_do_bound_tightening::Bool                          # Perform bound tightening procedure before main algorithm
+    presolve_perform_bound_tightening::Bool                     # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_tolerance::Float64                                 # Numerical tolerance specified for presolve_tolerance
-    presolve_bound_tightening_method::Any                       # Method used for bound tightening procedures, can either be index of default methods or functional inputs
+    presolve_bound_tightening_algo::Any                       # Method used for bound tightening procedures, can either be index of default methods or functional inputs
     presolve_mip_relaxation::Bool                               # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_mip_timelimit::Float64                             # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
 
@@ -103,7 +103,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
                                 nlp_local_solver, minlp_local_solver, mip_solver,
                                 discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-                                presolve_track_time, presolve_do_bound_tightening, presolve_maxiter, presolve_tolerance, presolve_bound_tightening_method, presolve_mip_relaxation, presolve_mip_timelimit)
+                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
 
         m = new()
         m.log_level = log_level
@@ -117,10 +117,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_add_partition_method = discretization_add_partition_method
 
         m.presolve_track_time = presolve_track_time
-        m.presolve_do_bound_tightening = presolve_do_bound_tightening
+        m.presolve_perform_bound_tightening = presolve_perform_bound_tightening
         m.presolve_maxiter = presolve_maxiter
         m.presolve_tolerance = presolve_tolerance
-        m.presolve_bound_tightening_method = presolve_bound_tightening_method
+        m.presolve_bound_tightening_algo = presolve_bound_tightening_algo
         m.presolve_mip_relaxation = presolve_mip_relaxation
         m.presolve_mip_timelimit = presolve_mip_timelimit
 
