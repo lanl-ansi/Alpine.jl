@@ -104,7 +104,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
                                 nlp_local_solver, minlp_local_solver, mip_solver,
                                 discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
+                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance,
+                                presolve_bt_output_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
 
         m = new()
         m.log_level = log_level
@@ -363,7 +364,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     if presolve == false
         l_var, u_var = fix_domains(m)
     else
-        l_var, u_var = m.l_var_tight, m.u_var_tight
+        l_var, u_var = m.l_var_orig, m.u_var_orig
     end
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
     (presolve && (:Bin in m.var_type_orig || :Int in m.var_type_orig)) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)

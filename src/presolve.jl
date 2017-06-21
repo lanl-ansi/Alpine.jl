@@ -99,11 +99,11 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         # Updates the discretization structure
         for var_idx in m.all_nonlinear_vars
-            if abs((temp_bounds[var_idx][1] - discretization[var_idx][1])/discretization[var_idx][1]) > presolve_bt_width_tolerance
+            if abs((temp_bounds[var_idx][1] - discretization[var_idx][1])/discretization[var_idx][1]) > m.presolve_bt_width_tolerance
                 keeptightening = true # Continue to perform the next iteration
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
             end
-            if abs((discretization[var_idx][end]-temp_bounds[var_idx][end])/discretization[var_idx][end]) > presolve_bt_width_tolerance
+            if abs((discretization[var_idx][end]-temp_bounds[var_idx][end])/discretization[var_idx][end]) > m.presolve_bt_width_tolerance
                 (m.log_level > 0) && print("+")
                 keeptightening = true
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
