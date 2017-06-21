@@ -45,6 +45,13 @@
     @testset " Validation Test || ATMC || basic solve || examples/nlp3.jl (40s)" begin
         # This test ans is base on old DTMC code
         m = nlp3()
+        setsolver(m, solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                					   mip_solver=CbcSolver(),
+                					   log_level=0, max_iter=4, tolerance=1e-6,
+                					   presolve_bt_width_tolerance=1e-3,
+                					   presolve_perform_bound_tightening=true,
+                                       presolve_bound_tightening_algo=2,
+                					   discretization_var_pick_algo=max_cover_var_picker))
         solve(m)
 
         @test isapprox(m.objVal, 7049.247897696512; atol=1e-4)
@@ -54,13 +61,13 @@
         @test isapprox(m.internalModel.logs[:obj][2], 7049.247897696513; atol=1e-3)
         @test isapprox(m.internalModel.logs[:obj][3], 7049.247897696513; atol=1e-3)
         @test isapprox(m.internalModel.logs[:obj][4], 7049.247897696513; atol=1e-3)
-        @test isapprox(m.internalModel.logs[:obj][5], 7049.247897696513; atol=1e-3)
+        # @test isapprox(m.internalModel.logs[:obj][5], 7049.247897696513; atol=1e-3)
 
         @test isapprox(m.internalModel.logs[:bound][1], 3004.2470; atol=1e-3)
         @test isapprox(m.internalModel.logs[:bound][2], 4896.6075; atol=1e-3)
         @test isapprox(m.internalModel.logs[:bound][3], 5871.5306; atol=1e-3)
         @test isapprox(m.internalModel.logs[:bound][4], 6717.2923; atol=1e-3)
-        @test isapprox(m.internalModel.logs[:bound][5], 6901.8131; atol=1e-3)
+        # @test isapprox(m.internalModel.logs[:bound][5], 6901.8131; atol=1e-3)
 
         ans = Dict()
         ans[1] = [100.0,467.809,475.693,526.419,661.077,838.577,3054.31,10000.0]
