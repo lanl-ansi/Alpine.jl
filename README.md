@@ -1,6 +1,6 @@
-# POD, a novel MINLP solver <span style="color:white">that is awesome</span>
+# POD, a novel MINLP solver <span style="color:black">that is awesome</span>
 
-Polyhedral Outer-Approximation and dynamic Discretization POD is based on a novel global algorithm that use adaptive convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programming problems (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [Library](http://www.gamsworld.org/minlp/minlplib2/html/) for problem instances). POD is also a good fit for many relaxations of the MINLPs, such as Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
+Polyhedral Outer-Approximation and dynamic Discretization  POD is based on a novel global algorithm that use adaptive convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programming problems (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [Library](http://www.gamsworld.org/minlp/minlplib2/html/) for problem instances). POD is also a good fit for many relaxations of the MINLPs, such as Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
 
 Unlike many other state-of-the-art MINLP solvers, POD is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
 
