@@ -76,7 +76,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
     # start of the solve
     keeptightening = true
-    while keeptightening && m.logs[:time_left] > m.tolerance && m.logs[:bt_iter] <= m.presolve_maxiter # Stopping criteria
+    while keeptightening && m.logs[:time_left] > m.tolerance && m.logs[:bt_iter] < m.presolve_maxiter # Stopping criteria
 
         keeptightening = false
         m.logs[:bt_iter] += 1
@@ -91,9 +91,10 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
                     solve_bound_tightening_model(m)
-                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip), abs(Int(log(10,m.presolve_bt_output_tolerance)))) # TODO: trunctate the objective value using presolve_bt_output_tolerance
+                    # TODO: trunctate the objective value using presolve_bt_output_tolerance
+                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance
                     # TODO: discuss feasibility tolerances and where to put them and apt default
-                    m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) with $(sense) problem, results in $(getobjectivevalue(m.model_mip)) from $(temp_bounds[var_idx])")
+                    m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
             end
         end
@@ -162,7 +163,7 @@ A function that solves the min and max bound-tightening model.
 """
 function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
 
-    # ========= MIP Solve ========= #
+    # ========= MILP Solve ========= #
     if m.presolve_mip_timelimit < Inf
         update_mip_time_limit(m, timelimit = max(0.0, min(m.presolve_mip_timelimit, m.timeout - m.logs[:total_time])))
     else
@@ -174,7 +175,7 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve * m.presolve_track_time
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time] * m.presolve_track_time)
-    # ========= MIP Solve ========= #
+    # ========= MILP Solve ========= #
 
     return
 end
