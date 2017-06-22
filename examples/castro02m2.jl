@@ -1,11 +1,9 @@
-using POD, JuMP, Gurobi, Ipopt, MathProgBase
-
 function castro02m2(verbose=false)
 
     m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								mip_solver=GurobiSolver(OutputFlag=0),
-                                presolve_perform_bound_tightening=true,
-                                log_level=100, rel_gap=0.001))
+                                presolve_perform_bound_tightening=false,
+                                log_level=1, rel_gap=0.001))
 
 	@variable(m, x[1:42])
 

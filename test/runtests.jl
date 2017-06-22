@@ -1,5 +1,5 @@
 using Base.Test
-using JuMP, Ipopt, MathProgBase
+using JuMP, Ipopt, MathProgBase, Cbc, Gurobi
 using POD
 
 # Expression Testing Instances

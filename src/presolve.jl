@@ -14,7 +14,7 @@ Currently, two bounding tightening method is implemented [`minmax_bound_tighteni
 """
 function bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
 
-    if !m.presolve_perform_bound_tightening  # User choose not to do bound tightening
+    if m.presolve_perform_bound_tightening == false # User choose not to do bound tightening
         return
     end
 

@@ -1,13 +1,15 @@
-using POD, JuMP, Ipopt, Gurobi, MathProgBase
+function nlp1(;verbose=false,solver=nothing)
 
-function nlp1(verbose=false)
-
-	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
-							   mip_solver=GurobiSolver(OutputFlag=0),
-							   presolve_perform_bound_tightening=false,
-							   presolve_bound_tightening_algo=1,
-							   presolve_bt_output_tolerance=1e-1,
-							   log_level=1))
+	if solver == nothing
+		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+								   mip_solver=GurobiSolver(OutputFlag=0),
+								   presolve_perform_bound_tightening=true,
+								   presolve_bound_tightening_algo=2,
+								   presolve_bt_output_tolerance=1e-1,
+								   log_level=1))
+	else
+		m = Model(solver=solver)
+	end
 
     @variable(m, 1<=x[1:2]<=10)
 
