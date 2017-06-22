@@ -85,15 +85,13 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         # Perform Bound Contraction
         for var_idx in m.all_nonlinear_vars # why only all nonlinear vars?
-            @show var_idx
-            @show discretization
-            if abs(discretization[var_idx][1] - discretization[var_idx][end]) < m.presolve_bt_width_tolerance
-                temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
+            temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
+            if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tolerance
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
                     solve_bound_tightening_model(m)
-                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip), abs(int(log(10,m.presolve_bt_output_tolerance)))) # TODO: trunctate the objective value using presolve_bt_output_tolerance
+                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip), abs(Int(log(10,m.presolve_bt_output_tolerance)))) # TODO: trunctate the objective value using presolve_bt_output_tolerance
                     # TODO: discuss feasibility tolerances and where to put them and apt default
                     m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) with $(sense) problem, results in $(getobjectivevalue(m.model_mip)) from $(temp_bounds[var_idx])")
                 end
