@@ -85,6 +85,8 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         # Perform Bound Contraction
         for var_idx in m.all_nonlinear_vars # why only all nonlinear vars?
+            @show var_idx
+            @show discretization
             if abs(discretization[var_idx][1] - discretization[var_idx][end]) < m.presolve_bt_width_tolerance
                 temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
                 create_bound_tightening_model(m, discretization, bound)
