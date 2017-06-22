@@ -104,7 +104,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
                                 nlp_local_solver, minlp_local_solver, mip_solver,
                                 discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
+                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance,
+                                presolve_bt_output_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
 
         m = new()
         m.log_level = log_level
@@ -279,20 +280,21 @@ function presolve(m::PODNonlinearModel)
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass
-        bound_tightening(m, use_bound = true)                     # performs bound-tightening with the local solve objective value
+        bound_tightening(m, use_bound = true)   # performs bound-tightening with the local solve objective value
         initialize_discretization(m)
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
-        (m.log_level > 0) && println("first attemp at local solve failed, performing bound tightening without objective value...")
-        bound_tightening(m, use_bound = false)    # do bound tightening without objective value
+        (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
+        bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
 
-        (m.log_level > 0) && println("re-attempting on locating initial feasible solution...")
-        local_solve(m, presolve = true)  # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
+        (m.log_level > 0) && println("second attempt at local solve using tightened bounds...")
+        local_solve(m, presolve = true) # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
 
-        if m.status in status_pass       # successful second try
+        if m.status in status_pass  # successful second try
             m.discretization = add_discretization(m, use_solution=m.best_sol)
-        else # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
-            (m.log_level > 0) && println("re-attemp local solve failed, initialize discretization with lower bound solution \nproblem remain infeasible")
+        else    # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
+            (m.log_level > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
+            # TODO: Make sure the discretization dictionary is clean
             create_bounding_mip(m)       # Build the bounding ATMC model
             bounding_solve(m)            # Solve bounding model
             m.discretization = add_discretization(m, use_solution=m.best_bound_sol)
@@ -449,7 +451,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         =#
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = status
-        error("[MIP INFEASIBLE] There is some issue about LB problem")
+        error("[PROBLEM INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
     elseif status == :Unbounded
         m.status[:bounding_solve] = status
         error("[MIP UNBOUNDED] MIP solver failure")
