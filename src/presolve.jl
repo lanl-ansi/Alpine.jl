@@ -171,10 +171,11 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
     end
 
     start_solve = time()
-    status = solve(m.model_mip, suppress_warnings=true, relaxation=m.presolve_mip_relaxation)
+    status = solve(m.model_mip, suppress_warnings=true, relaxation=m.presolve_mip_relaxation) #TODO Double check here
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve * m.presolve_track_time
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time] * m.presolve_track_time)
+    #TODO handle the infeasible cases when time limit is applied
     # ========= MILP Solve ========= #
 
     return

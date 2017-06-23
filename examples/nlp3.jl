@@ -23,7 +23,7 @@ function nlp3(;verbose=false, solver=nothing)
 								   presolve_bt_output_tolerance=1e-1,
 								   presolve_perform_bound_tightening=true,
 	                               presolve_bound_tightening_algo=2,
-								   discretization_var_pick_algo=max_cover_var_picker))
+								   discretization_var_pick_algo=1))
 	else
 		m = Model(solver=solver)
 	end
