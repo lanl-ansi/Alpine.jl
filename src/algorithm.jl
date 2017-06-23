@@ -398,7 +398,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
             # TODO: Proposed hot fix_domains
-            m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 5)
+            # m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 5)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
