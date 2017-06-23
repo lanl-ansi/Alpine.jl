@@ -66,10 +66,19 @@ function PODSolver(;
 
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(log_level, timeout, maxiter, rel_gap, tolerance,
-        deepcopy(nlp_local_solver), deepcopy(minlp_local_solver), deepcopy(mip_solver),
-        discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-        presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance,
-        presolve_bt_output_tolerance, presolve_bound_tightening_algo,presolve_mip_relaxation,presolve_mip_timelimit)
+        deepcopy(nlp_local_solver),
+        deepcopy(minlp_local_solver),
+        deepcopy(mip_solver),
+        discretization_var_pick_algo,
+        discretization_ratio,
+        discretization_add_partition_method,
+        presolve_track_time,
+        presolve_perform_bound_tightening,
+        presolve_maxiter,
+        presolve_bt_width_tolerance,
+        presolve_bt_output_tolerance,
+        presolve_bound_tightening_algo,
+        presolve_mip_relaxation,presolve_mip_timelimit)
     end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -101,8 +110,18 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_mip_timelimit = s.presolve_mip_timelimit
 
     return PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
-                            nlp_local_solver, minlp_local_solver, mip_solver,
-                            discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-                            presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance,
-                            presolve_bt_output_tolerance, presolve_bound_tightening_algo,presolve_mip_relaxation,presolve_mip_timelimit)
+                            nlp_local_solver,
+                            minlp_local_solver,
+                            mip_solver,
+                            discretization_var_pick_algo,
+                            discretization_ratio,
+                            discretization_add_partition_method,
+                            presolve_track_time,
+                            presolve_perform_bound_tightening,
+                            presolve_maxiter,
+                            presolve_bt_width_tolerance,
+                            presolve_bt_output_tolerance,
+                            presolve_bound_tightening_algo,
+                            presolve_mip_relaxation,
+                            presolve_mip_timelimit)
 end

@@ -102,10 +102,20 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # constructor
     function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
-                                nlp_local_solver, minlp_local_solver, mip_solver,
-                                discretization_var_pick_algo, discretization_ratio, discretization_add_partition_method,
-                                presolve_track_time, presolve_perform_bound_tightening, presolve_maxiter, presolve_bt_width_tolerance,
-                                presolve_bt_output_tolerance, presolve_bound_tightening_algo, presolve_mip_relaxation, presolve_mip_timelimit)
+                                nlp_local_solver,
+                                minlp_local_solver,
+                                mip_solver,
+                                discretization_var_pick_algo,
+                                discretization_ratio,
+                                discretization_add_partition_method,
+                                presolve_track_time,
+                                presolve_perform_bound_tightening,
+                                presolve_maxiter,
+                                presolve_bt_width_tolerance,
+                                presolve_bt_output_tolerance,
+                                presolve_bound_tightening_algo,
+                                presolve_mip_relaxation,
+                                presolve_mip_timelimit)
 
         m = new()
         m.log_level = log_level
@@ -281,7 +291,7 @@ function presolve(m::PODNonlinearModel)
 
     if m.status[:local_solve] in status_pass
         bound_tightening(m, use_bound = true)   # performs bound-tightening with the local solve objective value
-        initialize_discretization(m)
+        (m.presolve_perform_bound_tightening) && initialize_discretization(m)            # Reinitialize discretization dictionary on tight bounds
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
@@ -331,7 +341,7 @@ For example, this algorithm can easily be reformed as a uniform-partitioning alg
 """
 function global_solve(m::PODNonlinearModel)
 
-    logging_head()
+    (m.log_level > 0) && logging_head()
     while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0001 && m.logs[:n_iter] < m.maxiter
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
@@ -369,11 +379,10 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
     (presolve && (:Bin in m.var_type_orig || :Int in m.var_type_orig)) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
+    # MathProgBase.SolverInterface.setparameters!(local_solve_nlp_model, TimeLimit=m.logs[:time_left], Silent=true)
 
     start_local_solve = time()
-    (!presolve) && (TT = STDOUT; redirect_stdout()) # this will change with the updated version of MathProgBase
     MathProgBase.optimize!(local_solve_nlp_model)
-    (!presolve) && redirect_stdout(TT)
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
@@ -388,6 +397,8 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-10)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
+            # TODO: Proposed hot fix_domains
+            # m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 5)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
@@ -410,7 +421,6 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     return
 end
-
 
 """
 

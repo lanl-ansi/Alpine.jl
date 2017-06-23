@@ -225,7 +225,6 @@ function fix_domains(m::PODNonlinearModel; kwargs...)
         if i in m.var_discretization_mip
             point = m.sol_incumb_lb[i]
             for j in 1:length(m.discretization[i])
-                @show point, j, m.discretization[i], m.tolerance
                 if point >= (m.discretization[i][j] - m.tolerance) && (point <= m.discretization[i][j+1] + m.tolerance)
                     @assert j < length(m.discretization[i])
                     l_var[i] = m.discretization[i][j]

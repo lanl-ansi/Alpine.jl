@@ -116,7 +116,7 @@
     @testset "Expression Test || bilinear || Affine || nlp1.jl" begin
 
         m=nlp1()
-        solve(m)
+        JuMP.build(m)
 
         ex = m.internalModel.lifted_constr_expr_mip[1]
         affdict = POD.expr_to_affine(ex)
@@ -133,7 +133,7 @@
     @testset "Expression Test || bilinear || Affine || nlp3.jl" begin
 
         m=nlp3()
-        solve(m)
+        JuMP.build(m)
 
         ex = m.internalModel.lifted_constr_expr_mip[1]
         affdict = POD.expr_to_affine(ex)
@@ -206,7 +206,6 @@
 
         m = bi1()
         JuMP.build(m) # Setup internal model
-        POD.populate_nonlinear_info(m.internalModel)
 
         @test length(keys(m.internalModel.nonlinear_info)) == 8
         @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 1), Expr(:ref, :x, 1)])

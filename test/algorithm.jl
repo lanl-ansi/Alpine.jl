@@ -1,10 +1,16 @@
 @testset "Solving algorithm tests" begin
     @testset " Validation Test || ATMC || basic solve || exampls/nlp1.jl" begin
 
-        # This test's ans come from old DTMC code
-        m = nlp1()
-        solve(m)
 
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+                           mip_solver=GurobiSolver(OutputFlag=0),
+                           presolve_perform_bound_tightening=false,
+                           presolve_bt_output_tolerance=1e-1,
+                           log_level=0)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
         @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
         @test m.internalModel.logs[:n_iter] == 7
 
@@ -42,35 +48,40 @@
         end
     end
 
-    @testset " Validation Test || ATMC || basic solve || examples/nlp3.jl (40s)" begin
+    @testset " Validation Test || ATMC || basic solve || examples/nlp3.jl (4 iterations)" begin
         # This test ans is base on old DTMC code
-        m = nlp3()
-        solve(m)
+
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
+        					   mip_solver=CbcSolver(),
+        					   log_level=1,
+                               maxiter=4,
+                               tolerance=1e-5,
+        					   presolve_bt_width_tolerance=1e-3,
+        					   presolve_perform_bound_tightening=false,
+                               presolve_bound_tightening_algo=2,
+        					   discretization_var_pick_algo=0)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :UserLimits
 
         @test isapprox(m.objVal, 7049.247897696512; atol=1e-4)
-        @test m.internalModel.logs[:n_iter] == 5
-
-        @test isapprox(m.internalModel.logs[:obj][1], 7049.247897696513; atol=1e-3)
-        @test isapprox(m.internalModel.logs[:obj][2], 7049.247897696513; atol=1e-3)
-        @test isapprox(m.internalModel.logs[:obj][3], 7049.247897696513; atol=1e-3)
-        @test isapprox(m.internalModel.logs[:obj][4], 7049.247897696513; atol=1e-3)
-        @test isapprox(m.internalModel.logs[:obj][5], 7049.247897696513; atol=1e-3)
+        @test m.internalModel.logs[:n_iter] == 4
 
         @test isapprox(m.internalModel.logs[:bound][1], 3004.2470; atol=1e-3)
         @test isapprox(m.internalModel.logs[:bound][2], 4896.6075; atol=1e-3)
         @test isapprox(m.internalModel.logs[:bound][3], 5871.5306; atol=1e-3)
         @test isapprox(m.internalModel.logs[:bound][4], 6717.2923; atol=1e-3)
-        @test isapprox(m.internalModel.logs[:bound][5], 6901.8131; atol=1e-3)
 
         ans = Dict()
-        ans[1] = [100.0,467.809,475.693,526.419,661.077,838.577,3054.31,10000.0]
-        ans[2] = [1000.0,1137.29,1313.48,1352.39,1413.05,1606.7,1739.7,3609.97,10000.0]
-        ans[3] = [1000.0,1352.05,2282.04,2859.97,3365.52,4221.02,4570.98,5709.08,7359.97,10000.0]
-        ans[4] = [10.0,16.5493,126.38,160.694,185.647,210.658,226.308,429.518,1000.0]
-        ans[5] = [10.0,48.1012,141.794,242.271,278.835,304.084,340.71,366.021,389.294,543.101,1000.0]
-        ans[6] = [10.0,164.701,185.971,212.667,241.02,242.678,278.115,392.442,465.482,1000.0]
-        ans[7] = [10.0,38.9165,132.135,212.799,244.965,269.072,300.01,306.84,336.549,379.635,533.917,1000.0]
-        ans[8] = [10.0,148.101,241.794,342.271,378.835,404.084,440.71,466.021,489.294,643.101,1000.0]
+        ans[1] = [100.0,467.809,475.693,661.077,838.577,3054.31,10000.0]
+        ans[2] = [1000.0,1352.39,1413.05,1606.7,1739.7,3609.97,10000.0]
+        ans[3] = [1000.0,1352.05,2282.04,2859.97,3365.52,4221.02,4570.98,7359.97,10000.0]
+        ans[4] = [10.0,16.5493,126.38,160.694,210.658,226.308,429.518,1000.0]
+        ans[5] = [10.0,48.1012,141.794,242.271,278.835,340.71,366.021,389.294,543.101,1000.0]
+        ans[6] = [10.0,164.701,185.971,242.678,278.115,392.442,465.482,1000.0]
+        ans[7] = [10.0,38.9165,132.135,212.799,244.965,306.84,336.549,379.635,533.917,1000.0]
+        ans[8] = [10.0,148.101,241.794,342.271,378.835,440.71,466.021,489.294,643.101,1000.0]
 
         for i in 1:8
             for j in 1:length(ans[i])
@@ -91,7 +102,6 @@
         bounds = [78.0,78.0,78.0,78.1349,79.151,100.48,115.081,129.075,129.794,130.058,130.405,130.608]
 
         for i in 1:m.internalModel.logs[:n_iter]
-            @test isapprox(m.internalModel.logs[:obj][i], objs[i]; atol=1e-3)
             @test isapprox(m.internalModel.logs[:bound][i], bounds[i]; atol=1e-3)
         end
 
@@ -144,5 +154,137 @@
                 @test isapprox(discretizations[i][j], m.internalModel.discretization[i][j]; atol=1)
             end
         end
+    end
+
+    @testset " Validation Test || BT || basic solve || examples/nlp1.jl " begin
+
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+                               mip_solver=GurobiSolver(OutputFlag=0),
+                               presolve_perform_bound_tightening=true,
+                               presolve_bound_tightening_algo=1,
+                               presolve_bt_output_tolerance=1e-1,
+                               log_level=0)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @show m.internalModel.l_var_tight
+        @show m.internalModel.u_var_tight
+
+        @test status == :Optimal
+        @test m.internalModel.logs[:n_iter] == 3
+        @test isapprox(m.internalModel.l_var_tight[1], 2.4; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[2], 3.0; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[3], 5.76; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[4], 9.0; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[5], 7.2; atol=1e-2)
+
+        @test isapprox(m.internalModel.u_var_tight[1], 2.7; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[2], 3.3; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[3], 7.29; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[4], 10.89; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[5], 8.91; atol=1e-2)
+    end
+
+    @testset " Validation Test || TMC-BT || basic solve || exampls/nlp1.jl" begin
+
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+    							   mip_solver=GurobiSolver(OutputFlag=0),
+    							   presolve_perform_bound_tightening=true,
+    							   presolve_bound_tightening_algo=2,
+                                   presolve_bt_output_tolerance=1e-1,
+    							   log_level=1)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test m.internalModel.logs[:n_iter] == 2
+        @test isapprox(m.internalModel.l_var_tight[1], 2.5; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[2], 3.1; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[3], 6.25; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[4], 9.61; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[5], 7.75; atol=1e-2)
+
+        @test isapprox(m.internalModel.u_var_tight[1], 2.6; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[2], 3.2; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[3], 6.76; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[4], 10.24; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[5], 8.32; atol=1e-2)
+    end
+    #
+    @testset " Validation Test || BT || basic solve || examples/nlp3.jl" begin
+
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+    							   mip_solver=GurobiSolver(OutputFlag=0),
+    							   log_level=1, maxiter=3,
+    							   presolve_bt_width_tolerance=1e-3,
+    							   presolve_bt_output_tolerance=1e-1,
+    							   presolve_perform_bound_tightening=true,
+                                   presolve_bound_tightening_algo=1,
+    							   presolve_maxiter=2,
+    							   discretization_var_pick_algo=max_cover_var_picker)
+        m = nlp3(solver=test_solver)
+
+        status = solve(m)
+        @test status == :UserLimits
+        @test m.internalModel.logs[:n_iter] == 3
+        @test m.internalModel.logs[:bt_iter] == 2
+
+        @test isapprox(m.internalModel.u_var_tight[1], 4644.8; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[2], 5638.9; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[3], 5920.4; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[4], 334.8; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[5], 591.7; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[6], 390.0; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[7], 627.0; atol=1e-2)
+        @test isapprox(m.internalModel.u_var_tight[8], 691.7; atol=1e-2)
+
+        @test isapprox(m.internalModel.l_var_tight[1], 100.0; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[2], 1000.0; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[3], 1000.0; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[4], 10.0; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[5], 107.7; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[6], 10.0; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[7], 16.9; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[8], 87.2; atol=1e-2)
+    end
+    #
+    @testset " Validation Test || BT || basic solve || examples/nlp3.jl" begin
+
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+                                   mip_solver=GurobiSolver(OutputFlag=0),
+                                   log_level=100, maxiter=2,
+                                   presolve_perform_bound_tightening=true,
+                                   presolve_bt_width_tolerance=1e-3,
+                                   presolve_bt_output_tolerance=1e-1,
+                                   presolve_bound_tightening_algo=2,
+                                   presolve_maxiter=2,
+                                   discretization_var_pick_algo=max_cover_var_picker)
+
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+        @test status == :UserLimits
+        @test m.internalModel.logs[:n_iter] == 2
+        @test m.internalModel.logs[:bt_iter] == 2
+
+        @show m.internalModel.l_var_tight
+        @show m.internalModel.u_var_tight
+
+        @test isapprox(m.internalModel.u_var_tight[1], 3919.6; atol=1e-1)
+        @test isapprox(m.internalModel.u_var_tight[2], 4819.6; atol=1e-1)
+        @test isapprox(m.internalModel.u_var_tight[3], 5859.6; atol=1e-1)
+        @test isapprox(m.internalModel.u_var_tight[4], 266.6; atol=1e-1)
+        @test isapprox(m.internalModel.u_var_tight[5], 407.5; atol=1e-1)
+        @test isapprox(m.internalModel.u_var_tight[6], 390.0; atol=1e-1)
+        @test isapprox(m.internalModel.u_var_tight[7], 384.8; atol=1e-1)
+        @test isapprox(m.internalModel.u_var_tight[8], 507.5; atol=1e-1)
+
+        @test isapprox(m.internalModel.l_var_tight[1], 100.0; atol=1e-1)
+        @test isapprox(m.internalModel.l_var_tight[2], 1000.0; atol=1e-1)
+        @test isapprox(m.internalModel.l_var_tight[3], 2129.7; atol=1e-1)
+        @test isapprox(m.internalModel.l_var_tight[4], 10.0; atol=1e-1)
+        @test isapprox(m.internalModel.l_var_tight[5], 239.6; atol=1e-1)
+        @test isapprox(m.internalModel.l_var_tight[6], 10.0; atol=1e-1)
+        @test isapprox(m.internalModel.l_var_tight[7], 78.5; atol=1e-1)
+        @test isapprox(m.internalModel.l_var_tight[8], 339.6; atol=1e-1)
     end
 end

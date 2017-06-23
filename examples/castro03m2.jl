@@ -1,5 +1,3 @@
-using POD, JuMP, Gurobi, Ipopt, MathProgBase
-
 function castro03m2(verbose=false)
 
     m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),

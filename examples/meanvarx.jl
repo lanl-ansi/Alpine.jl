@@ -9,7 +9,11 @@ function meanvarx()
                                                                 "bonmin.milp_log_level=0",
                                                                 "bonmin.milp_solver=Cplex",
                                                                 "bonmin.algorithm=B-OA"]),
-                                mip_solver=GurobiSolver(OutputFlag=0), rel_gap=0.001, log_level=100))
+                                mip_solver=GurobiSolver(OutputFlag=0),
+                                rel_gap=0.001, log_level=100,
+                                discretization_ratio=16,
+                                presolve_bt_output_tolerance=1e-2,
+                                presolve_perform_bound_tightening=true))
 
     @variable(m, x[1:35]>=0)
     for i=22:35

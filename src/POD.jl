@@ -2,7 +2,6 @@ module POD
 
 using JuMP
 using MathProgBase
-using Documenter
 
 # package code goes here
 include("algorithm.jl")

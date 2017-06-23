@@ -34,7 +34,7 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
                 mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
                     lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
             end
-        else
+        else                                                    # Tighten McCormick
             if m.nonlinear_info[bi][:monomial_status]
                 λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                 λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
