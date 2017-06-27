@@ -1,3 +1,5 @@
+using JuMP, MathProgBase, Gurobi, Ipopt, POD
+
 function nlp1(;verbose=false,solver=nothing)
 
 	if solver == nothing

@@ -9,6 +9,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     rel_gap::Float64                                            # Relative optimality gap termination condition
     tolerance::Float64                                          # Numerical tolerance used in the algorithmic process
 
+    # expression-based user-inputs
+    expression_patterns::Array{Function}                        # Array of functions that user wish to use to parse/recognize expressions
+
     # parameters used in partitioning algorithm
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
@@ -123,6 +126,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.maxiter = maxiter
         m.rel_gap = rel_gap
         m.tolerance = tolerance
+
+        m.expression_patterns = Array{Function}(0)
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
         m.discretization_ratio = discretization_ratio
