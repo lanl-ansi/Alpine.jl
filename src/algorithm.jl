@@ -229,6 +229,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
+    # Temporary Disabled for testing new expression parser
     # populate data to create the bounding model
     populate_nonlinear_info(m)
     populate_lifted_expr(m)

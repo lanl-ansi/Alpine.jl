@@ -202,12 +202,12 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 end
 
-@doc """
+"""
 	Warpper for populating lifted expressions.
 	It populate .lifted_obj_expr_mip and .lifted_constr_expr_mip from .obj_expr_orig and .constr_expr_orig.
 	This procedure is adpative to the .nonlinear_info.
 	Limitations on acceptable expressions is posted.
-""" ->
+"""
 function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
 
 	expr_lift(m.lifted_obj_expr_mip, m.nonlinear_info)
@@ -218,9 +218,9 @@ function populate_lifted_expr(m::PODNonlinearModel; kwargs...)
 	return
 end
 
-@doc """
+"""
 	Recursive dereferencing of variables in expression graph to overcome JuMP.addNLconstraints() difficulties
-""" ->
+"""
 function expr_dereferencing(expr, m)
 
 	for i in 2:length(expr.args)

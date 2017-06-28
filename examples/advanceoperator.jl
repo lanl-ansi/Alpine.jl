@@ -1,9 +1,11 @@
-using JuMP
-using MathProgBase
-using JLD
-using POD
+using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
-m = Model()
+m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+						   mip_solver=GurobiSolver(OutputFlag=0),
+						   presolve_perform_bound_tightening=true,
+						   presolve_bound_tightening_algo=2,
+						   presolve_bt_output_tolerance=1e-1,
+						   log_level=1))
 
 @variable(m, x[1:4]>=0)
 @variable(m, y[1:3]<=0)
@@ -38,10 +40,10 @@ m = Model()
 @NLconstraint(m, x[1]*x[1]*x[2]*x[2]*x[3]*x[3] >= 24)		# x[1]*x[1]*x[2]*x[2]*x[3]*x[3]
 @NLconstraint(m, (x[1]+1)*(x[2]+2)*(x[3]+3)*(x[4]+4) <= 25)	# None
 
-@NLconstraint(m, 50sin(x[1]) - 32*cos(x[2]) >= 26)			# sin(x[1]), cos(x[2])
-@NLconstraint(m, sin(x[1]+x[2]) - cos(x[2]-x[3]) + sin(-x[2]+x[3]) <= 27)
-@NLconstraint(m, sin(4*x[1]*x[2]) + cos(x[2]*-1*x[3]) >= 28)# x[1]*x[2] and x[2]*-1*x[3]  ******
-@NLconstraint(m, sin(x[1]*x[2]*x[3]) <= 29)					# x[1]*x[2]*x[3]
+# @NLconstraint(m, 50sin(x[1]) - 32*cos(x[2]) >= 26)			# sin(x[1]), cos(x[2])
+# @NLconstraint(m, sin(x[1]+x[2]) - cos(x[2]-x[3]) + sin(-x[2]+x[3]) <= 27)
+# @NLconstraint(m, sin(4*x[1]*x[2]) + cos(x[2]*-1*x[3]) >= 28)# x[1]*x[2] and x[2]*-1*x[3]  ******
+# @NLconstraint(m, sin(x[1]*x[2]*x[3]) <= 29)					# x[1]*x[2]*x[3]
 
 d = JuMP.NLPEvaluator(m)
 MathProgBase.initialize(d, [:ExprGraph])
