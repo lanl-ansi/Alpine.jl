@@ -12,72 +12,78 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
     ub = Dict()
 
     for bi in keys(m.nonlinear_info)
-        # Consider a general bilinear framework c = a * b
-        # part -> short for partitions
-        @assert length(bi) == 2
-        idx_a = bi[1].args[2]
-        idx_b = bi[2].args[2]
-        idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
+        if m.nonlinear_info[bi][:nonlinear_type] in [:monomial, :bilinear]
+            # Consider a general bilinear framework c = a * b
+            # part -> short for partitions
+            @assert length(bi) == 2
+            idx_a = bi[1].args[2]
+            idx_b = bi[2].args[2]
+            idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
 
-        part_cnt_a = length(discretization[idx_a]) - 1
-        part_cnt_b = length(discretization[idx_b]) - 1
+            part_cnt_a = length(discretization[idx_a]) - 1
+            part_cnt_b = length(discretization[idx_b]) - 1
 
-        lb[idx_a] = discretization[idx_a][1:(end-1)]
-        ub[idx_a] = discretization[idx_a][2:end]
-        lb[idx_b] = discretization[idx_b][1:(end-1)]
-        ub[idx_b] = discretization[idx_b][2:end]
+            lb[idx_a] = discretization[idx_a][1:(end-1)]
+            ub[idx_a] = discretization[idx_a][2:end]
+            lb[idx_b] = discretization[idx_b][1:(end-1)]
+            ub[idx_b] = discretization[idx_b][2:end]
 
-        if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
-            if m.nonlinear_info[bi][:monomial_status]
-                mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
-            else
-                mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
-                    lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
-            end
-        else                                                    # Tighten McCormick
-            if m.nonlinear_info[bi][:monomial_status]
-                λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-                amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                amp_post_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
-            else
-                # Partitioning on left
-                if (idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
+            if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
+                # if m.nonlinear_info[bi][:monomial_status]
+                if m.nonlinear_info[bi][:nonlinear_type] == :monomial
+                    mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
+                # else
+                elseif m.nonlinear_info[bi][:nonlinear_type] == :bilinear
+                    mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
+                        lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
+                end
+            else                                                    # Tighten McCormick
+                # if m.nonlinear_info[bi][:monomial_satus]
+                if m.nonlinear_info[bi][:nonlinear_type] == :monomial
                     λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                     λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-                    λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
-                    λλ = amp_post_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
                     amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                    amp_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
-                end
+                    amp_post_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
+                # else
+                elseif m.nonlinear_info[bi][:nonlinear_type] == :bilinear
+                    # Partitioning on left
+                    if (idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
+                        λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                        λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+                        λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
+                        λλ = amp_post_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
+                        amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+                        amp_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+                    end
 
-                # Partitioning of right
-                if !(idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                    λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                    λX = amp_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
-                    λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
-                    λλ = amp_post_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
-                    amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
-                    amp_post_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
-                end
+                    # Partitioning of right
+                    if !(idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
+                        λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+                        λX = amp_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+                        λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
+                        λλ = amp_post_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
+                        amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+                        amp_post_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
+                    end
 
-                # Partitioning on both variables
-                if (idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                    λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                    λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                    λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-                    λX = amp_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
-                    λλ = amp_post_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
-                    amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                    amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
-                    amp_post_λxλ_mc(m.model_mip, λλ, λ, idx_a, idx_b)
-                    amp_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
-                end
+                    # Partitioning on both variables
+                    if (idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
+                        λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                        λ = amp_post_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+                        λX = amp_post_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+                        λX = amp_post_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+                        λλ = amp_post_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
+                        amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+                        amp_post_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+                        amp_post_λxλ_mc(m.model_mip, λλ, λ, idx_a, idx_b)
+                        amp_post_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+                    end
 
-                # Error condition
-                if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
-                    @show idx_a, idx_b, m.var_discretization_mip
-                    error("Error case. At least one term should show up in discretization choices.")
+                    # Error condition
+                    if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
+                        @show idx_a, idx_b, m.var_discretization_mip
+                        error("Error case. At least one term should show up in discretization choices.")
+                    end
                 end
             end
         end
@@ -121,7 +127,6 @@ function amp_post_λλ(m::JuMP.Model, λλ::Dict, dim_a::Int, dim_b::Int, idx_a:
     end
     return λλ
 end
-
 
 function amp_post_λλ(m::JuMP.Model, λλ::Dict, λ::Dict, idx_a::Int, idx_b::Int)
     if !haskey(λλ, (idx_a, idx_b))
@@ -228,7 +233,7 @@ function post_amp_lifted_constraints(m::PODNonlinearModel)
     return
 end
 
-function post_amp_lifted_obj(m::PODNonlinearModel)
+function post_amp_lifted_objective(m::PODNonlinearModel)
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
     return
 end

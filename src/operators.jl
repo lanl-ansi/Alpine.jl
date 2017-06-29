@@ -47,7 +47,7 @@ function expr_batch_proces(m::PODNonlinearModel;kwargs...)
     m.lifted_obj_expr_mip = expr_parsing(deepcopy(m.obj_expr_orig), m)
     for i in 1:m.num_constr_orig
         push!(m.lifted_constr_expr_mip, expr_parsing(deepcopy(m.constr_expr_orig[i]), m))
-        @show m.lifted_constr_expr_mip[end]
+        m.log_level > 99 && println(m.lifted_constr_expr_mip[end])
     end
 
     # 2
@@ -149,10 +149,11 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, var_idxs[1], var_idxs[2]))
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                    :ref => term_key,
-                                    :lifted_constr_ref => lifted_constr_ref,
-                                    :monomial_status => false,    # Later to be deprecated
-                                    :nonlinear_type => :bilinear)
+                                            :id => y_idx,
+                                            :ref => term_key,
+                                            :lifted_constr_ref => lifted_constr_ref,
+                                            :monomial_status => false,    # Later to be deprecated
+                                            :nonlinear_type => :bilinear)
     end
 
     function lift_bilinear()
@@ -179,7 +180,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         end
         # Confirm patter A
         if length(var_idxs) == 2
-            println("Found bilinear term $expr")
+            (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
             if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
                 return true, lift_bilinear()
@@ -187,8 +188,6 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
                 store_bilinear()
                 return true, lift_bilinear()
             end
-        else
-            (m.log_level > 99) && println("Spitting subtree $expr for no bilinear pattern")
         end #---------- End of Pattern A ---------#
     end
 
@@ -212,6 +211,7 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
         end
         lifted_constr_ref = parse(constr_block)
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
+                                            :id => y_idx,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :monomial_status => false,
@@ -241,7 +241,7 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         if length(var_idxs) > 2
-            println("Found multilinear term $expr")
+            (m.log_level > 99) && println("found multilinear term $expr")
             term_key = Set()
             [push!(term_key, Expr(:ref, :x, idx)) for idx in var_idxs]
             if term_key in keys(m.nonlinear_info)
@@ -266,12 +266,10 @@ function resolve_monomial(expr, m::PODNonlinearModel)
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, var_idxs[1], var_idxs[1]))
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                    :ref => term_key,
-                                    :lifted_constr_ref => lifted_constr_ref,
-                                    :monomial_status => true,               # Later to be deprecated
-                                    :cos_status => false,                   # Later to be deprecated
-                                    :sin_status => false,                   # Later to be deprecated
-                                    :nonlinear_type => :monomial)
+                                            :id => y_idx,
+                                            :ref => term_key,
+                                            :lifted_constr_ref => lifted_constr_ref,
+                                            :nonlinear_type => :monomial)
     end
 
     function lift_monomial()
@@ -293,7 +291,7 @@ function resolve_monomial(expr, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         if length(var_idxs) == 1 && power_scalar == 2.0
-            println("Found monomial term $expr")
+            (m.log_level > 99) && println("found monomial term $expr")
             term_key = []
             for i in 1:2
                 push!(term_key, Expr(:ref, :x, var_idxs[1]))
@@ -305,8 +303,6 @@ function resolve_monomial(expr, m::PODNonlinearModel)
                 store_monomial()
                 return true, lift_monomial()
             end
-        else
-            (m.log_level > 99) && println("Spitting subtree $expr for no monomial pattern")
         end
     end
 
@@ -320,22 +316,21 @@ function resolve_sin(expr, m::PODNonlinearModel)
 
     function store_sin() end
     function lift_sin() end
-    function recognize_sin() end
 
-    @assert expr.head == :call
-    if (expr.args[1] == :sin)
-        # Pattern: sin(a*x)
-        var_idxs = []
-        for i in 1:length(expr.args)
-            (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            (expr.args[i].head == :call) && return false, expr
-        end
-        if length(var_idxs) == 1
-            println("Found sin term $expr")
-            return true, expr
-        end
-    end
+    # @assert expr.head == :call
+    # if (expr.args[1] == :sin)
+    #     # Pattern: sin(a*x)
+    #     var_idxs = []
+    #     for i in 1:length(expr.args)
+    #         (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)) && continue
+    #         (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+    #         (expr.args[i].head == :call) && return false, expr
+    #     end
+    #     if length(var_idxs) == 1
+    #         println("found sin term $expr")
+    #         return true, expr
+    #     end
+    # end
 
     return false, expr
 end
@@ -347,22 +342,21 @@ function resolve_cos(expr, m::PODNonlinearModel)
 
     function store_sin() end
     function lift_sin() end
-    function recognize_sin() end
 
-    @assert expr.head == :call
-    if (expr.args[1] == :cos)
-        # Pattern: sin(a*x)
-        var_idxs = []
-        for i in 1:length(expr.args)
-            (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            (expr.args[i].head == :call) && return false, expr
-        end
-        if length(var_idxs) == 1
-            println("Found cos term $expr")
-            return true, expr
-        end
-    end
+    # @assert expr.head == :call
+    # if (expr.args[1] == :cos)
+    #     # Pattern: sin(a*x)
+    #     var_idxs = []
+    #     for i in 1:length(expr.args)
+    #         (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)) && continue
+    #         (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+    #         (expr.args[i].head == :call) && return false, expr
+    #     end
+    #     if length(var_idxs) == 1
+    #         println("Found cos term $expr")
+    #         return true, expr
+    #     end
+    # end
 
     return false, expr
 end

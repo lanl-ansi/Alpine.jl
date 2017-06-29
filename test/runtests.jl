@@ -18,6 +18,7 @@ include("../examples/util.jl")
 include("../examples/meanvarx.jl")
 include("../examples/blend029.jl")
 
+include("operators.jl")
 include("solver.jl")
-include("expression.jl")
+# include("expression.jl")
 include("algorithm.jl")

@@ -14,6 +14,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     tolerance::Float64                                          # Numerical tolerance used in the algorithmic process
 
     # expression-based user-inputs
+    expression_convexification::Array{Function}                 # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
     expression_patterns::Array{Function}                        # Array of functions that user wish to use to parse/recognize expressions
 
     # parameters used in partitioning algorithm
@@ -136,6 +137,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.rel_gap = rel_gap
         m.tolerance = tolerance
 
+        m.expression_convexification = Array{Function}(0)
         m.expression_patterns = Array{Function}(0)
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
@@ -239,10 +241,8 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
     # populate data to create the bounding model
-    if m.dev_test # divert for testing new code
-        println("[DEV MODE] testing new code for nonlinear expression parsing... ")
+    if true # divert for testing new code
         expr_batch_proces(m)
-        println("[DEV MODE] end of diverting for testing new code...")
     else # Original stable code
         populate_nonlinear_info(m)                          # *
         populate_lifted_expr(m)                             # *
@@ -362,12 +362,12 @@ For example, this algorithm can easily be reformed as a uniform-partitioning alg
 function global_solve(m::PODNonlinearModel)
 
     (m.log_level > 0) && logging_head()
-    while m.best_rel_gap > m.rel_gap && m.logs[:time_left] > 0.0001 && m.logs[:n_iter] < m.maxiter
+    while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
         m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
-        m.log_level>0 && logging_row_entry(m)
+        (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
         m.discretization = add_discretization(m)       # Add extra discretizations
@@ -399,13 +399,17 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
     (presolve && (:Bin in m.var_type_orig || :Int in m.var_type_orig)) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
-    # MathProgBase.SolverInterface.setparameters!(local_solve_nlp_model, TimeLimit=m.logs[:time_left], Silent=true)
+    MathProgBase.SolverInterface.setparameters!(local_solve_nlp_model, TimeLimit=m.logs[:time_left], Silent=true)
 
+
+    # TT = STDOUT # save original STDOUT stream
+    # redirect_stdout()
     start_local_solve = time()
     MathProgBase.optimize!(local_solve_nlp_model)
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
+    # redirect_stdout(TT) # restore STDOUT
 
     status_pass = [:Optimal, :Suboptimal, :UserLimit]
     status_reroute = [:Infeasible]
@@ -418,7 +422,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
             # TODO: Proposed hot fix_domains
-            # m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 5)
+            m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 5)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
@@ -454,13 +458,20 @@ See `create_bounding_mip` for more details of the problem solved here.
 """
 function bounding_solve(m::PODNonlinearModel; kwargs...)
 
+
+    # ================= Solve Start ================ #
     convertor = Dict(:Max=>:<, :Min=>:>)
     update_mip_time_limit(m)
     start_bounding_solve = time()
+    TT = STDOUT # save original STDOUT stream
+    redirect_stdout()
     status = solve(m.model_mip, suppress_warnings=true)
+    redirect_stdout(TT) # restore STDOUT
     cputime_bounding_solve = time() - start_bounding_solve
     m.logs[:total_time] += cputime_bounding_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
+    # ================= Solve End ================ #
+
 
     status_pass = [:Optimal, :Suboptimal, :UserLimit]
     status_reroute = [:Infeasible]

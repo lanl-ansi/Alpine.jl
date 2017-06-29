@@ -1,3 +1,5 @@
+using POD, JuMP, Ipopt, Gurobi, MathProgBase
+
 function max_cover_var_picker(m::POD.PODNonlinearModel)
 	nodes = Set()
 	for pair in keys(m.nonlinear_info)
@@ -18,7 +20,8 @@ function nlp3(;verbose=false, solver=nothing)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
-								   log_level=100, maxiter=4,
+								   log_level=0,
+								   maxiter=4,
 								   presolve_bt_width_tolerance=1e-3,
 								   presolve_bt_output_tolerance=1e-1,
 								   presolve_perform_bound_tightening=true,
@@ -49,8 +52,8 @@ function nlp3(;verbose=false, solver=nothing)
 	setupperbound(x[8], 1000)
 
 	@constraint(m, 0.0025*(x[4]+x[6]) <= 1)
-	@constraint(m, 0.0025*(-x[4] + x[5] + x[7]) <= 1)
-	@constraint(m, 0.01(-x[5]+x[8]) <= 1)
+	@constraint(m, 0.0025*(x[5] - x[4] + x[7]) <= 1)
+	@constraint(m, 0.01(x[8]-x[5]) <= 1)
 	@NLconstraint(m, 100*x[1] - x[1]*x[6] + 833.33252*x[4] <= 83333.333)
 	@NLconstraint(m, x[2]*x[4] - x[2]*x[7] - 1250*x[4] + 1250*x[5] <= 0)
 	@NLconstraint(m, x[3]*x[5] - x[3]*x[8] - 2500*x[5] + 1250000 <= 0)

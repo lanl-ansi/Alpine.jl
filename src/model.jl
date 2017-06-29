@@ -44,8 +44,12 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
     # ------- Model Construction ------ #
     post_amp_vars(m)                                            # Post original and lifted variables
     post_amp_lifted_constraints(m)                              # Post lifted constraints
-    post_amp_lifted_obj(m)                                      # Post objective
-    post_amp_mccormick(m, use_discretization=discretization)    # Post all mccormick constraints
+    post_amp_lifted_objective(m)                                # Post objective
+    post_amp_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
+    # any additional built-in convexification method
+    for i in 1:length(m.expression_convexification)             # Additional user-defined convexificaition method
+        eval(m.expression_convexification[i])(m)
+    end
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build

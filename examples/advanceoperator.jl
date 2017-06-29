@@ -1,7 +1,7 @@
-using JuMP, MathProgBase, Gurobi, Ipopt, POD
+using JuMP, MathProgBase, Cbc, Ipopt, POD
 
 m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
-						   mip_solver=GurobiSolver(OutputFlag=0),
+						   mip_solver=CbcSolver(OutputFlag=0),
 						   presolve_perform_bound_tightening=true,
 						   presolve_bound_tightening_algo=2,
 						   presolve_bt_output_tolerance=1e-1,

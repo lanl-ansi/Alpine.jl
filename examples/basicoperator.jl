@@ -3,8 +3,7 @@ using Ipopt, Cbc
 using JLD
 using POD
 
-m = Model(solver=PODSolver(dev_test=true,
-						   nlp_local_solver=IpoptSolver(),
+m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
 						   mip_solver=CbcSolver(),
 						   presolve_perform_bound_tightening=true,
 						   presolve_bound_tightening_algo=2,

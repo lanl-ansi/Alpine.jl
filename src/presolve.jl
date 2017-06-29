@@ -91,8 +91,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
                     solve_bound_tightening_model(m)
-                    # TODO: trunctate the objective value using presolve_bt_output_tolerance
-                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance
+                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance  # Objective truncation for numerical issues
                     # TODO: discuss feasibility tolerances and where to put them and apt default
                     m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
@@ -116,7 +115,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         haskey(options, :use_tmc) ? discretization = add_discretization(m, use_solution=m.best_sol, use_discretization=flatten_discretization(discretization)) : discretization = discretization
     end
 
-    (m.log_level > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter])iterations, applying tighten bounds")
+    (m.log_level > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
 
     # Update the bounds with the tightened ones
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
@@ -143,6 +142,11 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     post_amp_vars(m, use_discretization=discretization)
     post_amp_lifted_constraints(m)
     post_amp_mccormick(m, use_discretization=discretization)
+    # any additional built-in convexification method : convexhull for example
+    for i in 1:length(m.expression_convexification)             # Additional user-defined convexificaition method
+        eval(m.expression_convexification[i])(m)
+    end
+
     if bound != Inf
         post_obj_bounds(m, bound)
     end

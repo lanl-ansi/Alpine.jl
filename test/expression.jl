@@ -30,8 +30,9 @@
 
         # -1.0 * x[12] - 115.0 <= 0.0
         ex = m.internalModel.lifted_constr_expr_mip[3]
+        @show ex=m.internalModel.lifted_constr_expr_mip[3]
         affdict = POD.expr_to_affine(ex)
-        @test affdict[:coefs] == [-1.0,20.0]
+        @test affdict[:coefs] == [1.0,1.0,20.0]
         @test affdict[:coefs] == m.internalModel.lifted_constr_aff_mip[3][:coefs]
         @test affdict[:vars] == [:(x[12]),:(x[13])]
         @test affdict[:vars] == m.internalModel.lifted_constr_aff_mip[3][:vars]
@@ -170,7 +171,7 @@
 
         ex = m.internalModel.lifted_constr_expr_mip[4]
         affdict = POD.expr_to_affine(ex)
-        @test (affdict[:coefs] .== Any[100.0, -1.0, 833.33252]) == [true, true, true]
+        @test (affdict[:coefs] .== [100.0, -1.0, 833.33252]) == [true, true, true]
         @test affdict[:coefs] == m.internalModel.lifted_constr_aff_mip[4][:coefs]
         @test affdict[:vars] == [:(x[1]),:(x[9]),:(x[4])]
         @test affdict[:vars] == m.internalModel.lifted_constr_aff_mip[4][:vars]
