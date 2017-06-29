@@ -2,6 +2,10 @@ using JuMP
 
 type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
+    # developer parameters for testing and debugging
+    dev_debug::Bool                                             # Turn on the debug mode
+    dev_test::Bool                                              # Turn on for testing new code with
+
     # basic solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
@@ -104,7 +108,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
+    function PODNonlinearModel(dev_debug, dev_test,
+                                log_level, timeout, maxiter, rel_gap, tolerance,
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
@@ -121,6 +126,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_mip_timelimit)
 
         m = new()
+
+        m.dev_debug = dev_debug
+        m.dev_test = dev_test
+
         m.log_level = log_level
         m.timeout = timeout
         m.maxiter = maxiter
@@ -229,16 +238,21 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
-    # Temporary Disabled for testing new expression parser
     # populate data to create the bounding model
-    populate_nonlinear_info(m)
-    populate_lifted_expr(m)
-    m.num_var_lifted_mip = length(m.nonlinear_info)
-    populate_lifted_affine(m)
+    if m.dev_test # divert for testing new code
+        println("[DEV MODE] testing new code for nonlinear expression parsing... ")
+        expr_batch_proces(m)
+        println("[DEV MODE] end of diverting for testing new code...")
+    else # Original stable code
+        populate_nonlinear_info(m)                          # *
+        populate_lifted_expr(m)                             # *
+        m.num_var_lifted_mip = length(m.nonlinear_info)     # *
+    end
+    populate_lifted_affine(m)                               # keep
 
     # Initialize tightened bound vectors for future usage
-    m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_lifted_mip);]
-    m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_lifted_mip);]
+    m.l_var_tight = [m.l_var_orig, fill(-Inf, m.num_var_lifted_mip);]
+    m.u_var_tight = [m.u_var_orig, fill(Inf, m.num_var_lifted_mip);]
 
     pick_vars_discretization(m)
     initialize_discretization(m)

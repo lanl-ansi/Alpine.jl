@@ -5,6 +5,9 @@ type UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 type PODSolver <: MathProgBase.AbstractMathProgSolver
+    dev_debug::Bool
+    dev_test::Bool
+
     log_level::Int
     timeout::Float64
     maxiter::Int
@@ -32,6 +35,9 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 function PODSolver(;
+    dev_debug = false,
+    dev_test = false,
+
     log_level = 1,
     timeout = Inf,
     maxiter = 99,
@@ -65,7 +71,8 @@ function PODSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(log_level, timeout, maxiter, rel_gap, tolerance,
+    PODSolver(dev_debug, dev_test,
+        log_level, timeout, maxiter, rel_gap, tolerance,
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
         deepcopy(mip_solver),
@@ -88,6 +95,9 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     end
 
     # Translate options into old nonlinearmodel.jl fields
+    dev_test = s.dev_test
+    dev_debug = s.dev_debug
+
     log_level = s.log_level
     timeout = s.timeout
     maxiter = s.maxiter
@@ -109,7 +119,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_mip_relaxation = s.presolve_mip_relaxation
     presolve_mip_timelimit = s.presolve_mip_timelimit
 
-    return PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
+    return PODNonlinearModel(dev_debug, dev_test,
+                            log_level, timeout, maxiter, rel_gap, tolerance,
                             nlp_local_solver,
                             minlp_local_solver,
                             mip_solver,

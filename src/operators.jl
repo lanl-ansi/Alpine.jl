@@ -41,15 +41,30 @@
 
 High-level warpper for processing expression with sub-tree operators
 """
-function expr_batch_proces(expr, m::PODNonlinearModel;kwargs...)
-    # First Do Objective Expression
+function expr_batch_proces(m::PODNonlinearModel;kwargs...)
+
+    # 1 : most important
     m.lifted_obj_expr_mip = expr_parsing(deepcopy(m.obj_expr_orig), m)
     for i in 1:m.num_constr_orig
-        push!(m.lifted_constr_expr_mip, expr_parsing(deepcopy(m.lifted_constr_expr_mip[i]),m))
+        push!(m.lifted_constr_expr_mip, expr_parsing(deepcopy(m.constr_expr_orig[i]), m))
+        @show m.lifted_constr_expr_mip[end]
     end
 
-    # Other information to record
-    # Reference function: populate_nonlinear_info
+    # 2
+    for i in keys(m.nonlinear_info)
+        for var in i
+            @assert isa(var.args[2], Int)
+            if !(var.args[2] in m.all_nonlinear_vars)
+                push!(m.all_nonlinear_vars, var.args[2])
+            end
+        end
+    end
+    m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
+
+    # 3
+    m.num_var_lifted_mip = length(m.nonlinear_info)     # *
+
+    return m
 end
 
 """
@@ -105,14 +120,18 @@ function expr_resolve_pattern(expr, m::PODNonlinearModel; kwargs...)
         skip && return expr
     end
 
-    # Recognization of built-in structural pattern
+    # Recognize all built-in structural patterns
     skip, expr = resolve_bilinear(expr, m)
     skip && return expr
+
     skip, expr = resolve_monomial(expr, m)
     skip && return expr
+
     skip, expr = resolve_multilinear(expr, m)
     skip && return expr
+
     # resolve_sin(expr,m) && return expr
+
     # resolve_cos(expr,m) && return expr
 
     return expr # if no structure is detected, simply return the original tree
@@ -161,7 +180,6 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         # Confirm patter A
         if length(var_idxs) == 2
             println("Found bilinear term $expr")
-            # ----- Pattern A : Lifting ----- #
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
             if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
                 return true, lift_bilinear()
@@ -261,8 +279,6 @@ function resolve_monomial(expr, m::PODNonlinearModel)
         return new_expr
     end
 
-    @assert expr.head == :call
-    @show expr
     if (expr.args[1] == :^) && length(expr.args) == 3
         # Pattern: (x)^(2)
         var_idxs = []
@@ -276,15 +292,13 @@ function resolve_monomial(expr, m::PODNonlinearModel)
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
             (expr.args[i].head == :call) && return false, expr
         end
-        @show var_idxs
-        @show power_scalar
         if length(var_idxs) == 1 && power_scalar == 2.0
             println("Found monomial term $expr")
-            # ----- Pattern A : Lifting ----- #
-            term_key = Set()
-            for idx in var_idxs
-                push!(term_key, Expr(:ref, :x, idx))
+            term_key = []
+            for i in 1:2
+                push!(term_key, Expr(:ref, :x, var_idxs[1]))
             end
+
             if term_key in keys(m.nonlinear_info)
                 return true, lift_monomial()
             else
