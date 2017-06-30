@@ -43,14 +43,28 @@ High-level warpper for processing expression with sub-tree operators
 """
 function expr_batch_proces(m::PODNonlinearModel;kwargs...)
 
-    # 1 : most important
-    m.lifted_obj_expr_mip = expr_parsing(deepcopy(m.obj_expr_orig), m)
+	# 0 : migrate data into mip place holders
+	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
+	for i in 1:m.num_constr_orig
+        push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
+    end
+
+    # 1 : pre-process for negative
+    expr_resolve_sign(m.lifted_obj_expr_mip)
+    expr_flatten(m.lifted_obj_expr_mip)
     for i in 1:m.num_constr_orig
-        push!(m.lifted_constr_expr_mip, expr_parsing(deepcopy(m.constr_expr_orig[i]), m))
+        expr_resolve_sign(m.lifted_constr_expr_mip[i])
+        expr_flatten(m.lifted_constr_expr_mip[i])
+    end
+
+    # 1 : most important
+    m.lifted_obj_expr_mip = expr_parsing(m.lifted_obj_expr_mip, m)
+    for i in 1:m.num_constr_orig
+        m.lifted_constr_expr_mip[i] = expr_parsing(m.lifted_constr_expr_mip[i], m)
         m.log_level > 99 && println(m.lifted_constr_expr_mip[end])
     end
 
-    # 2
+    # 2: extract side information
     for i in keys(m.nonlinear_info)
         for var in i
             @assert isa(var.args[2], Int)
@@ -60,9 +74,7 @@ function expr_batch_proces(m::PODNonlinearModel;kwargs...)
         end
     end
     m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
-
-    # 3
-    m.num_var_lifted_mip = length(m.nonlinear_info)     # *
+    m.num_var_lifted_mip = length(m.nonlinear_info)
 
     return m
 end
@@ -131,7 +143,6 @@ function expr_resolve_pattern(expr, m::PODNonlinearModel; kwargs...)
     skip && return expr
 
     # resolve_sin(expr,m) && return expr
-
     # resolve_cos(expr,m) && return expr
 
     return expr # if no structure is detected, simply return the original tree

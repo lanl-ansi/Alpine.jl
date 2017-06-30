@@ -56,6 +56,8 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     both_senses = [:Min, :Max]             # Senses during bound tightening procedures
     tell_side = Dict(:Min=>1, :Max=>2)     # Positional information
     tell_round = Dict(:Min=>floor, :Max=>ceil)
+    status_pass = [:Optimal]
+    status_reroute = [:UserLimits]
 
     options = Dict(kwargs)
 
@@ -69,7 +71,6 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         discretization = add_discretization(m, use_solution=m.best_sol, use_discretization=discretization)
     end
     discretization = resolve_lifted_var_bounds(m.nonlinear_info, discretization) # recomputation of bounds for lifted_variables
-
 
     (m.log_level > 0) && println("starting the bound-tightening algorithm ...")
     (m.log_level > 99) && [println("[DEBUG] VAR $(var_idx) Original Bound [$(round(m.l_var_tight[var_idx],4)) < - > $(round(m.u_var_tight[var_idx],4))]") for var_idx in m.all_nonlinear_vars]
@@ -90,8 +91,14 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
-                    solve_bound_tightening_model(m)
-                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance  # Objective truncation for numerical issues
+                    status = solve_bound_tightening_model(m)
+                    if status == status_pass
+                        temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance  # Objective truncation for numerical issues
+                    elseif status == status_reroute
+                        temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance
+                    else
+                        error("bound tightening sub-problem solves to an error status")
+                    end
                     # TODO: discuss feasibility tolerances and where to put them and apt default
                     m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
@@ -182,7 +189,7 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
     #TODO handle the infeasible cases when time limit is applied
     # ========= MILP Solve ========= #
 
-    return
+    return status
 end
 
 """

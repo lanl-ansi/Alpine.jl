@@ -1,9 +1,14 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function util()
+function util(;verbose=false, solver=nothing)
 
-    m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
-							   mip_solver=GurobiSolver(OutputFlag=0)))
+    if solver==nothing
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+    							   mip_solver=GurobiSolver(OutputFlag=0),
+                                   log_level=1))
+    else
+        m = Model(solver=solver)
+    end
 
     @variable(m, x[1:145])
     for i=1:28

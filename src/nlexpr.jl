@@ -326,7 +326,6 @@ function expr_lift(expr, nonlinear_info::Dict; kwargs...)
 			deleteat!(expr.args, idxs)
 			push!(expr.args, nonlinear_info[reverse(refs)][:lifted_var_ref]) # Place Lift
 		end
-
 	elseif expr.args[1] == :^  # with assumption :: square
 		refs = [v for v in expr.args if (isa(v, Expr) && v.head == :ref)]
 		power = [v for v in expr.args if (isa(v, Float64) || isa(v, Int64))]

@@ -1,10 +1,14 @@
-function castro02m2(verbose=false)
+function castro02m2(;verbose=false, solver=nothing)
 
-    m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								mip_solver=CbcSolver(OutputFlag=0),
-                                presolve_perform_bound_tightening=false,
-                                log_level=1,
-                                rel_gap=0.001))
+    if solver == nothing
+        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+    								mip_solver=CbcSolver(OutputFlag=0),
+                                    presolve_perform_bound_tightening=false,
+                                    log_level=1,
+                                    rel_gap=0.001))
+    else
+        m = Model(solver=solver)
+    end
 
 	@variable(m, x[1:42])
 

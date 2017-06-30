@@ -1,10 +1,14 @@
 using POD, JuMP, CPLEX, Ipopt, MathProgBase
 
-function blend029(verbose=false)
+function blend029(;verbose=false, solver=nothing)
 
-    m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                                mip_solver=CplexSolver(CPX_PARAM_SCRIND=0), 
-                                rel_gap=0.001))
+    if solver == nothing
+        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                                    mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+                                    rel_gap=0.001))
+    else
+        m = Model(solver=solver)
+    end
 
     @variable(m, x[1:102])
     for i=67:102

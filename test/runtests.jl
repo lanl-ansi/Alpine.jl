@@ -20,5 +20,5 @@ include("../examples/blend029.jl")
 
 include("operators.jl")
 include("solver.jl")
-# include("expression.jl")
-include("algorithm.jl")
+include("expression.jl")
+#include("algorithm.jl")
