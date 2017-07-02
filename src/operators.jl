@@ -127,8 +127,8 @@ Specific structure pattern information will be described formally.
 function expr_resolve_pattern(expr, m::PODNonlinearModel; kwargs...)
 
     # First process user-defined structures in-cases of over-ride
-    for i in 1:length(m.expression_patterns)
-        skip, expr = eval(m.expression_patterns[i])(expr, m)
+    for i in 1:length(m.expr_patterns)
+        skip, expr = eval(m.expr_patterns[i])(expr, m)
         skip && return expr
     end
 
@@ -164,7 +164,8 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :monomial_status => false,    # Later to be deprecated
-                                            :nonlinear_type => :bilinear)
+                                            :nonlinear_type => :bilinear,
+                                            :convexified => false)
     end
 
     function lift_bilinear()
@@ -226,7 +227,8 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :monomial_status => false,
-                                            :nonlinear_type => :multilinear)
+                                            :nonlinear_type => :multilinear,
+                                            :convexified => false)
     end
 
     function lift_multilinear()
@@ -280,7 +282,8 @@ function resolve_monomial(expr, m::PODNonlinearModel)
                                             :id => y_idx,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
-                                            :nonlinear_type => :monomial)
+                                            :nonlinear_type => :monomial,
+                                            :convexified => false)
     end
 
     function lift_monomial()

@@ -1,3 +1,35 @@
+"""
+    post_amp_convexification(m::PODNonlinearModel; kwargs...)
+
+warpper function to convexify the problem for a bounding model. This function talks to nonlinear_info and convexification methods
+to finish the last step required during the construction of bounding model.
+"""
+function post_amp_convexification(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+
+    for i in 1:length(m.method_convexification)             # Additional user-defined convexificaition method
+        eval(m.method_convexification[i])(m)
+    end
+
+    if !m.convex_disable_tmc
+        post_amp_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
+    end
+
+    if !m.convex_disable_convhull
+        # convex hull representation
+    end
+
+    convexification_exam(m)
+
+    return
+end
+
+"""
+
+"""
 function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
@@ -13,9 +45,9 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
 
     for bi in keys(m.nonlinear_info)
         if m.nonlinear_info[bi][:nonlinear_type] in [:monomial, :bilinear]
-            # Consider a general bilinear framework c = a * b
-            # part -> short for partitions
+
             @assert length(bi) == 2
+            m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             idx_a = bi[1].args[2]
             idx_b = bi[2].args[2]
             idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
@@ -29,10 +61,8 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
             ub[idx_b] = discretization[idx_b][2:end]
 
             if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
-                # if m.nonlinear_info[bi][:monomial_status]
                 if m.nonlinear_info[bi][:nonlinear_type] == :monomial
                     mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
-                # else
                 elseif m.nonlinear_info[bi][:nonlinear_type] == :bilinear
                     mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
                         lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
@@ -218,6 +248,7 @@ function post_amp_vars(m::PODNonlinearModel; kwargs...)
 end
 
 function post_amp_lifted_constraints(m::PODNonlinearModel)
+
     for i in 1:m.num_constr_orig
         if m.constr_type_orig[i] == :(>=)
             @constraint(m.model_mip,
@@ -230,22 +261,13 @@ function post_amp_lifted_constraints(m::PODNonlinearModel)
                 sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) == m.lifted_constr_aff_mip[i][:rhs])
         end
     end
+
     return
 end
 
 function post_amp_lifted_objective(m::PODNonlinearModel)
 
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
-
-    # # TODO: potential issue when having zero objective
-    # if m.rel_gap < Inf
-    #     if m.sense_orig == :Max
-    #         @constraint(m.model_mip, m.model_mip.obj <= (1-m.rel_gap+m.tolerance) * m.best_obj)
-    #     elseif m.sense_orig == :Min
-    #         @constraint(m.model_mip, r, m.model_mip.obj >= (1-m.rel_gap+m.tolerance) * m.best_obj)
-    #         @show r
-    #     end
-    # end
 
     return
 end

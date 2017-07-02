@@ -1,6 +1,6 @@
 using POD, JuMP, Ipopt, CPLEX, MathProgBase
 
-function bi1(;verbose=false, solver=nothing)
+function operator_c(;verbose=false, solver=nothing)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
@@ -8,7 +8,7 @@ function bi1(;verbose=false, solver=nothing)
 	else
 		m = Model(solver=solver)
 	end
-	
+
 	@variable(m, px[i=1:6]>=1) # At some point if an initial value is given, keep them
 
 	@NLconstraint(m, sum(3*px[i]^2 for i=1:4) >= 111)

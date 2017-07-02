@@ -150,8 +150,8 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     post_amp_lifted_constraints(m)
     post_amp_mccormick(m, use_discretization=discretization)
     # any additional built-in convexification method : convexhull for example
-    for i in 1:length(m.expression_convexification)             # Additional user-defined convexificaition method
-        eval(m.expression_convexification[i])(m)
+    for i in 1:length(m.method_convexification)    # Additional user-defined convexificaition method, following user sequence
+        eval(m.method_convexification[i])(m)
     end
 
     if bound != Inf

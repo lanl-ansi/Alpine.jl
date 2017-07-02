@@ -42,18 +42,30 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP Model
     start_build = time()
     # ------- Model Construction ------ #
-    post_amp_vars(m)                                            # Post original and lifted variables
-    post_amp_lifted_constraints(m)                              # Post lifted constraints
-    post_amp_lifted_objective(m)                                # Post objective
-    post_amp_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
-    # any additional built-in convexification method goes here
-    for i in 1:length(m.expression_convexification)             # Additional user-defined convexificaition method
-        eval(m.expression_convexification[i])(m)
-    end
+    post_amp_vars(m)                                                # Post original and lifted variables
+    post_amp_lifted_constraints(m)                                  # Post lifted constraints
+    post_amp_lifted_objective(m)                                    # Post objective
+    post_amp_convexification(m, use_discretization=discretization)  # Convexify problem
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
+
+    return
+end
+
+"""
+    convexification_exam(m::PODNonlinearModel)
+"""
+function convexification_exam(m::PODNonlinearModel)
+
+    # Other more advanced convexification check goes here
+    for term in keys(m.nonlinear_info)
+        if !m.nonlinear_info[term][:convexified]
+            warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
+            return
+        end
+    end
 
     return
 end
@@ -79,7 +91,6 @@ function pick_vars_discretization(m::PODNonlinearModel)
         eval(m.discretization_var_pick_algo)(m)
         # TODO: Perform generic validation for user-defined method
     elseif isa(m.discretization_var_pick_algo, Int)
-        # Figure out which are the variables that needs to be partitioned
         if m.discretization_var_pick_algo == 0
             max_cover(m)
         elseif m.discretization_var_pick_algo == 1
@@ -94,14 +105,16 @@ function pick_vars_discretization(m::PODNonlinearModel)
     return
 end
 
+"""
+    mccormick(m::JuMP.Model, xy, x, y, x_l, x_u, y_l, y_u)
 
+Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
+"""
 function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
-
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
     @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
     @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
     @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
-
     return
 end
 
@@ -117,7 +130,6 @@ end
 function mccormick_monomial(m,xy,x,xˡ,xᵘ)
     @constraint(m, xy >= x^2)
     @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
-
     return
 end
 

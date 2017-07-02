@@ -221,7 +221,7 @@
                                mip_solver=CbcSolver(OutputFlag=0),
                                log_level=0)
 
-        m = bi1(solver=test_solver)
+        m = operator_c(solver=test_solver)
 
         JuMP.build(m) # Setup internal model
 

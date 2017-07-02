@@ -220,7 +220,6 @@ function update_boundstop_options(m::PODNonlinearModel, stopbound::Float64)
             deleteat!(m.mip_solver.options, i)
             if string(m.mip_solver)[1:6] == "Gurobi"
                 push!(m.mip_solver.options, (:BestBdStop, stopbound))
-                @show "pushing bound stop $(stopbound)"
             else
                 return
             end
@@ -229,7 +228,6 @@ function update_boundstop_options(m::PODNonlinearModel, stopbound::Float64)
 
     if string(m.mip_solver)[1:6] == "Gurobi"
         push!(m.mip_solver.options, (:BestBdStop, stopbound))
-        @show "pushing bound stop $(stopbound)"
     else
         return
     end

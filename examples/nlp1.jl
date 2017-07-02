@@ -4,7 +4,7 @@ function nlp1(;verbose=false,solver=nothing)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
-								   mip_solver=GurobiSolver(OutputFlag=1,BestBdStop=6978.51),
+								   mip_solver=GurobiSolver(OutputFlag=0),
 								   presolve_perform_bound_tightening=true,
 								   presolve_bound_tightening_algo=2,
 								   presolve_bt_output_tolerance=1e-1,

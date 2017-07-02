@@ -18,6 +18,12 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     minlp_local_solver::MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
+    convex_disable_tmc::Bool
+    convex_disable_convhull::Bool
+
+    method_convexification::Array{Function}
+    expr_patterns::Array{Function}
+
     discretization_var_pick_algo::Any
     discretization_ratio::Any
     discretization_add_partition_method::Any
@@ -48,6 +54,12 @@ function PODSolver(;
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
+    convex_disable_tmc = false,
+    convex_disable_convhull = false,
+
+    method_convexification = Array{Function}(0),
+    expr_patterns = Array{Function}(0),
+
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
     discretization_add_partition_method = nothing, # Not ready for implementation
@@ -76,6 +88,10 @@ function PODSolver(;
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
         deepcopy(mip_solver),
+        convex_disable_tmc,
+        convex_disable_convhull,
+        method_convexification,
+        expr_patterns,
         discretization_var_pick_algo,
         discretization_ratio,
         discretization_add_partition_method,
@@ -103,9 +119,17 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     maxiter = s.maxiter
     rel_gap = s.rel_gap
     tolerance = s.tolerance
+
+    convex_disable_tmc = s.convex_disable_tmc
+    convex_disable_convhull = s.convex_disable_convhull
+
+    method_convexification = s.method_convexification
+    expr_patterns = s.expr_patterns
+
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
+
     discretization_var_pick_algo = s.discretization_var_pick_algo
     discretization_ratio = s.discretization_ratio
     discretization_add_partition_method = s.discretization_add_partition_method
@@ -124,6 +148,10 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             nlp_local_solver,
                             minlp_local_solver,
                             mip_solver,
+                            convex_disable_tmc,
+                            convex_disable_convhull,
+                            method_convexification,
+                            expr_patterns,
                             discretization_var_pick_algo,
                             discretization_ratio,
                             discretization_add_partition_method,

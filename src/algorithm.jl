@@ -13,9 +13,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     rel_gap::Float64                                            # Relative optimality gap termination condition
     tolerance::Float64                                          # Numerical tolerance used in the algorithmic process
 
+    # convexification method tuning
+    convex_disable_tmc::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
+    convex_disable_convhull::Bool                               # disbale convex hull representation mtehod used for convexify nonlinear terms
+
     # expression-based user-inputs
-    expression_convexification::Array{Function}                 # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
-    expression_patterns::Array{Function}                        # Array of functions that user wish to use to parse/recognize expressions
+    method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
+    expr_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize expressions
 
     # parameters used in partitioning algorithm
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
@@ -114,6 +118,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
+                                convex_disable_tmc,
+                                convex_disable_convhull,
+                                method_convexification,
+                                expr_patterns,
                                 discretization_var_pick_algo,
                                 discretization_ratio,
                                 discretization_add_partition_method,
@@ -137,8 +145,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.rel_gap = rel_gap
         m.tolerance = tolerance
 
-        m.expression_convexification = Array{Function}(0)
-        m.expression_patterns = Array{Function}(0)
+        m.convex_disable_tmc = convex_disable_tmc
+        m.convex_disable_convhull = convex_disable_convhull
+
+        m.method_convexification = method_convexification
+        m.expr_patterns = expr_patterns
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
         m.discretization_ratio = discretization_ratio
@@ -241,13 +252,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
     # populate data to create the bounding model
-    if true # divert for testing new code
-        expr_batch_proces(m)
-    else # Original stable code
-        populate_nonlinear_info(m)                          # *
-        populate_lifted_expr(m)                             # *
-        m.num_var_lifted_mip = length(m.nonlinear_info)     # *
-    end
+    # if true # divert for testing new code
+    expr_batch_proces(m)
+    # else # Original stable code
+    #     populate_nonlinear_info(m)                          # *
+    #     populate_lifted_expr(m)                             # *
+    #     m.num_var_lifted_mip = length(m.nonlinear_info)     # *
+    # end
     populate_lifted_affine(m)                               # keep
 
     # Initialize tightened bound vectors for future usage
@@ -283,7 +294,6 @@ MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
 
 
 """
-
     presolve(m::PODNonlinearModel)
 
 Function that perfoms a presolve on the user-supplied nonlinear program.
@@ -296,7 +306,6 @@ the objective value. Furthermore, in this case, a second local solve is attempte
 If a local solution is not obtained eved after the second solve then an initial McCormick solve is performed.
 The local solution (if available) or the initial McCormick solution (if infeasible after two local solve tries)
 is then used to partition the variables for the subsequent Adaptive Multivariate Partitioning algorithm iterations.
-
 """
 function presolve(m::PODNonlinearModel)
 
