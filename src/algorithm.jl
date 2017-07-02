@@ -462,22 +462,29 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     # ================= Solve Start ================ #
     convertor = Dict(:Max=>:<, :Min=>:>)
     update_mip_time_limit(m)
+    update_boundstop_options(m, (1-m.rel_gap+m.tolerance)*m.best_obj)
     start_bounding_solve = time()
-    TT = STDOUT # save original STDOUT stream
-    redirect_stdout()
     status = solve(m.model_mip, suppress_warnings=true)
-    redirect_stdout(TT) # restore STDOUT
     cputime_bounding_solve = time() - start_bounding_solve
     m.logs[:total_time] += cputime_bounding_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     # ================= Solve End ================ #
-
 
     status_pass = [:Optimal, :Suboptimal, :UserLimit]
     status_reroute = [:Infeasible]
 
     if status in status_pass
         candidate_bound = getobjectivevalue(m.model_mip)
+        push!(m.logs[:bound], candidate_bound)
+        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
+            m.best_bound = candidate_bound
+            m.best_bound_sol = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig]
+            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
+            m.status[:bounding_solve] = status
+            m.status[:bound] = :Detected
+        end
+    elseif status == :UserObjLimits     # This will leads to optimality
+        candidate_bound = getobjbound(m.model_mip)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound

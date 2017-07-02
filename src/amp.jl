@@ -234,6 +234,18 @@ function post_amp_lifted_constraints(m::PODNonlinearModel)
 end
 
 function post_amp_lifted_objective(m::PODNonlinearModel)
+
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
+
+    # # TODO: potential issue when having zero objective
+    # if m.rel_gap < Inf
+    #     if m.sense_orig == :Max
+    #         @constraint(m.model_mip, m.model_mip.obj <= (1-m.rel_gap+m.tolerance) * m.best_obj)
+    #     elseif m.sense_orig == :Min
+    #         @constraint(m.model_mip, r, m.model_mip.obj >= (1-m.rel_gap+m.tolerance) * m.best_obj)
+    #         @show r
+    #     end
+    # end
+
     return
 end

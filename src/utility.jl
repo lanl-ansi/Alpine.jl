@@ -195,16 +195,45 @@ end
 
 An utility function used to recognize differnt sub-solvers return the timelimit setup keywords.
 """
-function fetch_timeleft_symbol(m::PODNonlinearModel; kwargs...)
-    if string(m.mip_solver)[1:10] == "CPLEX.Cple"
+function fetch_timeleft_symbol(m::PODNonlinearModel)
+    if string(m.mip_solver)[1:5] == "CPLEX"
         return :CPX_PARAM_TILIM
-    elseif string(m.mip_solver)[1:10] == "Gurobi.Gur"
+    elseif string(m.mip_solver)[1:6] == "Gurobi"
         return :TimeLimit
-    elseif string(m.mip_solver)[1:10] == "Cbc.CbcMat"
+    elseif string(m.mip_solver)[1:3] == "Cbc"
         return :seconds
     else found == nothing
         error("Needs support for this MIP solver")
     end
+    return
+end
+
+"""
+    fetch_boundstop_symbol(m::PODNonlinearModel)
+
+An utility function used to recongize different sub-solvers and return the bound stop option key words
+"""
+function update_boundstop_options(m::PODNonlinearModel, stopbound::Float64)
+
+    for i in 1:length(m.mip_solver.options)
+        if m.mip_solver.options[i][1] == :BestBdStop
+            deleteat!(m.mip_solver.options, i)
+            if string(m.mip_solver)[1:6] == "Gurobi"
+                push!(m.mip_solver.options, (:BestBdStop, stopbound))
+                @show "pushing bound stop $(stopbound)"
+            else
+                return
+            end
+        end
+    end
+
+    if string(m.mip_solver)[1:6] == "Gurobi"
+        push!(m.mip_solver.options, (:BestBdStop, stopbound))
+        @show "pushing bound stop $(stopbound)"
+    else
+        return
+    end
+
     return
 end
 

@@ -92,9 +92,9 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
                     status = solve_bound_tightening_model(m)
-                    if status == status_pass
+                    if status in status_pass
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance  # Objective truncation for numerical issues
-                    elseif status == status_reroute
+                    elseif status in status_reroute
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance
                     else
                         error("bound tightening sub-problem solves to an error status")
