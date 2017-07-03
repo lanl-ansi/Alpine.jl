@@ -16,7 +16,7 @@ There are some general paremters that controls the behavior of the AMP:
 
 * `rel_gap(default=1e-4)`: relative gap considered for optimality during [`global_solve`](@ref). Bounds are evaluated using ``\frac{UB-LB}{UB} 100 \times \%``
 
-* `tolerance(default=1e-6)`: numerical tolerance used furing the process of [`global_solve`](@ref)
+* `tol(default=1e-6)`: numerical tol used furing the process of [`global_solve`](@ref)
 
 ## Discretization-based parameters
 
@@ -34,7 +34,7 @@ There are some general paremters that controls the behavior of the AMP:
 
 * `presolve_maxiter(default=9999)`: maximum iteration allowed using presolve process
 
-* `presolve_bt_width_tolerance(default=1e-3)`: independent numerical tolerance used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tolerance in here. Small tolerance is more likely to results in strange presolve behvaior.
+* `presolve_bt_width_tol(default=1e-3)`: independent numerical tol used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tol in here. Small tol is more likely to results in strange presolve behvaior.
 
 * `presolve_bound_tightening_algo(default=1)`: method used to do built-in bound tightening, choose `1` for regular bounding tightening,  `2` for Tighten McCormick bound tightening.
 

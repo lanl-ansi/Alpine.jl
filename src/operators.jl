@@ -61,7 +61,6 @@ function expr_batch_proces(m::PODNonlinearModel;kwargs...)
     m.lifted_obj_expr_mip = expr_parsing(m.lifted_obj_expr_mip, m)
     for i in 1:m.num_constr_orig
         m.lifted_constr_expr_mip[i] = expr_parsing(m.lifted_constr_expr_mip[i], m)
-        m.log_level > 99 && println(m.lifted_constr_expr_mip[i])
     end
 
     # 2: extract side information
@@ -90,11 +89,6 @@ function expr_parsing(expr, m::PODNonlinearModel, level=0;options...)
         if isa(node, Float64) || isa(node, Int) || isa(node, Symbol)
             continue
         elseif node.head == :call
-            # TODO: Evaluate the pure number sub-tree for partial flattening
-            # if isa(eval(node), Float64) || isa(eval(node), Int)
-            #     expr.args[cnt] = eval(node)
-            #     continue
-            # end
             expr.args[cnt] = expr_parsing(node, m, level+1)
         elseif node.head == :ref
             continue

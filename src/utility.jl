@@ -1,4 +1,28 @@
 """
+    update_rel_gap(m::PODNonlinearModel)
+
+Update POD model relative & absolute optimality gap.
+
+The relative gap calculation is
+
+```math
+    \\textbf{Gap} = \\frac{|UB-LB|}{ϵ+|UB|}
+```
+
+The absolute gap calculation is
+```
+    |UB-LB|
+```
+"""
+function update_opt_gap(m::PODNonlinearModel)
+
+    m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+    # m.best_abs_gap = abs(m.best_obj - m.best_bound)
+
+    return
+end
+
+"""
     update_var_bounds(m::PODNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
 
 This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
@@ -135,8 +159,8 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
 
     for i in 1:m.num_var_orig
         point = point_vec[i]
-        @assert point >= discretization[i][1] - m.tolerance       # Solution validation
-        @assert point <= discretization[i][end] + m.tolerance
+        @assert point >= discretization[i][1] - m.tol       # Solution validation
+        @assert point <= discretization[i][end] + m.tol
         if i in m.var_discretization_mip  # Only construct when discretized
             for j in 1:length(discretization[i])
                 if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
@@ -148,10 +172,10 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     lb_new = max(point - radius, lb_local)
                     ub_new = min(point + radius, ub_local)
                     m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
-                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tolerance)  # Insert new UB-based partition
+                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
                         insert!(discretization[i], j+1, ub_new)
                     end
-                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tolerance)  # Insert new LB-based partition
+                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
                         insert!(discretization[i], j+1, lb_new)
                     end
                     break
@@ -168,7 +192,6 @@ end
     update_mip_time_limit(m::PODNonlinearModel)
 
 An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
-
 """
 function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
 
@@ -213,12 +236,20 @@ end
 
 An utility function used to recongize different sub-solvers and return the bound stop option key words
 """
-function update_boundstop_options(m::PODNonlinearModel, stopbound::Float64)
+function update_boundstop_options(m::PODNonlinearModel)
+
+    # Calculation of the bound
+    if m.sense_orig == :Min
+        stopbound = (1-m.rel_gap+m.tol) * m.best_obj
+    elseif m.sense_orig == :Max
+        stopbound = (1+m.rel_gap-m.tol) * m.best_obj
+    end
 
     for i in 1:length(m.mip_solver.options)
         if m.mip_solver.options[i][1] == :BestBdStop
             deleteat!(m.mip_solver.options, i)
             if string(m.mip_solver)[1:6] == "Gurobi"
+                (m.log_level > 99) && (println("injecting bound stop for MIP $(stopbound)"))
                 push!(m.mip_solver.options, (:BestBdStop, stopbound))
             else
                 return
@@ -227,6 +258,7 @@ function update_boundstop_options(m::PODNonlinearModel, stopbound::Float64)
     end
 
     if string(m.mip_solver)[1:6] == "Gurobi"
+        (m.log_level > 99) && (println("injecting bound stop for MIP $(stopbound)"))
         push!(m.mip_solver.options, (:BestBdStop, stopbound))
     else
         return
@@ -242,7 +274,6 @@ end
 This function is used to fix variables to certain domains during the local solve process in the [`global_solve`](@ref).
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
-
 """
 function fix_domains(m::PODNonlinearModel; kwargs...)
 
@@ -252,7 +283,7 @@ function fix_domains(m::PODNonlinearModel; kwargs...)
         if i in m.var_discretization_mip
             point = m.sol_incumb_lb[i]
             for j in 1:length(m.discretization[i])
-                if point >= (m.discretization[i][j] - m.tolerance) && (point <= m.discretization[i][j+1] + m.tolerance)
+                if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
                     @assert j < length(m.discretization[i])
                     l_var[i] = m.discretization[i][j]
                     u_var[i] = m.discretization[i][j+1]

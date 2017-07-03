@@ -5,7 +5,7 @@
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
                            mip_solver=GurobiSolver(OutputFlag=0),
                            presolve_perform_bound_tightening=false,
-                           presolve_bt_output_tolerance=1e-1,
+                           presolve_bt_output_tol=1e-1,
                            log_level=0)
         m = nlp1(solver=test_solver)
         status = solve(m)
@@ -55,8 +55,8 @@
         					   mip_solver=CbcSolver(),
         					   log_level=0,
                                maxiter=4,
-                               tolerance=1e-5,
-        					   presolve_bt_width_tolerance=1e-3,
+                               tol=1e-5,
+        					   presolve_bt_width_tol=1e-3,
         					   presolve_perform_bound_tightening=false,
                                presolve_bound_tightening_algo=2,
         					   discretization_var_pick_algo=0)
@@ -162,7 +162,7 @@
                                mip_solver=GurobiSolver(OutputFlag=0),
                                presolve_perform_bound_tightening=true,
                                presolve_bound_tightening_algo=1,
-                               presolve_bt_output_tolerance=1e-1,
+                               presolve_bt_output_tol=1e-1,
                                log_level=0)
         m = nlp1(solver=test_solver)
         status = solve(m)
@@ -191,7 +191,7 @@
     							   mip_solver=GurobiSolver(OutputFlag=0),
     							   presolve_perform_bound_tightening=true,
     							   presolve_bound_tightening_algo=2,
-                                   presolve_bt_output_tolerance=1e-1,
+                                   presolve_bt_output_tol=1e-1,
     							   log_level=1)
         m = nlp1(solver=test_solver)
         status = solve(m)
@@ -216,8 +216,8 @@
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
     							   mip_solver=GurobiSolver(OutputFlag=0),
     							   log_level=1, maxiter=3,
-    							   presolve_bt_width_tolerance=1e-3,
-    							   presolve_bt_output_tolerance=1e-1,
+    							   presolve_bt_width_tol=1e-3,
+    							   presolve_bt_output_tol=1e-1,
     							   presolve_perform_bound_tightening=true,
                                    presolve_bound_tightening_algo=1,
     							   presolve_maxiter=2,
@@ -254,8 +254,8 @@
                                    mip_solver=GurobiSolver(OutputFlag=0),
                                    log_level=100, maxiter=2,
                                    presolve_perform_bound_tightening=true,
-                                   presolve_bt_width_tolerance=1e-3,
-                                   presolve_bt_output_tolerance=1e-1,
+                                   presolve_bt_width_tol=1e-3,
+                                   presolve_bt_output_tol=1e-1,
                                    presolve_bound_tightening_algo=2,
                                    presolve_maxiter=2,
                                    discretization_var_pick_algo=max_cover_var_picker)

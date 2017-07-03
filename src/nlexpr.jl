@@ -100,6 +100,12 @@ function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
+		m.log_level > 99 && println("lifted ::", m.lifted_constr_expr_mip[i])
+		m.log_level > 99 && println("coeffs ::", m.lifted_constr_aff_mip[i][:coefs])
+        m.log_level > 99 && println("vars ::", m.lifted_constr_aff_mip[i][:vars])
+        m.log_level > 99 && println("sense ::", m.lifted_constr_aff_mip[i][:sense])
+        m.log_level > 99 && println("rhs ::", m.lifted_constr_aff_mip[i][:rhs])
+		m.log_level > 99 && println("--------- =>")
 	end
 
 end
@@ -134,6 +140,8 @@ function expr_to_affine(expr)
 end
 
 """
+
+	traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
 
 This function traverse a left hand side tree to collect affine terms.
 Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled properly
@@ -172,15 +180,15 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 
 	for i in 1:length(expr.args)
 		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr.args[1], i), level+1)
-		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and close the previous term
-			if bufferVal != 0.0 && bufferVar != nothing
-				push!(lhscoeffs, sign*bufferVal)
+		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
+			if bufferVal != 0.0 && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
+				push!(lhscoeffs, sign*sign_convertor(expr.args[1], i)*bufferVal)
 				push!(lhsvars, bufferVar)
 				bufferVal = 0.0
 				bufferVar = nothing
 			end
-			if bufferVal != 0.0 && bufferVar == nothing
-				rhs += bufferVal
+			if bufferVal != 0.0 && bufferVar == nothing  # (sign) * (coef) => right-hand-side term
+				rhs += sign*sign_convertor(expr.args[1], i)*bufferVal
 				bufferVal = 0.0
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
@@ -189,7 +197,7 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 				bufferVar = nothing
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
-				push!(lhscoeffs, sign*reversor[(i<=2)]*(-1.0))
+				push!(lhscoeffs, sign*sign_convertor(expr.args[1], i))
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
@@ -427,7 +435,6 @@ end
 	By separating the structure with some dummy treatments
 """
 function expr_resolve_sign(expr, level=0; kwargs...)
-	@show expr, level
 	resolver = Dict(:- => -1, :+ => 1)
 	for i in 2:length(expr.args)
 		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 								# Skip the coefficients

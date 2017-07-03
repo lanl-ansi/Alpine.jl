@@ -11,7 +11,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     maxiter::Int                                                # Target Maximum Iterations
     rel_gap::Float64                                            # Relative optimality gap termination condition
-    tolerance::Float64                                          # Numerical tolerance used in the algorithmic process
+    abs_gap::Float64                                            # Absolute optimality gap termination condition
+    tol::Float64                                                # Numerical tol used in the algorithmic process
 
     # convexification method tuning
     convex_disable_tmc::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
@@ -30,8 +31,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_perform_bound_tightening::Bool                     # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
-    presolve_bt_width_tolerance::Float64                        # Numerical tolerance bound-tightening width
-    presolve_bt_output_tolerance::Float64                       # Variable bounds truncation tolerance
+    presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
+    presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
     presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
     presolve_mip_relaxation::Bool                               # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_mip_timelimit::Float64                             # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
@@ -112,9 +113,12 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     status::Dict{Symbol,Symbol}                                 # Detailed status of each different phases in algorithm
     pod_status::Symbol                                          # Current POD status
 
+    #
+    dump::Any
+
     # constructor
     function PODNonlinearModel(dev_debug, dev_test,
-                                log_level, timeout, maxiter, rel_gap, tolerance,
+                                log_level, timeout, maxiter, rel_gap, tol,
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
@@ -128,8 +132,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_track_time,
                                 presolve_perform_bound_tightening,
                                 presolve_maxiter,
-                                presolve_bt_width_tolerance,
-                                presolve_bt_output_tolerance,
+                                presolve_bt_width_tol,
+                                presolve_bt_output_tol,
                                 presolve_bound_tightening_algo,
                                 presolve_mip_relaxation,
                                 presolve_mip_timelimit)
@@ -143,7 +147,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.timeout = timeout
         m.maxiter = maxiter
         m.rel_gap = rel_gap
-        m.tolerance = tolerance
+        m.tol = tol
 
         m.convex_disable_tmc = convex_disable_tmc
         m.convex_disable_convhull = convex_disable_convhull
@@ -158,8 +162,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.presolve_track_time = presolve_track_time
         m.presolve_perform_bound_tightening = presolve_perform_bound_tightening
         m.presolve_maxiter = presolve_maxiter
-        m.presolve_bt_width_tolerance = presolve_bt_width_tolerance
-        m.presolve_bt_output_tolerance = presolve_bt_output_tolerance
+        m.presolve_bt_width_tol = presolve_bt_width_tol
+        m.presolve_bt_output_tol = presolve_bt_output_tol
         m.presolve_bound_tightening_algo = presolve_bound_tightening_algo
         m.presolve_mip_relaxation = presolve_mip_relaxation
         m.presolve_mip_timelimit = presolve_mip_timelimit
@@ -195,6 +199,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.best_bound = -Inf
         m.best_rel_gap = Inf
         m.pod_status = :NotLoaded
+
+        m.dump = STDOUT
 
         create_status!(m)
         create_logs!(m)
@@ -369,13 +375,13 @@ For example, this algorithm can easily be reformed as a uniform-partitioning alg
 
 """
 function global_solve(m::PODNonlinearModel)
-    
+
     (m.log_level > 0) && logging_head()
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
-        m.best_rel_gap = (m.best_obj - m.best_bound)/m.best_obj
+        update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
@@ -410,14 +416,13 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
     # MathProgBase.SolverInterface.setparameters!(local_solve_nlp_model, TimeLimit=m.logs[:time_left], Silent=true)
 
-    # TT = STDOUT # save original STDOUT stream
     # redirect_stdout()
     start_local_solve = time()
     MathProgBase.optimize!(local_solve_nlp_model)
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
-    # redirect_stdout(TT) # restore STDOUT
+    # redirect_stdout(m.dump) # restore STDOUT
 
     status_pass = [:Optimal, :Suboptimal, :UserLimit]
     status_reroute = [:Infeasible]
@@ -466,11 +471,12 @@ See `create_bounding_mip` for more details of the problem solved here.
 """
 function bounding_solve(m::PODNonlinearModel; kwargs...)
 
-
     # ================= Solve Start ================ #
     convertor = Dict(:Max=>:<, :Min=>:>)
+    boundlocator = Dict(:Max=>:+, :Min=>:-)
+    boundlocator_rev = Dict(:Max=>:-, :Max=>:+)
     update_mip_time_limit(m)
-    update_boundstop_options(m, (1-m.rel_gap+m.tolerance)*m.best_obj)
+    update_boundstop_options(m)
     start_bounding_solve = time()
     status = solve(m.model_mip, suppress_warnings=true)
     cputime_bounding_solve = time() - start_bounding_solve

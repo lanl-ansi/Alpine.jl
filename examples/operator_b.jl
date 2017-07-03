@@ -7,7 +7,7 @@ function operator_b(;verbose=false, solver=nothing)
 								   mip_solver=CbcSolver(OutputFlag=0),
 								   presolve_perform_bound_tightening=true,
 								   presolve_bound_tightening_algo=2,
-								   presolve_bt_output_tolerance=1e-1,
+								   presolve_bt_output_tol=1e-1,
 								   log_level=1))
 	else
 		m = Model(solver=solver)

@@ -7,7 +7,7 @@ function meanvarx(;verbose=false, solver=nothing)
                                    mip_solver=GurobiSolver(OutputFlag=0),
                                    rel_gap=0.001, log_level=100,
                                    discretization_ratio=4,
-                                   presolve_bt_output_tolerance=1e-2,
+                                   presolve_bt_output_tol=1e-2,
                                    presolve_perform_bound_tightening=false))
     else
         m = Model(solver=solver)
