@@ -3,21 +3,16 @@ using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 function meanvarx(;verbose=false, solver=nothing)
 
     if solver==nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.oa_log_level=0",
-                                                                "bonmin.nlp_log_level=0",
-                                                                "bonmin.bb_log_level=0",
-                                                                "bonmin.milp_log_level=0",
-                                                                "bonmin.milp_solver=Cplex",
-                                                                "bonmin.algorithm=B-OA"]),
-                                    mip_solver=GurobiSolver(OutputFlag=0),
-                                    rel_gap=0.001, log_level=100,
-                                    discretization_ratio=16,
-                                    presolve_bt_output_tolerance=1e-2,
-                                    presolve_perform_bound_tightening=true))
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+                                   mip_solver=GurobiSolver(OutputFlag=0),
+                                   rel_gap=0.001, log_level=100,
+                                   discretization_ratio=4,
+                                   presolve_bt_output_tolerance=1e-2,
+                                   presolve_perform_bound_tightening=false))
     else
         m = Model(solver=solver)
     end
-    
+
     @variable(m, x[1:35]>=0)
     for i=22:35
         setcategory(x[i], :Bin)

@@ -97,7 +97,6 @@ function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 
 	# Populate the affine data structure for the objective
 	m.lifted_obj_aff_mip = expr_to_affine(m.lifted_obj_expr_mip)
-
 	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
@@ -135,11 +134,19 @@ function expr_to_affine(expr)
 end
 
 """
-	This function traverse a left hand side tree to collect affine terms
+
+This function traverse a left hand side tree to collect affine terms.
+Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled properly
 """
-function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, level=0; kwargs...)
+function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
 
 	reversor = Dict(true => -1.0, false => 1.0)
+	function sign_convertor(operator, pos)
+		if operator == :- && pos > 2
+			return -1.0
+		end
+		return 1.0
+	end
 
 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
 		bufferVal = expr
@@ -152,36 +159,37 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 			bufferVar = nothing
 		end
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-	elseif expr in [:*, :(<=), :(==), :(>=)]
+	elseif expr in [:*]
+		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+	elseif expr in [:(<=), :(==), :(>=)]
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	elseif expr in [:/, :^]
-		error("Unsupported operators $expr")
+		error("Unsupported operators $expr, it is suppose to be affine function")
 	elseif expr.head == :ref
 		bufferVar = expr
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	end
 
 	for i in 1:length(expr.args)
-		lhscoeff, lhsvars, rhs, bufferVal, bufferVar=
-			traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, level+1)
+		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr.args[1], i), level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and close the previous term
 			if bufferVal != 0.0 && bufferVar != nothing
-				push!(lhscoeffs, reversor[(expr.args[1]==:- && i<=2)]*eval(expr.args[1])(bufferVal))
+				push!(lhscoeffs, sign*bufferVal)
 				push!(lhsvars, bufferVar)
 				bufferVal = 0.0
 				bufferVar = nothing
 			end
 			if bufferVal != 0.0 && bufferVar == nothing
-				rhs = eval(expr.args[1])(rhs, bufferVal)
+				rhs += bufferVal
 				bufferVal = 0.0
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
-				push!(lhscoeffs, 1.0)
+				push!(lhscoeffs, sign*1.0)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
-				push!(lhscoeffs, reversor[(i<=2)]*(-1.0))
+				push!(lhscoeffs, sign*reversor[(i<=2)]*(-1.0))
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
@@ -201,6 +209,74 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 
 	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 end
+
+# """
+# 	This function traverse a left hand side tree to collect affine terms
+# """
+# function _traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, level=0; kwargs...)
+#
+# 	reversor = Dict(true => -1.0, false => 1.0)
+#
+# 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
+# 		bufferVal = expr
+# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+# 	elseif expr in [:+, :-]
+# 		if bufferVal != 0.0 && bufferVar != nothing
+# 			push!(lhscoeffs, bufferVal)
+# 			push!(lhsvars, bufferVar)
+# 			bufferVal = 0.0
+# 			bufferVar = nothing
+# 		end
+# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+# 	elseif expr in [:*, :(<=), :(==), :(>=)]
+# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+# 	elseif expr in [:/, :^]
+# 		error("Unsupported operators $expr")
+# 	elseif expr.head == :ref
+# 		bufferVar = expr
+# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+# 	end
+#
+# 	for i in 1:length(expr.args)
+# 		lhscoeff, lhsvars, rhs, bufferVal, bufferVar=
+# 			_traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, level+1)
+# 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and close the previous term
+# 			if bufferVal != 0.0 && bufferVar != nothing
+# 				push!(lhscoeffs, reversor[(expr.args[1]==:- && i<=2)]*eval(expr.args[1])(bufferVal))
+# 				push!(lhsvars, bufferVar)
+# 				bufferVal = 0.0
+# 				bufferVar = nothing
+# 			end
+# 			if bufferVal != 0.0 && bufferVar == nothing
+# 				rhs = eval(expr.args[1])(rhs, bufferVal)
+# 				bufferVal = 0.0
+# 			end
+# 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
+# 				push!(lhscoeffs, 1.0)
+# 				push!(lhsvars, bufferVar)
+# 				bufferVar = nothing
+# 			end
+# 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
+# 				push!(lhscoeffs, reversor[(i<=2)]*(-1.0))
+# 				push!(lhsvars, bufferVar)
+# 				bufferVar = nothing
+# 			end
+# 		elseif expr.args[1] in [:(<=), :(==), :(>=)]
+# 			rhs = expr.args[end]
+# 		end
+# 	end
+#
+# 	if level == 0
+# 		if bufferVal != 0.0 && bufferVar != nothing
+# 			push!(lhscoeffs, bufferVal)
+# 			push!(lhsvars, bufferVar)
+# 			bufferVal = 0.0
+# 			bufferVar = nothing
+# 		end
+# 	end
+#
+# 	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
+# end
 
 """
 	Warpper for populating lifted expressions.
@@ -351,7 +427,7 @@ end
 	By separating the structure with some dummy treatments
 """
 function expr_resolve_sign(expr, level=0; kwargs...)
-
+	@show expr, level
 	resolver = Dict(:- => -1, :+ => 1)
 	for i in 2:length(expr.args)
 		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 								# Skip the coefficients
@@ -363,7 +439,7 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 					elseif expr.args[1] in [:+, :-, :(==), :(<=), :(>=)]
 						expr.args[i] = expr.args[i]
 					else
-						error("Unexpected operator $(expr.args[1]) during resolving sign")
+						error("Unexpected operator $(expr.args[i]) during resolving sign")
 					end
 				elseif expr.args[i].args[1] == :+ 												# Treatement for :(+x) replace with :x
 					expr.args[i] = expr.args[i].args[2]
@@ -374,6 +450,7 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 		end
 	end
 
+	return
 end
 
 """
@@ -382,7 +459,6 @@ end
 	Most issues can be caused by this function.
 """
 function expr_flatten(expr, level=0; kwargs...)
-
 	if level > 0  # No trivial constraint is allowed "3>5"
 		flat = expr_arrangeargs(expr.args)
 		if isa(flat, Float64)
@@ -398,7 +474,7 @@ function expr_flatten(expr, level=0; kwargs...)
 		end
 	end
 
-	if level > 0  #Root level process, no additional operators
+	if level > 0  #Root level process, no additional processes
 		expr.args = expr_arrangeargs(expr.args)
 	end
 
@@ -411,7 +487,6 @@ end
 	Sequence arrangement is dependent on operator
 """
 function expr_arrangeargs(args::Array; kwargs...)
-
 	# A mapping used for operator treatments
 	reverter = Dict(true=>:-, false=>:+)
 	operator_coefficient_base = Dict{Symbol, Float64}(
@@ -481,9 +556,10 @@ function expr_arrangeargs(args::Array; kwargs...)
 		end
 
 	else
-		error("Unkown operator $(args[1])")
+		error("Unkown/unspported operator $(args[1])")
 	end
 
+	return
 end
 
 

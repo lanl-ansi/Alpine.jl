@@ -54,14 +54,14 @@ function expr_batch_proces(m::PODNonlinearModel;kwargs...)
     expr_flatten(m.lifted_obj_expr_mip)
     for i in 1:m.num_constr_orig
         expr_resolve_sign(m.lifted_constr_expr_mip[i])
-        expr_flatten(m.lifted_constr_expr_mip[i])
+        expr_flatten(m.lifted_constr_expr_mip[i].args[2])
     end
 
     # 1 : most important
     m.lifted_obj_expr_mip = expr_parsing(m.lifted_obj_expr_mip, m)
     for i in 1:m.num_constr_orig
         m.lifted_constr_expr_mip[i] = expr_parsing(m.lifted_constr_expr_mip[i], m)
-        m.log_level > 99 && println(m.lifted_constr_expr_mip[end])
+        m.log_level > 99 && println(m.lifted_constr_expr_mip[i])
     end
 
     # 2: extract side information
@@ -158,12 +158,11 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
     function store_bilinear()
         y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
-        lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, var_idxs[1], var_idxs[2]))
+        lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])))
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
                                             :id => y_idx,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
-                                            :monomial_status => false,    # Later to be deprecated
                                             :nonlinear_type => :bilinear,
                                             :convexified => false)
     end

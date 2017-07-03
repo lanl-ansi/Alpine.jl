@@ -1,10 +1,11 @@
-using POD, JuMP, CPLEX, Ipopt, MathProgBase
+using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
 function blend029(;verbose=false, solver=nothing)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                                    mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+                                    mip_solver=CplexSolver(CPX_PARAM_SCRIND=1),
+                                    log_level=100,
                                     rel_gap=0.001))
     else
         m = Model(solver=solver)

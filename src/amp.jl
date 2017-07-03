@@ -111,7 +111,6 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
 
                     # Error condition
                     if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
-                        @show idx_a, idx_b, m.var_discretization_mip
                         error("Error case. At least one term should show up in discretization choices.")
                     end
                 end
@@ -266,8 +265,6 @@ function post_amp_lifted_constraints(m::PODNonlinearModel)
 end
 
 function post_amp_lifted_objective(m::PODNonlinearModel)
-
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
-
     return
 end
