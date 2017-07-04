@@ -108,6 +108,7 @@ function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 		m.log_level > 99 && println("--------- =>")
 	end
 
+	return
 end
 
 """
@@ -217,74 +218,6 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 
 	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 end
-
-# """
-# 	This function traverse a left hand side tree to collect affine terms
-# """
-# function _traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, level=0; kwargs...)
-#
-# 	reversor = Dict(true => -1.0, false => 1.0)
-#
-# 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
-# 		bufferVal = expr
-# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-# 	elseif expr in [:+, :-]
-# 		if bufferVal != 0.0 && bufferVar != nothing
-# 			push!(lhscoeffs, bufferVal)
-# 			push!(lhsvars, bufferVar)
-# 			bufferVal = 0.0
-# 			bufferVar = nothing
-# 		end
-# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-# 	elseif expr in [:*, :(<=), :(==), :(>=)]
-# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-# 	elseif expr in [:/, :^]
-# 		error("Unsupported operators $expr")
-# 	elseif expr.head == :ref
-# 		bufferVar = expr
-# 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-# 	end
-#
-# 	for i in 1:length(expr.args)
-# 		lhscoeff, lhsvars, rhs, bufferVal, bufferVar=
-# 			_traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, level+1)
-# 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and close the previous term
-# 			if bufferVal != 0.0 && bufferVar != nothing
-# 				push!(lhscoeffs, reversor[(expr.args[1]==:- && i<=2)]*eval(expr.args[1])(bufferVal))
-# 				push!(lhsvars, bufferVar)
-# 				bufferVal = 0.0
-# 				bufferVar = nothing
-# 			end
-# 			if bufferVal != 0.0 && bufferVar == nothing
-# 				rhs = eval(expr.args[1])(rhs, bufferVal)
-# 				bufferVal = 0.0
-# 			end
-# 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
-# 				push!(lhscoeffs, 1.0)
-# 				push!(lhsvars, bufferVar)
-# 				bufferVar = nothing
-# 			end
-# 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
-# 				push!(lhscoeffs, reversor[(i<=2)]*(-1.0))
-# 				push!(lhsvars, bufferVar)
-# 				bufferVar = nothing
-# 			end
-# 		elseif expr.args[1] in [:(<=), :(==), :(>=)]
-# 			rhs = expr.args[end]
-# 		end
-# 	end
-#
-# 	if level == 0
-# 		if bufferVal != 0.0 && bufferVar != nothing
-# 			push!(lhscoeffs, bufferVal)
-# 			push!(lhsvars, bufferVar)
-# 			bufferVal = 0.0
-# 			bufferVar = nothing
-# 		end
-# 	end
-#
-# 	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-# end
 
 """
 	Warpper for populating lifted expressions.

@@ -270,7 +270,7 @@ function resolve_monomial(expr, m::PODNonlinearModel)
     function store_monomial()
         y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
-        lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, var_idxs[1], var_idxs[1]))
+        lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[1])))
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
                                             :id => y_idx,
                                             :ref => term_key,
@@ -319,10 +319,13 @@ end
 """
     TODO: doc
 """
-function resolve_sin(expr, m::PODNonlinearModel)
+function resolve_sine(expr, m::PODNonlinearModel)
 
-    function store_sin() end
-    function lift_sin() end
+    function store_sin()
+    end
+
+    function lift_sin()
+    end
 
     # @assert expr.head == :call
     # if (expr.args[1] == :sin)
@@ -347,8 +350,10 @@ end
 """
 function resolve_cos(expr, m::PODNonlinearModel)
 
-    function store_sin() end
-    function lift_sin() end
+    function store_sin()
+    end
+    function lift_sin()
+    end
 
     # @assert expr.head == :call
     # if (expr.args[1] == :cos)
