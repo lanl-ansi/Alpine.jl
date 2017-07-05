@@ -203,14 +203,21 @@ function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; k
 
     options = Dict(kwargs)
 
-    for bi in keys(nonlinear_info)
-        idx_a = bi[1].args[2]
-        idx_b = bi[2].args[2]
-        idx_ab = nonlinear_info[bi][:lifted_var_ref].args[2]
-        bound = [discretization[idx_a][1], discretization[idx_a][end]] * [discretization[idx_b][1], discretization[idx_b][end]]'
-        discretization[idx_ab] = [-Inf, Inf]
-        discretization[idx_ab][1] = minimum(bound)
-        discretization[idx_ab][2] = maximum(bound)
+    # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
+    # Increased complexity from linear to square but a reasonable amount
+    # Potentially, additional mapping can be applied to reduce the complexity
+    for i in 1:length(m.nonlinear_info)
+        for bi in keys(nonlinear_info)
+            if nonlinear_info[bi][:id] == i
+                idx_a = bi[1].args[2]
+                idx_b = bi[2].args[2]
+                idx_ab = nonlinear_info[bi][:lifted_var_ref].args[2]
+                bound = [discretization[idx_a][1], discretization[idx_a][end]] * [discretization[idx_b][1], discretization[idx_b][end]]'
+                discretization[idx_ab] = [-Inf, Inf]
+                discretization[idx_ab][1] = minimum(bound)
+                discretization[idx_ab][2] = maximum(bound)
+            end
+        end
     end
 
     return discretization

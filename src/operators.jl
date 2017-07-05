@@ -154,7 +154,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])))
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                            :id => y_idx,
+                                            :id => length(keys(m.nonlinear_info)) + 1,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :nonlinear_type => :bilinear,
@@ -216,7 +216,7 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
         end
         lifted_constr_ref = parse(constr_block)
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                            :id => y_idx,
+                                            :id => length(keys(m.nonlinear_info)) + 1,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :monomial_status => false,
@@ -272,7 +272,7 @@ function resolve_monomial(expr, m::PODNonlinearModel)
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[1])))
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                            :id => y_idx,
+                                            :id => length(keys(m.nonlinear_info)) + 1,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :nonlinear_type => :monomial,

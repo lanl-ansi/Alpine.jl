@@ -28,15 +28,15 @@
         @test haskey(m.internalModel.nonlinear_info, [:(x[1]), :(x[2])])
         @test haskey(m.internalModel.nonlinear_info, [:(x[5]), :(x[12])])
 
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 5
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2])]][:id] == 6
-        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 7
-        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[7])]][:id] == 8
-        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[3])]][:id] == 9
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[9])]][:id] == 10
-        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 11
-        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[11])]][:id] == 12
-        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[12])]][:id] == 13
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2])]][:id] == 2
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 3
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[7])]][:id] == 4
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[3])]][:id] == 5
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[9])]][:id] == 6
+        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 7
+        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[11])]][:id] == 8
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[12])]][:id] == 9
     end
 
     @testset " Validation Test on expression parsing : part2" begin
@@ -78,21 +78,21 @@
         @test haskey(m.internalModel.nonlinear_info, [:(x[1]), :(x[8])]) #18
         @test haskey(m.internalModel.nonlinear_info, [:(x[18]), :(x[3])]) #19
 
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2])]][:id] == 5
-        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[3])]][:id] == 6
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 7
-        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 8
-        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[8])]][:id] == 9
-        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 10
-        @test m.internalModel.nonlinear_info[[:(x[9]), :(x[10])]][:id] == 11
-        @test m.internalModel.nonlinear_info[[:(x[8]), :(x[10])]][:id] == 12
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[12])]][:id] == 13
-        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[2])]][:id] == 14
-        @test m.internalModel.nonlinear_info[[:(x[14]), :(x[10])]][:id] == 15
-        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[3])]][:id] == 16
-        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[16])]][:id] == 17
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[8])]][:id] == 18
-        @test m.internalModel.nonlinear_info[[:(x[18]), :(x[3])]][:id] == 19
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[3])]][:id] == 2
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 3
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 4
+        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[8])]][:id] == 5
+        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 6
+        @test m.internalModel.nonlinear_info[[:(x[9]), :(x[10])]][:id] == 7
+        @test m.internalModel.nonlinear_info[[:(x[8]), :(x[10])]][:id] == 8
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[12])]][:id] == 9
+        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[2])]][:id] == 10
+        @test m.internalModel.nonlinear_info[[:(x[14]), :(x[10])]][:id] == 11
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[3])]][:id] == 12
+        @test m.internalModel.nonlinear_info[[:(x[7]), :(x[16])]][:id] == 13
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[8])]][:id] == 14
+        @test m.internalModel.nonlinear_info[[:(x[18]), :(x[3])]][:id] == 15
 
     end
 
@@ -138,25 +138,25 @@
         @test haskey(m.internalModel.nonlinear_info, [:(x[21]), :(x[16])]) #22
         @test haskey(m.internalModel.nonlinear_info, [:(x[22]), :(x[19])]) #23
 
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2])]][:id] == 5
-        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[3])]][:id] == 6
-        @test m.internalModel.nonlinear_info[[:(x[6]), :(x[4])]][:id] == 7
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 8
-        @test m.internalModel.nonlinear_info[[:(x[8]), :(x[2])]][:id] == 9
-        @test m.internalModel.nonlinear_info[[:(x[9]), :(x[3])]][:id] == 10
-        @test m.internalModel.nonlinear_info[[:(x[10]), :(x[4])]][:id] == 11
-        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 12
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[12])]][:id] == 13
-        @test m.internalModel.nonlinear_info[[:(x[13]), :(x[3])]][:id] == 14
-        @test m.internalModel.nonlinear_info[[:(x[14]), :(x[4])]][:id] == 15
-        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 16
-        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[16])]][:id] == 17
-        @test m.internalModel.nonlinear_info[[:(x[17]), :(x[4])]][:id] == 18
-        @test m.internalModel.nonlinear_info[[:(x[4]), :(x[4])]][:id] == 19
-        @test m.internalModel.nonlinear_info[[:(x[6]), :(x[19])]][:id] == 20
-        @test m.internalModel.nonlinear_info[[:(x[8]), :(x[12])]][:id] == 21
-        @test m.internalModel.nonlinear_info[[:(x[21]), :(x[16])]][:id] == 22
-        @test m.internalModel.nonlinear_info[[:(x[22]), :(x[19])]][:id] == 23
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[3])]][:id] == 2
+        @test m.internalModel.nonlinear_info[[:(x[6]), :(x[4])]][:id] == 3
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 4
+        @test m.internalModel.nonlinear_info[[:(x[8]), :(x[2])]][:id] == 5
+        @test m.internalModel.nonlinear_info[[:(x[9]), :(x[3])]][:id] == 6
+        @test m.internalModel.nonlinear_info[[:(x[10]), :(x[4])]][:id] == 7
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 8
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[12])]][:id] == 9
+        @test m.internalModel.nonlinear_info[[:(x[13]), :(x[3])]][:id] == 10
+        @test m.internalModel.nonlinear_info[[:(x[14]), :(x[4])]][:id] == 11
+        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 12
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[16])]][:id] == 13
+        @test m.internalModel.nonlinear_info[[:(x[17]), :(x[4])]][:id] == 14
+        @test m.internalModel.nonlinear_info[[:(x[4]), :(x[4])]][:id] == 15
+        @test m.internalModel.nonlinear_info[[:(x[6]), :(x[19])]][:id] == 16
+        @test m.internalModel.nonlinear_info[[:(x[8]), :(x[12])]][:id] == 17
+        @test m.internalModel.nonlinear_info[[:(x[21]), :(x[16])]][:id] == 18
+        @test m.internalModel.nonlinear_info[[:(x[22]), :(x[19])]][:id] == 19
 
     end
 
@@ -196,17 +196,17 @@
         @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[11])])) #14
         @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[6]),:(x[8]),:(x[10]),:(x[11])])) #15
 
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[2]),:(x[3]),:(x[4])])][:id] == 5 #5
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 6 #6
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[4])])][:id] == 7 #7
-        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 8 #8
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[8]),:(x[3]),:(x[4])])][:id] == 9 #9
-        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 10 #10
-        @test m.internalModel.nonlinear_info[[:(x[4]), :(x[4])]][:id] == 11 #11
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[2]),:(x[10]),:(x[11])])][:id] ==  12  #12
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[8]),:(x[10]),:(x[4])])][:id] == 13 #13
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[11])])][:id] == 14 #14
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[8]),:(x[10]),:(x[11])])][:id] == 15 #15
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[2]),:(x[3]),:(x[4])])][:id] == 1 #5
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 2 #6
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[4])])][:id] == 3 #7
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 4 #8
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[8]),:(x[3]),:(x[4])])][:id] == 5 #9
+        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 6 #10
+        @test m.internalModel.nonlinear_info[[:(x[4]), :(x[4])]][:id] == 7 #11
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[2]),:(x[10]),:(x[11])])][:id] ==  8  #12
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[8]),:(x[10]),:(x[4])])][:id] == 9 #13
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[11])])][:id] == 10 #14
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[8]),:(x[10]),:(x[11])])][:id] == 11 #15
 
     end
 
