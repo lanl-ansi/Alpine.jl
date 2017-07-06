@@ -186,7 +186,7 @@ function min_vertex_cover(m::PODNonlinearModel)
     for pair in keys(m.nonlinear_info)
         arc = []
         if length(pair) > 2
-            error("min_vertex_cover discretizing variable selection method only support bi-linear problems")
+            warn("min_vertex_cover discretizing variable selection method only support bi-linear problems, enfocing thie method may produce mistakes...")
         end
         for i in pair
             @assert isa(i.args[2], Int)
@@ -227,7 +227,7 @@ function max_cover(m::PODNonlinearModel; kwargs...)
     nodes = Set()
     for pair in keys(m.nonlinear_info)
         if length(pair) > 2
-            error("max-cover discretizing variable selection method only support bi-linear problems")
+            warn("max-cover discretizing variable selection method only support bi-linear problems. enforcing may produce mistakes...")
         end
         for i in pair
             @assert isa(i.args[2], Int)

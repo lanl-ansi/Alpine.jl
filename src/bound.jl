@@ -39,7 +39,7 @@ function detect_bound_from_aff(m::PODNonlinearModel)
             elseif aff[:sense] == :(>=) && aff[:coefs][1] > 0.0
                 eval_bound = aff[:rhs]/aff[:coefs][1]
                 if eval_bound > m.l_var_tight[var_idx] + m.tol
-                    m.l_var_tight[var_idx] = eval_bounds
+                    m.l_var_tight[var_idx] = eval_bound
                     (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) detected from constraints")
                 end
             elseif aff[:sense] == :(>=) && aff[:coefs][1] < 0.0  # Flip sign
@@ -183,7 +183,7 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
     # Potentially, additional mapping can be applied to reduce the complexity
     for i in 1:length(m.nonlinear_info)
         for bi in keys(m.nonlinear_info)
-            if m.nonlinear_info[bi][:id] == i
+            if (m.nonlinear_info[bi][:id]) == i && (m.nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial])
                 idx_a = bi[1].args[2]
                 idx_b = bi[2].args[2]
                 idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
