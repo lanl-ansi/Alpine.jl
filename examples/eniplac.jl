@@ -4,12 +4,12 @@ function eniplac(;verbose=false, solver=nothing)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
-                                    mip_solver=GurobiSolver(),
+                                    mip_solver=GurobiSolver(OutputFlag=0),
                                     presolve_bound_tightening=false,
                                     discretization_ratio=8,
                                     discretization_var_pick_algo="min_vertex_cover",
                                     log_level=100,
-                                    rel_gap=0.0001))
+                                    rel_gap=0.001))
     else
         m = Model(solver=solver)
     end

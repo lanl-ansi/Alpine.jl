@@ -87,13 +87,11 @@ function detect_bound_from_aff(m::PODNonlinearModel)
                     if eval_l_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
-                        # @show aff
                         (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
                     end
                     if eval_u_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
-                        # @show aff
                         (m.log_level > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif aff[:sense] == :(>=) && var_coef > 0.0  # a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
@@ -109,7 +107,6 @@ function detect_bound_from_aff(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        # @show aff
                         (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif var_coef < 0.0 && aff[:sense] == :(>=) # -a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
@@ -117,7 +114,7 @@ function detect_bound_from_aff(m::PODNonlinearModel)
                     for j in 1:length(aff[:vars])
                         if j != i && aff[:coefs][j] > 0.0
                             eval_bound += abs(aff[:coefs][j]/var_coef) * m.u_var_tight[aff[:vars][j].args[2]]
-                        elseif j != i && aff[:coefs] < 0.0
+                        elseif j != i && aff[:coefs][j] < 0.0
                             eval_bound -= abs(aff[:coefs][j]/var_coef) * m.l_var_tight[aff[:vars][j].args[2]]
                         end
                         (eval_bound == Inf) && break
@@ -125,7 +122,6 @@ function detect_bound_from_aff(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        # @show aff
                         (m.log_level > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif (aff[:sense] == :(<=) && aff[:coefs][i] > 0.0) # a($) - by + cz <= 100, y∈[1,10], z∈[2,50], a,b,c > 0
@@ -141,7 +137,6 @@ function detect_bound_from_aff(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        # @show aff
                         (m.log_level > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif (aff[:sense] == :(<=) && aff[:coefs][i] < 0.0) # -a($) - by + cz <= 100, y∈[1,10], z∈[2,50], a,b,c > 0
@@ -157,7 +152,6 @@ function detect_bound_from_aff(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        # @show aff
                         (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
                     end
                 end
@@ -215,10 +209,7 @@ function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; k
     # Potentially, additional mapping can be applied to reduce the complexity
     for i in 1:length(nonlinear_info)
         for bi in keys(nonlinear_info)
-            if length(bi) > 2
-                error("Currently, resolve_lifted_var_bounds only supports bi-linear or hierarchical bi-linear convexificaition problems")
-            end
-            if nonlinear_info[bi][:id] == i
+            if (nonlinear_info[bi][:id] == i) && (nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial])
                 idx_a = bi[1].args[2]
                 idx_b = bi[2].args[2]
                 idx_ab = nonlinear_info[bi][:lifted_var_ref].args[2]
@@ -231,4 +222,24 @@ function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; k
     end
 
     return discretization
+end
+
+"""
+    resolve_closed_var_bounds(m::PODNonlinearModel)
+
+This function seeks variable with tight bounds (by presolve_bt_width_tol) by checking .l_var_tight and .u_var_tight.
+If a variable is found to be within a sufficiently small interval then no discretization will be performed on this variable
+and the .discretization will be cleared with the tight bounds for basic McCormick operation if necessary.
+
+"""
+function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
+
+    for var in m.all_nonlinear_vars
+        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
+            deleteat!(m.var_discretization_mip, findfirst(m.var_discretization_mip, var)) # Clean nonlinear_info by deleting the info
+            m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
+        end
+    end
+
+    return
 end

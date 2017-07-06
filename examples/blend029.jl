@@ -1,9 +1,9 @@
-using POD, JuMP, CPLEX, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
+using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
 function blend029(;verbose=false, solver=nothing)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=32,
                                     log_level=100,

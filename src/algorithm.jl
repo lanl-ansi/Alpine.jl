@@ -2,9 +2,11 @@ using JuMP
 
 type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
-    # developer parameters for testing and debugging
+    # external developer parameters for testing and debugging
     dev_debug::Bool                                             # Turn on the debug mode
     dev_test::Bool                                              # Turn on for testing new code with
+    # Temporary internal place-holder for testing differnt things
+    dump::Any
 
     # basic solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
@@ -112,9 +114,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     logs::Dict{Symbol,Any}                                      # Logging information
     status::Dict{Symbol,Symbol}                                 # Detailed status of each different phases in algorithm
     pod_status::Symbol                                          # Current POD status
-
-    #
-    dump::Any
 
     # constructor
     function PODNonlinearModel(dev_debug, dev_test,
@@ -415,13 +414,11 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
     # MathProgBase.SolverInterface.setparameters!(local_solve_nlp_model, TimeLimit=m.logs[:time_left], Silent=true)
 
-    # redirect_stdout()
     start_local_solve = time()
     MathProgBase.optimize!(local_solve_nlp_model)
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
-    # redirect_stdout(m.dump) # restore STDOUT
 
     status_pass = [:Optimal, :Suboptimal, :UserLimit]
     status_reroute = [:Infeasible]
@@ -483,10 +480,11 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     # ================= Solve End ================ #
 
-    status_pass = [:Optimal, :Suboptimal, :UserLimit]
+    status_pass = [:Optimal]
+    status_lb = [:UserObjLimits, :UserLimit, :Suboptimal]
     status_reroute = [:Infeasible]
 
-    if status in status_pass
+    if status in status_pass  # Only fetch the lower bound when default optimality is performed :: maybe we should always fetch lower bound
         candidate_bound = getobjectivevalue(m.model_mip)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
@@ -496,7 +494,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
         end
-    elseif status == :UserObjLimits     # This will leads to optimality
+    elseif status in status_lb
         candidate_bound = getobjbound(m.model_mip)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)

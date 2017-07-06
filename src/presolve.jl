@@ -145,9 +145,9 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
 
     start_build = time()
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP model
-    post_amp_vars(m, use_discretization=discretization)
-    post_amp_lifted_constraints(m)
-    post_amp_mccormick(m, use_discretization=discretization)
+    amp_post_vars(m, use_discretization=discretization)
+    amp_post_lifted_constraints(m)
+    amp_post_tmc_mccormick(m, use_discretization=discretization)
     # any additional built-in convexification method : convexhull for example
     for i in 1:length(m.method_convexification)    # Additional user-defined convexificaition method, following user sequence
         eval(m.method_convexification[i])(m)
@@ -192,20 +192,15 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    resolve_closed_var_bounds(m::PODNonlinearModel)
-
-This function seeks variable with tight bounds (by presolve_bt_width_tol) by checking .l_var_tight and .u_var_tight.
-If a variable is found to be within a sufficiently small interval then no discretization will be performed on this variable
-and the .discretization will be cleared with the tight bounds for basic McCormick operation if necessary.
-
+    TODO: docstring
 """
-function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
-
-    for var in m.all_nonlinear_vars
-        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
-            deleteat!(m.var_discretization_mip, findfirst(m.var_discretization_mip, var)) # Clean nonlinear_info by deleting the info
-            m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
-        end
+function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
+    if m.sense_orig == :Max
+        @constraint(m.model_mip,
+            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) >= bound)
+    elseif m.sense_orig == :Min
+        @constraint(m.model_mip,
+            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) <= bound)
     end
 
     return

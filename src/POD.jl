@@ -3,15 +3,27 @@ module POD
 using JuMP
 using MathProgBase
 
+# Engine for High-level Algorithmic Control and User-interface
 include("algorithm.jl")
-include("nlexpr.jl")
 include("solver.jl")
-include("model.jl")
-include("amp.jl")
-include("bound.jl")
-include("presolve.jl")
+
+# Engine for expression handling
+include("nlexpr.jl")
 include("operators.jl")
+
+# Main Algorithmic Process
+include("presolve.jl")
+include("amp.jl")
+
+# Convexification method
+include("tmc.jl")
+include("multi.jl")
+
+# Model Manipulation and utilities
+include("bounds.jl")
 include("utility.jl")
+
+# Othes
 include("log.jl")
 
 end # module

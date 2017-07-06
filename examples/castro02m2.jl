@@ -1,8 +1,10 @@
+using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
+
 function castro02m2(;verbose=false, solver=nothing)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-    								mip_solver=CbcSolver(OutputFlag=0),
+    								mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
                                     presolve_bound_tightening=false,
                                     log_level=1,
                                     rel_gap=0.001))

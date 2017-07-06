@@ -17,7 +17,7 @@ The absolute gap calculation is
 function update_opt_gap(m::PODNonlinearModel)
 
     m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
-    # m.best_abs_gap = abs(m.best_obj - m.best_bound)
+    # absoluate or anyother bound calculation shows here...
 
     return
 end
@@ -243,7 +243,6 @@ function update_boundstop_options(m::PODNonlinearModel)
         if m.mip_solver.options[i][1] == :BestBdStop
             deleteat!(m.mip_solver.options, i)
             if string(m.mip_solver)[1:6] == "Gurobi"
-                (m.log_level > 99) && (println("injecting bound stop for MIP $(stopbound)"))
                 push!(m.mip_solver.options, (:BestBdStop, stopbound))
             else
                 return
@@ -252,7 +251,6 @@ function update_boundstop_options(m::PODNonlinearModel)
     end
 
     if string(m.mip_solver)[1:6] == "Gurobi"
-        (m.log_level > 99) && (println("injecting bound stop for MIP $(stopbound)"))
         push!(m.mip_solver.options, (:BestBdStop, stopbound))
     else
         return
@@ -291,4 +289,179 @@ function fix_domains(m::PODNonlinearModel; kwargs...)
     end
 
     return l_var, u_var
+end
+
+"""
+    convexification_exam(m::PODNonlinearModel)
+"""
+function convexification_exam(m::PODNonlinearModel)
+
+    # Other more advanced convexification check goes here
+    for term in keys(m.nonlinear_info)
+        if !m.nonlinear_info[term][:convexified]
+            warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
+            return
+        end
+    end
+
+    return
+end
+
+"""
+    pick_vars_discretization(m::PODNonlinearModel)
+
+This function helps pick the variables for discretization. The method chosen depends on user-inputs.
+In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
+there exist two built-in method:
+
+    * `max-cover(m.discretization_var_pick_algo=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover(m.discretization_var_pick_algo=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+
+For advance usage, `m.discretization_var_pick_algo` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
+For more information, read more details at [Hacking Solver](@ref).
+
+"""
+function pick_vars_discretization(m::PODNonlinearModel)
+
+    if isa(m.discretization_var_pick_algo, Function)
+        (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
+        eval(m.discretization_var_pick_algo)(m)
+        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_info) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+    elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
+        if m.discretization_var_pick_algo == 0 || m.discretization_var_pick_algo == "max_cover"
+            max_cover(m)
+        elseif m.discretization_var_pick_algo == 1 || m.discretization_var_pick_algo == "min_vertex_cover"
+            min_vertex_cover(m)
+        else
+            error("Unsupported default indicator for picking variables for discretization")
+        end
+    else
+        error("Input for parameter :discretization_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
+    end
+
+    return
+end
+
+"""
+    mccormick(m::JuMP.Model, xy, x, y, x_l, x_u, y_l, y_u)
+
+Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
+"""
+function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
+    @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
+    @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
+    @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
+    @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
+    return
+end
+
+function mccormick_bin(m,xy,x,y)
+
+    @constraint(m, xy <= x)
+    @constraint(m, xy <= y)
+    @constraint(m, xy >= x+y-1)
+
+    return
+end
+
+function mccormick_monomial(m,xy,x,xˡ,xᵘ)
+    @constraint(m, xy >= x^2)
+    @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
+    return
+end
+
+function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
+    if lazy == 1
+        function GetLazyCuts_quad(cb)
+            TOL1 = 1e-6
+            if (getvalue(x)^p > (getvalue(x_p) + TOL1))
+                a = p*getvalue(x)^(p-1)
+                b = (1-p)*getvalue(x)^p
+                @lazyconstraint(cb, a*x + b <= x_p)
+            end
+        end
+        addlazycallback(m, GetLazyCuts_quad)
+    elseif p == 2 && quad == 1
+        @constraint(m, x_p >= x^2)
+    else
+        x0_vec = sort(union(xˡ, xᵘ))
+        for x0 in x0_vec
+            @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
+        end
+    end
+
+    A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
+    @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
+
+    return
+end
+
+"""
+
+    min_vertex_cover(m:PODNonlinearModel)
+
+A built-in method for selecting variables for discretization.
+
+"""
+function min_vertex_cover(m::PODNonlinearModel)
+
+    # Collect the information for arcs and nodes
+    nodes = Set()
+    arcs = Set()
+    for pair in keys(m.nonlinear_info)
+        arc = []
+        if length(pair) > 2
+            warn("min_vertex_cover discretizing variable selection method only support bi-linear problems, enfocing thie method may produce mistakes...")
+        end
+        for i in pair
+            @assert isa(i.args[2], Int)
+            push!(nodes, i.args[2])
+            push!(arc, i.args[2])
+        end
+        push!(arcs, arc)
+    end
+    nodes = collect(nodes)
+    arcs = collect(arcs)
+
+    # Set up minimum vertex cover problem
+    minvertex = Model(solver=m.mip_solver)
+    @variable(minvertex, x[nodes], Bin)
+    for arc in arcs
+        @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
+    end
+    @objective(minvertex, Min, sum(x))
+    status = solve(minvertex, suppress_warnings=true)
+
+    xVal = getvalue(x)
+
+    # Getting required information
+    m.num_var_discretization_mip = Int(sum(xVal))
+    m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
+
+end
+
+"""
+
+    max_cover(m:PODNonlinearModel)
+
+A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
+
+"""
+function max_cover(m::PODNonlinearModel; kwargs...)
+
+    nodes = Set()
+    for pair in keys(m.nonlinear_info)
+        if length(pair) > 2
+            warn("max-cover discretizing variable selection method only support bi-linear problems. enforcing may produce mistakes...")
+        end
+        for i in pair
+            @assert isa(i.args[2], Int)
+            push!(nodes, i.args[2])
+        end
+    end
+    nodes = collect(nodes)
+    m.num_var_discretization_mip = length(nodes)
+    m.var_discretization_mip = nodes
+
+    return
 end

@@ -15,8 +15,8 @@
 #         x    >2
 #   3. multilinear tree  x*z*y
 #           (:*)
-#         / | .. \
-#       x   z     y
+#          /| ..\
+#        x  z   y
 #   4. hierarchical bilinear tree (upon 1)  (x*y)*z
 #           (:*)
 #           /  \
@@ -143,7 +143,7 @@ function expr_resolve_pattern(expr, m::PODNonlinearModel; kwargs...)
 end
 
 """
-    TODO: doc
+    TODO: docstring
 """
 function resolve_bilinear(expr, m::PODNonlinearModel)
 
@@ -154,11 +154,11 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])))
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                            :id => length(keys(m.nonlinear_info)) + 1,
-                                            :ref => term_key,
-                                            :lifted_constr_ref => lifted_constr_ref,
-                                            :nonlinear_type => :bilinear,
-                                            :convexified => false)
+                                        :id => length(keys(m.nonlinear_info)) + 1,
+                                        :ref => term_key,
+                                        :lifted_constr_ref => lifted_constr_ref,
+                                        :nonlinear_type => :bilinear,
+                                        :convexified => false)
     end
 
     function lift_bilinear()
@@ -169,6 +169,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         end
     end
 
+    # Main body
     if (expr.args[1] == :*)  # confirm head (:*)
         # ----- Pattern A : coefficients * x * y  ------ #
         # Collect children information for checking
@@ -183,7 +184,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
             (expr.args[i].head == :call) && return false, expr
         end
-        # Confirm patter A
+        # Cofirm detection of patter A and perform store & lifting procedures
         if length(var_idxs) == 2
             (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
@@ -200,7 +201,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
 end
 
 """
-    TODO: doc
+    TODO: docstring
 """
 function resolve_multilinear(expr, m::PODNonlinearModel)
 
@@ -263,7 +264,7 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
 end
 
 """
-    TODO: doc
+    TODO: docstring
 """
 function resolve_monomial(expr, m::PODNonlinearModel)
 
