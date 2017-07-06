@@ -5,7 +5,7 @@ function operator_b(;verbose=false, solver=nothing)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
 								   mip_solver=CbcSolver(OutputFlag=0),
-								   presolve_perform_bound_tightening=true,
+								   presolve_bound_tightening=true,
 								   presolve_bound_tightening_algo=2,
 								   presolve_bt_output_tol=1e-1,
 								   log_level=1))

@@ -65,15 +65,9 @@ function initialize_discretization(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
-    for var in 1:m.num_var_orig
+    for var in 1:(m.num_var_orig+m.num_var_lifted_mip)
         lb = m.l_var_tight[var]
         ub = m.u_var_tight[var]
-        m.discretization[var] = [lb, ub]
-    end
-
-    for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
-        lb = -Inf
-        ub = Inf
         m.discretization[var] = [lb, ub]
     end
 

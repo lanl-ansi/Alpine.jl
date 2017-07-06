@@ -24,7 +24,7 @@ function nlp3(;verbose=false, solver=nothing)
 								   rel_gap=0.05,
 								   presolve_bt_width_tol=1e-3,
 								   presolve_bt_output_tol=1e-1,
-								   presolve_perform_bound_tightening=false,
+								   presolve_bound_tightening=false,
 	                               presolve_bound_tightening_algo=2,
 								   discretization_var_pick_algo=0))
 	else

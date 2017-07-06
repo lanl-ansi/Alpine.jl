@@ -30,7 +30,7 @@ There are some general paremters that controls the behavior of the AMP:
 
 * `presolve_track_time(default=false)`: consier presolve time as the total time or not
 
-* `presolve_perform_bound_tightening(default=false)`: perform built-in bound tightening presolve procedure
+* `presolve_bound_tightening(default=false)`: perform built-in bound tightening presolve procedure
 
 * `presolve_maxiter(default=9999)`: maximum iteration allowed using presolve process
 

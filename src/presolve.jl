@@ -14,7 +14,7 @@ Currently, two bounding tightening method is implemented [`minmax_bound_tighteni
 """
 function bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
 
-    if m.presolve_perform_bound_tightening == false # User choose not to do bound tightening
+    if m.presolve_bound_tightening == false # User choose not to do bound tightening
         return
     end
 
@@ -127,7 +127,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     # Update the bounds with the tightened ones
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
 
-    (m.log_level > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in m.all_nonlinear_vars]
+    (m.log_level > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
     (m.log_level > 0) && print("\n")
     return
 end
@@ -144,7 +144,6 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     options = Dict(kwargs)
 
     start_build = time()
-
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP model
     post_amp_vars(m, use_discretization=discretization)
     post_amp_lifted_constraints(m)
@@ -167,7 +166,7 @@ end
 
 """
 
-    solve_bound_tightening_model(m::PODNonlinearModels)
+    solve_bound_tightening_model(m::PODNonlinearModel)
 
 A function that solves the min and max bound-tightening model.
 
@@ -193,38 +192,6 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict)
-
-For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
-The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
-can help speed up the subsequent solve in subsequent iterations.
-"""
-function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; kwargs...)
-
-    options = Dict(kwargs)
-
-    # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
-    # Increased complexity from linear to square but a reasonable amount
-    # Potentially, additional mapping can be applied to reduce the complexity
-    for i in 1:length(m.nonlinear_info)
-        for bi in keys(nonlinear_info)
-            if nonlinear_info[bi][:id] == i
-                idx_a = bi[1].args[2]
-                idx_b = bi[2].args[2]
-                idx_ab = nonlinear_info[bi][:lifted_var_ref].args[2]
-                bound = [discretization[idx_a][1], discretization[idx_a][end]] * [discretization[idx_b][1], discretization[idx_b][end]]'
-                discretization[idx_ab] = [-Inf, Inf]
-                discretization[idx_ab][1] = minimum(bound)
-                discretization[idx_ab][2] = maximum(bound)
-            end
-        end
-    end
-
-    return discretization
-end
-
-
-"""
     resolve_closed_var_bounds(m::PODNonlinearModel)
 
 This function seeks variable with tight bounds (by presolve_bt_width_tol) by checking .l_var_tight and .u_var_tight.
@@ -235,7 +202,7 @@ and the .discretization will be cleared with the tight bounds for basic McCormic
 function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
 
     for var in m.all_nonlinear_vars
-        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol   # Closed Bound Criteria
+        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
             deleteat!(m.var_discretization_mip, findfirst(m.var_discretization_mip, var)) # Clean nonlinear_info by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end

@@ -29,7 +29,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_perform_bound_tightening::Bool                     # Perform bound tightening procedure before main algorithm
+    presolve_bound_tightening::Bool                     # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
@@ -130,7 +130,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_ratio,
                                 discretization_add_partition_method,
                                 presolve_track_time,
-                                presolve_perform_bound_tightening,
+                                presolve_bound_tightening,
                                 presolve_maxiter,
                                 presolve_bt_width_tol,
                                 presolve_bt_output_tol,
@@ -160,7 +160,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_add_partition_method = discretization_add_partition_method
 
         m.presolve_track_time = presolve_track_time
-        m.presolve_perform_bound_tightening = presolve_perform_bound_tightening
+        m.presolve_bound_tightening = presolve_bound_tightening
         m.presolve_maxiter = presolve_maxiter
         m.presolve_bt_width_tol = presolve_bt_width_tol
         m.presolve_bt_output_tol = presolve_bt_output_tol
@@ -265,14 +265,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     #     populate_lifted_expr(m)                             # *
     #     m.num_var_lifted_mip = length(m.nonlinear_info)     # *
     # end
-    populate_lifted_affine(m)                               # keep
+    populate_lifted_affine(m)                                 # keep
 
-    # Initialize tightened bound vectors for future usage
-    m.l_var_tight = [m.l_var_orig, fill(-Inf, m.num_var_lifted_mip);]
-    m.u_var_tight = [m.u_var_orig, fill(Inf, m.num_var_lifted_mip);]
-
-    pick_vars_discretization(m)
-    initialize_discretization(m)
+    initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
+    detect_bound_from_aff(m)        # Fetch bounds from constriants
+    resolve_lifted_var_bounds(m)    # resolve some lifted var bounds
+    pick_vars_discretization(m)     # Picking discretizing variable
+    initialize_discretization(m)    # Initialize discretization dictionary
 
     m.best_sol = fill(NaN, m.num_var_orig)
 
@@ -326,7 +325,7 @@ function presolve(m::PODNonlinearModel)
 
     if m.status[:local_solve] in status_pass
         bound_tightening(m, use_bound = true)   # performs bound-tightening with the local solve objective value
-        (m.presolve_perform_bound_tightening) && initialize_discretization(m)            # Reinitialize discretization dictionary on tight bounds
+        (m.presolve_bound_tightening) && initialize_discretization(m)            # Reinitialize discretization dictionary on tight bounds
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
@@ -492,7 +491,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)),6) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
@@ -502,7 +501,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)),6) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected

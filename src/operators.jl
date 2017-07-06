@@ -186,7 +186,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         # Confirm patter A
         if length(var_idxs) == 2
             (m.log_level) > 99 && println("found bilinear term $expr")
-            term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
+            term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
                 return true, lift_bilinear()
             else

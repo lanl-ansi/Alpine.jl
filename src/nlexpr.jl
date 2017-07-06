@@ -150,8 +150,10 @@ Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled
 function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
 
 	reversor = Dict(true => -1.0, false => 1.0)
-	function sign_convertor(operator, pos)
-		if operator == :- && pos > 2
+	function sign_convertor(subexpr, pos)
+		if length(subexpr.args) == 2 && subexpr.args[1] == :-
+			return -1.0
+	 	elseif length(subexpr.args) > 2 && subexpr.args[1] == :- && pos > 2
 			return -1.0
 		end
 		return 1.0
@@ -180,16 +182,16 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	end
 
 	for i in 1:length(expr.args)
-		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr.args[1], i), level+1)
+		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
 			if bufferVal != 0.0 && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
-				push!(lhscoeffs, sign*sign_convertor(expr.args[1], i)*bufferVal)
+				push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)
 				push!(lhsvars, bufferVar)
 				bufferVal = 0.0
 				bufferVar = nothing
 			end
 			if bufferVal != 0.0 && bufferVar == nothing  # (sign) * (coef) => right-hand-side term
-				rhs += sign*sign_convertor(expr.args[1], i)*bufferVal
+				rhs += sign*sign_convertor(expr, i)*bufferVal
 				bufferVal = 0.0
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
@@ -198,7 +200,7 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 				bufferVar = nothing
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
-				push!(lhscoeffs, sign*sign_convertor(expr.args[1], i))
+				push!(lhscoeffs, sign*sign_convertor(expr, i))
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end

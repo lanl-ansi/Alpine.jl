@@ -29,7 +29,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_add_partition_method::Any
 
     presolve_track_time::Bool
-    presolve_perform_bound_tightening::Bool
+    presolve_bound_tightening::Bool
     presolve_maxiter::Int
     presolve_bt_width_tol::Float64
     presolve_bt_output_tol::Float64
@@ -65,7 +65,7 @@ function PODSolver(;
     discretization_add_partition_method = nothing, # Not ready for implementation
 
     presolve_track_time = false,
-    presolve_perform_bound_tightening = false,
+    presolve_bound_tightening = false,
     presolve_maxiter = 9999,
     presolve_bt_width_tol = 1e-3,
     presolve_bt_output_tol = 1e-5,
@@ -96,7 +96,7 @@ function PODSolver(;
         discretization_ratio,
         discretization_add_partition_method,
         presolve_track_time,
-        presolve_perform_bound_tightening,
+        presolve_bound_tightening,
         presolve_maxiter,
         presolve_bt_width_tol,
         presolve_bt_output_tol,
@@ -135,7 +135,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_add_partition_method = s.discretization_add_partition_method
 
     presolve_track_time = s.presolve_track_time
-    presolve_perform_bound_tightening = s.presolve_perform_bound_tightening
+    presolve_bound_tightening = s.presolve_bound_tightening
     presolve_maxiter = s.presolve_maxiter
     presolve_bt_width_tol = s.presolve_bt_width_tol
     presolve_bt_output_tol = s.presolve_bt_output_tol
@@ -156,7 +156,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_ratio,
                             discretization_add_partition_method,
                             presolve_track_time,
-                            presolve_perform_bound_tightening,
+                            presolve_bound_tightening,
                             presolve_maxiter,
                             presolve_bt_width_tol,
                             presolve_bt_output_tol,

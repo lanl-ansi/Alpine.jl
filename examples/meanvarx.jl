@@ -8,7 +8,7 @@ function meanvarx(;verbose=false, solver=nothing)
                                    rel_gap=0.001, log_level=100,
                                    discretization_ratio=4,
                                    presolve_bt_output_tol=1e-2,
-                                   presolve_perform_bound_tightening=false))
+                                   presolve_bound_tightening=false))
     else
         m = Model(solver=solver)
     end

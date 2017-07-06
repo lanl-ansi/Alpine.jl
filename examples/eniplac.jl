@@ -1,13 +1,15 @@
-using POD, JuMP, CPLEX, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
+using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
 function eniplac(;verbose=false, solver=nothing)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
-                                    mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+                                    mip_solver=GurobiSolver(),
+                                    presolve_bound_tightening=false,
+                                    discretization_ratio=8,
+                                    discretization_var_pick_algo="min_vertex_cover",
                                     log_level=100,
-                                    rel_gap=0.001))
+                                    rel_gap=0.0001))
     else
         m = Model(solver=solver)
     end
@@ -365,7 +367,6 @@ function eniplac(;verbose=false, solver=nothing)
     @constraint(m, e188,x[23]-140*b[141]>=0.0)
     @constraint(m, e189,x[24]-160*b[142]>=0.0)
     @constraint(m, e190,-x[97]+x[112]+x[113]-objvar==0.0)
-
 
     # ----- Objective ----- #
     @objective(m, Min, objvar)

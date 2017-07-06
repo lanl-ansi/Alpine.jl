@@ -87,16 +87,16 @@ For more information, read more details at [Hacking Solver](@ref).
 function pick_vars_discretization(m::PODNonlinearModel)
 
     if isa(m.discretization_var_pick_algo, Function)
-        (m.log_level > 0) && println("method for picking discretization variable provided... overiding the parameter input...")
+        (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
         eval(m.discretization_var_pick_algo)(m)
-        # TODO: Perform generic validation for user-defined method
-    elseif isa(m.discretization_var_pick_algo, Int)
-        if m.discretization_var_pick_algo == 0
+        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_info) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+    elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
+        if m.discretization_var_pick_algo == 0 || m.discretization_var_pick_algo == "max_cover"
             max_cover(m)
-        elseif m.discretization_var_pick_algo == 1
+        elseif m.discretization_var_pick_algo == 1 || m.discretization_var_pick_algo == "min_vertex_cover"
             min_vertex_cover(m)
         else
-            error("Unsupported default method for picking variables for discretization")
+            error("Unsupported default indicator for picking variables for discretization")
         end
     else
         error("Input for parameter :discretization_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
@@ -185,6 +185,9 @@ function min_vertex_cover(m::PODNonlinearModel)
     arcs = Set()
     for pair in keys(m.nonlinear_info)
         arc = []
+        if length(pair) > 2
+            error("min_vertex_cover discretizing variable selection method only support bi-linear problems")
+        end
         for i in pair
             @assert isa(i.args[2], Int)
             push!(nodes, i.args[2])
@@ -223,6 +226,9 @@ function max_cover(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
     for pair in keys(m.nonlinear_info)
+        if length(pair) > 2
+            error("max-cover discretizing variable selection method only support bi-linear problems")
+        end
         for i in pair
             @assert isa(i.args[2], Int)
             push!(nodes, i.args[2])

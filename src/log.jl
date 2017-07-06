@@ -29,22 +29,26 @@ function logging_summary(m::PODNonlinearModel)
         @printf "number of non-linear constraints = %d.\n" m.num_nlconstr_orig
         @printf "number of linear constraints = %d.\n" m.num_lconstr_orig
         @printf "number of variables = %d.\n" m.num_var_orig
-        println("NLP solver = ", string(m.nlp_local_solver))
-        println("MIP solver = ", string(m.mip_solver))
+
+        println("NLP solver = ", split(string(m.nlp_local_solver),".")[1])
+        println("MIP solver = ", split(string(m.mip_solver),".")[1])
 
         println("regulated maximum solution time = ", m.timeout)
         println("regulated maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
+        println("detected nonlinear terms = $(length(m.nonlinear_info))")
+        println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")
         println("algorithm for selecting variables to discretize = $(m.discretization_var_pick_algo)")
+        println("number of selected variables to discretize = $(length(m.var_discretization_mip))")
     end
 end
 
 function logging_head()
-    println(" | NLP       | MIP       || Objective | Bound     | GAP\%      | CLOCK     | TIME LEFT | Iter ")
+    println(" | NLP         | MIP         || Objective   | Bound       | GAP\%        | CLOCK       | TIME LEFT   | Iter   ")
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)
-    b_len = 10
+    b_len = 12
     if isa(m.logs[:obj][end], Float64)
         UB_block = string(" ", round(m.logs[:obj][end],4), " " ^ (b_len - length(string(round(m.logs[:obj][end], 4)))))
     else

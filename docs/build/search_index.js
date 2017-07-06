@@ -85,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Parameters",
     "title": "Presolve Parameters",
     "category": "section",
-    "text": "presolve_track_time(default=false): consier presolve time as the total time or not\npresolve_perform_bound_tightening(default=false): perform built-in bound tightening presolve procedure\npresolve_maxiter(default=9999): maximum iteration allowed using presolve process\npresolve_bt_width_tol(default=1e-3): independent numerical tol used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tol in here. Small tol is more likely to results in strange presolve behvaior.\npresolve_bound_tightening_algo(default=1): method used to do built-in bound tightening, choose 1 for regular bounding tightening,  2 for Tighten McCormick bound tightening.\npresolve_mip_relaxation(default=false): whether to relax the bounding tightening MILP solved or not\npresolve_mip_timelimit(default=Inf): time limit used for invidiual MILP solved during bound tightening presolveMore parameter descriptions to come..."
+    "text": "presolve_track_time(default=false): consier presolve time as the total time or not\npresolve_bound_tightening(default=false): perform built-in bound tightening presolve procedure\npresolve_maxiter(default=9999): maximum iteration allowed using presolve process\npresolve_bt_width_tol(default=1e-3): independent numerical tol used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tol in here. Small tol is more likely to results in strange presolve behvaior.\npresolve_bound_tightening_algo(default=1): method used to do built-in bound tightening, choose 1 for regular bounding tightening,  2 for Tighten McCormick bound tightening.\npresolve_mip_relaxation(default=false): whether to relax the bounding tightening MILP solved or not\npresolve_mip_timelimit(default=Inf): time limit used for invidiual MILP solved during bound tightening presolveMore parameter descriptions to come..."
 },
 
 {
@@ -237,7 +237,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Methods",
     "title": "POD.solve_bound_tightening_model",
     "category": "Function",
-    "text": "solve_bound_tightening_model(m::PODNonlinearModels)\n\nA function that solves the min and max bound-tightening model.\n\n\n\n"
+    "text": "solve_bound_tightening_model(m::PODNonlinearModel)\n\nA function that solves the min and max bound-tightening model.\n\n\n\n"
 },
 
 {

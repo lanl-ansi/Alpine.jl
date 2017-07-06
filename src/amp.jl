@@ -45,8 +45,8 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
 
     for bi in keys(m.nonlinear_info)
         if m.nonlinear_info[bi][:nonlinear_type] in [:monomial, :bilinear]
-
             @assert length(bi) == 2
+
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             idx_a = bi[1].args[2]
             idx_b = bi[2].args[2]
@@ -59,6 +59,11 @@ function post_amp_mccormick(m::PODNonlinearModel; kwargs...)
             ub[idx_a] = discretization[idx_a][2:end]
             lb[idx_b] = discretization[idx_b][1:(end-1)]
             ub[idx_b] = discretization[idx_b][2:end]
+
+            (lb[idx_a][1] == -Inf) && error("Infinite lower bound detected on VAR$idx_a, resolve it please")
+            (lb[idx_b][1] == -Inf) && error("Infinite lower bound detected on VAR$idx_b, resolve it please")
+            (ub[idx_a][end] == +Inf) && error("Infinite upper bound detected on VAR$idx_a, resolve it please")
+            (ub[idx_b][end] == +Inf) && error("Infinite upper bound detected on VAR$idx_b, resolve it please")
 
             if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
                 if m.nonlinear_info[bi][:nonlinear_type] == :monomial
@@ -239,8 +244,8 @@ function post_amp_vars(m::PODNonlinearModel; kwargs...)
     @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_lifted_mip)])
     for i in 1:(m.num_var_orig+m.num_var_lifted_mip)
         (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
-        setlowerbound(x[i], l_var[i])   # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
-        setupperbound(x[i], u_var[i])   # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+        (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
+        (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
     end
 
     return
