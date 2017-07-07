@@ -1,9 +1,16 @@
-function castro02m2(verbose=false)
+using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-    m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								mip_solver=GurobiSolver(OutputFlag=0),
-                                presolve_perform_bound_tightening=false,
-                                log_level=1, rel_gap=0.001))
+function castro02m2(;verbose=false, solver=nothing)
+
+    if solver == nothing
+        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+    								mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+                                    presolve_bound_tightening=false,
+                                    log_level=1,
+                                    rel_gap=0.001))
+    else
+        m = Model(solver=solver)
+    end
 
 	@variable(m, x[1:42])
 
@@ -138,6 +145,10 @@ function castro02m2(verbose=false)
     @constraint(m, e43, x[30]+x[31]+x[36]==1.0)
     @constraint(m, e44, x[32]+x[33]+x[37]==1.0)
     @constraint(m, e45, -10*x[13]+x[20]+x[21]+x[22]+x[23]<=0.0)
+
+    if verbose
+        print(m)
+    end
 
     return m
 

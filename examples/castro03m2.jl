@@ -1,7 +1,12 @@
-function castro03m2(verbose=false)
+function castro03m2(;verbose=false, solver=nothing)
 
-    m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                                mip_solver=GurobiSolver(OutputFlag=0), rel_gap=0.0001))
+	if solver == nothing
+	    m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+	                                mip_solver=CbcSolver(OutputFlag=0),
+									rel_gap=0.0001, log_level=0))
+	else
+		m = Model(solver=solver)
+	end
 
     @variable(m, x[1:51])
     setlowerbound(x[16], 0.0)
@@ -164,5 +169,8 @@ function castro03m2(verbose=false)
     @constraint(m, e53, x[38]+x[39]+x[44]==1.0)
     @constraint(m, e54, -30*x[16]+x[23]+x[24]+x[25]+x[26]+x[27]<=0.0)
 
+	if verbose
+		print(m)
+	end
     return m
 end

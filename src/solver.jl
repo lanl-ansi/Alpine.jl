@@ -5,25 +5,34 @@ type UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 type PODSolver <: MathProgBase.AbstractMathProgSolver
+    dev_debug::Bool
+    dev_test::Bool
+
     log_level::Int
     timeout::Float64
     maxiter::Int
     rel_gap::Float64
-    tolerance::Float64
+    tol::Float64
 
     nlp_local_solver::MathProgBase.AbstractMathProgSolver
     minlp_local_solver::MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
+
+    convex_disable_tmc::Bool
+    convex_disable_convhull::Bool
+
+    method_convexification::Array{Function}
+    expr_patterns::Array{Function}
 
     discretization_var_pick_algo::Any
     discretization_ratio::Any
     discretization_add_partition_method::Any
 
     presolve_track_time::Bool
-    presolve_perform_bound_tightening::Bool
+    presolve_bound_tightening::Bool
     presolve_maxiter::Int
-    presolve_bt_width_tolerance::Float64
-    presolve_bt_output_tolerance::Float64
+    presolve_bt_width_tol::Float64
+    presolve_bt_output_tol::Float64
     presolve_bound_tightening_algo::Any
     presolve_mip_relaxation::Bool
     presolve_mip_timelimit::Float64
@@ -32,25 +41,34 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 function PODSolver(;
+    dev_debug = false,
+    dev_test = false,
+
     log_level = 1,
     timeout = Inf,
     maxiter = 99,
     rel_gap = 1e-4,
-    tolerance = 1e-6,
+    tol = 1e-6,
 
     nlp_local_solver = UnsetSolver(),
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
+
+    convex_disable_tmc = false,
+    convex_disable_convhull = false,
+
+    method_convexification = Array{Function}(0),
+    expr_patterns = Array{Function}(0),
 
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
     discretization_add_partition_method = nothing, # Not ready for implementation
 
     presolve_track_time = false,
-    presolve_perform_bound_tightening = false,
+    presolve_bound_tightening = false,
     presolve_maxiter = 9999,
-    presolve_bt_width_tolerance = 1e-3,
-    presolve_bt_output_tolerance = 1e-5,
+    presolve_bt_width_tol = 1e-3,
+    presolve_bt_output_tol = 1e-5,
     presolve_bound_tightening_algo = 1,
     presolve_mip_relaxation = false,
     presolve_mip_timelimit = Inf,
@@ -65,18 +83,23 @@ function PODSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(log_level, timeout, maxiter, rel_gap, tolerance,
+    PODSolver(dev_debug, dev_test,
+        log_level, timeout, maxiter, rel_gap, tol,
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
         deepcopy(mip_solver),
+        convex_disable_tmc,
+        convex_disable_convhull,
+        method_convexification,
+        expr_patterns,
         discretization_var_pick_algo,
         discretization_ratio,
         discretization_add_partition_method,
         presolve_track_time,
-        presolve_perform_bound_tightening,
+        presolve_bound_tightening,
         presolve_maxiter,
-        presolve_bt_width_tolerance,
-        presolve_bt_output_tolerance,
+        presolve_bt_width_tol,
+        presolve_bt_output_tol,
         presolve_bound_tightening_algo,
         presolve_mip_relaxation,presolve_mip_timelimit)
     end
@@ -88,39 +111,55 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     end
 
     # Translate options into old nonlinearmodel.jl fields
+    dev_test = s.dev_test
+    dev_debug = s.dev_debug
+
     log_level = s.log_level
     timeout = s.timeout
     maxiter = s.maxiter
     rel_gap = s.rel_gap
-    tolerance = s.tolerance
+    tol = s.tol
+
+    convex_disable_tmc = s.convex_disable_tmc
+    convex_disable_convhull = s.convex_disable_convhull
+
+    method_convexification = s.method_convexification
+    expr_patterns = s.expr_patterns
+
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
+
     discretization_var_pick_algo = s.discretization_var_pick_algo
     discretization_ratio = s.discretization_ratio
     discretization_add_partition_method = s.discretization_add_partition_method
 
     presolve_track_time = s.presolve_track_time
-    presolve_perform_bound_tightening = s.presolve_perform_bound_tightening
+    presolve_bound_tightening = s.presolve_bound_tightening
     presolve_maxiter = s.presolve_maxiter
-    presolve_bt_width_tolerance = s.presolve_bt_width_tolerance
-    presolve_bt_output_tolerance = s.presolve_bt_output_tolerance
+    presolve_bt_width_tol = s.presolve_bt_width_tol
+    presolve_bt_output_tol = s.presolve_bt_output_tol
     presolve_bound_tightening_algo = s.presolve_bound_tightening_algo
     presolve_mip_relaxation = s.presolve_mip_relaxation
     presolve_mip_timelimit = s.presolve_mip_timelimit
 
-    return PODNonlinearModel(log_level, timeout, maxiter, rel_gap, tolerance,
+    return PODNonlinearModel(dev_debug, dev_test,
+                            log_level, timeout, maxiter, rel_gap, tol,
                             nlp_local_solver,
                             minlp_local_solver,
                             mip_solver,
+                            convex_disable_tmc,
+                            convex_disable_convhull,
+                            method_convexification,
+                            expr_patterns,
                             discretization_var_pick_algo,
                             discretization_ratio,
                             discretization_add_partition_method,
                             presolve_track_time,
-                            presolve_perform_bound_tightening,
+                            presolve_bound_tightening,
                             presolve_maxiter,
-                            presolve_bt_width_tolerance,
-                            presolve_bt_output_tolerance,
+                            presolve_bt_width_tol,
+                            presolve_bt_output_tol,
                             presolve_bound_tightening_algo,
                             presolve_mip_relaxation,
                             presolve_mip_timelimit)

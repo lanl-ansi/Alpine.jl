@@ -3,7 +3,7 @@ using JuMP, Ipopt, MathProgBase, Cbc, Gurobi
 using POD
 
 # Expression Testing Instances
-include("../examples/bi1.jl")
+include("../examples/operator_c.jl")
 include("../examples/exprstest.jl")
 
 # NLP Testing Instances
@@ -18,6 +18,8 @@ include("../examples/util.jl")
 include("../examples/meanvarx.jl")
 include("../examples/blend029.jl")
 
+# Performe Tests
+include("operators.jl")
 include("solver.jl")
 include("expression.jl")
-include("algorithm.jl")
+#include("algorithm.jl")

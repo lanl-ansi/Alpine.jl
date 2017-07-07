@@ -18,14 +18,13 @@ end
 function nlp3(;verbose=false, solver=nothing)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
+		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+								   mip_solver=GurobiSolver(),
 								   log_level=1,
-								   rel_gap=0.05,
-								   presolve_bt_width_tol=1e-3,
-								   presolve_bt_output_tol=1e-1,
+								   maxiter=1,
+								   rel_gap=0.01,
+								   convex_disable_tmc=true,
 								   presolve_bound_tightening=false,
-	                               presolve_bound_tightening_algo=2,
 								   discretization_var_pick_algo=0))
 	else
 		m = Model(solver=solver)

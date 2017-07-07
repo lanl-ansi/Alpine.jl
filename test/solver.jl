@@ -4,7 +4,7 @@
 
     @testset "PODNonlinearModel loading tests" begin
         # Random Model 1
-        m = bi1()
+        m = operator_c()
         setsolver(m, PODSolver(nlp_local_solver=IpoptSolver(),
     						   mip_solver=CbcSolver(OutputFlag=0),log_level=0))
         status = JuMP.build(m)

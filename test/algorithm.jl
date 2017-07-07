@@ -1,11 +1,11 @@
 @testset "Solving algorithm tests" begin
-    @testset " Validation Test || ATMC || basic solve || exampls/nlp1.jl" begin
+    @testset " Validation Test || AMP || basic solve || exampls/nlp1.jl" begin
 
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
                            mip_solver=GurobiSolver(OutputFlag=0),
-                           presolve_perform_bound_tightening=false,
-                           presolve_bt_output_tolerance=1e-1,
+                           presolve_bound_tightening=false,
+                           presolve_bt_output_tol=1e-1,
                            log_level=0)
         m = nlp1(solver=test_solver)
         status = solve(m)
@@ -48,16 +48,16 @@
         end
     end
 
-    @testset " Validation Test || ATMC || basic solve || examples/nlp3.jl (4 iterations)" begin
+    @testset " Validation Test || AMP || basic solve || examples/nlp3.jl (4 iterations)" begin
         # This test ans is base on old DTMC code
 
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
         					   mip_solver=CbcSolver(),
-        					   log_level=1,
+        					   log_level=0,
                                maxiter=4,
-                               tolerance=1e-5,
-        					   presolve_bt_width_tolerance=1e-3,
-        					   presolve_perform_bound_tightening=false,
+                               tol=1e-5,
+        					   presolve_bt_width_tol=1e-3,
+        					   presolve_bound_tightening=false,
                                presolve_bound_tightening_algo=2,
         					   discretization_var_pick_algo=0)
         m = nlp3(solver=test_solver)
@@ -91,7 +91,7 @@
         end
     end
 
-    @testset " Algorithm Test || ATMC || basic solve || examples/castro02m2.jl" begin
+    @testset " Algorithm Test || AMP || basic solve || examples/castro02m2.jl" begin
         m = castro02m2()
         solve(m)
 
@@ -156,13 +156,13 @@
         end
     end
 
-    @testset " Validation Test || BT || basic solve || examples/nlp1.jl " begin
+    @testset " Validation Test || BT-AMP || basic solve || examples/nlp1.jl " begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=GurobiSolver(OutputFlag=0),
-                               presolve_perform_bound_tightening=true,
+                               presolve_bound_tightening=true,
                                presolve_bound_tightening_algo=1,
-                               presolve_bt_output_tolerance=1e-1,
+                               presolve_bt_output_tol=1e-1,
                                log_level=0)
         m = nlp1(solver=test_solver)
         status = solve(m)
@@ -185,13 +185,13 @@
         @test isapprox(m.internalModel.u_var_tight[5], 8.91; atol=1e-2)
     end
 
-    @testset " Validation Test || TMC-BT || basic solve || exampls/nlp1.jl" begin
+    @testset " Validation Test || PBT-AMP || basic solve || exampls/nlp1.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
     							   mip_solver=GurobiSolver(OutputFlag=0),
-    							   presolve_perform_bound_tightening=true,
+    							   presolve_bound_tightening=true,
     							   presolve_bound_tightening_algo=2,
-                                   presolve_bt_output_tolerance=1e-1,
+                                   presolve_bt_output_tol=1e-1,
     							   log_level=1)
         m = nlp1(solver=test_solver)
         status = solve(m)
@@ -211,14 +211,14 @@
         @test isapprox(m.internalModel.u_var_tight[5], 8.32; atol=1e-2)
     end
     #
-    @testset " Validation Test || BT || basic solve || examples/nlp3.jl" begin
+    @testset " Validation Test || BT-AMP || basic solve || examples/nlp3.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
     							   mip_solver=GurobiSolver(OutputFlag=0),
     							   log_level=1, maxiter=3,
-    							   presolve_bt_width_tolerance=1e-3,
-    							   presolve_bt_output_tolerance=1e-1,
-    							   presolve_perform_bound_tightening=true,
+    							   presolve_bt_width_tol=1e-3,
+    							   presolve_bt_output_tol=1e-1,
+    							   presolve_bound_tightening=true,
                                    presolve_bound_tightening_algo=1,
     							   presolve_maxiter=2,
     							   discretization_var_pick_algo=max_cover_var_picker)
@@ -248,14 +248,14 @@
         @test isapprox(m.internalModel.l_var_tight[8], 87.2; atol=1e-2)
     end
     #
-    @testset " Validation Test || BT || basic solve || examples/nlp3.jl" begin
+    @testset " Validation Test || PBT-AMP || basic solve || examples/nlp3.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
                                    mip_solver=GurobiSolver(OutputFlag=0),
                                    log_level=100, maxiter=2,
-                                   presolve_perform_bound_tightening=true,
-                                   presolve_bt_width_tolerance=1e-3,
-                                   presolve_bt_output_tolerance=1e-1,
+                                   presolve_bound_tightening=true,
+                                   presolve_bt_width_tol=1e-3,
+                                   presolve_bt_output_tol=1e-1,
                                    presolve_bound_tightening_algo=2,
                                    presolve_maxiter=2,
                                    discretization_var_pick_algo=max_cover_var_picker)

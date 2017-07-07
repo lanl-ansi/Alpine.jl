@@ -14,7 +14,7 @@ Currently, two bounding tightening method is implemented [`minmax_bound_tighteni
 """
 function bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
 
-    if m.presolve_perform_bound_tightening == false # User choose not to do bound tightening
+    if m.presolve_bound_tightening == false # User choose not to do bound tightening
         return
     end
 
@@ -56,6 +56,8 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     both_senses = [:Min, :Max]             # Senses during bound tightening procedures
     tell_side = Dict(:Min=>1, :Max=>2)     # Positional information
     tell_round = Dict(:Min=>floor, :Max=>ceil)
+    status_pass = [:Optimal]
+    status_reroute = [:UserLimits]
 
     options = Dict(kwargs)
 
@@ -70,13 +72,12 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     end
     discretization = resolve_lifted_var_bounds(m.nonlinear_info, discretization) # recomputation of bounds for lifted_variables
 
-
     (m.log_level > 0) && println("starting the bound-tightening algorithm ...")
     (m.log_level > 99) && [println("[DEBUG] VAR $(var_idx) Original Bound [$(round(m.l_var_tight[var_idx],4)) < - > $(round(m.u_var_tight[var_idx],4))]") for var_idx in m.all_nonlinear_vars]
 
     # start of the solve
     keeptightening = true
-    while keeptightening && m.logs[:time_left] > m.tolerance && m.logs[:bt_iter] < m.presolve_maxiter # Stopping criteria
+    while keeptightening && m.logs[:time_left] > m.tol && m.logs[:bt_iter] < m.presolve_maxiter # Stopping criteria
 
         keeptightening = false
         m.logs[:bt_iter] += 1
@@ -86,14 +87,19 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         # Perform Bound Contraction
         for var_idx in m.all_nonlinear_vars # why only all nonlinear vars?
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
-            if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tolerance
+            if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tol
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
-                    solve_bound_tightening_model(m)
-                    # TODO: trunctate the objective value using presolve_bt_output_tolerance
-                    temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tolerance)*m.presolve_bt_output_tolerance
-                    # TODO: discuss feasibility tolerances and where to put them and apt default
+                    status = solve_bound_tightening_model(m)
+                    if status in status_pass
+                        temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol  # Objective truncation for numerical issues
+                    elseif status in status_reroute
+                        temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
+                    else
+                        error("bound tightening sub-problem solves to an error status")
+                    end
+                    # TODO: discuss feasibility tols and where to put them and apt default
                     m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
             end
@@ -101,11 +107,11 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         # Updates the discretization structure
         for var_idx in m.all_nonlinear_vars
-            if abs((temp_bounds[var_idx][1] - discretization[var_idx][1])/discretization[var_idx][1]) > m.presolve_bt_width_tolerance
+            if abs((temp_bounds[var_idx][1] - discretization[var_idx][1])/discretization[var_idx][1]) > m.presolve_bt_width_tol
                 keeptightening = true # Continue to perform the next iteration
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
             end
-            if abs((discretization[var_idx][end]-temp_bounds[var_idx][end])/discretization[var_idx][end]) > m.presolve_bt_width_tolerance
+            if abs((discretization[var_idx][end]-temp_bounds[var_idx][end])/discretization[var_idx][end]) > m.presolve_bt_width_tol
                 (m.log_level > 0) && print("+")
                 keeptightening = true
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
@@ -116,12 +122,12 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         haskey(options, :use_tmc) ? discretization = add_discretization(m, use_solution=m.best_sol, use_discretization=flatten_discretization(discretization)) : discretization = discretization
     end
 
-    (m.log_level > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter])iterations, applying tighten bounds")
+    (m.log_level > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
 
     # Update the bounds with the tightened ones
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
 
-    (m.log_level > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in m.all_nonlinear_vars]
+    (m.log_level > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
     (m.log_level > 0) && print("\n")
     return
 end
@@ -138,11 +144,15 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     options = Dict(kwargs)
 
     start_build = time()
-
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP model
-    post_amp_vars(m, use_discretization=discretization)
-    post_amp_lifted_constraints(m)
-    post_amp_mccormick(m, use_discretization=discretization)
+    amp_post_vars(m, use_discretization=discretization)
+    amp_post_lifted_constraints(m)
+    amp_post_tmc_mccormick(m, use_discretization=discretization)
+    # any additional built-in convexification method : convexhull for example
+    for i in 1:length(m.method_convexification)    # Additional user-defined convexificaition method, following user sequence
+        eval(m.method_convexification[i])(m)
+    end
+
     if bound != Inf
         post_obj_bounds(m, bound)
     end
@@ -156,7 +166,7 @@ end
 
 """
 
-    solve_bound_tightening_model(m::PODNonlinearModels)
+    solve_bound_tightening_model(m::PODNonlinearModel)
 
 A function that solves the min and max bound-tightening model.
 
@@ -178,49 +188,19 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
     #TODO handle the infeasible cases when time limit is applied
     # ========= MILP Solve ========= #
 
-    return
+    return status
 end
 
 """
-    resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict)
-
-For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
-The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
-can help speed up the subsequent solve in subsequent iterations.
+    TODO: docstring
 """
-function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; kwargs...)
-
-    options = Dict(kwargs)
-
-    for bi in keys(nonlinear_info)
-        idx_a = bi[1].args[2]
-        idx_b = bi[2].args[2]
-        idx_ab = nonlinear_info[bi][:lifted_var_ref].args[2]
-        bound = [discretization[idx_a][1], discretization[idx_a][end]] * [discretization[idx_b][1], discretization[idx_b][end]]'
-        discretization[idx_ab] = [-Inf, Inf]
-        discretization[idx_ab][1] = minimum(bound)
-        discretization[idx_ab][2] = maximum(bound)
-    end
-
-    return discretization
-end
-
-
-"""
-    resolve_closed_var_bounds(m::PODNonlinearModel)
-
-This function seeks variable with tight bounds (by presolve_bt_width_tolerance) by checking .l_var_tight and .u_var_tight.
-If a variable is found to be within a sufficiently small interval then no discretization will be performed on this variable
-and the .discretization will be cleared with the tight bounds for basic McCormick operation if necessary.
-
-"""
-function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
-
-    for var in m.all_nonlinear_vars
-        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tolerance   # Closed Bound Criteria
-            deleteat!(m.var_discretization_mip, findfirst(m.var_discretization_mip, var)) # Clean nonlinear_info by deleting the info
-            m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
-        end
+function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
+    if m.sense_orig == :Max
+        @constraint(m.model_mip,
+            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) >= bound)
+    elseif m.sense_orig == :Min
+        @constraint(m.model_mip,
+            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) <= bound)
     end
 
     return
