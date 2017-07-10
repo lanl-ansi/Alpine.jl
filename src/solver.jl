@@ -18,8 +18,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     minlp_local_solver::MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
-    convex_disable_tmc::Bool
-    convex_disable_convhull::Bool
+    bilinear_mccormick::Bool
+    bilinear_convexhull::Bool
 
     method_convexification::Array{Function}
     expr_patterns::Array{Function}
@@ -54,8 +54,8 @@ function PODSolver(;
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
-    convex_disable_tmc = false,
-    convex_disable_convhull = false,
+    bilinear_mccormick = false,
+    bilinear_convexhull = false,
 
     method_convexification = Array{Function}(0),
     expr_patterns = Array{Function}(0),
@@ -88,8 +88,8 @@ function PODSolver(;
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
         deepcopy(mip_solver),
-        convex_disable_tmc,
-        convex_disable_convhull,
+        bilinear_mccormick,
+        bilinear_convexhull,
         method_convexification,
         expr_patterns,
         discretization_var_pick_algo,
@@ -120,8 +120,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     rel_gap = s.rel_gap
     tol = s.tol
 
-    convex_disable_tmc = s.convex_disable_tmc
-    convex_disable_convhull = s.convex_disable_convhull
+    bilinear_mccormick = s.bilinear_mccormick
+    bilinear_convexhull = s.bilinear_convexhull
 
     method_convexification = s.method_convexification
     expr_patterns = s.expr_patterns
@@ -148,8 +148,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             nlp_local_solver,
                             minlp_local_solver,
                             mip_solver,
-                            convex_disable_tmc,
-                            convex_disable_convhull,
+                            bilinear_mccormick,
+                            bilinear_convexhull,
                             method_convexification,
                             expr_patterns,
                             discretization_var_pick_algo,

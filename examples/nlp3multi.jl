@@ -23,7 +23,7 @@ function nlp3(;verbose=false, solver=nothing)
 								   log_level=1,
 								   maxiter=1,
 								   rel_gap=0.01,
-								   convex_disable_tmc=true,
+								   bilinear_mccormick=true,
 								   presolve_bound_tightening=false,
 								   discretization_var_pick_algo=0))
 	else

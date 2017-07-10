@@ -66,15 +66,15 @@ function amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
 
-    for i in 1:length(m.method_convexification)             # Additional user-defined convexificaition method
+    for i in 1:length(m.method_convexification)             # Additional user-defined convexification method
         eval(m.method_convexification[i])(m)
     end
 
-    if !m.convex_disable_tmc
+    if !m.bilinear_mccormick
         amp_post_tmc_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
     end
 
-    if !m.convex_disable_convhull
+    if !m.bilinear_convexhull
         # convex hull representation
         # amp_post_convhull(m, use_discretization=discretization)
     end

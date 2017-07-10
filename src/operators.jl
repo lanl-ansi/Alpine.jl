@@ -1,4 +1,3 @@
-# =====------ Developer's Note ------===== #
 #  Proposed built-in structure patterns
 #   Plan for the following non-linear subtree structure
 #   1. bilinear tree
@@ -34,22 +33,21 @@
 #   7. user-defined tree (can over-ride built-in structural trees)
 #
 #
-# =====------ Developer's Note ------===== #
 
 """
     process_expr(expr; kwargs...)
 
 High-level warpper for processing expression with sub-tree operators
 """
-function expr_batch_proces(m::PODNonlinearModel;kwargs...)
+function expr_batch_process(m::PODNonlinearModel;kwargs...)
 
-	# 0 : migrate data into mip place holders
+	# 0 : deepcopy data into mip lifted expr place holders
 	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
 	for i in 1:m.num_constr_orig
         push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
     end
 
-    # 1 : pre-process for negative
+    # 1 : pre-process the negative sign in expressions
     expr_resolve_sign(m.lifted_obj_expr_mip)
     expr_flatten(m.lifted_obj_expr_mip)
     for i in 1:m.num_constr_orig
@@ -79,7 +77,7 @@ function expr_batch_proces(m::PODNonlinearModel;kwargs...)
 end
 
 """
-    expr_podding(expr, m::PODNonlinearModel, level=0)
+    expr_parsing(expr, m::PODNonlinearModel, level=0)
 """
 function expr_parsing(expr, m::PODNonlinearModel, level=0;options...)
 
@@ -93,7 +91,7 @@ function expr_parsing(expr, m::PODNonlinearModel, level=0;options...)
         elseif node.head == :ref
             continue
         else
-            error("Type issue during expression podding. ")
+            error("Type issue during expression parsing. ")
         end
     end
 
@@ -103,9 +101,9 @@ end
 """
     expr_resolve_pattern(expr, m::PODNonlinearModel)
 
-This function recognize, store, and replace a sub-tree `expr` with available
-user-defined/built-in structures patterns. The procedure is to inqury user-defined
-structure first and perform any user-defined operations to convexify the problem.
+This function recognizes, stores, and replaces a sub-tree `expr` with available
+user-defined/built-in structures patterns. The procedure is creates the required number
+of lifted variables based on the patterns that it it trying to recognize.
 Then, go through all built-in structures and perform operatins to convexify the problem.
 
 Available structures patterns are:
@@ -171,7 +169,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
 
     # Main body
     if (expr.args[1] == :*)  # confirm head (:*)
-        # ----- Pattern A : coefficients * x * y  ------ #
+        # ----- Pattern : coefficient * x * y  ------ #
         # Collect children information for checking
         scalar = 1.0
         var_idxs = []
@@ -194,7 +192,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
                 store_bilinear()
                 return true, lift_bilinear()
             end
-        end #---------- End of Pattern A ---------#
+        end
     end
 
     return false, expr
@@ -220,7 +218,6 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
                                             :id => length(keys(m.nonlinear_info)) + 1,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
-                                            :monomial_status => false,
                                             :nonlinear_type => :multilinear,
                                             :convexified => false)
     end

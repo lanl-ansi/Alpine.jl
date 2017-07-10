@@ -17,8 +17,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     tol::Float64                                                # Numerical tol used in the algorithmic process
 
     # convexification method tuning
-    convex_disable_tmc::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
-    convex_disable_convhull::Bool                               # disbale convex hull representation mtehod used for convexify nonlinear terms
+    bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
+    bilinear_convexhull::Bool                               # disbale convex hull representation mtehod used for convexify nonlinear terms
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
@@ -31,7 +31,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_bound_tightening::Bool                     # Perform bound tightening procedure before main algorithm
+    presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
@@ -121,8 +121,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
-                                convex_disable_tmc,
-                                convex_disable_convhull,
+                                bilinear_mccormick,
+                                bilinear_convexhull,
                                 method_convexification,
                                 expr_patterns,
                                 discretization_var_pick_algo,
@@ -148,8 +148,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.rel_gap = rel_gap
         m.tol = tol
 
-        m.convex_disable_tmc = convex_disable_tmc
-        m.convex_disable_convhull = convex_disable_convhull
+        m.bilinear_mccormick = bilinear_mccormick
+        m.bilinear_convexhull = bilinear_convexhull
 
         m.method_convexification = method_convexification
         m.expr_patterns = expr_patterns
@@ -258,7 +258,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # populate data to create the bounding model
     # if true # divert for testing new code
-    expr_batch_proces(m)
+    expr_batch_process(m)
     # else # Original stable code
     #     populate_nonlinear_info(m)                          # *
     #     populate_lifted_expr(m)                             # *
@@ -267,9 +267,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     populate_lifted_affine(m)                                 # keep
 
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    detect_bound_from_aff(m)        # Fetch bounds from constriants
-    resolve_lifted_var_bounds(m)    # resolve some lifted var bounds
-    pick_vars_discretization(m)     # Picking discretizing variable
+    detect_bound_from_aff(m)        # Fetch bounds from constraints
+    resolve_lifted_var_bounds(m)    # resolve lifted var bounds
+    pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
 
     m.best_sol = fill(NaN, m.num_var_orig)

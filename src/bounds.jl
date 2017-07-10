@@ -22,7 +22,7 @@ end
 """
     detect_bound_from_aff(m::PODNonlinearModel)
 
-Detect bounds from affine constraint parsed. This function examines the one variable constraints such as
+Detect bounds from parse affine constraint. This function examines the one variable constraints such as
 x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_tight.
 This function can potential grow to be smarter.
 """
