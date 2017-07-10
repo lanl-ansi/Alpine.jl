@@ -18,7 +18,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # convexification method tuning
     bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
-    bilinear_convexhull::Bool                               # disbale convex hull representation mtehod used for convexify nonlinear terms
+    bilinear_convexhull::Bool                                   # disbale convex hull representation mtehod used for convexify nonlinear terms
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege

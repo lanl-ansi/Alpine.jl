@@ -14,9 +14,9 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Construct λ variable space
     for bi in keys(m.nonlinear_info)
         # Downward compatability: convex hull representation is suitable for :monomial and :bilinear
-        if (m.nonlinear_info[bi][:nonlinear_type] == :multilinear) || m.bilinear_mccormick * (m.nonlinear_info[bi][:nonlinear_info] in [:monomial, :bilinear])
+        if (m.nonlinear_info[bi][:nonlinear_type] == :multilinear) || m.bilinear_mccormick * (m.nonlinear_info[bi][:nonlinear_type] in [:monomial, :bilinear])
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
-            id, dim = generate_dims(discretization, bi)
+            id, dim = generate_dim(discretization, bi)
             extreme_point_cnt = prod(dim)
             λ = post_convhull_λ(m, bi[:id], λ, extreme_point_cnt, dim)
             λ = populate_extreme_values(m, id, λ, dim, ones(length(dim)))
@@ -26,6 +26,13 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     end
 
     return
+end
+
+function generate_dims(discretization::Dict, nonlinear_key::Any)
+    println(nonlinear_key)
+    exit()
+    dim = []
+
 end
 
 function amp_convhull_id_and_dims(discretization::Dict, nonlinear_key::Any)

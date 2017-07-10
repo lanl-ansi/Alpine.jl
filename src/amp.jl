@@ -75,8 +75,7 @@ function amp_post_convexification(m::PODNonlinearModel; kwargs...)
     end
 
     if !m.bilinear_convexhull
-        # convex hull representation
-        # amp_post_convhull(m, use_discretization=discretization)
+        amp_post_convhull(m, use_discretization=discretization)         # convex hull representation
     end
 
     convexification_exam(m)
