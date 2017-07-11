@@ -110,10 +110,12 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Int, dim::Tu
         return indices
     else
         for i in dim(ind)
+            locator = locator[ind] + 1
             if abs(i-fixed_partition) <=1 && locator[fixed_dim] == ind
                 push!(indices, l[CartesianIndex(locator)])
             end
             indices = collect_indices(l, fixed_dim, fixed_partition, dim, ind+1, indices)
+            locator = locator[ind] - 1
         end
     end
 
