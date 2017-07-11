@@ -7,7 +7,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
 
     # Variable holders
-    λ = Dict()  # Extreme points convex multiplier
+    λ = Dict()  # Extreme points and multipliers
     α = Dict()  # Partitioning Variables
     f = Dict()  # Extreme points function values
 
@@ -16,11 +16,11 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         nl_type = m.nonlinear_info[bi][:nonlinear_type]
         if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
-            id, dim = generate_dim(discretization, bi)
+            ml_indices, dim = amp_convhull_id_and_dim(discretization, bi)
             extreme_point_cnt = prod(dim)
-            λ = post_convhull_λ(m, bi[:id], λ, extreme_point_cnt, dim)
-            λ = populate_extreme_values(m, id, λ, dim, ones(length(dim)))
-            α = amp_post_convhull_α_vars(m, id, α, dim, m.discretization)
+            λ = post_convhull_λ(m, bi, λ, extreme_point_cnt, dim)
+            λ = populate_extreme_values(m, ml_indices, λ, dim, ones(length(dim)))
+            α = amp_post_convhull_α_vars(m, ml_indices, α, dim, m.discretization)
             # amp_post_convhull_constrs()
         end
     end
@@ -28,15 +28,8 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     return
 end
 
-function generate_dims(discretization::Dict, nonlinear_key::Any)
-    println(nonlinear_key)
-    exit()
-    dim = []
-
-end
-
 function amp_convhull_id_and_dims(discretization::Dict, nonlinear_key::Any)
-    id = Set()                  # This may be something else, TODO: be safe in regulating the shape
+    id = Set()                 # This may be something else, TODO: be safe in regulating the shape
     dim = []
     for var in nonlinear_key
         push!(id, var.args[2])
@@ -45,20 +38,21 @@ function amp_convhull_id_and_dims(discretization::Dict, nonlinear_key::Any)
     return id, tuple([i for i in dims]...)
 end
 
-function amp_post_convhull_λ(m::PODNonlinearModel, id::Set, λ::Dict, dim::Tuple; kwargs...)
-    λ[id] = Dict(:indices=>reshape(1:prod(dim), dim),
-                 :vars=>@variable(m.model_mip, [1:prod(dim)], lowerbound=0, upperbound=1, basename="L$(string(hash(id)))"),
+function amp_post_convhull_λ(m::PODNonlinearModel, nonlinear_key::Any, λ::Dict, extreme_point_cnt::Int, dim::Tuple; kwargs...)
+    id = m.nonlinear_info[nonlinear_key][:id]
+    λ[id] = Dict(:indices=>reshape(1:extreme_point_cnt, dim),
+                 :vars=>@variable(m.model_mip, [1:extreme_point_cnt], lowerbound=0, upperbound=1, basename="L$(string(hash(id)))"),
                  :vals=>ones(dim))
     return λ
 end
 
-function populate_convhull_extreme_values(m::PODNonlinearModel, id::Set, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
+function populate_convhull_extreme_values(m::PODNonlinearModel, ml_indices::Set, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
 
     if level == length(dim)
-        @assert length(id) == length(dim)
-        @assert length(id) == length(locator)
+        @assert length(ml_indices) == length(dim)
+        @assert length(ml_indices) == length(locator)
         val = 1.0
-        for i in id
+        for i in ml_indices
             val *= m.discretization[i][locator[i]]                      # Calculate extreme point z-value
         end
         λ[:vals][CartesianIndex(tuple([i for i in locator]...))] = val  # Value assignment
@@ -66,24 +60,24 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, id::Set, λ::Dic
     else
         for i in 1:dim[level]
             locator[level] = i                                          # Fix this level's index
-            λ = populate_extreme_values(m, id, λ, dim, locator, level+1)
+            λ = populate_convhull_extreme_values(m, ml_indices, λ, dim, locator, level+1)
         end
     end
 
     return λ
 end
 
-function amp_post_convhull_α_vars(m::PODNonlinearModel, id::Set, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
+function amp_post_convhull_α_vars(m::PODNonlinearModel, ml_indices::Set, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
-    for i in id
+    for i in ml_indices
         partition_cnt = length(discretization[i]) - 1
-        α[id] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(hash(id))")
+        α[ml_indices] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(hash(ml_indices))")
     end
 
     return α
 end
 
-function amp_post_convhull_constrs(m::PODNonlinearModel, id::Set, α::Dict, dim::Tuple)
+function amp_post_convhull_constrs(m::PODNonlinearModel, ml_indices::Set, α::Dict, dim::Tuple)
     # Build all necessary constriants according to user-options
     # Harhsa, SOS-1, SOS-2, Logrithm...
 
