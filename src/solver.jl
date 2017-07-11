@@ -54,7 +54,7 @@ function PODSolver(;
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
-    bilinear_mccormick = false,
+    bilinear_mccormick = true,      # by default, deal with bilinear terms using mccormick
     bilinear_convexhull = false,
 
     method_convexification = Array{Function}(0),

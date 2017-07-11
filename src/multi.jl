@@ -13,8 +13,8 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
 
     # Construct λ variable space
     for bi in keys(m.nonlinear_info)
-        # Downward compatability: convex hull representation is suitable for :monomial and :bilinear
-        if (m.nonlinear_info[bi][:nonlinear_type] == :multilinear) || m.bilinear_mccormick * (m.nonlinear_info[bi][:nonlinear_type] in [:monomial, :bilinear])
+        nl_type = m.nonlinear_info[bi][:nonlinear_type]
+        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             id, dim = generate_dim(discretization, bi)
             extreme_point_cnt = prod(dim)
@@ -99,4 +99,23 @@ function amp_post_convhull_one_partition(m::PODNonlinearModel, α::Dict)
         @constraint(m, sum(α[i]) == 1)
     end
     return
+end
+
+"""
+    Not finished.
+"""
+function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Int, dim::Tuple, ind::Int=1, locator=nothing, indices=[])
+
+    if ind > length(dim)
+        return indices
+    else
+        for i in dim(ind)
+            if abs(i-fixed_partition) <=1 && locator[fixed_dim] == ind
+                push!(indices, l[CartesianIndex(locator)])
+            end
+            indices = collect_indices(l, fixed_dim, fixed_partition, dim, ind+1, indices)
+        end
+    end
+
+    return indices
 end
