@@ -89,19 +89,14 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, id::Set, α::Dict, dim:
 
     # Currently, focus on SOS-1 implementation
 
-    # Post SOS-1
-    for i in id
-        # amp_post_convhull_SOS1()
-        # amp_post_convhull_domain()
-        # amp_post_convhull_domain()
-        # amp_post_convhull_hull()
-        # amp_post_convhull_locator()
-    end
-
+    amp_post_convhull_one_partition(m, α)
     return
 end
 
-function amp_post_convhull_sos1()
-
+function amp_post_convhull_one_partition(m::PODNonlinearModel, α::Dict)
+    # each variable must take only one domain
+    for i in keys(α)
+        @constraint(m, sum(α[i]) == 1)
+    end
     return
 end
