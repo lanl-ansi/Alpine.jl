@@ -267,7 +267,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     populate_lifted_affine(m)                                 # keep
 
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    detect_bound_from_aff(m)        # Fetch bounds from constraints
+    # detect_bound_from_aff(m)        # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
