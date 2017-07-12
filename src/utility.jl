@@ -301,6 +301,8 @@ function convexification_exam(m::PODNonlinearModel)
         if !m.nonlinear_info[term][:convexified]
             warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
             return
+        else
+            m.nonlinear_info[term][:convexified] = false    # Reset status for next iteration
         end
     end
 
