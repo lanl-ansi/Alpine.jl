@@ -126,6 +126,11 @@ function expr_to_affine(expr)
 		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr.args[2])
 		rhs = -rhs + expr.args[3]
 		affdict[:sense] = expr.args[1]
+	elseif expr.head == :ref  # For single variable objective expression
+		lhscoeff = [1.0]
+		lhsvars = [expr]
+		rhs = 0
+		affdict[:sense] = nothing
 	else # For an objective expression
 		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr)
 		affdict[:sense] = nothing
