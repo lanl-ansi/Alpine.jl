@@ -16,7 +16,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
-            # @show bi, ml_indices, dim, extreme_point_cnt
+            @show bi, ml_indices, dim, extreme_point_cnt
             λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
             # @show λ[ml_indices][:vals]
@@ -24,6 +24,8 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
             amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
         end
     end
+
+    print(m.model_mip)
 
     return
 end
@@ -102,7 +104,15 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
 
     @constraint(m.model_mip, sum(λ[ml_indices][:vars]) == 1)
     @constraint(m.model_mip, Variable(m.model_mip, λ[ml_indices][:lifted_var_idx]) == dot(λ[ml_indices][:vars], reshape(λ[ml_indices][:vals], extreme_point_cnt)))
-    # Constaint 3
+
+    for i in 1:length(λ[ml_indices][:indices])
+        println("Mapping i -> $(ind2sub(λ[ml_indices][:indices], i))")
+        println("Value of i-th position is $(λ[ml_indices][:vals][i])")
+    end
+    @show λ[ml_indices][:vals]
+    @show discretization[3]
+    @show discretization[8]
+
     cnt = 0
     for i in ml_indices
         cnt += 1
@@ -113,6 +123,8 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
             @constraint(m.model_mip, α[i][k] <= sum(λ[ml_indices][:vars][slice_indices]))
         end
     end
+
+    print(m.model_mip)
 
     return
 end

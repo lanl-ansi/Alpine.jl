@@ -55,6 +55,17 @@ Same as [`update_var_bounds`](@ref)
 """
 discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 
+
+"""
+    Utility function for debugging.
+"""
+function show_solution(m::JuMP.Model)
+    for i in 1:length(m.colNames)
+        println("$(m.colNames[i])=$(m.colVal[i])")
+    end
+    return
+end
+
 """
     initialize_discretization(m::PODNonlinearModel)
 

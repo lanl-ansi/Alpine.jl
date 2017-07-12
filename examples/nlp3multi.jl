@@ -8,7 +8,7 @@ function nlp3(;verbose=false, solver=nothing)
 								   log_level=100,
 								   rel_gap=0.01,
 								   bilinear_convexhull=true,
-								   presolve_bound_tightening=false,
+								   presolve_bound_tightening=true,
 								   discretization_var_pick_algo=0))
 	else
 		m = Model(solver=solver)

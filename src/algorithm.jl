@@ -379,7 +379,9 @@ function global_solve(m::PODNonlinearModel)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
+        show_solution(m.model_mip)
         update_opt_gap(m)
+        (m.logs[:n_iter] == 2) && error("STOP")
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
