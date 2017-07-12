@@ -126,6 +126,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
     # Update the bounds with the tightened ones
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
+    m.discretization = add_discretization(m, use_solution=m.best_sol)
 
     (m.log_level > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
     (m.log_level > 0) && print("\n")

@@ -323,8 +323,8 @@ function presolve(m::PODNonlinearModel)
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass
-        bound_tightening(m, use_bound = true)   # performs bound-tightening with the local solve objective value
-        (m.presolve_bound_tightening) && initialize_discretization(m)            # Reinitialize discretization dictionary on tight bounds
+        bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
+        (m.presolve_bound_tightening) && initialize_discretization(m)      # Reinitialize discretization dictionary on tight bounds
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
@@ -379,9 +379,9 @@ function global_solve(m::PODNonlinearModel)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
-        show_solution(m.model_mip)
+        # print(m.model_mip)
+        # show_solution(m.model_mip)
         update_opt_gap(m)
-        (m.logs[:n_iter] == 2) && error("STOP")
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
@@ -483,7 +483,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     # ================= Solve End ================ #
 
     status_pass = [:Optimal]
-    status_lb = [:UserObjLimits, :UserLimit, :Suboptimal]
+    status_lb = [:UserObjLimit, :UserLimit, :Suboptimal]
     status_reroute = [:Infeasible]
 
     if status in status_pass  # Only fetch the lower bound when default optimality is performed :: maybe we should always fetch lower bound
@@ -519,6 +519,6 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         m.status[:bounding_solve] = status
         error("[MIP UNBOUNDED] MIP solver failure")
     else
-        error("[MIP UNEXPECTED] MIP solver failure.")
+        error("[MIP UNEXPECTED] MIP solver failure $(status)")
     end
 end

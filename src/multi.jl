@@ -16,7 +16,12 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
-            @show bi, ml_indices, dim, extreme_point_cnt
+            for i in ml_indices
+                if !(i in m.var_discretization_mip)
+                    error("Currently, convexhull formulation requires all non-linear variables to be considered for discretization.")
+                end
+            end
+            # @show bi, ml_indices, dim, extreme_point_cnt
             λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
             # @show λ[ml_indices][:vals]
@@ -25,7 +30,8 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         end
     end
 
-    print(m.model_mip)
+    # print(m.model_mip)
+    # error("STOP")
 
     return
 end
@@ -92,6 +98,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Set, α::Dict, dim::T
             partition_cnt = length(discretization[i]) - 1
             α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
             @constraint(m.model_mip, sum(α[i]) == 1)
+            # Redundent constraints
             @constraint(m.model_mip, Variable(m.model_mip, i) >= dot(discretization[i][1:(end-1)], α[i]))
             @constraint(m.model_mip, Variable(m.model_mip, i) <= dot(discretization[i][2:end], α[i]))
         end
@@ -105,39 +112,35 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     @constraint(m.model_mip, sum(λ[ml_indices][:vars]) == 1)
     @constraint(m.model_mip, Variable(m.model_mip, λ[ml_indices][:lifted_var_idx]) == dot(λ[ml_indices][:vars], reshape(λ[ml_indices][:vals], extreme_point_cnt)))
 
-    for i in 1:length(λ[ml_indices][:indices])
-        println("Mapping i -> $(ind2sub(λ[ml_indices][:indices], i))")
-        println("Value of i-th position is $(λ[ml_indices][:vals][i])")
-    end
-    @show λ[ml_indices][:vals]
-    @show discretization[3]
-    @show discretization[8]
-
     cnt = 0
     for i in ml_indices
         cnt += 1
         @assert length(α[i]) == (length(discretization[i]) - 1)
         partition_cnt = length(α[i])
+        lambda_cnt = length(discretization[i])
         for k in 1:partition_cnt
-            slice_indices = collect_indices(λ[ml_indices][:indices], cnt, k, dim)
-            @constraint(m.model_mip, α[i][k] <= sum(λ[ml_indices][:vars][slice_indices]))
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [k, k+1], dim)
+            @constraint(m.model_mip, α[i][k] <= sum(λ[ml_indices][:vars][sliced_indices]))
         end
+        sliced_indices=[]
+        for k in 1:lambda_cnt
+            push!(sliced_indices, collect_indices(λ[ml_indices][:indices], cnt, [k], dim))
+        end
+        @assert length(sliced_indices) == lambda_cnt
+        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
     end
-
-    print(m.model_mip)
 
     return
 end
 
 
-function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Int, dim::Tuple)
+function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::Tuple)
 
 	k = 0
-	indices = Vector{Int}(Int(prod(dim)/dim[fixed_dim]*2))
+	indices = Vector{Int}(Int(prod(dim)/dim[fixed_dim]*length(fixed_partition)))
 	for i in 1:prod(dim)
 		ind = ind2sub(l, i)
-		(fixed_partition >= dim[fixed_dim]) && error("indices collection input error, exceeding partition counts")
-		if ind[fixed_dim] in [fixed_partition, fixed_partition+1]
+		if ind[fixed_dim] in fixed_partition
 			k += 1
 			indices[k] = i
 		end

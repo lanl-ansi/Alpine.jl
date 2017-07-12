@@ -5,10 +5,10 @@ function nlp3(;verbose=false, solver=nothing)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
-								   log_level=100,
-								   rel_gap=0.01,
+								   log_level=1,
+								   rel_gap=0.001,
 								   bilinear_convexhull=true,
-								   presolve_bound_tightening=true,
+								   presolve_bound_tightening=false,
 								   discretization_var_pick_algo=0))
 	else
 		m = Model(solver=solver)
