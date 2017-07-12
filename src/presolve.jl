@@ -147,7 +147,7 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP model
     amp_post_vars(m, use_discretization=discretization)
     amp_post_lifted_constraints(m)
-    amp_post_tmc_mccormick(m, use_discretization=discretization)
+    amp_post_mccormick(m, use_discretization=discretization)
     # any additional built-in convexification method : convexhull for example
     for i in 1:length(m.method_convexification)    # Additional user-defined convexificaition method, following user sequence
         eval(m.method_convexification[i])(m)
