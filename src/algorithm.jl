@@ -259,19 +259,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # populate data to create the bounding model
     # if true # divert for testing new code
     expr_batch_process(m)
-    # else # Original stable code
-    #     populate_nonlinear_info(m)                          # *
-    #     populate_lifted_expr(m)                             # *
-    #     m.num_var_lifted_mip = length(m.nonlinear_info)     # *
-    # end
-    populate_lifted_affine(m)                                 # keep
+    populate_lifted_affine(m)
 
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    # detect_bound_from_aff(m)        # Fetch bounds from constraints
+    detect_bound_from_aff(m)        # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
-
     m.best_sol = fill(NaN, m.num_var_orig)
 
     logging_summary(m)

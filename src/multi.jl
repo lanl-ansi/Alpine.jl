@@ -30,9 +30,6 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         end
     end
 
-    # print(m.model_mip)
-    # error("STOP")
-
     return
 end
 
@@ -98,9 +95,6 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Set, α::Dict, dim::T
             partition_cnt = length(discretization[i]) - 1
             α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
             @constraint(m.model_mip, sum(α[i]) == 1)
-            # Redundent constraints
-            @constraint(m.model_mip, Variable(m.model_mip, i) >= dot(discretization[i][1:(end-1)], α[i]))
-            @constraint(m.model_mip, Variable(m.model_mip, i) <= dot(discretization[i][2:end], α[i]))
         end
     end
 
@@ -130,9 +124,48 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
         @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
     end
 
+    # box_cuts(m, λ, α, ml_indices, dim)
+
     return
 end
 
+function box_cuts(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Set, dim::Tuple, locator::Any=[], level::Int=1)
+
+    isempty(locator) && (locator = ones(Int, length(dim)))
+
+    if level > length(dim)
+        @show locator
+        var_idx = collect(ml_indices)
+        sliced_indices = collect_indices(λ[ml_indices][:indices], tuple([i for i in locator]...), dim)
+        @constraint(m.model_mip,
+            sum(α[var_idx[i]][locator[i]] for i in 1:length(var_idx)) <= 2*sum(λ[ml_indices][:vars][sliced_indices]))
+        return
+    else
+        @show dim, level
+        for i in 1:(dim[level]-1)
+            locator[level] = i
+            box_cuts(m, λ, α, ml_indices, dim, locator, level+1)
+        end
+    end
+
+    return
+end
+
+function collect_indices(l::Array, locator::Tuple, dim::Tuple)
+
+    k = 0
+    indices = Vector{Int}(2^length(dim))
+    for i in 1:prod(dim)
+        ind = ind2sub(l, i)
+        diff = [((ind[i] - locator[i] == 0) || (ind[i] - locator[i] == 1)) for i in 1:length(dim)]
+        if prod(diff)
+            k +=1
+            indices[k] = i
+        end
+    end
+
+    return indices
+end
 
 function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::Tuple)
 

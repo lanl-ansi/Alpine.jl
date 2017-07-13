@@ -164,12 +164,11 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
 
     for i in 1:m.num_var_orig
         point = point_vec[i]
-        @show point, discretization[i]
         @assert point >= discretization[i][1] - m.tol       # Solution validation
         @assert point <= discretization[i][end] + m.tol
         if i in m.var_discretization_mip  # Only construct when discretized
             for j in 1:length(discretization[i])
-                if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+                if point >= discretization[i][j] + m.tol && point <= discretization[i][j+1] - m.tol  # Locating the right location
                     @assert j < length(m.discretization[i])
                     lb_local = discretization[i][j]
                     ub_local = discretization[i][j+1]
@@ -177,13 +176,13 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     radius = distance / m.discretization_ratio
                     lb_new = max(point - radius, lb_local)
                     ub_new = min(point + radius, ub_local)
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                     if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
                         insert!(discretization[i], j+1, ub_new)
                     end
                     if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
                         insert!(discretization[i], j+1, lb_new)
                     end
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                     break
                 end
             end
