@@ -433,7 +433,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
             # TODO: Proposed hot fix_domains
-            m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 5)
+            m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 8)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
@@ -491,7 +491,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)),6) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
@@ -501,7 +501,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)),6) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected

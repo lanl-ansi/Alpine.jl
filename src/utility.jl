@@ -164,6 +164,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
 
     for i in 1:m.num_var_orig
         point = point_vec[i]
+        @show point, discretization[i]
         @assert point >= discretization[i][1] - m.tol       # Solution validation
         @assert point <= discretization[i][end] + m.tol
         if i in m.var_discretization_mip  # Only construct when discretized
