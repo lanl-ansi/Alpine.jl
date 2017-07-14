@@ -17,6 +17,10 @@ function multi4(;verbose=false,solver=nothing)
 	@NLobjective(m, Max, x[1]*x[2]*x[3]*x[4])
 	# @NLobjective(m, Max, (x[1]*x[2])*(x[3]*x[4]))
 	# @NLobjective(m, Max, (((x[1]*x[2])*x[3])*x[4]))
+    # @NLobjective(m, Max, (x[1]*x[2]*x[3])*x[4])
+	# @NLobjective(m, Max, x[1]*(x[2]*(x[3]*x[4])))
+	# @NLobjecitve(m, Max, x[1]*(x[2]*x[3])*x[4])
+	# @NLobjecitve(m, Max, x[1]*(x[2]*x[3]*x[4]))
 	@constraint(m, sum(x[i] for i in 1:4) <= 4)
 
 	if verbose
@@ -41,8 +45,9 @@ function multi3(;verbose=false,solver=nothing)
 
 	srand(1)
     @variable(m, 0.1<=x[1:3]<=rand()*100)
-	@NLobjective(m, Max, x[1]*x[2]*x[3])
+	# @NLobjective(m, Max, x[1]*x[2]*x[3])
 	# @NLobjective(m, Max, (x[1]*x[2])*x[3])
+	# @NLobjective(m, Max, x[1]*(x[2]*x[3]))
 	@constraint(m, sum(x[i] for i in 1:3) <= 3)
 
 	if verbose
