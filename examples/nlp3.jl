@@ -21,11 +21,12 @@ function nlp3(;verbose=false, solver=nothing)
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   log_level=1,
-								   rel_gap=0.05,
+								   rel_gap=0.001,
+								#    bilinear_convexhull=true,
 								   presolve_bt_width_tol=1e-3,
 								   presolve_bt_output_tol=1e-1,
 								   presolve_bound_tightening=false,
-	                               presolve_bound_tightening_algo=2,
+	                               presolve_bound_tightening_algo=1,
 								   discretization_var_pick_algo=0))
 	else
 		m = Model(solver=solver)

@@ -18,7 +18,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # convexification method tuning
     bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
-    bilinear_convexhull::Bool                               # disbale convex hull representation mtehod used for convexify nonlinear terms
+    bilinear_convexhull::Bool                                   # disbale convex hull representation mtehod used for convexify nonlinear terms
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
@@ -259,19 +259,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # populate data to create the bounding model
     # if true # divert for testing new code
     expr_batch_process(m)
-    # else # Original stable code
-    #     populate_nonlinear_info(m)                          # *
-    #     populate_lifted_expr(m)                             # *
-    #     m.num_var_lifted_mip = length(m.nonlinear_info)     # *
-    # end
-    populate_lifted_affine(m)                                 # keep
+    populate_lifted_affine(m)
 
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
     detect_bound_from_aff(m)        # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
-
     m.best_sol = fill(NaN, m.num_var_orig)
 
     logging_summary(m)
@@ -323,8 +317,8 @@ function presolve(m::PODNonlinearModel)
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass
-        bound_tightening(m, use_bound = true)   # performs bound-tightening with the local solve objective value
-        (m.presolve_bound_tightening) && initialize_discretization(m)            # Reinitialize discretization dictionary on tight bounds
+        bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
+        (m.presolve_bound_tightening) && initialize_discretization(m)      # Reinitialize discretization dictionary on tight bounds
         m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
@@ -379,6 +373,8 @@ function global_solve(m::PODNonlinearModel)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
+        # print(m.model_mip)
+        # show_solution(m.model_mip)
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
@@ -431,7 +427,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
             # TODO: Proposed hot fix_domains
-            m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 5)
+            m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 8)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
@@ -481,7 +477,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     # ================= Solve End ================ #
 
     status_pass = [:Optimal]
-    status_lb = [:UserObjLimits, :UserLimit, :Suboptimal]
+    status_lb = [:UserObjLimit, :UserLimit, :Suboptimal]
     status_reroute = [:Infeasible]
 
     if status in status_pass  # Only fetch the lower bound when default optimality is performed :: maybe we should always fetch lower bound
@@ -489,7 +485,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)),6) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
@@ -499,7 +495,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)),6) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
@@ -517,6 +513,6 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         m.status[:bounding_solve] = status
         error("[MIP UNBOUNDED] MIP solver failure")
     else
-        error("[MIP UNEXPECTED] MIP solver failure.")
+        error("[MIP UNEXPECTED] MIP solver failure $(status)")
     end
 end

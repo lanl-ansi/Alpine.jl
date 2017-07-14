@@ -1,29 +1,13 @@
 using POD, JuMP, Ipopt, Gurobi, MathProgBase
 
-function max_cover_var_picker(m::POD.PODNonlinearModel)
-	nodes = Set()
-	for pair in keys(m.nonlinear_info)
-		for i in pair
-			@assert isa(i.args[2], Int)
-			push!(nodes, i.args[2])
-		end
-	end
-	nodes = collect(nodes)
-	m.num_var_discretization_mip = length(nodes)
-	m.var_discretization_mip = nodes
-	return
-end
-
-
 function nlp3(;verbose=false, solver=nothing)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
-								   mip_solver=GurobiSolver(),
+		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+								   mip_solver=GurobiSolver(OutputFlag=1),
 								   log_level=1,
-								   maxiter=1,
-								   rel_gap=0.01,
-								   bilinear_mccormick=true,
+								   rel_gap=0.001,
+								   bilinear_convexhull=true,
 								   presolve_bound_tightening=false,
 								   discretization_var_pick_algo=0))
 	else

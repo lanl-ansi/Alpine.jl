@@ -55,6 +55,17 @@ Same as [`update_var_bounds`](@ref)
 """
 discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 
+
+"""
+    Utility function for debugging.
+"""
+function show_solution(m::JuMP.Model)
+    for i in 1:length(m.colNames)
+        println("$(m.colNames[i])=$(m.colVal[i])")
+    end
+    return
+end
+
 """
     initialize_discretization(m::PODNonlinearModel)
 
@@ -155,6 +166,9 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
         point = point_vec[i]
         @assert point >= discretization[i][1] - m.tol       # Solution validation
         @assert point <= discretization[i][end] + m.tol
+        # Safety Scheme
+        (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
+        (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
         if i in m.var_discretization_mip  # Only construct when discretized
             for j in 1:length(discretization[i])
                 if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
@@ -165,13 +179,13 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     radius = distance / m.discretization_ratio
                     lb_new = max(point - radius, lb_local)
                     ub_new = min(point + radius, ub_local)
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                     if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
                         insert!(discretization[i], j+1, ub_new)
                     end
                     if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
                         insert!(discretization[i], j+1, lb_new)
                     end
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                     break
                 end
             end
@@ -301,6 +315,8 @@ function convexification_exam(m::PODNonlinearModel)
         if !m.nonlinear_info[term][:convexified]
             warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
             return
+        else
+            m.nonlinear_info[term][:convexified] = false    # Reset status for next iteration
         end
     end
 

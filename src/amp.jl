@@ -70,15 +70,8 @@ function amp_post_convexification(m::PODNonlinearModel; kwargs...)
         eval(m.method_convexification[i])(m)
     end
 
-    if !m.bilinear_mccormick
-        amp_post_tmc_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
-    end
-
-    if !m.bilinear_convexhull
-        # convex hull representation
-        # amp_post_convhull(m, use_discretization=discretization)
-    end
-
+    amp_post_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
+    amp_post_convhull(m, use_discretization=discretization)         # convex hull representation
     convexification_exam(m)
 
     return

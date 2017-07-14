@@ -126,6 +126,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
     # Update the bounds with the tightened ones
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
+    m.discretization = add_discretization(m, use_solution=m.best_sol)
 
     (m.log_level > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
     (m.log_level > 0) && print("\n")
@@ -147,7 +148,7 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP model
     amp_post_vars(m, use_discretization=discretization)
     amp_post_lifted_constraints(m)
-    amp_post_tmc_mccormick(m, use_discretization=discretization)
+    amp_post_mccormick(m, use_discretization=discretization)
     # any additional built-in convexification method : convexhull for example
     for i in 1:length(m.method_convexification)    # Additional user-defined convexificaition method, following user sequence
         eval(m.method_convexification[i])(m)
