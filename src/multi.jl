@@ -16,7 +16,6 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
-            @show bi, extreme_point_cnt
             for i in ml_indices
                 if !(i in m.var_discretization_mip)
                     error("Currently, convexhull formulation requires all non-linear variables to be considered for discretization.")
@@ -37,12 +36,12 @@ end
     This function is very important.
 """
 function amp_convhull_prepare(discretization::Dict, nonlinear_key::Any)
-    id = Set()                 # This may be something else, TODO: be safe in regulating the shape
+    id = Set()                      # Coverting the nonlinear indices into a different space
     dim = []
     for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
         push!(id, var.args[2])
     end
-    for i in id                     # Ensure the same sequence
+    for i in id                     # Critical!!! Ensure the same sequence
         push!(dim, length(discretization[i]))
     end
     return id, tuple([i for i in dim]...), prod(dim)
@@ -87,6 +86,25 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
     return λ
 end
 
+"""
+    Less memeory & time efficient, but a easier implementation
+"""
+function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Set, λ::Dict, extreme_point_cnt::Int)
+
+    var_indices = collect(ml_indices)
+    for i in 1:extreme_point_cnt
+        sub = ind2sub(λ[ml_indices][:indices], i)
+        k = 0
+        for var in ml_indices
+            k += 1
+            @assert var == var_indices[k]
+            λ[ml_indices][:vals][CartesianIndex(sub)] *= discretization[var][sub[k]]
+        end
+    end
+
+    return λ
+end
+
 function amp_convhull_α(m::PODNonlinearModel, ml_indices::Set, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
     for i in ml_indices
@@ -102,67 +120,50 @@ end
 
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Set, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
 
+    # Adding λ constraints
     @constraint(m.model_mip, sum(λ[ml_indices][:vars]) == 1)
     @constraint(m.model_mip, Variable(m.model_mip, λ[ml_indices][:lifted_var_idx]) == dot(λ[ml_indices][:vars], reshape(λ[ml_indices][:vals], extreme_point_cnt)))
 
     cnt = 0
     for i in ml_indices
         cnt += 1
-        @assert length(α[i]) == (length(discretization[i]) - 1)
+
         partition_cnt = length(α[i])
         lambda_cnt = length(discretization[i])
-        for k in 1:partition_cnt
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [k, k+1], dim)
-            @constraint(m.model_mip, α[i][k] <= sum(λ[ml_indices][:vars][sliced_indices]))
-        end
-        sliced_indices=[]
-        for k in 1:lambda_cnt
-            push!(sliced_indices, collect_indices(λ[ml_indices][:indices], cnt, [k], dim))
-        end
-        @assert length(sliced_indices) == lambda_cnt
+        @assert lambda_cnt == partition_cnt + 1
+
+        # Add links between λ and α
+        valid_inequalities(m, discretization, λ, α, ml_indices, dim, i, cnt)
+
+        # Add x = f(λ) for convex representation of x value
+        sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt]
         @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
     end
 
-    valid_cuts(m, λ, α, ml_indices, dim)
-    # box_cuts(m, λ, α, ml_indices, dim)
-
     return
 end
 
-# Valid inequalities proposed by Jeff
-function valid_cuts(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Set, dim::Tuple)
+# Valid inequalities proposed when Jeff L. was here
+function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Set, dim::Tuple, var_ind::Int, cnt::Int)
 
-    k = 0
-    for i in ml_indices
-        k += 1
-        sliced_indices = collect_indices(λ[ml_indices][:indices], k, [1], dim)
-        @constraint(m.model_mip, α[i][1] >= sum(λ[ml_indices][:vars][sliced_indices]))
-        sliced_indices = collect_indices(λ[ml_indices][:indices], k, [dim[k]], dim)
-        @constraint(m.model_mip, α[i][end] >= sum(λ[ml_indices][:vars][sliced_indices]))
+    partition_cnt = length(α[var_ind])
+    lambda_cnt = length(discretization[var_ind])
+
+    # Constriant cluster of α <= f(λ)
+    for j in 1:partition_cnt
+        for i in 1:max(1, min(partition_cnt-j+1, m.convhull_sweep_limit)) # At least one
+            # println("On partition $j, partition_cnt=$(partition_cnt), reaching lambda $(j):$(j+i)")
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j:(j+i);], dim)
+            @constraint(m.model_mip, sum(α[var_ind][j:(j+i-1)]) <= sum(λ[ml_indices][:vars][sliced_indices]))
+        end
     end
 
-    return
-end
-
-# Valid inequalities proposed by Russell
-# Currently under tests
-function box_cuts(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Set, dim::Tuple, locator::Any=[], level::Int=1)
-
-    isempty(locator) && (locator = ones(Int, length(dim)))
-
-    if level > length(dim)
-        @show locator
-        var_idx = collect(ml_indices)
-        sliced_indices = collect_indices(λ[ml_indices][:indices], tuple([i for i in locator]...), dim)
-        @constraint(m.model_mip,
-            sum(α[var_idx[i]][locator[i]] for i in 1:length(var_idx)) <= 2*sum(λ[ml_indices][:vars][sliced_indices]))
-        return
-    else
-        @show dim, level
-        for i in 1:(dim[level]-1)
-            locator[level] = i
-            box_cuts(m, λ, α, ml_indices, dim, locator, level+1)
-        end
+    # Constraint cluster of α >= f(λ)
+    for j in 1:min(partition_cnt, m.convhull_sweep_limit) # Construct cuts by sweeping in both directions
+        sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+        @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
+        sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
+        @constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
     end
 
     return

@@ -29,6 +29,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
 
+    # parameters used to control convhull formulation
+    convhull_sweep_limit::Int
+
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
@@ -128,6 +131,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_var_pick_algo,
                                 discretization_ratio,
                                 discretization_add_partition_method,
+                                convhull_sweep_limit,
                                 presolve_track_time,
                                 presolve_bound_tightening,
                                 presolve_maxiter,
@@ -157,6 +161,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_var_pick_algo = discretization_var_pick_algo
         m.discretization_ratio = discretization_ratio
         m.discretization_add_partition_method = discretization_add_partition_method
+
+        m.convhull_sweep_limit = convhull_sweep_limit
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bound_tightening = presolve_bound_tightening
@@ -235,7 +241,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
 
     # Summarize constraints information in original model
-    m.constr_type_orig = Array(Symbol, m.num_constr_orig)
+    @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
     for i in 1:m.num_constr_orig
         if l_constr[i] > -Inf && u_constr[i] < Inf
             m.constr_type_orig[i] = :(==)
@@ -347,7 +353,7 @@ function presolve(m::PODNonlinearModel)
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
     (m.log_level > 0) && println("Presolve ended.")
-    (m.log_level > 0) && println("Presolve time = $(round(m.logs[:total_time],2))s")
+    (m.log_level > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
 
     return
 end
@@ -427,7 +433,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
             # TODO: Proposed hot fix_domains
-            m.best_sol = round(MathProgBase.getsolution(local_solve_nlp_model), 8)
+            m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 8)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
@@ -476,26 +482,15 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     # ================= Solve End ================ #
 
-    status_pass = [:Optimal]
-    status_lb = [:UserObjLimit, :UserLimit, :Suboptimal]
+    status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_reroute = [:Infeasible]
 
-    if status in status_pass  # Only fetch the lower bound when default optimality is performed :: maybe we should always fetch lower bound
-        candidate_bound = getobjectivevalue(m.model_mip)
-        push!(m.logs[:bound], candidate_bound)
-        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
-            m.best_bound = candidate_bound
-            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
-            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
-            m.status[:bounding_solve] = status
-            m.status[:bound] = :Detected
-        end
-    elseif status in status_lb
+    if status in status_solved
         candidate_bound = getobjbound(m.model_mip)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected

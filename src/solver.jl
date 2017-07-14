@@ -28,6 +28,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_ratio::Any
     discretization_add_partition_method::Any
 
+    convhull_sweep_limit::Int
+
     presolve_track_time::Bool
     presolve_bound_tightening::Bool
     presolve_maxiter::Int
@@ -54,7 +56,7 @@ function PODSolver(;
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
-    bilinear_mccormick = true,      # by default, deal with bilinear terms using mccormick
+    bilinear_mccormick = true,      # by default, deal with bilinear terms using mccormick since the convhull is under tests
     bilinear_convexhull = false,
 
     method_convexification = Array{Function}(0),
@@ -63,6 +65,8 @@ function PODSolver(;
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
     discretization_add_partition_method = nothing, # Not ready for implementation
+
+    convhull_sweep_limit = 1,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
@@ -95,6 +99,7 @@ function PODSolver(;
         discretization_var_pick_algo,
         discretization_ratio,
         discretization_add_partition_method,
+        convhull_sweep_limit,
         presolve_track_time,
         presolve_bound_tightening,
         presolve_maxiter,
@@ -134,6 +139,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_ratio = s.discretization_ratio
     discretization_add_partition_method = s.discretization_add_partition_method
 
+    convhull_sweep_limit = s.convhull_sweep_limit
+
     presolve_track_time = s.presolve_track_time
     presolve_bound_tightening = s.presolve_bound_tightening
     presolve_maxiter = s.presolve_maxiter
@@ -155,6 +162,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_var_pick_algo,
                             discretization_ratio,
                             discretization_add_partition_method,
+                            convhull_sweep_limit,
                             presolve_track_time,
                             presolve_bound_tightening,
                             presolve_maxiter,

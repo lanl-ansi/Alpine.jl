@@ -200,3 +200,59 @@ function amp_post_tmc_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, 
 
     return
 end
+
+"""
+    mccormick(m::JuMP.Model, xy, x, y, x_l, x_u, y_l, y_u)
+
+Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
+"""
+function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
+    @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
+    @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
+    @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
+    @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
+    return
+end
+
+function mccormick_bin(m,xy,x,y)
+
+    @constraint(m, xy <= x)
+    @constraint(m, xy <= y)
+    @constraint(m, xy >= x+y-1)
+
+    return
+end
+
+function mccormick_monomial(m,xy,x,xˡ,xᵘ)
+    @constraint(m, xy >= x^2)
+    @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
+    return
+end
+
+
+
+function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
+    if lazy == 1
+        function GetLazyCuts_quad(cb)
+            TOL1 = 1e-6
+            if (getvalue(x)^p > (getvalue(x_p) + TOL1))
+                a = p*getvalue(x)^(p-1)
+                b = (1-p)*getvalue(x)^p
+                @lazyconstraint(cb, a*x + b <= x_p)
+            end
+        end
+        addlazycallback(m, GetLazyCuts_quad)
+    elseif p == 2 && quad == 1
+        @constraint(m, x_p >= x^2)
+    else
+        x0_vec = sort(union(xˡ, xᵘ))
+        for x0 in x0_vec
+            @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
+        end
+    end
+
+    A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
+    @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
+
+    return
+end
