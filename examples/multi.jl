@@ -15,8 +15,7 @@ println("Multi4 - exprmode 11 -> (X1 * (X2*X3)) * X4")
 println("--------------------------------------------")
 
 function pick_my_var(m::Any)
-	exclude = 3
-	println("Excluding !!!!!!!!!!! $exclude")
+	exclude = 3		# Give the variabel you wish to exclude from discretization set
 	# Perform a max-cover locally and exclude the target term
 	nodes = Set()
 	for pair in keys(m.nonlinear_info)

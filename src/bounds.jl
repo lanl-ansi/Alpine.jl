@@ -27,42 +27,6 @@ This function can potential grow to be smarter.
 """
 function bounds_propagation(m::PODNonlinearModel)
 
-    # for aff in m.lifted_constr_aff_mip
-    #     if length(aff[:coefs]) == 1 && length(aff[:vars]) == 1
-    #         var_idx = aff[:vars][1].args[2]
-    #         @assert (isa(var_idx, Float64) || isa(var_idx, Int))
-    #         if aff[:sense] == :(==)
-    #             m.l_var_tight[var_idx] = aff[:coefs][1] * aff[:rhs]
-    #             m.u_var_tight[var_idx] = aff[:coefs][1] * aff[:rhs]
-    #             (m.log_level > 99) && println("[VAR$(var_idx)] Both bound $(aff[:rhs]) detected from constraints")
-    #         elseif aff[:sense] == :(>=) && aff[:coefs][1] > 0.0
-    #             eval_bound = aff[:rhs]/aff[:coefs][1]
-    #             if eval_bound > m.l_var_tight[var_idx] + m.tol
-    #                 m.l_var_tight[var_idx] = eval_bound
-    #                 (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) detected from constraints")
-    #             end
-    #         elseif aff[:sense] == :(>=) && aff[:coefs][1] < 0.0  # Flip sign
-    #             eval_bound = aff[:rhs]/aff[:coefs][1]
-    #             if eval_bound < m.u_var_tight[var_idx] - m.tol
-    #                 m.u_var_tight[var_idx] = eval_bound
-    #                 (m.log_level > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) detected from constraints")
-    #             end
-    #         elseif aff[:sense] == :(<=) && aff[:coefs][1] > 0.0
-    #             eval_bound = aff[:rhs]/aff[:coefs][1]
-    #             if eval_bound < m.u_var_tight[var_idx] - m.tol
-    #                 m.u_var_tight[var_idx] = eval_bound
-    #                 (m.log_level > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) detected from constraints")
-    #             end
-    #         elseif aff[:sense] == :(<=) && aff[:coefs][1] < 0.0  # Flip sign
-    #             eval_bound = aff[:rhs]/aff[:coefs][1]
-    #             if eval_bound > m.l_var_tight[var_idx] + m.tol
-    #                 m.l_var_tight[var_idx] = eval_bound
-    #                 (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) detected from constraints")
-    #             end
-    #         end
-    #     end
-    # end
-
     exhausted = false
     while !exhausted
         exhausted = true
