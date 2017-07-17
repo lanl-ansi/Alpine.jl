@@ -97,7 +97,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                     elseif status in status_reroute
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
                     else
-                        error("bound tightening sub-problem solves to an error status")
+                        error("bound tightening sub-problem solves to an error status [$(status)]")
                     end
                     # TODO: discuss feasibility tols and where to put them and apt default
                     m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
@@ -108,6 +108,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         # Updates the discretization structure
         for var_idx in m.all_nonlinear_vars
             if abs((temp_bounds[var_idx][1] - discretization[var_idx][1])/discretization[var_idx][1]) > m.presolve_bt_width_tol
+                (m.log_level > 0) && print("+")
                 keeptightening = true # Continue to perform the next iteration
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
             end
@@ -148,19 +149,15 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP model
     amp_post_vars(m, use_discretization=discretization)
     amp_post_lifted_constraints(m)
-    amp_post_mccormick(m, use_discretization=discretization)
-    # any additional built-in convexification method : convexhull for example
-    for i in 1:length(m.method_convexification)    # Additional user-defined convexificaition method, following user sequence
-        eval(m.method_convexification[i])(m)
-    end
+    amp_post_convexification(m, use_discretization=discretization)  # Convexify problem
 
     if bound != Inf
         post_obj_bounds(m, bound)
     end
 
     cputime_build = time() - start_build
-    m.logs[:total_time] += cputime_build * m.presolve_track_time
-    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time] * m.presolve_track_time)
+    m.logs[:total_time] += cputime_build
+    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
     return
 end
@@ -184,8 +181,8 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
     start_solve = time()
     status = solve(m.model_mip, suppress_warnings=true, relaxation=m.presolve_mip_relaxation) #TODO Double check here
     cputime_solve = time() - start_solve
-    m.logs[:total_time] += cputime_solve * m.presolve_track_time
-    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time] * m.presolve_track_time)
+    m.logs[:total_time] += cputime_solve
+    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     #TODO handle the infeasible cases when time limit is applied
     # ========= MILP Solve ========= #
 

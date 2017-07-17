@@ -97,6 +97,7 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
 
     options = Dict(kwargs)
 
+    @assert length(lbs) == length(ubs)
     var_discretization = Dict()
     for var in 1:m.num_var_orig
         lb = lbs[var]
@@ -104,10 +105,18 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
         var_discretization[var] = [lb, ub]
     end
 
-    for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
-        lb = -Inf
-        ub = Inf
-        var_discretization[var] = [lb, ub]
+    if length(lbs) == (m.num_var_orig+m.num_var_lifted_mip)
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+            lb = lbs[var]
+            ub = ubs[var]
+            var_discretization[var] = [lb, ub]
+        end
+    else
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+            lb = -Inf
+            ub = Inf
+            var_discretization[var] = [lb, ub]
+        end
     end
 
     return var_discretization
@@ -313,7 +322,7 @@ function convexification_exam(m::PODNonlinearModel)
     # Other more advanced convexification check goes here
     for term in keys(m.nonlinear_info)
         if !m.nonlinear_info[term][:convexified]
-            warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
+            error("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
             return
         else
             m.nonlinear_info[term][:convexified] = false    # Reset status for next iteration

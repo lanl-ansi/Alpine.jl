@@ -268,7 +268,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     populate_lifted_affine(m)
 
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    detect_bound_from_aff(m)        # Fetch bounds from constraints
+    bounds_propagation(m)           # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
@@ -278,7 +278,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 end
 
 function MathProgBase.optimize!(m::PODNonlinearModel)
-    start = time()
     if any(isnan, m.best_sol)
         m.best_sol = zeros(length(m.best_sol))
     end
@@ -352,6 +351,7 @@ function presolve(m::PODNonlinearModel)
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
+    m.logs[:time_left] -= m.logs[:presolve_time]
     (m.log_level > 0) && println("Presolve ended.")
     (m.log_level > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
 
@@ -375,12 +375,11 @@ For example, this algorithm can easily be reformed as a uniform-partitioning alg
 function global_solve(m::PODNonlinearModel)
 
     (m.log_level > 0) && logging_head()
+    (!m.presolve_track_time) && reset_timer(m)
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
         bounding_solve(m)           # Solve bounding model
-        # print(m.model_mip)
-        # show_solution(m.model_mip)
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model

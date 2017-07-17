@@ -14,21 +14,45 @@ println("Multi4 - exprmode 10 -> X1 * ((X2*X3) * X4)")
 println("Multi4 - exprmode 11 -> (X1 * (X2*X3)) * X4")
 println("--------------------------------------------")
 
+function pick_my_var(m::Any)
+	exclude = 3
+	println("Excluding !!!!!!!!!!! $exclude")
+	# Perform a max-cover locally and exclude the target term
+	nodes = Set()
+	for pair in keys(m.nonlinear_info)
+		# Assumption Max cover is always safe
+		for i in pair
+			@assert isa(i.args[2], Int)
+			push!(nodes, i.args[2])
+		end
+	end
+	delete!(nodes, exclude)
+	nodes = collect(nodes)
+	m.num_var_discretization_mip = length(nodes)
+	m.var_discretization_mip = nodes
+
+	return
+end
+
 function multi4(;verbose=false,solver=nothing, exprmode=1)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
+								   rel_gap=0.0001,
 								   bilinear_convexhull=true,
-								   presolve_bound_tightening=false,
-								   log_level=1))
+								   convhull_sweep_limit=1,
+								#    discretization_var_pick_algo=pick_my_var,
+								   presolve_bound_tightening=true,
+								   presolve_track_time=true,
+								   presolve_bound_tightening_algo=1,
+								   log_level=100))
 	else
 		m = Model(solver=solver)
 	end
 
 	srand(1)
-	ub = rand()
-    @variable(m, 0.1<=x[1:4]<=ub*100)
+    @variable(m, 0.1<=x[1:4]<=rand()*100)
 	if exprmode == 1
 		@NLobjective(m, Max, x[1]*x[2]*x[3]*x[4])
 	elseif exprmode == 2
@@ -44,13 +68,13 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 	elseif exprmode == 7
     	@NLobjective(m, Max, x[1]*(x[2]*(x[3]*x[4])))
 	elseif exprmode == 8
-		@NLobjecitve(m, Max, x[1]*(x[2]*x[3])*x[4])
+		@NLobjective(m, Max, x[1]*(x[2]*x[3])*x[4])
 	elseif exprmode == 9
-		@NLobjecitve(m, Max, x[1]*(x[2]*x[3]*x[4]))
+		@NLobjective(m, Max, x[1]*(x[2]*x[3]*x[4]))
 	elseif exprmode == 10
-		@NLobjecitve(m, Max, x[1]*((x[2]*x[3])*x[4]))
+		@NLobjective(m, Max, x[1]*((x[2]*x[3])*x[4]))
 	elseif exprmode == 11
-		@NLobjecitve(m, Max, (x[1]*(x[2]*x[3]))*x[4])
+		@NLobjective(m, Max, (x[1]*(x[2]*x[3]))*x[4])
 	else
 		error("exprmode argument only taks from 1-7")
 	end
@@ -83,7 +107,7 @@ function multi3(;verbose=false,solver=nothing, exprmode=1)
 
 	srand(1)
 	ub = rand()
-    @variable(m, 0.1<=x[1:3]<=*100)
+    @variable(m, 0.1<=x[1:3]<=ub*100)
 	if exprmode == 1
 		@NLobjective(m, Max, x[1]*x[2]*x[3])
 	elseif exprmode == 2
@@ -117,7 +141,7 @@ function multi2(;verbose=false,solver=nothing)
 	end
 
 	srand(1)
-    @variable(m, 0.1<=x[1:2]<=rand()*100)
+    @variable(m, 0.1<=x[1:2]<=rand()*10)
 	@NLobjective(m, Max, x[1]*x[2])
 	@constraint(m, sum(x[i] for i in 1:2) <= 2)
 
