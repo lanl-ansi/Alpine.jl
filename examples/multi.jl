@@ -1,4 +1,4 @@
-using JuMP, MathProgBase, Gurobi, Ipopt, POD
+using JuMP, MathProgBase, CPLEX, Ipopt, POD
 
 println("--------------------------------------------")
 println("Multi4 - exprmode 1 -> X1 * X2 * X3 * X4")
@@ -37,7 +37,7 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
+								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
 								   rel_gap=0.0001,
 								   bilinear_convexhull=true,
 								   convhull_sweep_limit=1,
@@ -96,8 +96,11 @@ function multi3(;verbose=false,solver=nothing, exprmode=1)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
-								   bilinear_convexhull=true,
+								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+								   rel_gap=0.001,
+								   bilinear_convexhull=false,
+								#    discretization_add_partition_method="uniform",
+								#    discretization_uniform_rate=3,
 								   presolve_bound_tightening=false,
 								   log_level=1))
 	else
@@ -131,10 +134,11 @@ function multi2(;verbose=false,solver=nothing)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
+								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
 								   bilinear_convexhull=true,
+								   discretization_add_partition_method="uniform",
 								   presolve_bound_tightening=false,
-								   log_level=1))
+								   log_level=100))
 	else
 		m = Model(solver=solver)
 	end

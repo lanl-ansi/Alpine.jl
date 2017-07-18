@@ -122,10 +122,26 @@ function amp_post_lifted_objective(m::PODNonlinearModel)
     return
 end
 
+function add_partition(m::PODNonlinearModel; kwargs...)
+    options = Dict(kwargs)
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+    haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
 
+    if isa(m.discretization_add_partition_method, Function)
+        m.discretization = eval(m.discretization_add_partition_method)(m, use_discretization=discretization, use_solution=point_vec)
+    elseif m.discretization_add_partition_method == "adaptive"
+        m.discretization = add_adaptive_partition(m, use_discretization=discretization, use_solution=point_vec)
+    elseif m.discretization_add_partition_method == "uniform"
+        m.discretization = add_uniform_partition(m, use_discretization=discretization)
+    else
+        error("Unknown input on how to add partitions.")
+    end
+
+    return
+end
 
 """
-    add_discretization(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
+    add_adaptive_partition(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
 
 Basic built-in method used to add a new partition on feasible domains of discretizing variables.
 This method make modification in .discretization
@@ -148,7 +164,7 @@ There are two options for this function,
 
 This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
 """
-function add_discretization(m::PODNonlinearModel; kwargs...)
+function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
@@ -156,7 +172,6 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
 
     # ? Perform discretization base on type of nonlinear terms
-
     for i in 1:m.num_var_orig
         point = point_vec[i]
         @assert point >= discretization[i][1] - m.tol       # Solution validation
@@ -184,6 +199,26 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     break
                 end
             end
+        end
+    end
+
+    return discretization
+end
+
+function add_uniform_partition(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+
+    for i in 1:m.num_var_orig
+        if i in m.var_discretization_mip  # Only construct when discretized
+            lb_local = discretization[i][1]
+            ub_local = discretization[i][end]
+            distance = ub_local - lb_local
+            chunk = distance / ((m.logs[:n_iter]+1)*m.discretization_uniform_rate)
+            discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.discretization_uniform_rate]
+            push!(discretization[i], ub_local)   # Safety Scheme
+            (m.log_level > 99) && println("[DEBUG] VAR$(i): RATE=$(m.discretization_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.discretization_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
         end
     end
 

@@ -38,7 +38,7 @@ discretization_to_bounds
 initialize_discretization
 to_discretization
 flatten_discretization
-add_discretization
+add_adpative_partition
 update_mip_time_limit
 fetch_timeleft_symbol
 ```

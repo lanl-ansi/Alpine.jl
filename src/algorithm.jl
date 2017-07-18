@@ -26,6 +26,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # parameters used in partitioning algorithm
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
+    discretization_uniform_rate::Int                            # Discretization rate parameter when using uniform partitions
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
 
@@ -130,6 +131,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 expr_patterns,
                                 discretization_var_pick_algo,
                                 discretization_ratio,
+                                discretization_uniform_rate,
                                 discretization_add_partition_method,
                                 convhull_sweep_limit,
                                 presolve_track_time,
@@ -160,6 +162,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
         m.discretization_ratio = discretization_ratio
+        m.discretization_uniform_rate = discretization_uniform_rate
         m.discretization_add_partition_method = discretization_add_partition_method
 
         m.convhull_sweep_limit = convhull_sweep_limit
@@ -237,7 +240,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
         push!(m.constr_expr_orig, MathProgBase.constr_expr(d, i))
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
-
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
 
     # Summarize constraints information in original model
@@ -264,9 +266,8 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # populate data to create the bounding model
     # if true # divert for testing new code
-    expr_batch_process(m)
-    populate_lifted_affine(m)
-
+    expr_batch_process(m)           # Expression handling
+    populate_lifted_affine(m)       # Construct affine function
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
     bounds_propagation(m)           # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
@@ -324,29 +325,25 @@ function presolve(m::PODNonlinearModel)
     if m.status[:local_solve] in status_pass
         bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
         (m.presolve_bound_tightening) && initialize_discretization(m)      # Reinitialize discretization dictionary on tight bounds
-        m.discretization = add_discretization(m, use_solution=m.best_sol)  # Setting up the initial discretization
+        add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-
         (m.log_level > 0) && println("second attempt at local solve using tightened bounds...")
         local_solve(m, presolve = true) # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
-
         if m.status in status_pass  # successful second try
-            m.discretization = add_discretization(m, use_solution=m.best_sol)
+            add_partition(m, use_solution=m.best_sol)
         else    # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
             (m.log_level > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
             # TODO: Make sure the discretization dictionary is clean
             create_bounding_mip(m)       # Build the bounding ATMC model
             bounding_solve(m)            # Solve bounding model
-            m.discretization = add_discretization(m, use_solution=m.best_bound_sol)
+            add_partition(m, use_solution=m.best_bound_sol)
         end
     else
         error("NLP local solve is $(m.status[:local_solve]) - quitting solve.")
         quit()
     end
-
-    # There should be a exiting scheme due to time out if user wants to track presolve
 
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
@@ -365,10 +362,10 @@ end
 
 Perform the global algorithm that is based on the adaptive conexification scheme.
 This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) for converging lower bound (relaxed problem) and upper bound (feasible problem).
-Each [`bounding_solve`](@ref) provides a lower bound solution that is used as a partioning point for next iteration (this feature can be modified given different `add_discretization`).
+Each [`bounding_solve`](@ref) provides a lower bound solution that is used as a partioning point for next iteration (this feature can be modified given different `add_adaptive_partition`).
 Each [`local_solve`](@ref) provides a local serach of incumbent feasible solution. The algrithm terminates given time limits, optimality condition, or iteration limits.
 
-The algorithm is can be reformed when `add_discretization` is replaced with user-defined functional input.
+The algorithm is can be reformed when `add_adaptive_partition` is replaced with user-defined functional input.
 For example, this algorithm can easily be reformed as a uniform-partitioning algorithm in other literature.
 
 """
@@ -378,13 +375,13 @@ function global_solve(m::PODNonlinearModel)
     (!m.presolve_track_time) && reset_timer(m)
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
-        create_bounding_mip(m)      # Build the bounding ATMC model
-        bounding_solve(m)           # Solve bounding model
+        create_bounding_mip(m)                                                  # Build the bounding ATMC model
+        bounding_solve(m)                                                       # Solve bounding model
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
-        local_solve(m)              # Solve upper bounding model
+        local_solve(m)                                                          # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        m.discretization = eval(m.discretization_add_partition_method)(m)       # Add extra discretizations
+        add_partition(m)                                 # Add extra discretizations
     end
 
     return
@@ -482,6 +479,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     # ================= Solve End ================ #
 
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
+    status_maynosolution = [:UserObjLimit, :UserLimit]
     status_reroute = [:Infeasible]
 
     if status in status_solved
@@ -495,11 +493,6 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
             m.status[:bound] = :Detected
         end
     elseif status in status_reroute
-        # print_iis_gurobi(m.model_mip)  # Used for debugging
-        #= Case when this happens::
-            1) :UserLimits ? but will this return :UserLimits?
-            2) :Numerical Difficult
-        =#
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = status
         error("[PROBLEM INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
