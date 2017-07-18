@@ -121,3 +121,71 @@ function amp_post_lifted_objective(m::PODNonlinearModel)
     @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
     return
 end
+
+
+
+"""
+    add_discretization(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
+
+Basic built-in method used to add a new partition on feasible domains of discretizing variables.
+This method make modification in .discretization
+
+Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
+Use ^ as the new partition, "|" as the original partition
+
+A case when discretize ratio = 4
+| -------- | - ^ -- * -- ^ ---- | -------- |
+0          3  3.5   4   4.5     7          9
+
+A special case when discretize ratio = 2
+| -------- | ---- * ---- ^ ---- | -------- |
+0          3      4      5      7          9
+
+There are two options for this function,
+
+    * `use_discretization(default=m.discretization)`:: to regulate which is the base to add new partitions on
+    * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
+
+This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
+"""
+function add_discretization(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+    haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
+
+    # ? Perform discretization base on type of nonlinear terms
+
+    for i in 1:m.num_var_orig
+        point = point_vec[i]
+        @assert point >= discretization[i][1] - m.tol       # Solution validation
+        @assert point <= discretization[i][end] + m.tol
+        # Safety Scheme
+        (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
+        (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
+        if i in m.var_discretization_mip  # Only construct when discretized
+            for j in 1:length(discretization[i])
+                if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+                    @assert j < length(m.discretization[i])
+                    lb_local = discretization[i][j]
+                    ub_local = discretization[i][j+1]
+                    distance = ub_local - lb_local
+                    radius = distance / m.discretization_ratio
+                    lb_new = max(point - radius, lb_local)
+                    ub_new = min(point + radius, ub_local)
+                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
+                        insert!(discretization[i], j+1, ub_new)
+                    end
+                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
+                        insert!(discretization[i], j+1, lb_new)
+                    end
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    break
+                end
+            end
+        end
+    end
+
+    return discretization
+end

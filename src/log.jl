@@ -25,7 +25,7 @@ end
 function reset_timer(m::PODNonlinearModel)
     m.logs[:total_time] = 0.
     m.logs[:time_left] = m.timeout
-    return
+    return m
 end
 
 function logging_summary(m::PODNonlinearModel)
@@ -82,14 +82,14 @@ function create_status!(m)
 
     status[:presolve] = :none                   # Status of presolve
     status[:local_solve] = :none                # Status of local solve
-    status[:bounding_solve] = :none              # Status of bounding solve
-    status[:lower_bounding_solve] = :none        # Status of lower bonding solve
+    status[:bounding_solve] = :none             # Status of bounding solve
+    status[:lower_bounding_solve] = :none       # Status of lower bonding solve
     status[:upper_bounding_solve] = :none       # Status of bounding solve
     status[:feasible_solution] = :none          # Status of whether a upper bound is detected or not
     status[:upper_bound] = :none                # Status of whether a upper bound has been detected
     status[:lower_bound] = :none                # Status of whether a lower bound has been detected
     status[:bound] = :none                      # Status of whether a bound has been detected
-    status[:bound_tightening_solve] = :none    # Status of bound-tightening solve
+    status[:bound_tightening_solve] = :none     # Status of bound-tightening solve
 
     m.status = status
 end

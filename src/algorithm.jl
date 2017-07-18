@@ -384,7 +384,7 @@ function global_solve(m::PODNonlinearModel)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)              # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        m.discretization = add_discretization(m)       # Add extra discretizations
+        m.discretization = eval(m.discretization_add_partition_method)(m)       # Add extra discretizations
     end
 
     return

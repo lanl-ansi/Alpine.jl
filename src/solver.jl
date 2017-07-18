@@ -64,7 +64,7 @@ function PODSolver(;
 
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
-    discretization_add_partition_method = nothing, # Not ready for implementation
+    discretization_add_partition_method = add_discretization, # Not ready for implementation
 
     convhull_sweep_limit = 1,
 

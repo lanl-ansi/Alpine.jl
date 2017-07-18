@@ -42,7 +42,7 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 								   bilinear_convexhull=true,
 								   convhull_sweep_limit=1,
 								#    discretization_var_pick_algo=pick_my_var,
-								   presolve_bound_tightening=true,
+								   presolve_bound_tightening=false,
 								   presolve_track_time=true,
 								   presolve_bound_tightening_algo=1,
 								   log_level=100))
