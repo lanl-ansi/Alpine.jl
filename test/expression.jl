@@ -134,7 +134,6 @@
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[1][:rhs]
         @test affdict[:sense] == :(>=)
         @test affdict[:sense] == m.internalModel.lifted_constr_aff_mip[1][:sense]
-
     end
 
     @testset "Expression Test || bilinear || Affine || nlp3.jl" begin
@@ -212,7 +211,6 @@
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[6][:rhs]
         @test affdict[:sense] == :(<=)
         @test affdict[:sense] == m.internalModel.lifted_constr_aff_mip[6][:sense]
-
 	end
 
     @testset "Expression Test || bilinear || Simple || bi1.jl " begin
@@ -234,6 +232,195 @@
         @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)])
 
         # TODO setup detailed check on this problem
+    end
+
+    @testset "Expression Test || bilinear || Complex || blend029.jl " begin
+
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(OutputFlag=0),
+                               log_level=0)
+
+        m = blend029(solver=test_solver)
+
+        JuMP.build(m) # Setup internal model
+        @test length(keys(m.internalModel.nonlinear_info)) == 28
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 37), Expr(:ref, :x, 55)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 38), Expr(:ref, :x, 56)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 37), Expr(:ref, :x, 26)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 43), Expr(:ref, :x, 26)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 47), Expr(:ref, :x, 59)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 48), Expr(:ref, :x, 60)])
+        @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 47), Expr(:ref, :x, 36)])
+
+        @test m.internalModel.lifted_constr_aff_mip[1][:rhs] == 1.0
+        @test m.internalModel.lifted_constr_aff_mip[1][:vars] == Any[:(x[1]), :(x[4]), :(x[7]), :(x[10]), :(x[49])]
+        @test m.internalModel.lifted_constr_aff_mip[1][:sense] == :(==)
+        @test m.internalModel.lifted_constr_aff_mip[1][:coefs] == Any[1.0, 1.0, 1.0, 1.0, 1.0]
+        @test m.internalModel.lifted_constr_aff_mip[1][:cnt] == 5
+
+        @test m.internalModel.lifted_constr_aff_mip[4][:rhs] == 0.1
+        @test m.internalModel.lifted_constr_aff_mip[4][:vars] == Any[:(x[4]), :(x[16]), :(x[25]), :(x[34]), :(x[58])]
+        @test m.internalModel.lifted_constr_aff_mip[4][:sense] == :(==)
+        @test m.internalModel.lifted_constr_aff_mip[4][:coefs] == Any[-1.0, -1.0, -1.0, 1.0, 1.0]
+        @test m.internalModel.lifted_constr_aff_mip[4][:cnt] == 5
+
+        @test m.internalModel.lifted_constr_aff_mip[17][:rhs] == -0.14
+        @test m.internalModel.lifted_constr_aff_mip[17][:vars] == Any[:(x[11]), :(x[23]), :(x[32]), :(x[64]), :(x[65])]
+        @test m.internalModel.lifted_constr_aff_mip[17][:sense] == :(==)
+        @test m.internalModel.lifted_constr_aff_mip[17][:coefs] == Any[-1.0, -1.0, -1.0, -1.0, 1.0]
+        @test m.internalModel.lifted_constr_aff_mip[17][:cnt] == 5
+
+        @test m.internalModel.lifted_constr_aff_mip[67][:rhs] == 0.0
+        @test m.internalModel.lifted_constr_aff_mip[67][:vars] == Any[:(x[13])]
+        @test m.internalModel.lifted_constr_aff_mip[67][:sense] == :(>=)
+        @test m.internalModel.lifted_constr_aff_mip[67][:coefs] == Any[1.0]
+        @test m.internalModel.lifted_constr_aff_mip[67][:cnt] == 1
+
+        @test m.internalModel.lifted_constr_aff_mip[103][:rhs] == 1.0
+        @test m.internalModel.lifted_constr_aff_mip[103][:vars] == Any[:(x[73])]
+        @test m.internalModel.lifted_constr_aff_mip[103][:sense] == :(<=)
+        @test m.internalModel.lifted_constr_aff_mip[103][:coefs] == Any[1.0]
+        @test m.internalModel.lifted_constr_aff_mip[103][:cnt] == 1
+
+        @test m.internalModel.lifted_constr_aff_mip[127][:rhs] == -1.0
+        @test m.internalModel.lifted_constr_aff_mip[127][:vars] == Any[:(x[73])]
+        @test m.internalModel.lifted_constr_aff_mip[127][:sense] == :(>=)
+        @test m.internalModel.lifted_constr_aff_mip[127][:coefs] == Any[-1.0]
+        @test m.internalModel.lifted_constr_aff_mip[127][:cnt] == 1
+
+        @test m.internalModel.lifted_constr_aff_mip[187][:rhs] == 1.0
+        @test m.internalModel.lifted_constr_aff_mip[187][:vars] == Any[:(x[79]), :(x[94])]
+        @test m.internalModel.lifted_constr_aff_mip[187][:sense] == :(<=)
+        @test m.internalModel.lifted_constr_aff_mip[187][:coefs] == Any[1.0, 1.0]
+        @test m.internalModel.lifted_constr_aff_mip[187][:cnt] == 2
+
+        @test m.internalModel.lifted_constr_aff_mip[202][:rhs] == 0.04
+        @test m.internalModel.lifted_constr_aff_mip[202][:vars] == Any[:(x[103]), :(x[1]), :(x[13]), :(x[25]), :(x[28]), :(x[31])]
+        @test m.internalModel.lifted_constr_aff_mip[202][:sense] == :(==)
+        @test m.internalModel.lifted_constr_aff_mip[202][:coefs] == Any[1.0, -0.6, -0.2, 0.2, 0.2, 0.2]
+        @test m.internalModel.lifted_constr_aff_mip[202][:cnt] == 6
+
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[55])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[55])]][:lifted_var_ref] == :(x[103])
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[55])]][:convexified] == false
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[55])]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.lifted_constr_aff_mip[206][:rhs] == 0.0
+        @test m.internalModel.lifted_constr_aff_mip[206][:vars] == Any[:(x[107]), :(x[103]), :(x[108]), :(x[109]), :(x[110]), :(x[2]), :(x[14])]
+        @test m.internalModel.lifted_constr_aff_mip[206][:sense] == :(==)
+        @test m.internalModel.lifted_constr_aff_mip[206][:coefs] == Any[1.0, -1.0, 1.0, 1.0, 1.0, -0.6, -0.2]
+        @test m.internalModel.lifted_constr_aff_mip[206][:cnt] == 7
+
+        @test m.internalModel.nonlinear_info[[:(x[38]), :(x[56])]][:id] == 5
+        @test m.internalModel.nonlinear_info[[:(x[38]), :(x[56])]][:lifted_var_ref] == :(x[107])
+        @test m.internalModel.nonlinear_info[[:(x[38]), :(x[56])]][:convexified] == false
+        @test m.internalModel.nonlinear_info[[:(x[38]), :(x[56])]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[26])]][:id] == 6
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[26])]][:lifted_var_ref] == :(x[108])
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[26])]][:convexified] == false
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[26])]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[32])]][:id] == 8
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[32])]][:lifted_var_ref] == :(x[110])
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[32])]][:convexified] == false
+        @test m.internalModel.nonlinear_info[[:(x[37]), :(x[32])]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.lifted_constr_aff_mip[213][:rhs] == 0.0
+        @test m.internalModel.lifted_constr_aff_mip[213][:vars] == Any[:(x[129]), :(x[127]), :(x[124]), :(x[130]), :(x[6]), :(x[18])]
+        @test m.internalModel.lifted_constr_aff_mip[213][:sense] == :(==)
+        @test m.internalModel.lifted_constr_aff_mip[213][:coefs] == Any[1.0, -1.0, -1.0, 1.0, -0.4, -0.4]
+        @test m.internalModel.lifted_constr_aff_mip[213][:cnt] == 6
+
+        @test m.internalModel.nonlinear_info[[:(x[48]), :(x[60])]][:id] == 27
+        @test m.internalModel.nonlinear_info[[:(x[48]), :(x[60])]][:lifted_var_ref] == :(x[129])
+        @test m.internalModel.nonlinear_info[[:(x[48]), :(x[60])]][:convexified] == false
+        @test m.internalModel.nonlinear_info[[:(x[48]), :(x[60])]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[59])]][:id] == 25
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[59])]][:lifted_var_ref] == :(x[127])
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[59])]][:convexified] == false
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[59])]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[36])]][:id] == 28
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[36])]][:lifted_var_ref] == :(x[130])
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[36])]][:convexified] == false
+        @test m.internalModel.nonlinear_info[[:(x[47]), :(x[36])]][:nonlinear_type] == :bilinear
+    end
+
+    @testset "Expression Test || multilinear || Simple || multi3.jl " begin
+
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(OutputFlag=0),
+                               log_level=0)
+
+        m = multi3(solver=test_solver, exprmode=1)
+
+        JuMP.build(m) # Setup internal model
+
+        @test length(keys(m.internalModel.nonlinear_info)) == 1
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2])])][:id] == 1
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2])])][:lifted_var_ref] == :(x[4])
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2])])][:nonlinear_type] == :multilinear
+
+        @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
+        @test m.internalModel.lifted_obj_aff_mip[:vars] == Expr[:(x[4])]
+        @test m.internalModel.lifted_obj_aff_mip[:coefs] == [1.0]
+        @test m.internalModel.lifted_obj_aff_mip[:cnt] == 1
+        @test m.internalModel.lifted_obj_aff_mip[:sense] == nothing
+
+        m = multi3(solver=test_solver, exprmode=2)
+
+        JuMP.build(m)
+
+        @test length(keys(m.internalModel.nonlinear_info)) == 2
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[4])
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 4), Expr(:ref, :x, 3)]][:id] == 2
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 4), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[5])
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 4), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
+        @test m.internalModel.lifted_obj_aff_mip[:vars] == Expr[:(x[5])]
+        @test m.internalModel.lifted_obj_aff_mip[:coefs] == [1.0]
+        @test m.internalModel.lifted_obj_aff_mip[:cnt] == 1
+        @test m.internalModel.lifted_obj_aff_mip[:sense] == nothing
+
+        m = multi3(solver=test_solver, exprmode=3)
+
+        JuMP.build(m)
+
+        @test length(keys(m.internalModel.nonlinear_info)) == 2
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:id] == 1
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[4])
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 4)]][:id] == 2
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[5])
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+
+        @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
+        @test m.internalModel.lifted_obj_aff_mip[:vars] == Expr[:(x[5])]
+        @test m.internalModel.lifted_obj_aff_mip[:coefs] == [1.0]
+        @test m.internalModel.lifted_obj_aff_mip[:cnt] == 1
+        @test m.internalModel.lifted_obj_aff_mip[:sense] == nothing
+
+        m = multi4(solver=test_solver, exprmode=1)
+
+        JuMP.build(m)
+
+        @test length(keys(m.internalModel.nonlinear_info)) == 1
+
+        @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
+        @test m.internalModel.lifted_obj_aff_mip[:vars] == Expr[:(x[5])]
+        @test m.internalModel.lifted_obj_aff_mip[:coefs] == [1.0]
+        @test m.internalModel.lifted_obj_aff_mip[:cnt] == 1
+        @test m.internalModel.lifted_obj_aff_mip[:sense] == nothing
+
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:id] == 1
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:lifted_var_ref] == :(x[5])
+        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:nonlinear_type] == multilinear
 
     end
+
 end
