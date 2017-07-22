@@ -348,7 +348,7 @@
         @test m.internalModel.nonlinear_info[[:(x[47]), :(x[36])]][:nonlinear_type] == :bilinear
     end
 
-    @testset "Expression Test || multilinear || Simple || multi3.jl " begin
+    @testset "Expression Test || multilinear || Simple || multi.jl " begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
@@ -420,7 +420,6 @@
         @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:id] == 1
         @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:lifted_var_ref] == :(x[5])
         @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:nonlinear_type] == multilinear
-
     end
 
 end
