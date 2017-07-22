@@ -134,7 +134,6 @@
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[1][:rhs]
         @test affdict[:sense] == :(>=)
         @test affdict[:sense] == m.internalModel.lifted_constr_aff_mip[1][:sense]
-
     end
 
     @testset "Expression Test || bilinear || Affine || nlp3.jl" begin
@@ -212,7 +211,6 @@
         @test affdict[:rhs] == m.internalModel.lifted_constr_aff_mip[6][:rhs]
         @test affdict[:sense] == :(<=)
         @test affdict[:sense] == m.internalModel.lifted_constr_aff_mip[6][:sense]
-
 	end
 
     @testset "Expression Test || bilinear || Simple || bi1.jl " begin
@@ -234,6 +232,6 @@
         @test haskey(m.internalModel.nonlinear_info, [Expr(:ref, :x, 3), Expr(:ref, :x, 4)])
 
         # TODO setup detailed check on this problem
-
     end
+
 end
