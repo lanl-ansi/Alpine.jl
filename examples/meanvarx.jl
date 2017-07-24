@@ -3,10 +3,11 @@ using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 function meanvarx(;verbose=false, solver=nothing)
 
     if solver==nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
-                                   mip_solver=GurobiSolver(OutputFlag=0),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
+                                   mip_solver=GurobiSolver(OutputFlag=1),
                                    rel_gap=0.001, log_level=100,
                                    discretization_ratio=4,
+                                   bilinear_convexhull=false,
                                    presolve_bt_output_tol=1e-2,
                                    presolve_bound_tightening=false))
     else

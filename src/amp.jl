@@ -174,6 +174,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     # ? Perform discretization base on type of nonlinear terms
     for i in 1:m.num_var_orig
         point = point_vec[i]
+        # @show i, point, discretization[i]
         @assert point >= discretization[i][1] - m.tol       # Solution validation
         @assert point <= discretization[i][end] + m.tol
         # Safety Scheme
@@ -195,7 +196,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
                         insert!(discretization[i], j+1, lb_new)
                     end
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                     break
                 end
             end

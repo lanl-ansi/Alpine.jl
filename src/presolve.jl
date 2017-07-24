@@ -68,7 +68,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         (m.log_level > 0) && warn("[BOUND TIGHTENING ALGO] TMC chosen by the user, but local solve infeasible; defaulting to doing bound-tightening without TMC.")
     end
     if use_bound == true && haskey(options, :use_tmc)
-        discretization = add_adpative_partiton(m, use_solution=m.best_sol, use_discretization=discretization)
+        discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_discretization=discretization)
     end
     discretization = resolve_lifted_var_bounds(m.nonlinear_info, discretization) # recomputation of bounds for lifted_variables
 

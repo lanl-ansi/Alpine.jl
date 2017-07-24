@@ -1,13 +1,15 @@
-using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
+using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
 function castro02m2(;verbose=false, solver=nothing)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-    								mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+    								mip_solver=GurobiSolver(OutputFlag=1),
+                                    bilinear_convexhull=true,
                                     presolve_bound_tightening=false,
-                                    log_level=1,
-                                    rel_gap=0.001))
+                                    presolve_bound_tightening_algo=2,
+                                    log_level=100,
+                                    rel_gap=0.0001))
     else
         m = Model(solver=solver)
     end

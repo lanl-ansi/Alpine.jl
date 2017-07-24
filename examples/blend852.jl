@@ -1,4 +1,4 @@
-using POD, JuMP, CPLEX, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
+using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
 function blend852(;verbose=false, solver=nothing)
 

@@ -189,29 +189,29 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
-    # Calculation of the bound
-    if m.sense_orig == :Min
-        stopbound = (1-m.rel_gap+m.tol) * m.best_obj
-    elseif m.sense_orig == :Max
-        stopbound = (1+m.rel_gap-m.tol) * m.best_obj
-    end
-
-    for i in 1:length(m.mip_solver.options)
-        if m.mip_solver.options[i][1] == :BestBdStop
-            deleteat!(m.mip_solver.options, i)
-            if string(m.mip_solver)[1:6] == "Gurobi"
-                push!(m.mip_solver.options, (:BestBdStop, stopbound))
-            else
-                return
-            end
-        end
-    end
-
-    if string(m.mip_solver)[1:6] == "Gurobi"
-        push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    else
-        return
-    end
+    # # Calculation of the bound
+    # if m.sense_orig == :Min
+    #     stopbound = (1-m.rel_gap+m.tol) * m.best_obj
+    # elseif m.sense_orig == :Max
+    #     stopbound = (1+m.rel_gap-m.tol) * m.best_obj
+    # end
+    #
+    # for i in 1:length(m.mip_solver.options)
+    #     if m.mip_solver.options[i][1] == :BestBdStop
+    #         deleteat!(m.mip_solver.options, i)
+    #         if string(m.mip_solver)[1:6] == "Gurobi"
+    #             push!(m.mip_solver.options, (:BestBdStop, stopbound))
+    #         else
+    #             return
+    #         end
+    #     end
+    # end
+    #
+    # if string(m.mip_solver)[1:6] == "Gurobi"
+    #     push!(m.mip_solver.options, (:BestBdStop, stopbound))
+    # else
+    #     return
+    # end
 
     return
 end
@@ -368,4 +368,37 @@ function max_cover(m::PODNonlinearModel; kwargs...)
     m.var_discretization_mip = nodes
 
     return
+end
+
+function print_iis_gurobi(m::Model)
+
+    grb = MathProgBase.getrawsolver(internalmodel(m))
+    Gurobi.computeIIS(grb)
+    numconstr = Gurobi.num_constrs(grb)
+    numvar = Gurobi.num_vars(grb)
+
+    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+
+    info("Irreducible Inconsistent Subsystem (IIS)")
+    info("Variable bounds:")
+    for i in 1:numvar
+        v = Variable(m, i)
+        if iislb[i] != 0 && iisub[i] != 0
+            println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+        elseif iislb[i] != 0
+            println(getname(v), " >= ", getlowerbound(v))
+        elseif iisub[i] != 0
+            println(getname(v), " <= ", getupperbound(v))
+        end
+    end
+
+    info("Constraints:")
+    for i in 1:numconstr
+        if iisconstr[i] != 0
+            println(m.linconstr[i])
+        end
+    end
+
 end

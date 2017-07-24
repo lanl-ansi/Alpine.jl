@@ -376,7 +376,7 @@ function global_solve(m::PODNonlinearModel)
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)                                                  # Build the bounding ATMC model
-        bounding_solve(m)                                                       # Solve bounding model
+        bounding_solve(m)   # Solve bounding model
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)                                                          # Solve upper bounding model
@@ -425,11 +425,10 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     if local_solve_nlp_status in status_pass
         candidate_obj = MathProgBase.getobjval(local_solve_nlp_model)
         push!(m.logs[:obj], candidate_obj)
-        if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-10)
+        if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
-            # TODO: Proposed hot fix_domains
-            m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 8)
+            m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 6)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
@@ -479,7 +478,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     # ================= Solve End ================ #
 
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
-    status_maynosolution = [:UserObjLimit, :UserLimit]
+    status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
     status_reroute = [:Infeasible]
 
     if status in status_solved
@@ -487,7 +486,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 8) for i in 1:m.num_var_orig]
+            m.best_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig]
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
@@ -495,6 +494,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     elseif status in status_reroute
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = status
+        print_iis_gurobi(m.model_mip)
         error("[PROBLEM INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
     elseif status == :Unbounded
         m.status[:bounding_solve] = status

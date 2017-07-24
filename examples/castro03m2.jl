@@ -1,3 +1,5 @@
+using POD, JuMP, Cbc, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
+
 function castro03m2(;verbose=false, solver=nothing)
 
 	if solver == nothing

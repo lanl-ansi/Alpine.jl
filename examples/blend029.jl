@@ -6,6 +6,7 @@ function blend029(;verbose=false, solver=nothing)
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=32,
+                                    bilinear_convexhull=true,
                                     log_level=100,
                                     rel_gap=0.001))
     else

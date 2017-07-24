@@ -98,7 +98,7 @@ function multi3(;verbose=false,solver=nothing, exprmode=1)
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
 								   rel_gap=0.001,
-								   bilinear_convexhull=false,
+								   bilinear_convexhull=true,
 								#    discretization_add_partition_method="uniform",
 								#    discretization_uniform_rate=3,
 								   presolve_bound_tightening=false,

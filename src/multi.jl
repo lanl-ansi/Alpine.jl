@@ -31,18 +31,29 @@ end
     This function is very important.
 """
 function amp_convhull_prepare(discretization::Dict, nonlinear_key::Any)
+
     id = Set()                      # Coverting the nonlinear indices into a different space
-    dim = []
     for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
         push!(id, var.args[2])
     end
+
+    if length(id) < length(nonlinear_key) # Got repeating terms, now the sequence matters
+        id = []
+        for var in nonlinear_key
+            push!(id, var.args[2])
+        end
+    end
+
+    dim = []
     for i in id                     # Critical!!! Ensure the same sequence
         push!(dim, length(discretization[i]))
     end
+
+
     return id, tuple([i for i in dim]...), prod(dim)
 end
 
-function amp_convhull_λ(m::PODNonlinearModel, nonlinear_key::Any, ml_indices::Set, λ::Dict, extreme_point_cnt::Int, dim::Tuple; kwargs...)
+function amp_convhull_λ(m::PODNonlinearModel, nonlinear_key::Any, ml_indices::Any, λ::Dict, extreme_point_cnt::Int, dim::Tuple; kwargs...)
 
     lifted_var_idx = m.nonlinear_info[nonlinear_key][:lifted_var_ref].args[2]
     @assert !(lifted_var_idx in keys(λ))
@@ -58,7 +69,7 @@ end
 """
     TODO: docstring
 """
-function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, ml_indices::Set, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
+function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, ml_indices::Any, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
 
     if level > length(dim)
         @assert length(ml_indices) == length(dim)
@@ -84,7 +95,7 @@ end
 """
     Less memeory & time efficient, but a easier implementation
 """
-function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Set, λ::Dict, extreme_point_cnt::Int)
+function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Any, λ::Dict, extreme_point_cnt::Int)
 
     var_indices = collect(ml_indices)
     for i in 1:extreme_point_cnt
@@ -100,10 +111,10 @@ function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Set
     return λ
 end
 
-function amp_convhull_α(m::PODNonlinearModel, ml_indices::Set, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
+function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
     for i in ml_indices
-        if i != keys(α)
+        if !(i in keys(α))
             partition_cnt = length(discretization[i]) - 1
             α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
             @constraint(m.model_mip, sum(α[i]) == 1)
@@ -113,7 +124,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Set, α::Dict, dim::T
     return α
 end
 
-function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Set, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
+function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[ml_indices][:vars]) == 1)
@@ -139,7 +150,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
 end
 
 # Valid inequalities proposed when Jeff L. was here
-function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Set, dim::Tuple, var_ind::Int, cnt::Int)
+function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
     partition_cnt = length(α[var_ind])
     lambda_cnt = length(discretization[var_ind])

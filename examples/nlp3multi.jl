@@ -4,9 +4,9 @@ function nlp3(;verbose=false, solver=nothing)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
+								   mip_solver=GurobiSolver(OutputFlag=1),
 								   log_level=1,
-								   rel_gap=0.001,
+								   rel_gap=0.005,
 								   bilinear_convexhull=true,
 								   presolve_bound_tightening=false,
 								   discretization_var_pick_algo=0))

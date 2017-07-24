@@ -100,12 +100,12 @@ function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
-		m.log_level > 99 && println("lifted ::", m.lifted_constr_expr_mip[i])
-		m.log_level > 99 && println("coeffs ::", m.lifted_constr_aff_mip[i][:coefs])
-        m.log_level > 99 && println("vars ::", m.lifted_constr_aff_mip[i][:vars])
-        m.log_level > 99 && println("sense ::", m.lifted_constr_aff_mip[i][:sense])
-        m.log_level > 99 && println("rhs ::", m.lifted_constr_aff_mip[i][:rhs])
-		m.log_level > 99 && println("--------- =>")
+		m.log_level > 199 && println("lifted ::", m.lifted_constr_expr_mip[i])
+		m.log_level > 199 && println("coeffs ::", m.lifted_constr_aff_mip[i][:coefs])
+        m.log_level > 199 && println("vars ::", m.lifted_constr_aff_mip[i][:vars])
+        m.log_level > 199 && println("sense ::", m.lifted_constr_aff_mip[i][:sense])
+        m.log_level > 199 && println("rhs ::", m.lifted_constr_aff_mip[i][:rhs])
+		m.log_level > 199 && println("--------- =>")
 	end
 
 	return
