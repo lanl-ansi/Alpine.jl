@@ -22,7 +22,7 @@ include("../examples/blend029.jl")
 include("../examples/multi.jl")
 
 # Performe Tests
-include("operators.jl")
-include("solver.jl")
-include("expression.jl")
-#include("algorithm.jl")
+# include("operators.jl")
+# include("solver.jl")
+# include("expression.jl")
+include("algorithm.jl")
