@@ -13,7 +13,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Construct λ variable space
     for bi in keys(m.nonlinear_info)
         nl_type = m.nonlinear_info[bi][:nonlinear_type]
-        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
+        if ((nl_type == :multilinear) || (nl_type == :bilinear) || (nl_type == :monomial)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
             λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
@@ -163,14 +163,6 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
         end
     end
 
-    # # Experimental Section
-    # for j in 1:1
-    #     for i in 1:max(1, min(partition_cnt-j+1, 99)) # At least one
-    #     sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j:(j+i);], dim)
-    #         @constraint(m.model_mip, sum(α[var_ind][j:(j+i-1)]) <= sum(λ[ml_indices][:vars][sliced_indices]))
-    #     end
-    # end
-
     # Constraint cluster of α >= f(λ)
     for j in 1:min(partition_cnt, m.convhull_sweep_limit) # Construct cuts by sweeping in both directions
         sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
@@ -178,12 +170,6 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
         sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
         @constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
     end
-
-    # # Experimental Section
-    # for j in 1:min(partition_cnt-1, 99) # Construct cuts by sweeping in both directions
-    #     sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
-    #     @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-    # end
 
     return
 end

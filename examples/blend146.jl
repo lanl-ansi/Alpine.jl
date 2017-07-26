@@ -4,8 +4,10 @@ function blend146(;verbose=false, solver=nothing)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
-                                    mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    mip_solver=GurobiSolver(OutputFlag=1),
+                                    discretization_ratio=8,
+                                    bilinear_convexhull=true,
+                                    discretization_var_pick_algo=1,
                                     log_level=100,
                                     rel_gap=0.001))
     else

@@ -18,7 +18,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # convexification method tuning
     bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
-    bilinear_convexhull::Bool                                   # disbale convex hull representation mtehod used for convexify nonlinear terms
+    bilinear_convexhull::Bool                                   # convexify bilinear terms using convex hull representation
+    monomial_convexhull::Bool                                   # convexify monomial terms using convex hull representation
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
@@ -127,6 +128,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 mip_solver,
                                 bilinear_mccormick,
                                 bilinear_convexhull,
+                                monomial_convexhull,
                                 method_convexification,
                                 expr_patterns,
                                 discretization_var_pick_algo,
@@ -156,6 +158,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.bilinear_mccormick = bilinear_mccormick
         m.bilinear_convexhull = bilinear_convexhull
+        m.monomial_convexhull = monomial_convexhull
 
         m.method_convexification = method_convexification
         m.expr_patterns = expr_patterns

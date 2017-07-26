@@ -17,7 +17,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
     for bi in keys(m.nonlinear_info)
         nl_type = m.nonlinear_info[bi][:nonlinear_type]
-        if ((nl_type == :monomial) || (!m.bilinear_convexhull)*(nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
+        if ((!m.monomial_convexhull)*(nl_type == :monomial) || (!m.bilinear_convexhull)*(nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             @assert length(bi) == 2
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             idx_a = bi[1].args[2]

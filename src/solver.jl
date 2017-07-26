@@ -20,6 +20,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     bilinear_mccormick::Bool
     bilinear_convexhull::Bool
+    monomial_convexhull::Bool
 
     method_convexification::Array{Function}
     expr_patterns::Array{Function}
@@ -59,6 +60,7 @@ function PODSolver(;
 
     bilinear_mccormick = true,      # by default, deal with bilinear terms using mccormick since the convhull is under tests
     bilinear_convexhull = false,
+    monomial_convexhull = false,
 
     method_convexification = Array{Function}(0),
     expr_patterns = Array{Function}(0),
@@ -96,6 +98,7 @@ function PODSolver(;
         deepcopy(mip_solver),
         bilinear_mccormick,
         bilinear_convexhull,
+        monomial_convexhull,
         method_convexification,
         expr_patterns,
         discretization_var_pick_algo,
@@ -130,6 +133,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     bilinear_mccormick = s.bilinear_mccormick
     bilinear_convexhull = s.bilinear_convexhull
+    monomial_convexhull = s.monomial_convexhull
 
     method_convexification = s.method_convexification
     expr_patterns = s.expr_patterns
@@ -161,6 +165,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             mip_solver,
                             bilinear_mccormick,
                             bilinear_convexhull,
+                            monomial_convexhull,
                             method_convexification,
                             expr_patterns,
                             discretization_var_pick_algo,

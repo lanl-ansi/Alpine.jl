@@ -3,7 +3,7 @@ using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 function util(;verbose=false, solver=nothing)
 
     if solver==nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.nlp_log_level=0", "bonmin.bb_log_level=0"]),
     							   mip_solver=GurobiSolver(OutputFlag=0),
                                    bilinear_convexhull=true,
                                    log_level=1))
