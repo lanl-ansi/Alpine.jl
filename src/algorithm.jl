@@ -480,21 +480,10 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     # ================= Solve End ================ #
 
-    status_pass = [:Optimal]
-    status_lb = [:UserObjLimits, :UserLimit, :Suboptimal]
+    status_solved = [:Optimal, :UserObjLimits, :UserLimit, :Suboptimal]
     status_reroute = [:Infeasible]
 
-    if status in status_pass  # Only fetch the lower bound when default optimality is performed :: maybe we should always fetch lower bound
-        candidate_bound = getobjectivevalue(m.model_mip)
-        push!(m.logs[:bound], candidate_bound)
-        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
-            m.best_bound = candidate_bound
-            m.best_bound_sol = [round(getvalue(Variable(m.model_mip, i)),6) for i in 1:m.num_var_orig]
-            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig] # can remove this
-            m.status[:bounding_solve] = status
-            m.status[:bound] = :Detected
-        end
-    elseif status in status_lb
+    if status in status_solved
         candidate_bound = getobjbound(m.model_mip)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)

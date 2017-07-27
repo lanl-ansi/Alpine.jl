@@ -18,8 +18,11 @@ include("../examples/util.jl")
 include("../examples/meanvarx.jl")
 include("../examples/blend029.jl")
 
+# Multilinear Testing Instances
+include("../examples/multi.jl")
+
 # Performe Tests
-include("operators.jl")
-include("solver.jl")
-include("expression.jl")
-#include("algorithm.jl")
+# include("operators.jl")
+# include("solver.jl")
+# include("expression.jl")
+include("algorithm.jl")
