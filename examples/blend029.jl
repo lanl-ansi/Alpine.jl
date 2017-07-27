@@ -1,12 +1,12 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function blend029(;verbose=false, solver=nothing)
+function blend029(;verbose=false, solver=nothing, convhull=false)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=10000"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=32,
-                                    bilinear_convexhull=true,
+                                    bilinear_convexhull=convhull,
                                     log_level=100,
                                     rel_gap=0.001))
     else

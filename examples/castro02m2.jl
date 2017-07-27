@@ -1,13 +1,13 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function castro02m2(;verbose=false, solver=nothing)
+function castro02m2(;verbose=false, solver=nothing, convhull=true)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
     								# mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    bilinear_convexhull=true,
-                                    presolve_bound_tightening=true,
+                                    bilinear_convexhull=convhull,
+                                    presolve_bound_tightening=false,
                                     presolve_bound_tightening_algo=2,
                                     discretization_var_pick_algo=0,
                                     log_level=1,

@@ -189,29 +189,29 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
-    # # Calculation of the bound
-    # if m.sense_orig == :Min
-    #     stopbound = (1-m.rel_gap+m.tol) * m.best_obj
-    # elseif m.sense_orig == :Max
-    #     stopbound = (1+m.rel_gap-m.tol) * m.best_obj
-    # end
-    #
-    # for i in 1:length(m.mip_solver.options)
-    #     if m.mip_solver.options[i][1] == :BestBdStop
-    #         deleteat!(m.mip_solver.options, i)
-    #         if string(m.mip_solver)[1:6] == "Gurobi"
-    #             push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    #         else
-    #             return
-    #         end
-    #     end
-    # end
-    #
-    # if string(m.mip_solver)[1:6] == "Gurobi"
-    #     push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    # else
-    #     return
-    # end
+    # Calculation of the bound
+    if m.sense_orig == :Min
+        stopbound = (1-m.rel_gap+m.tol) * m.best_obj
+    elseif m.sense_orig == :Max
+        stopbound = (1+m.rel_gap-m.tol) * m.best_obj
+    end
+
+    for i in 1:length(m.mip_solver.options)
+        if m.mip_solver.options[i][1] == :BestBdStop
+            deleteat!(m.mip_solver.options, i)
+            if string(m.mip_solver)[1:6] == "Gurobi"
+                push!(m.mip_solver.options, (:BestBdStop, stopbound))
+            else
+                return
+            end
+        end
+    end
+
+    if string(m.mip_solver)[1:6] == "Gurobi"
+        push!(m.mip_solver.options, (:BestBdStop, stopbound))
+    else
+        return
+    end
 
     return
 end

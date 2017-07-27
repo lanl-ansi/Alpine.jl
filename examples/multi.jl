@@ -1,4 +1,4 @@
-using JuMP, MathProgBase, CPLEX, Ipopt, POD
+using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
 println("--------------------------------------------")
 println("Multi4 - exprmode 1 -> X1 * X2 * X3 * X4")
@@ -33,18 +33,21 @@ function pick_my_var(m::Any)
 	return
 end
 
-function multi4(;verbose=false,solver=nothing, exprmode=1)
+function multi4(;verbose=false,solver=nothing, exprmode=1, convhull=true)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
-								   rel_gap=0.0001,
-								   bilinear_convexhull=true,
+								   mip_solver=GurobiSolver(OutputFlag=1),
+								   rel_gap=0.001,
+								   bilinear_convexhull=convhull,
+							       discretization_add_partition_method="uniform",
+							       discretization_uniform_rate=16,
+								   maxiter=1,
 								   convhull_sweep_limit=1,
-								#    discretization_var_pick_algo=pick_my_var,
 								   presolve_bound_tightening=false,
 								   presolve_track_time=true,
 								   presolve_bound_tightening_algo=1,
+								   timeout=100,
 								   log_level=100))
 	else
 		m = Model(solver=solver)
@@ -92,15 +95,16 @@ println("Multi3 - exprmode 2 -> (X1*X2) * X3")
 println("Multi3 - exprmode 3 -> X1 * (X2*X3)")
 println("--------------------------------------------")
 
-function multi3(;verbose=false,solver=nothing, exprmode=1)
+function multi3(;verbose=false,solver=nothing, exprmode=1, convhull=true)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+								   mip_solver=GurobiSolver(OutputFlag=1),
 								   rel_gap=0.001,
-								   bilinear_convexhull=true,
-								#    discretization_add_partition_method="uniform",
-								#    discretization_uniform_rate=3,
+								   bilinear_convexhull=convhull,
+								   discretization_add_partition_method="uniform",
+								   discretization_uniform_rate=16,
+								   maxiter=1,
 								   presolve_bound_tightening=false,
 								   log_level=1))
 	else
@@ -108,8 +112,7 @@ function multi3(;verbose=false,solver=nothing, exprmode=1)
 	end
 
 	srand(1)
-	ub = rand()
-    @variable(m, 0.1<=x[1:3]<=ub*100)
+    @variable(m, 0.1<=x[1:3]<=rand()*100)
 	if exprmode == 1
 		@NLobjective(m, Max, x[1]*x[2]*x[3])
 	elseif exprmode == 2
@@ -117,7 +120,7 @@ function multi3(;verbose=false,solver=nothing, exprmode=1)
 	elseif exprmode == 3
 		@NLobjective(m, Max, x[1]*(x[2]*x[3]))
 	else
-		error("exprmode argument only taks from 1-7")
+		error("exprmode argument only taks from 1-3")
 	end
 
 	@constraint(m, sum(x[i] for i in 1:3) <= 3)
@@ -130,13 +133,15 @@ function multi3(;verbose=false,solver=nothing, exprmode=1)
 end
 
 
-function multi2(;verbose=false,solver=nothing)
+function multi2(;verbose=false,solver=nothing, convhull=true)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
-								   bilinear_convexhull=true,
+								   mip_solver=GurobiSolver(OutputFlag=1),
+								   bilinear_convexhull=convhull,
 								   discretization_add_partition_method="uniform",
+								   discretization_uniform_rate=16,
+								   maxiter=1,
 								   presolve_bound_tightening=false,
 								   log_level=100))
 	else

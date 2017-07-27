@@ -1,11 +1,13 @@
 using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
-function nlp1(;verbose=false,solver=nothing)
+function nlp1(;verbose=false,solver=nothing, convhull=true)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
-								   presolve_bound_tightening=true,
+								   bilinear_convexhull=convhull,
+								   monomial_convexhull=convhull,
+								   presolve_bound_tightening=false,
 								   presolve_bound_tightening_algo=2,
 								   presolve_bt_output_tol=1e-1,
 								   log_level=1))

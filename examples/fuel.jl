@@ -1,13 +1,15 @@
 using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function castro02m2(;verbose=false, solver=nothing)
+function fuel(;verbose=false, solver=nothing, convhull=true)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
     								mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
-                                    bilinear_convexhull=false,
+                                    bilinear_convexhull=convhull,
+                                    monomial_convexhull=convhull,
                                     presolve_bound_tightening=false,
                                     log_level=100,
+                                    tol=1e-4,
                                     rel_gap=0.001))
     else
         m = Model(solver=solver)
@@ -52,9 +54,9 @@ function castro02m2(;verbose=false, solver=nothing)
     @constraint(m, x[6]+x[9]>=700)  #= e13: =#
 
     @objective(m, Min, 0.0025*x[7]^2 + 6*x[7] + 0.0025*x[8]^2 + 6*x[8] + 0.0025*x[9]^2 + 6*x[9] + 900)
-    @NLconstraint(m, -(0.005*x[4]^2+x[4])-50*x[1]+x[10] ==0)  #= e14: =#
-    @NLconstraint(m, -(0.005*x[5]^2+x[5])-50*x[2]+x[11] ==0)  #= e15: =#
-    @NLconstraint(m, -(0.005*x[6]^2+x[6])-50*x[3]+x[12] ==0)  #= e16: =#
+    @NLconstraint(m, -0.005*x[4]^2-x[4]-50*x[1]+x[10] ==0)  #= e14: =#
+    @NLconstraint(m, -0.005*x[5]^2-x[5]-50*x[2]+x[11] ==0)  #= e15: =#
+    @NLconstraint(m, -0.005*x[6]^2-x[6]-50*x[3]+x[12] ==0)  #= e16: =#
 
     if verbose
         print(m)
