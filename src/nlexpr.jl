@@ -192,7 +192,7 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	if (expr.args[1] == :*) && (length(expr.args) >= 3)
 		if (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && (expr.args[3].head == :call)
 			coef = coef * expr.args[2]
-			warn("Speicial expression structure detected. Currently handling using a hot fix...")
+			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a hot fix...")
 		end
 	end
 
