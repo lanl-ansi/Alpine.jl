@@ -235,7 +235,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
 
     # Summarize constraints information in original model
-    m.constr_type_orig = Array(Symbol, m.num_constr_orig)
+    @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
     for i in 1:m.num_constr_orig
         if l_constr[i] > -Inf && u_constr[i] < Inf
             m.constr_type_orig[i] = :(==)
