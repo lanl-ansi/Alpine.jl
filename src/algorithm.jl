@@ -486,6 +486,8 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
 
     if status in status_solved
         candidate_bound = getobjbound(m.model_mip)
+        @show getobjbound(m.model_mip)
+        @show getobjectivevalue(m.model_mip)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
