@@ -17,7 +17,6 @@ include("amp.jl")
 
 # Convexification method
 include("tmc.jl")
-include("multi.jl")
 
 # Model Manipulation and utilities
 include("bounds.jl")

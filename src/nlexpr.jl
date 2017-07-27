@@ -152,7 +152,9 @@ end
 This function traverse a left hand side tree to collect affine terms.
 Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled properly
 """
-function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
+function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
+
+	# @show expr, coef, bufferVal
 
 	reversor = Dict(true => -1.0, false => 1.0)
 	function sign_convertor(subexpr, pos)
@@ -165,7 +167,7 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	end
 
 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
-		bufferVal = expr
+		bufferVal = expr * coef
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	elseif expr in [:+, :-]
 		if bufferVal != 0.0 && bufferVar != nothing
@@ -186,11 +188,19 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	end
 
+	# HOTPATCH : Special Structure Recognization
+	if (expr.args[1] == :*) && (length(expr.args) >= 3)
+		if (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && (expr.args[3].head == :call)
+			coef = coef * expr.args[2]
+			warn("Speicial expression structure detected. Currently handling using a hot fix...")
+		end
+	end
+
 	for i in 1:length(expr.args)
-		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), level+1)
+		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
 			if bufferVal != 0.0 && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
-				push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)
+				push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal*coef)
 				push!(lhsvars, bufferVar)
 				bufferVal = 0.0
 				bufferVar = nothing
@@ -200,12 +210,12 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 				bufferVal = 0.0
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
-				push!(lhscoeffs, sign*1.0)
+				push!(lhscoeffs, sign*1.0*coef)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
-				push!(lhscoeffs, sign*sign_convertor(expr, i))
+				push!(lhscoeffs, sign*sign_convertor(expr, i)*coef)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
