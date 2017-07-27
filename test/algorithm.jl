@@ -14,8 +14,6 @@
         @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
         @test m.internalModel.logs[:n_iter] == 7
 
-        @show m.internalModel.logs[:bound]
-
         @test isapprox(m.internalModel.logs[:obj][1], 58.38367118523376; atol=1e-3)
         @test isapprox(m.internalModel.logs[:obj][2], 58.38367118523376; atol=1e-3)
         @test isapprox(m.internalModel.logs[:obj][3], 58.38367118523376; atol=1e-3)
@@ -98,9 +96,6 @@
         m = nlp1(solver=test_solver)
         status = solve(m)
 
-        @show m.internalModel.l_var_tight
-        @show m.internalModel.u_var_tight
-
         @test status == :Optimal
         @test m.internalModel.logs[:n_iter] == 3
 
@@ -124,7 +119,7 @@
     							   presolve_bound_tightening=true,
     							   presolve_bound_tightening_algo=2,
                                    presolve_bt_output_tol=1e-1,
-    							   log_level=1)
+    							   log_level=0)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -199,9 +194,6 @@
         @test m.internalModel.logs[:n_iter] == 2
         @test m.internalModel.logs[:bt_iter] == 2
 
-        @show m.internalModel.l_var_tight
-        @show m.internalModel.u_var_tight
-
         @test isapprox(m.internalModel.u_var_tight[1], 3011.9; atol=1e-1)
         @test isapprox(m.internalModel.u_var_tight[2], 3951.3; atol=1e-1)
         @test isapprox(m.internalModel.u_var_tight[3], 5836.4; atol=1e-1)
@@ -220,5 +212,5 @@
         @test isapprox(m.internalModel.l_var_tight[7], 100.2; atol=1e-1)
         @test isapprox(m.internalModel.l_var_tight[8], 352.0; atol=1e-1)
     end
-    
+
 end
