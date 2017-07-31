@@ -734,6 +734,11 @@
         @test aff_mip[10][:coefs] == Any[5.6, -300.0, -1.75]
         @test aff_mip[10][:cnt] == 3
 
+        @test aff_mip[11][:rhs] == 0.0
+        @test aff_mip[11][:vars] == Any[:(x[2]),:(x[1]),:(x[5])]
+        @test aff_mip[11][:sense] == :(>=)
+        @test aff_mip[11][:coefs] == Any[5.6, -0.5, 0.5]
+        @test aff_mip[11][:cnt] == 3
     end
 
 end
