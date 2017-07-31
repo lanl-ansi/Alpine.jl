@@ -431,12 +431,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
             m.best_obj = candidate_obj
             m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
-<<<<<<< HEAD
-            m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 6)
-=======
-            # TODO: Proposed hot fix_domains
             m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 5)
->>>>>>> master
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
@@ -485,12 +480,8 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     # ================= Solve End ================ #
 
-<<<<<<< HEAD
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
-=======
-    status_solved = [:Optimal, :UserObjLimits, :UserLimit, :Suboptimal]
->>>>>>> master
     status_reroute = [:Infeasible]
 
     if status in status_solved
