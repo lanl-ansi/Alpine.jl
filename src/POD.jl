@@ -2,6 +2,7 @@ module POD
 
 using JuMP
 using MathProgBase
+using Compat
 
 # Engine for High-level Algorithmic Control and User-interface
 include("algorithm.jl")
@@ -17,7 +18,6 @@ include("amp.jl")
 
 # Convexification method
 include("tmc.jl")
-include("multi.jl")
 
 # Model Manipulation and utilities
 include("bounds.jl")
