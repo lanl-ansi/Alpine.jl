@@ -27,6 +27,7 @@ function div(;verbose=false,solver=nothing)
 	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-x[1]*1*2*3*4*5*6*x[2]/0.01>=0)
 	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-0.5(x[1]*1*2*3*4*5*6*x[2]/0.01)>=0)
 	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-0.5(x[1]*2*3*x[2]/0.01+5*7/10*x[2])>=0)
+	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-0.5*(x[1]-x[2]x[1])>=0)
 
 	if verbose
 		print(m)

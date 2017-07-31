@@ -189,6 +189,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
             (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
+                (term_key in keys(m.nonlinear_info)) ? term_key = term_key : term_key = reverse(term_key)
                 return true, lift_bilinear()
             else
                 store_bilinear()
