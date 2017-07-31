@@ -257,13 +257,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
 
     # populate data to create the bounding model
-    # if true # divert for testing new code
     expr_batch_process(m)
-    # else # Original stable code
-    #     populate_nonlinear_info(m)                          # *
-    #     populate_lifted_expr(m)                             # *
-    #     m.num_var_lifted_mip = length(m.nonlinear_info)     # *
-    # end
     populate_lifted_affine(m)                                 # keep
 
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
