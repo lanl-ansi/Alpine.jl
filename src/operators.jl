@@ -48,13 +48,12 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
     end
 
     # 1 : pre-process the negative sign in expressions
-    expr_resolve_const(m.lifted_obj_expr_mip)
     expr_resolve_sign(m.lifted_obj_expr_mip)
+    expr_resolve_const(m.lifted_obj_expr_mip)
     expr_flatten(m.lifted_obj_expr_mip)
     for i in 1:m.num_constr_orig
-        #@show i, m.constr_expr_orig[i]
-        expr_resolve_const(m.lifted_constr_expr_mip[i])
         expr_resolve_sign(m.lifted_constr_expr_mip[i])
+        expr_resolve_const(m.lifted_constr_expr_mip[i])
         expr_flatten(m.lifted_constr_expr_mip[i].args[2])
     end
 
