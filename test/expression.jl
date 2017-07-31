@@ -648,6 +648,91 @@
         @test m.internalModel.lifted_obj_aff_mip[:coefs] == [1.0]
         @test m.internalModel.lifted_obj_aff_mip[:cnt] == 1
         @test m.internalModel.lifted_obj_aff_mip[:sense] == nothing
+    end
+
+    @testset "Expression Test || bilinear || Complex-div || div.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(OutputFlag=0),
+                               log_level=0)
+
+        m = div(solver=test_solver)
+
+        JuMP.build(m) # Setup internal model
+
+        @test length(keys(m.internalModel.nonlinear_info)) == 3
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 1)]][:id] == 1
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 1)]][:lifted_var_ref] == :(x[3])
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 1)]][:nonlinear_type] == :monomial
+
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 2)]][:id] == 2
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[4])
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 2)]][:nonlinear_type] == :monomial
+
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 3
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
+        @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
+
+        aff_mip = m.internalModel.lifted_constr_aff_mip
+
+        @test aff_mip[1][:rhs] == 0.0
+        @test aff_mip[1][:vars] == Any[:(x[1])]
+        @test aff_mip[1][:sense] == :(>=)
+        @test round.(aff_mip[1][:coefs],1) == Any[-3.0]
+        @test aff_mip[1][:cnt] == 1
+
+        @test aff_mip[2][:rhs] == 0.0
+        @test aff_mip[2][:vars] == Any[:(x[2])]
+        @test aff_mip[2][:sense] == :(>=)
+        @test aff_mip[2][:coefs] == Any[0.25]
+        @test aff_mip[2][:cnt] == 1
+
+        @test aff_mip[3][:rhs] == 0.0
+        @test aff_mip[3][:vars] == Any[:(x[2])]
+        @test aff_mip[3][:sense] == :(>=)
+        @test aff_mip[3][:coefs] == Any[5.0]
+        @test aff_mip[3][:cnt] == 1
+
+        @test aff_mip[4][:rhs] == 0.0
+        @test aff_mip[4][:vars] == Any[:(x[2])]
+        @test aff_mip[4][:sense] == :(>=)
+        @test aff_mip[4][:coefs] == Any[-120.0]
+        @test aff_mip[4][:cnt] == 1
+
+        @test aff_mip[5][:rhs] == 0.0
+        @test aff_mip[5][:vars] == Any[:(x[2])]
+        @test aff_mip[5][:sense] == :(>=)
+        @test aff_mip[5][:coefs] == Any[72000.0]
+        @test aff_mip[5][:cnt] == 1
+
+        @test aff_mip[6][:rhs] == 0.0
+        @test aff_mip[6][:vars] == Any[:(x[1])]
+        @test aff_mip[6][:sense] == :(>=)
+        @test aff_mip[6][:coefs] == Any[72000.0]
+        @test aff_mip[6][:cnt] == 1
+
+        @test aff_mip[7][:rhs] == 8.0
+        @test aff_mip[7][:vars] == Any[:(x[5])]
+        @test aff_mip[7][:sense] == :(>=)
+        @test aff_mip[7][:coefs] == Any[0.6]
+        @test aff_mip[7][:cnt] == 1
+
+        @test aff_mip[8][:rhs] == 0.0
+        @test aff_mip[8][:vars] == Any[:(x[2]),:(x[5])]
+        @test aff_mip[8][:sense] == :(>=)
+        @test aff_mip[8][:coefs] == Any[5.6,-72000.0]
+        @test aff_mip[8][:cnt] == 2
+
+        @test aff_mip[9][:rhs] == 0.0
+        @test aff_mip[9][:vars] == Any[:(x[2]),:(x[5])]
+        @test aff_mip[9][:sense] == :(>=)
+        @test aff_mip[9][:coefs] == Any[5.6,-36000.0]
+        @test aff_mip[9][:cnt] == 2
+
+        @test aff_mip[10][:rhs] == 0.0
+        @test aff_mip[10][:vars] == Any[:(x[2]),:(x[5]),:(x[2])]
+        @test aff_mip[10][:sense] == :(>=)
+        @test aff_mip[10][:coefs] == Any[5.6, -300.0, -1.75]
+        @test aff_mip[10][:cnt] == 3
 
     end
 

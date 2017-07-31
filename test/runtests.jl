@@ -21,6 +21,9 @@ include("../examples/blend029.jl")
 # Multilinear Testing Instances
 include("../examples/multi.jl")
 
+# Special Operator
+include("../examples/div.jl")
+
 # Performe Tests
 include("operators.jl")
 include("solver.jl")
