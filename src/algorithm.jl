@@ -276,7 +276,8 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
-    m.best_sol = fill(NaN, m.num_var_orig)
+
+    m.best_sol = m.d_orig.m.colVal
 
     logging_summary(m)
 end

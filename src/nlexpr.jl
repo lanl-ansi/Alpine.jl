@@ -121,12 +121,12 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 				bufferVal = 0.0
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
-				push!(lhscoeffs, sign*1.0)
+				push!(lhscoeffs, sign*1.0*coef)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
 			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
-				push!(lhscoeffs, sign*sign_convertor(expr, i))
+				push!(lhscoeffs, sign*sign_convertor(expr, i)*coef)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end

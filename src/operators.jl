@@ -48,12 +48,12 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
     end
 
     # 1 : pre-process the negative sign in expressions
-    expr_resolve_sign(m.lifted_obj_expr_mip)
     expr_resolve_const(m.lifted_obj_expr_mip)
+    expr_resolve_sign(m.lifted_obj_expr_mip)
     expr_flatten(m.lifted_obj_expr_mip)
     for i in 1:m.num_constr_orig
-        expr_resolve_sign(m.lifted_constr_expr_mip[i])
         expr_resolve_const(m.lifted_constr_expr_mip[i])
+        expr_resolve_sign(m.lifted_constr_expr_mip[i])
         expr_flatten(m.lifted_constr_expr_mip[i].args[2])
     end
 
@@ -189,6 +189,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
             (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
+                (term_key in keys(m.nonlinear_info)) ? term_key = term_key : term_key = reverse(term_key)
                 return true, lift_bilinear()
             else
                 store_bilinear()
