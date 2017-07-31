@@ -97,6 +97,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                     elseif status in status_reroute
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
                     else
+                        print_iis_gurobi(m.model_mip)
                         error("bound tightening sub-problem solves to an error status [$(status)]")
                     end
                     # TODO: discuss feasibility tols and where to put them and apt default

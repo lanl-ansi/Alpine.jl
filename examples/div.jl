@@ -30,6 +30,7 @@ function div(;verbose=false,solver=nothing)
 	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-0.5(x[1]*1*2*3*4*5*6*x[2]/0.01)>=0)
 	@NLconstraint(m, input_num*x[2]-0.5(x[1]*2*3*x[2]/0.01+5*7/10*x[2])>=0)
 	@NLconstraint(m, -((3.5e10+1.5/2+2))*x[1]*x[2] >=0)
+	@NLconstraint(m, -((-6.23123123+0.0/2.0))*x[1]*x[2] >=0)
 
 	if verbose
 		print(m)

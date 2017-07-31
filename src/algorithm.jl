@@ -276,7 +276,8 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
-    m.best_sol = fill(NaN, m.num_var_orig)
+    # m.best_sol = fill(NaN, m.num_var_orig)
+    m.best_sol = m.d_orig.m.colVal
 
     logging_summary(m)
 end
@@ -421,7 +422,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
-    status_pass = [:Optimal, :Suboptimal, :UserLimit]
+    status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_reroute = [:Infeasible]
 
     local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
