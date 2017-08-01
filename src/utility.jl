@@ -23,32 +23,6 @@ function update_opt_gap(m::PODNonlinearModel)
 end
 
 """
-    update_var_bounds(m::PODNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
-
-This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
-
-Output::
-
-    l_var::Vector{Float64}, u_var::Vector{Float64}
-"""
-function update_var_bounds(discretization; kwargs...)
-
-    options = Dict(kwargs)
-
-    haskey(options, :len) ? len = options[:len] : len = length(keys(discretization))
-
-    l_var = fill(-Inf, len)
-    u_var = fill(Inf, len)
-
-    for var_idx in keys(discretization)
-        l_var[var_idx] = discretization[var_idx][1]
-        u_var[var_idx] = discretization[var_idx][end]
-    end
-
-    return l_var, u_var
-end
-
-"""
     discretization_to_bounds(d::Dict, l::Int)
 
 Same as [`update_var_bounds`](@ref)

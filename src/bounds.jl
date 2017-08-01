@@ -157,6 +157,7 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
                         bound = diag(bound) * var_bounds'
                     end
                 end
+                @show bound
                 if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
                     m.l_var_tight[lifted_idx] = minimum(bound)
                 end
@@ -200,6 +201,7 @@ function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; k
                         bound = diag(bound) * var_bounds'
                     end
                 end
+                @show bound
                 if minimum(bound) > discretization[lifted_idx][1]
                     discretization[lifted_idx][1] = minimum(bound)
                 end
@@ -231,4 +233,30 @@ function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
     end
 
     return
+end
+
+"""
+    update_var_bounds(m::PODNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
+
+This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
+
+Output::
+
+    l_var::Vector{Float64}, u_var::Vector{Float64}
+"""
+function update_var_bounds(discretization; kwargs...)
+
+    options = Dict(kwargs)
+
+    haskey(options, :len) ? len = options[:len] : len = length(keys(discretization))
+
+    l_var = fill(-Inf, len)
+    u_var = fill(Inf, len)
+
+    for var_idx in keys(discretization)
+        l_var[var_idx] = discretization[var_idx][1]
+        u_var[var_idx] = discretization[var_idx][end]
+    end
+
+    return l_var, u_var
 end
