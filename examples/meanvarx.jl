@@ -6,7 +6,7 @@ function meanvarx(;verbose=false, solver=nothing, convhull=true)
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
                                    mip_solver=GurobiSolver(OutputFlag=0),
                                    rel_gap=0.0001,
-                                   log_level=100,
+                                   log_level=1,
                                    discretization_ratio=4,
                                    bilinear_convexhull=convhull,
                                    monomial_convexhull=convhull,
@@ -74,5 +74,6 @@ function meanvarx(;verbose=false, solver=nothing, convhull=true)
     @constraint(m, x[27]+x[34]<=1)  #= e43: =#
     @constraint(m, x[28]+x[35]<=1)  #= e44: =#
 
+    verbose && print(m)
     return m
 end

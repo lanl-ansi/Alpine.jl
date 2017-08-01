@@ -13,21 +13,20 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Construct λ variable space
     for bi in keys(m.nonlinear_info)
         nl_type = m.nonlinear_info[bi][:nonlinear_type]
-        if ((nl_type == :multilinear) || (nl_type == :bilinear) || (nl_type == :monomial)) && (m.nonlinear_info[bi][:convexified] == false)
+        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
-            @show ml_indices, dim, extreme_point_cnt
             λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
             α = amp_convhull_α(m, ml_indices, α, dim, discretization)
             amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
-        # elseif (nl_type == :monomial) && (m.nonlinear_info[bi][:convexified] == false)
-        #     m.nonlinear_info[bi][:convexified] = true
-        #     monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi, monomial=true)
-        #     λ = amp_convhull_λ(m, bi, monomial_index, λ, extreme_point_cnt, dim)
-        #     λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
-        #     α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
-        #     amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
+        elseif (nl_type == :monomial) && (m.nonlinear_info[bi][:convexified] == false)
+            m.nonlinear_info[bi][:convexified] = true
+            monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi, monomial=true)
+            λ = amp_convhull_λ(m, bi, monomial_index, λ, extreme_point_cnt, dim)
+            λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
+            α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
+            amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
         end
     end
 
