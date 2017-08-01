@@ -50,11 +50,11 @@ function logging_summary(m::PODNonlinearModel)
 end
 
 function logging_head()
-    println(" | NLP         | MIP         || Objective   | Bound       | GAP\%        | CLOCK       | TIME LEFT   | Iter   ")
+    println(" | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | TIME LEFT     | Iter   ")
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)
-    b_len = 12
+    b_len = 14
     if isa(m.logs[:obj][end], Float64)
         UB_block = string(" ", round(m.logs[:obj][end],4), " " ^ (b_len - length(string(round(m.logs[:obj][end], 4)))))
     else

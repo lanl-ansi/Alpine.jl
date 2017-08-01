@@ -3,8 +3,11 @@ using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 function meyer10(;verbose=false, solver=nothing)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
+																	"bonmin.time_limit=60"]),
 									mip_solver=GurobiSolver(OutputFlag=0),
+									bilinear_convexhull=convhull,
+									monomial_convexhull=convhull,
 									discretization_ratio=32,
 									log_level=100,
 									rel_gap=0.001))

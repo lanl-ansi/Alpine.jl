@@ -1,12 +1,16 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function meyer4(;verbose=false, solver=nothing)
+function meyer4(;verbose=false, solver=nothing, convhull=true)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
+																	"bonmin.time_limit=60"]),
 									mip_solver=GurobiSolver(OutputFlag=0),
-									discretization_ratio=32,
-									log_level=100,
+									bilinear_convexhull=convhull,
+									monomial_convexhull=convhull,
+									discretization_ratio=8,
+									discretization_var_pick_algo="min_vertex_cover",
+									log_level=200,
 									rel_gap=0.001))
 	else
 		m = Model(solver=solver)

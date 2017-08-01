@@ -1,11 +1,14 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function lee1(;verbose=false, solver=nothing)
+function lee1(;verbose=false, solver=nothing, convhull=true)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
-                                    mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
+																	"bonmin.time_limit=60"]),
+                                    mip_solver=GurobiSolver(OutputFlag=1),
+                                    discretization_ratio=8,
+                                    bilinear_convexhull=convhull,
+                                    monomial_convexhull=convhull,
                                     log_level=100,
                                     rel_gap=0.001))
     else

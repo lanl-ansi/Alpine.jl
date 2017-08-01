@@ -1,12 +1,15 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function lee2(;verbose=false, solver=nothing)
+function lee2(;verbose=false, solver=nothing, convhull=true)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
+																	"bonmin.time_limit=180"]),
 									mip_solver=GurobiSolver(OutputFlag=0),
+									bilinear_convexhull=convhull,
+									monomial_convexhull=convhull,
 									discretization_ratio=32,
-									log_level=100,
+									log_level=200,
 									rel_gap=0.001))
 	else
 		m = Model(solver=solver)
@@ -155,7 +158,8 @@ function lee2(;verbose=false, solver=nothing)
 	@constraint(m, e9,x[2]+x[6]+x[10]+x[14]+x[18]-x[24]-x[25]-x[26]==0.0)
 	@constraint(m, e10,x[3]+x[7]+x[11]+x[15]+x[19]-x[27]-x[28]-x[29]==0.0)
 	@constraint(m, e11,x[4]+x[8]+x[12]+x[16]+x[20]-x[30]-x[31]-x[32]==0.0)
-	######## All NL constrants pushed up there
+
+
 	@constraint(m, e42,x[1]-686*x[50]<=0.0)
 	@constraint(m, e43,x[2]-686*x[51]<=0.0)
 	@constraint(m, e44,x[3]-686*x[52]<=0.0)

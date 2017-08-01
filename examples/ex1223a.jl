@@ -33,7 +33,9 @@ function ex1223a(;verbose=false, solver=nothing)
     @constraint(m, x[3]+x[6]<=2.5)  #= e5: =#
     @constraint(m, x[1]+x[7]<=1.2)  #= e6: =#
 
-    @objective(m,Min,(-1 + x[1])^2 + (-2 + x[2])^2 + (-3 + x[3])^2 - x[4] - 3*x[5] - x[6] - 0.693147180559945*x[7] + 6)
+    # @objective(m, Min, (-1 + x[1])^2 + (-2 + x[2])^2 + (-3 + x[3])^2 - x[4] - 3*x[5] - x[6] - 0.693147180559945*x[7] + 6)
+    # Expanded objective
+    @objective(m, Min, x[1]^2-2*x[1]+1 + x[2]^2-4*x[2]+4 + x[3]^2-6*x[3]+9 - x[4] - 3*x[5] - x[6] - 0.693147180559945*x[7] + 6)
     @NLconstraint(m, x[1]^2+x[2]^2+x[3]^2+x[6]<=5.5)  #= e2: =#
     @NLconstraint(m, x[2]^2+x[5]<=1.64)  #= e7: =#
     @NLconstraint(m, x[3]^2+x[6]<=4.25)  #= e8: =#
