@@ -185,7 +185,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         # Cofirm detection of patter A and perform store & lifting procedures
-        if length(var_idxs) == 2
+        if (length(var_idxs) == 2) && length(Set(var_idxs)) == 2
             (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
@@ -281,14 +281,19 @@ function resolve_monomial(expr, m::PODNonlinearModel)
     end
 
     function lift_monomial()
-        new_expr = m.nonlinear_info[term_key][:lifted_var_ref] #TODO: check if this will actually be replaced
-        return new_expr
+        if scalar == 1.0
+            return m.nonlinear_info[term_key][:lifted_var_ref]
+        else
+            return Expr(:call, :*, m.nonlinear_info[term_key][:lifted_var_ref], scalar)
+        end
     end
 
+    # Type 1 monomial
     if (expr.args[1] == :^) && length(expr.args) == 3
         # Pattern: (x)^(2)
         var_idxs = []
         power_scalar = 0
+        scalar = 1.0
         for i in 2:length(expr.args)
             if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
                 power_scalar += expr.args[i]
@@ -309,6 +314,36 @@ function resolve_monomial(expr, m::PODNonlinearModel)
                 return true, lift_monomial()
             else
                 store_monomial()
+                return true, lift_monomial()
+            end
+        end
+    end
+
+    # Type 2 monomial term : x * x
+    if (expr.args[1] == :*)  # confirm head (:*)
+        # ----- Pattern : coefficient * x * y  ------ #
+        # Collect children information for checking
+        scalar = 1.0
+        var_idxs = []
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                scalar *= expr.args[i]
+                continue
+            end
+            (isa(expr.args[i], Symbol)) && continue
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+            (expr.args[i].head == :call) && return false, expr
+        end
+        # Cofirm detection of patter A and perform store & lifting procedures
+        if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
+            (m.log_level) > 99 && println("found bilinear term $expr")
+            @show expr, var_idxs
+            term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
+            if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
+                (term_key in keys(m.nonlinear_info)) ? term_key = term_key : term_key = reverse(term_key)
+                return true, lift_monomial()
+            else
+                store_bilinear()
                 return true, lift_monomial()
             end
         end

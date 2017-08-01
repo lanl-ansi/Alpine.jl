@@ -102,6 +102,9 @@
         m = nlp1(solver=test_solver)
         status = solve(m)
 
+        @show m.internalModel.l_var_tight
+        @show m.internalModel.u_var_tight
+
         @test status == :Optimal
         @test m.internalModel.logs[:n_iter] == 3
 
@@ -109,7 +112,7 @@
         @test isapprox(m.internalModel.l_var_tight[2], 3.0; atol=1e-2)
         @test isapprox(m.internalModel.l_var_tight[3], 5.76; atol=1e-2)
         @test isapprox(m.internalModel.l_var_tight[4], 9.0; atol=1e-2)
-        @test isapprox(m.internalModel.l_var_tight[5], 7.2; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[5], 8.0; atol=1e-2)
 
         @test isapprox(m.internalModel.u_var_tight[1], 2.7; atol=1e-2)
         @test isapprox(m.internalModel.u_var_tight[2], 3.3; atol=1e-2)
@@ -131,13 +134,17 @@
         m = nlp1(solver=test_solver)
         status = solve(m)
 
+        @show m.internalModel.l_var_tight
+        @show m.internalModel.u_var_tight
+
         @test status == :Optimal
         @test m.internalModel.logs[:n_iter] == 2
+        @show m.internalModel.l_var_tight
         @test isapprox(m.internalModel.l_var_tight[1], 2.5; atol=1e-2)
         @test isapprox(m.internalModel.l_var_tight[2], 3.1; atol=1e-2)
         @test isapprox(m.internalModel.l_var_tight[3], 6.25; atol=1e-2)
         @test isapprox(m.internalModel.l_var_tight[4], 9.61; atol=1e-2)
-        @test isapprox(m.internalModel.l_var_tight[5], 7.75; atol=1e-2)
+        @test isapprox(m.internalModel.l_var_tight[5], 8.0; atol=1e-2)
 
         @test isapprox(m.internalModel.u_var_tight[1], 2.6; atol=1e-2)
         @test isapprox(m.internalModel.u_var_tight[2], 3.2; atol=1e-2)
