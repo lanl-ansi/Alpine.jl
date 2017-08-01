@@ -5,7 +5,7 @@ function meanvarx(;verbose=false, solver=nothing, convhull=true)
     if solver==nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
                                    mip_solver=GurobiSolver(OutputFlag=0),
-                                   rel_gap=0.005,
+                                   rel_gap=0.0001,
                                    log_level=100,
                                    discretization_ratio=4,
                                    bilinear_convexhull=convhull,
