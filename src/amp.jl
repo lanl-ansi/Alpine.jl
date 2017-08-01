@@ -125,6 +125,6 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
 end
 
 function amp_post_lifted_objective(m::PODNonlinearModel)
-    @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
+    @objective(m.model_mip, m.sense_orig, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
     return
 end
