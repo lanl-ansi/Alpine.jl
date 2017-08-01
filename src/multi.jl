@@ -13,13 +13,20 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Construct λ variable space
     for bi in keys(m.nonlinear_info)
         nl_type = m.nonlinear_info[bi][:nonlinear_type]
-        if ((nl_type == :multilinear) || (nl_type == :bilinear) || (nl_type == :monomial)) && (m.nonlinear_info[bi][:convexified] == false)
+        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
             m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
             λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
             α = amp_convhull_α(m, ml_indices, α, dim, discretization)
             amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+        elseif (nl_type == :monomial) && (m.nonlinear_info[bi][:convexified] == false)
+            m.nonlinear_info[bi][:convexified] = true
+            monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi, monomial=true)
+            λ = amp_convhull_λ(m, bi, monomial_index, λ, extreme_point_cnt, dim)
+            λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
+            α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
+            amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
         end
     end
 
@@ -30,7 +37,7 @@ end
     TODO: docstring
     This function is very important.
 """
-function amp_convhull_prepare(discretization::Dict, nonlinear_key::Any)
+function amp_convhull_prepare(discretization::Dict, nonlinear_key::Any; monomial=false)
 
     id = Set()                      # Coverting the nonlinear indices into a different space
     for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
@@ -45,11 +52,11 @@ function amp_convhull_prepare(discretization::Dict, nonlinear_key::Any)
     end
 
     dim = []
-    for i in id                     # Critical!!! Ensure the same sequence
+    for i in id
         push!(dim, length(discretization[i]))
     end
 
-
+    monomial && return id[1], tuple(dim[1]), dim[1]   # One less dimension is required
     return id, tuple([i for i in dim]...), prod(dim)
 end
 
@@ -68,6 +75,16 @@ end
 
 """
     TODO: docstring
+    method for monomial
+"""
+function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, monomial_index::Int, λ::Dict)
+    λ[monomial_index][:vals] = [discretization[monomial_index][i]^2 for i in 1:length(discretization[monomial_index])]
+    return λ
+end
+
+"""
+    TODO: docstring
+    method for general multilinear term
 """
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, ml_indices::Any, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
 
@@ -133,7 +150,6 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     cnt = 0
     for i in ml_indices
         cnt += 1
-
         partition_cnt = length(α[i])
         lambda_cnt = length(discretization[i])
         @assert lambda_cnt == partition_cnt + 1
@@ -146,6 +162,31 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
         @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
     end
 
+    return
+end
+
+function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
+
+    # Adding λ constraints
+    @constraint(m.model_mip, sum(λ[monomial_idx][:vars]) == 1)
+    @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) <= dot(λ[monomial_idx][:vars], λ[monomial_idx][:vals]))
+    @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >= Variable(m.model_mip, monomial_idx)^2)
+
+    partition_cnt = length(α[monomial_idx])
+    lambda_cnt = length(discretization[monomial_idx])
+    @assert lambda_cnt == partition_cnt + 1
+
+    for i in 1:lambda_cnt
+        if i == 1
+            @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i])
+        elseif i == lambda_cnt
+            @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1])
+        else
+            @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1] + α[monomial_idx][i])
+        end
+    end
+
+    @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
     return
 end
 

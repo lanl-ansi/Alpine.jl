@@ -1,9 +1,11 @@
 @testset "Solving algorithm tests" begin
 
-    @testset " Validation Test || AMP || basic solve || exampls/nlp1.jl" begin
+    @testset " Validation Test || AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                            mip_solver=GurobiSolver(OutputFlag=0),
+                           bilinear_convexhull=false,
+                           monomial_convexhull=false,
                            presolve_bound_tightening=false,
                            presolve_bt_output_tol=1e-1,
                            log_level=0)
@@ -45,10 +47,12 @@
         end
     end
 
-    @testset " Validation Test || AMP || basic solve || examples/nlp3.jl (4 iterations)" begin
+    @testset " Validation Test || AMP-TMC || basic solve || examples/nlp3.jl (4 iterations)" begin
 
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
         					   mip_solver=CbcSolver(logLevel=0),
+                               bilinear_convexhull=false,
+                               monomial_convexhull=false,
         					   log_level=0,
                                maxiter=3,
         					   presolve_bt_width_tol=1e-3,
@@ -84,10 +88,12 @@
         end
     end
 
-    @testset " Validation Test || BT-AMP || basic solve || examples/nlp1.jl " begin
+    @testset " Validation Test || BT-AMP-TMC || basic solve || examples/nlp1.jl " begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=GurobiSolver(OutputFlag=0),
+                               bilinear_convexhull=false,
+                               monomial_convexhull=false,
                                presolve_bound_tightening=true,
                                presolve_bound_tightening_algo=1,
                                presolve_bt_output_tol=1e-1,
@@ -112,10 +118,12 @@
         @test isapprox(m.internalModel.u_var_tight[5], 8.91; atol=1e-2)
     end
 
-    @testset " Validation Test || PBT-AMP || basic solve || exampls/nlp1.jl" begin
+    @testset " Validation Test || PBT-AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
     							   mip_solver=GurobiSolver(OutputFlag=0),
+                                   bilinear_convexhull=false,
+                                   monomial_convexhull=false,
     							   presolve_bound_tightening=true,
     							   presolve_bound_tightening_algo=2,
                                    presolve_bt_output_tol=1e-1,
@@ -138,11 +146,13 @@
         @test isapprox(m.internalModel.u_var_tight[5], 8.32; atol=1e-2)
     end
 
-    @testset " Validation Test || BT-AMP || basic solve || examples/nlp3.jl" begin
+    @testset " Validation Test || BT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
     							   mip_solver=CbcSolver(logLevel=0),
-    							   log_level=0, maxiter=3,
+                                   bilinear_convexhull=false,
+    							   log_level=0,
+                                   maxiter=3,
     							   presolve_bt_width_tol=1e-3,
     							   presolve_bt_output_tol=1e-1,
     							   presolve_bound_tightening=true,
@@ -176,11 +186,13 @@
         @test isapprox(m.internalModel.l_var_tight[8], 89.2; atol=1e-2)
     end
 
-    @testset " Validation Test || PBT-AMP || basic solve || examples/nlp3.jl" begin
+    @testset " Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                    mip_solver=CbcSolver(logLevel=0),
-                                   log_level=0, maxiter=2,
+                                   bilinear_convexhull=false,
+                                   log_level=0,
+                                   maxiter=2,
                                    presolve_bound_tightening=true,
                                    presolve_bt_width_tol=1e-3,
                                    presolve_bt_output_tol=1e-1,
@@ -212,5 +224,14 @@
         @test isapprox(m.internalModel.l_var_tight[7], 100.2; atol=1e-1)
         @test isapprox(m.internalModel.l_var_tight[8], 352.0; atol=1e-1)
     end
+
+    @testset " Validation Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
+        #TODO
+    end
+
+    @testset " Validation Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
+        #TODO
+    end
+
 
 end

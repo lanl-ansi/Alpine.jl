@@ -1,6 +1,6 @@
 using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
-function nlp1(;verbose=false,solver=nothing, convhull=false)
+function nlp1(;verbose=false,solver=nothing, convhull=true)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
