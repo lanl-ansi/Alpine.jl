@@ -249,8 +249,10 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
         end
         if length(var_idxs) > 2
             (m.log_level > 99) && println("found multilinear term $expr")
-            term_key = Set()
-            [push!(term_key, Expr(:ref, :x, idx)) for idx in var_idxs]
+            term_key = []
+            for idx in var_idxs
+                push!(term_key, Expr(:ref, :x, idx))
+            end
             if term_key in keys(m.nonlinear_info)
                 return true, lift_multilinear()
             else
@@ -336,14 +338,13 @@ function resolve_monomial(expr, m::PODNonlinearModel)
         end
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
-            (m.log_level) > 99 && println("found bilinear term $expr")
-            @show expr, var_idxs
+            (m.log_level) > 99 && println("found monomial term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
-            if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
-                (term_key in keys(m.nonlinear_info)) ? term_key = term_key : term_key = reverse(term_key)
+            if term_key in keys(m.nonlinear_info)
+                term_key in keys(m.nonlinear_info)
                 return true, lift_monomial()
             else
-                store_bilinear()
+                store_monomial()
                 return true, lift_monomial()
             end
         end

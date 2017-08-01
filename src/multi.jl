@@ -57,6 +57,7 @@ function amp_convhull_prepare(discretization::Dict, nonlinear_key::Any; monomial
     end
 
     monomial && return id[1], tuple(dim[1]), dim[1]   # One less dimension is required
+
     return id, tuple([i for i in dim]...), prod(dim)
 end
 

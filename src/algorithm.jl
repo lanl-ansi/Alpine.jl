@@ -414,14 +414,12 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
     (presolve && (:Bin in m.var_type_orig || :Int in m.var_type_orig)) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
-    # MathProgBase.SolverInterface.setparameters!(local_solve_nlp_model, TimeLimit=m.logs[:time_left], Silent=true)
 
     start_local_solve = time()
     MathProgBase.optimize!(local_solve_nlp_model)
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
-
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_reroute = [:Infeasible]
 

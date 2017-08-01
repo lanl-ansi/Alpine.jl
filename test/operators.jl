@@ -184,29 +184,29 @@
         @test m.internalModel.lifted_constr_expr_mip[6] == :(x[14]-1.0 >= 0.0)
         @test m.internalModel.lifted_constr_expr_mip[7] == :(x[15]-1.0 >= 0.0)
 
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[1]),:(x[2]),:(x[3]),:(x[4])])) #5
-        @test haskey(m.internalModel.nonlinear_info, [:(x[1]), :(x[1])]) #6
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[4])])) #7
-        @test haskey(m.internalModel.nonlinear_info, [:(x[2]), :(x[2])]) #8
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[1]),:(x[8]),:(x[3]),:(x[4])])) #9
-        @test haskey(m.internalModel.nonlinear_info, [:(x[3]), :(x[3])]) #10
-        @test haskey(m.internalModel.nonlinear_info, [:(x[4]), :(x[4])]) #11
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[1]),:(x[2]),:(x[10]),:(x[11])])) #12
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[1]),:(x[8]),:(x[10]),:(x[4])])) #13
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[11])])) #14
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[6]),:(x[8]),:(x[10]),:(x[11])])) #15
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[2]),:(x[3]),:(x[4])]) #5
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[1])]) #6
+        @test haskey(m.internalModel.nonlinear_info, [:(x[6]),:(x[2]),:(x[3]),:(x[4])]) #7
+        @test haskey(m.internalModel.nonlinear_info, [:(x[2]),:(x[2])]) #8
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[3]),:(x[4]),:(x[8])]) #9
+        @test haskey(m.internalModel.nonlinear_info, [:(x[3]),:(x[3])]) #10
+        @test haskey(m.internalModel.nonlinear_info, [:(x[4]),:(x[4])]) #11
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[2]),:(x[10]),:(x[11])]) #12
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[4]),:(x[8]),:(x[10])]) #13
+        @test haskey(m.internalModel.nonlinear_info, [:(x[6]),:(x[11]),:(x[2]),:(x[3])]) #14
+        @test haskey(m.internalModel.nonlinear_info, [:(x[6]),:(x[8]),:(x[10]),:(x[11])]) #15
 
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[2]),:(x[3]),:(x[4])])][:id] == 1 #5
-        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[1])]][:id] == 2 #6
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[4])])][:id] == 3 #7
-        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[2])]][:id] == 4 #8
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[8]),:(x[3]),:(x[4])])][:id] == 5 #9
-        @test m.internalModel.nonlinear_info[[:(x[3]), :(x[3])]][:id] == 6 #10
-        @test m.internalModel.nonlinear_info[[:(x[4]), :(x[4])]][:id] == 7 #11
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[2]),:(x[10]),:(x[11])])][:id] ==  8  #12
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]),:(x[8]),:(x[10]),:(x[4])])][:id] == 9 #13
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[11])])][:id] == 10 #14
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[6]),:(x[8]),:(x[10]),:(x[11])])][:id] == 11 #15
+        @test m.internalModel.nonlinear_info[[:(x[1]),:(x[2]),:(x[3]),:(x[4])]][:id] == 1 #5
+        @test m.internalModel.nonlinear_info[[:(x[1]),:(x[1])]][:id] == 2 #6
+        @test m.internalModel.nonlinear_info[[:(x[6]),:(x[2]),:(x[3]),:(x[4])]][:id] == 3 #7
+        @test m.internalModel.nonlinear_info[[:(x[2]),:(x[2])]][:id] == 4 #8
+        @test m.internalModel.nonlinear_info[[:(x[1]),:(x[3]),:(x[4]),:(x[8])]][:id] == 5 #9
+        @test m.internalModel.nonlinear_info[[:(x[3]),:(x[3])]][:id] == 6 #10
+        @test m.internalModel.nonlinear_info[[:(x[4]),:(x[4])]][:id] == 7 #11
+        @test m.internalModel.nonlinear_info[[:(x[1]),:(x[2]),:(x[10]),:(x[11])]][:id] ==  8  #12
+        @test m.internalModel.nonlinear_info[[:(x[1]),:(x[4]),:(x[8]),:(x[10])]][:id] == 9 #13
+        @test m.internalModel.nonlinear_info[[:(x[6]),:(x[11]),:(x[2]),:(x[3])]][:id] == 10 #14
+        @test m.internalModel.nonlinear_info[[:(x[6]),:(x[8]),:(x[10]),:(x[11])]][:id] == 11 #15
 
     end
 
@@ -238,26 +238,26 @@
         @test m.internalModel.lifted_constr_expr_mip[8] == :(x[22]-1.0 >= 0.0)
         @test m.internalModel.lifted_constr_expr_mip[9] == :(x[24]-1.0 >= 0.0)
 
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[1]),:(x[2]),:(x[3])])) #5
-        @test haskey(m.internalModel.nonlinear_info, [:(x[5]), :(x[4])]) #6
-        @test haskey(m.internalModel.nonlinear_info, [:(x[1]), :(x[1])]) #7
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[7]),:(x[2]),:(x[3])])) #8
-        @test haskey(m.internalModel.nonlinear_info, [:(x[8]), :(x[4])]) #9
-        @test haskey(m.internalModel.nonlinear_info, [:(x[2]), :(x[2])]) #10
-        @test haskey(m.internalModel.nonlinear_info, [:(x[10]), :(x[3])]) #11
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[1]),:(x[11]),:(x[4])])) #12
-        @test haskey(m.internalModel.nonlinear_info, [:(x[3]), :(x[3])]) #13
-        @test haskey(m.internalModel.nonlinear_info, [:(x[2]), :(x[13])]) #14
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[1]),:(x[14]),:(x[4])])) #15
-        @test haskey(m.internalModel.nonlinear_info, [:(x[1]), :(x[10])]) #16
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[16]),:(x[3]),:(x[4])])) #17
-        @test haskey(m.internalModel.nonlinear_info, [:(x[1]), :(x[2])]) #18
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[18]),:(x[13]),:(x[4])])) #19
-        @test haskey(m.internalModel.nonlinear_info, [:(x[4]), :(x[4])]) #20
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[18]),:(x[3]),:(x[20])])) #21
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[18]),:(x[13]),:(x[20])])) #22
-        @test haskey(m.internalModel.nonlinear_info, Set(Any[:(x[7]),:(x[10]),:(x[13])])) #23
-        @test haskey(m.internalModel.nonlinear_info, [:(x[23]), :(x[20])]) #24
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[2]),:(x[3])]) #5
+        @test haskey(m.internalModel.nonlinear_info, [:(x[5]),:(x[4])]) #6
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[1])]) #7
+        @test haskey(m.internalModel.nonlinear_info, [:(x[7]),:(x[2]),:(x[3])]) #8
+        @test haskey(m.internalModel.nonlinear_info, [:(x[8]),:(x[4])]) #9
+        @test haskey(m.internalModel.nonlinear_info, [:(x[2]),:(x[2])]) #10
+        @test haskey(m.internalModel.nonlinear_info, [:(x[10]),:(x[3])]) #11
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[4]),:(x[11])]) #12
+        @test haskey(m.internalModel.nonlinear_info, [:(x[3]),:(x[3])]) #13
+        @test haskey(m.internalModel.nonlinear_info, [:(x[2]),:(x[13])]) #14
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[4]),:(x[14])]) #15
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[10])]) #16
+        @test haskey(m.internalModel.nonlinear_info, [:(x[16]),:(x[3]),:(x[4])]) #17
+        @test haskey(m.internalModel.nonlinear_info, [:(x[1]),:(x[2])]) #18
+        @test haskey(m.internalModel.nonlinear_info, [:(x[18]),:(x[13]),:(x[4])]) #19
+        @test haskey(m.internalModel.nonlinear_info, [:(x[4]),:(x[4])]) #20
+        @test haskey(m.internalModel.nonlinear_info, [:(x[18]),:(x[20]),:(x[3])]) #21
+        @test haskey(m.internalModel.nonlinear_info, [:(x[18]),:(x[13]),:(x[20])]) #22
+        @test haskey(m.internalModel.nonlinear_info, [:(x[7]),:(x[10]),:(x[13])]) #23
+        @test haskey(m.internalModel.nonlinear_info, [:(x[23]),:(x[20])]) #24
 
     end
 
