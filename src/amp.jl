@@ -57,7 +57,7 @@ end
 """
     amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
-warpper function to convexify the problem for a bounding model. This function talks to nonlinear_info and convexification methods
+warpper function to convexify the problem for a bounding model. This function talks to nonlinear_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
 function amp_post_convexification(m::PODNonlinearModel; kwargs...)
@@ -111,13 +111,13 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
     for i in 1:m.num_constr_orig
         if m.constr_type_orig[i] == :(>=)
             @constraint(m.model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) >= m.lifted_constr_aff_mip[i][:rhs])
+                sum(m.bounding_constr_mip[i][:coefs][j]*Variable(m.model_mip, m.bounding_constr_mip[i][:vars][j].args[2]) for j in 1:m.bounding_constr_mip[i][:cnt]) >= m.bounding_constr_mip[i][:rhs])
         elseif m.constr_type_orig[i] == :(<=)
             @constraint(m.model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) <= m.lifted_constr_aff_mip[i][:rhs])
+                sum(m.bounding_constr_mip[i][:coefs][j]*Variable(m.model_mip, m.bounding_constr_mip[i][:vars][j].args[2]) for j in 1:m.bounding_constr_mip[i][:cnt]) <= m.bounding_constr_mip[i][:rhs])
         elseif m.constr_type_orig[i] == :(==)
             @constraint(m.model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) == m.lifted_constr_aff_mip[i][:rhs])
+                sum(m.bounding_constr_mip[i][:coefs][j]*Variable(m.model_mip, m.bounding_constr_mip[i][:vars][j].args[2]) for j in 1:m.bounding_constr_mip[i][:cnt]) == m.bounding_constr_mip[i][:rhs])
         end
     end
 
@@ -125,6 +125,6 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
 end
 
 function amp_post_lifted_objective(m::PODNonlinearModel)
-    @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
+    @objective(m.model_mip, m.sense_orig, sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
     return
 end

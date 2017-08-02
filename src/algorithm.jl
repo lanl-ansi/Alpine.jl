@@ -88,15 +88,17 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    nonlinear_info::Dict{Any,Any}                               # Dictionary containing details of lifted terms
-    all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
-    lifted_obj_expr_mip::Expr                                   # Lifted objective expression; if linear, same as obj_expr_orig
-    lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints; if linear, same as corresponding constr_expr_orig
     num_var_lifted_mip::Int                                     # Number of lifted variables
-    lifted_obj_aff_mip::Dict{Any, Any}                          # Lifted objective expression in affine form
-    lifted_constr_aff_mip::Vector{Dict{Any, Any}}               # Lifted constraint expressions in affine form
-    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
+    num_constr_structural::Int                                  # Number of structural constraints
+    nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted terms
+    nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
+    all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
+    bounding_obj_expr_mip::Expr                                 # Lifted objective expression; if linear, same as obj_expr_orig
+    bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
+    bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
+    bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
+    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
     var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
@@ -185,12 +187,16 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
 
-        m.nonlinear_info = Dict()
+        m.nonlinear_terms = Dict()
+        m.nonlinear_constrs = Dict()
         m.all_nonlinear_vars = Int[]
-        m.lifted_constr_expr_mip = []
-        m.lifted_constr_aff_mip = []
+        m.bounding_constr_expr_mip = []
+        m.bounding_constr_mip = []
         m.var_discretization_mip = []
         m.discretization = Dict()
+        m.num_var_lifted_mip = 0
+        m.num_var_discretization_mip = 0
+        m.num_constr_structural = 0
 
         m.user_parameters = Dict()
 
@@ -258,7 +264,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # populate data to create the bounding model
     expr_batch_process(m)
-    populate_lifted_affine(m)                                 # keep
 
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
     detect_bound_from_aff(m)        # Fetch bounds from constraints

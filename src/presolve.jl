@@ -70,7 +70,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     if use_bound == true && haskey(options, :use_tmc)
         discretization = add_discretization(m, use_solution=m.best_sol, use_discretization=discretization)
     end
-    discretization = resolve_lifted_var_bounds(m.nonlinear_info, discretization) # recomputation of bounds for lifted_variables
+    discretization = resolve_lifted_var_bounds(m.nonlinear_terms, discretization) # recomputation of bounds for lifted_variables
 
     (m.log_level > 0) && println("starting the bound-tightening algorithm ...")
     (m.log_level > 99) && [println("[DEBUG] VAR $(var_idx) Original Bound [$(round(m.l_var_tight[var_idx],4)) < - > $(round(m.u_var_tight[var_idx],4))]") for var_idx in m.all_nonlinear_vars]
@@ -118,7 +118,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
             end
         end
 
-        discretization = resolve_lifted_var_bounds(m.nonlinear_info, discretization)
+        discretization = resolve_lifted_var_bounds(m.nonlinear_terms, discretization)
         haskey(options, :use_tmc) ? discretization = add_discretization(m, use_solution=m.best_sol, use_discretization=flatten_discretization(discretization)) : discretization = discretization
     end
 
@@ -197,10 +197,10 @@ end
 function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
     if m.sense_orig == :Max
         @constraint(m.model_mip,
-            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) >= bound)
+            sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) >= bound)
     elseif m.sense_orig == :Min
         @constraint(m.model_mip,
-            sum(m.lifted_obj_aff_mip[:coefs][j]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][j].args[2]) for j in 1:m.lifted_obj_aff_mip[:cnt]) <= bound)
+            sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) <= bound)
     end
 
     return

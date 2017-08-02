@@ -42,29 +42,30 @@ High-level warpper for processing expression with sub-tree operators
 function expr_batch_process(m::PODNonlinearModel;kwargs...)
 
 	# 0 : deepcopy data into mip lifted expr place holders
-	m.lifted_obj_expr_mip = deepcopy(m.obj_expr_orig)
+	m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
 	for i in 1:m.num_constr_orig
-        push!(m.lifted_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
+        push!(m.bounding_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
     end
 
     # 1 : pre-process the negative sign in expressions
-    expr_resolve_const(m.lifted_obj_expr_mip)
-    expr_resolve_sign(m.lifted_obj_expr_mip)
-    expr_flatten(m.lifted_obj_expr_mip)
+    expr_resolve_const(m.bounding_obj_expr_mip)
+    expr_resolve_sign(m.bounding_obj_expr_mip)
+    expr_flatten(m.bounding_obj_expr_mip)
     for i in 1:m.num_constr_orig
-        expr_resolve_const(m.lifted_constr_expr_mip[i])
-        expr_resolve_sign(m.lifted_constr_expr_mip[i])
-        expr_flatten(m.lifted_constr_expr_mip[i].args[2])
+        expr_resolve_const(m.bounding_constr_expr_mip[i])
+        expr_resolve_sign(m.bounding_constr_expr_mip[i])
+        expr_flatten(m.bounding_constr_expr_mip[i].args[2])
     end
 
-    # 1 : most important
-    m.lifted_obj_expr_mip = expr_parsing(m.lifted_obj_expr_mip, m)
+    # 2 : most important
+    m.bounding_obj_expr_mip = expr_parsing(m.bounding_obj_expr_mip, m)
     for i in 1:m.num_constr_orig
-        m.lifted_constr_expr_mip[i] = expr_parsing(m.lifted_constr_expr_mip[i], m)
+        # Expression parsing and recognizing
+        m.bounding_constr_expr_mip[i] = expr_parsing(m.bounding_constr_expr_mip[i], m)
     end
 
-    # 2: extract side information
-    for i in keys(m.nonlinear_info)
+    # 3 : extract some information
+    for i in keys(m.nonlinear_terms)
         for var in i
             @assert isa(var.args[2], Int)
             if !(var.args[2] in m.all_nonlinear_vars)
@@ -73,7 +74,10 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
         end
     end
     m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
-    m.num_var_lifted_mip = length(m.nonlinear_info)
+    m.num_var_lifted_mip = length(m.nonlinear_terms)
+
+    # 4 : convert expression graph into affine functions
+    populate_bounding_mip_oc(m)
 
     return m
 end
@@ -150,11 +154,11 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
     @assert expr.head == :call
 
     function store_bilinear()
-        y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
+        y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])))
-        m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                        :id => length(keys(m.nonlinear_info)) + 1,
+        m.nonlinear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
+                                        :id => length(keys(m.nonlinear_terms)) + 1,
                                         :ref => term_key,
                                         :lifted_constr_ref => lifted_constr_ref,
                                         :nonlinear_type => :bilinear,
@@ -163,9 +167,9 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
 
     function lift_bilinear()
         if scalar == 1
-            return m.nonlinear_info[term_key][:lifted_var_ref]
+            return m.nonlinear_terms[term_key][:lifted_var_ref]
         else
-            return Expr(:call, :*, m.nonlinear_info[term_key][:lifted_var_ref], scalar)
+            return Expr(:call, :*, m.nonlinear_terms[term_key][:lifted_var_ref], scalar)
         end
     end
 
@@ -188,8 +192,8 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         if length(var_idxs) == 2
             (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
-            if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
-                (term_key in keys(m.nonlinear_info)) ? term_key = term_key : term_key = reverse(term_key)
+            if (term_key in keys(m.nonlinear_terms) || reverse(term_key) in keys(m.nonlinear_terms))
+                (term_key in keys(m.nonlinear_terms)) ? term_key = term_key : term_key = reverse(term_key)
                 return true, lift_bilinear()
             else
                 store_bilinear()
@@ -207,7 +211,7 @@ end
 function resolve_multilinear(expr, m::PODNonlinearModel)
 
     function store_multilinear()
-        y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
+        y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         constr_block = "x[$(y_idx)]=="
         for j in 1:length(var_idxs)
@@ -217,8 +221,8 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
             end
         end
         lifted_constr_ref = parse(constr_block)
-        m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                            :id => length(keys(m.nonlinear_info)) + 1,
+        m.nonlinear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
+                                            :id => length(keys(m.nonlinear_terms)) + 1,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :nonlinear_type => :multilinear,
@@ -227,9 +231,9 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
 
     function lift_multilinear()
         if scalar == 1
-            return m.nonlinear_info[term_key][:lifted_var_ref]
+            return m.nonlinear_terms[term_key][:lifted_var_ref]
         else
-            return Expr(:call, :*, m.nonlinear_info[term_key][:lifted_var_ref], scalar)
+            return Expr(:call, :*, m.nonlinear_terms[term_key][:lifted_var_ref], scalar)
         end
     end
 
@@ -251,7 +255,7 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
             (m.log_level > 99) && println("found multilinear term $expr")
             term_key = Set()
             [push!(term_key, Expr(:ref, :x, idx)) for idx in var_idxs]
-            if term_key in keys(m.nonlinear_info)
+            if term_key in keys(m.nonlinear_terms)
                 return true, lift_multilinear()
             else
                 store_multilinear()
@@ -269,11 +273,11 @@ end
 function resolve_monomial(expr, m::PODNonlinearModel)
 
     function store_monomial()
-        y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
+        y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[1])))
-        m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                            :id => length(keys(m.nonlinear_info)) + 1,
+        m.nonlinear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
+                                            :id => length(keys(m.nonlinear_terms)) + 1,
                                             :ref => term_key,
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :nonlinear_type => :monomial,
@@ -281,7 +285,7 @@ function resolve_monomial(expr, m::PODNonlinearModel)
     end
 
     function lift_monomial()
-        new_expr = m.nonlinear_info[term_key][:lifted_var_ref] #TODO: check if this will actually be replaced
+        new_expr = m.nonlinear_terms[term_key][:lifted_var_ref] #TODO: check if this will actually be replaced
         return new_expr
     end
 
@@ -305,7 +309,7 @@ function resolve_monomial(expr, m::PODNonlinearModel)
                 push!(term_key, Expr(:ref, :x, var_idxs[1]))
             end
 
-            if term_key in keys(m.nonlinear_info)
+            if term_key in keys(m.nonlinear_terms)
                 return true, lift_monomial()
             else
                 store_monomial()

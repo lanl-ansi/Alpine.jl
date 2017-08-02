@@ -1,19 +1,19 @@
 """
 	This is wrapper generating an affine data structure from a lifted linear expression
-	The lifted expressions are stored in the POD model as lifted_obj_expr_mip and lifted_constr_expr_mip
+	The lifted expressions are stored in the POD model as bounding_obj_expr_mip and bounding_constr_expr_mip
 """
-function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
+function populate_bounding_mip_oc(m::PODNonlinearModel; kwargs...)
 
 	# Populate the affine data structure for the objective
-	m.lifted_obj_aff_mip = expr_to_affine(m.lifted_obj_expr_mip)
+	m.bounding_obj_mip = expr_to_affine(m.bounding_obj_expr_mip)
 	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
-		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
-		m.log_level > 99 && println("lifted ::", m.lifted_constr_expr_mip[i])
-		m.log_level > 99 && println("coeffs ::", m.lifted_constr_aff_mip[i][:coefs])
-        m.log_level > 99 && println("vars ::", m.lifted_constr_aff_mip[i][:vars])
-        m.log_level > 99 && println("sense ::", m.lifted_constr_aff_mip[i][:sense])
-        m.log_level > 99 && println("rhs ::", m.lifted_constr_aff_mip[i][:rhs])
+		push!(m.bounding_constr_mip, expr_to_affine(m.bounding_constr_expr_mip[i]))
+		m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
+		m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+        m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
+        m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
+        m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
 		m.log_level > 99 && println("--------- =>")
 	end
 

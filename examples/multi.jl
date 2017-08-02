@@ -18,7 +18,7 @@ function pick_my_var(m::Any)
 	exclude = 3		# Give the variabel you wish to exclude from discretization set
 	# Perform a max-cover locally and exclude the target term
 	nodes = Set()
-	for pair in keys(m.nonlinear_info)
+	for pair in keys(m.nonlinear_terms)
 		# Assumption Max cover is always safe
 		for i in pair
 			@assert isa(i.args[2], Int)

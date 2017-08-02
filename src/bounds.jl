@@ -28,7 +28,7 @@ This function can potential grow to be smarter.
 """
 function detect_bound_from_aff(m::PODNonlinearModel)
 
-    for aff in m.lifted_constr_aff_mip
+    for aff in m.bounding_constr_mip
         if length(aff[:coefs]) == 1 && length(aff[:vars]) == 1
             var_idx = aff[:vars][1].args[2]
             @assert (isa(var_idx, Float64) || isa(var_idx, Int))
@@ -67,7 +67,7 @@ function detect_bound_from_aff(m::PODNonlinearModel)
     exhausted = false
     while !exhausted
         exhausted = true
-        for aff in m.lifted_constr_aff_mip
+        for aff in m.bounding_constr_mip
             for i in 1:length(aff[:vars])
                 var_idx = aff[:vars][i].args[2]
                 var_coef = aff[:coefs][i]
@@ -175,12 +175,12 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
-    for i in 1:length(m.nonlinear_info)
-        for bi in keys(m.nonlinear_info)
-            if (m.nonlinear_info[bi][:id]) == i && (m.nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial])
+    for i in 1:length(m.nonlinear_terms)
+        for bi in keys(m.nonlinear_terms)
+            if (m.nonlinear_terms[bi][:id]) == i && (m.nonlinear_terms[bi][:nonlinear_type] in [:bilinear, :monomial])
                 idx_a = bi[1].args[2]
                 idx_b = bi[2].args[2]
-                idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
+                idx_ab = m.nonlinear_terms[bi][:lifted_var_ref].args[2]
                 bound = [m.l_var_tight[idx_a], m.u_var_tight[idx_a]] * [m.l_var_tight[idx_b], m.u_var_tight[idx_b]]'
                 if minimum(bound) > m.l_var_tight[idx_ab] + m.tol
                     m.l_var_tight[idx_ab] = minimum(bound)
@@ -196,23 +196,23 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
 end
 
 """
-    resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict)
+    resolve_lifted_var_bounds(nonlinear_terms::Dict, discretization::Dict)
 
 For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
 The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
 can help speed up the subsequent solve in subsequent iterations.
 """
-function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; kwargs...)
+function resolve_lifted_var_bounds(nonlinear_terms::Dict, discretization::Dict; kwargs...)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
-    for i in 1:length(nonlinear_info)
-        for bi in keys(nonlinear_info)
-            if (nonlinear_info[bi][:id] == i) && (nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial])
+    for i in 1:length(nonlinear_terms)
+        for bi in keys(nonlinear_terms)
+            if (nonlinear_terms[bi][:id] == i) && (nonlinear_terms[bi][:nonlinear_type] in [:bilinear, :monomial])
                 idx_a = bi[1].args[2]
                 idx_b = bi[2].args[2]
-                idx_ab = nonlinear_info[bi][:lifted_var_ref].args[2]
+                idx_ab = nonlinear_terms[bi][:lifted_var_ref].args[2]
                 bound = [discretization[idx_a][1], discretization[idx_a][end]] * [discretization[idx_b][1], discretization[idx_b][end]]'
                 discretization[idx_ab] = [-Inf, Inf]
                 discretization[idx_ab][1] = minimum(bound)
@@ -236,7 +236,7 @@ function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
 
     for var in m.all_nonlinear_vars
         if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
-            deleteat!(m.var_discretization_mip, findfirst(m.var_discretization_mip, var)) # Clean nonlinear_info by deleting the info
+            deleteat!(m.var_discretization_mip, findfirst(m.var_discretization_mip, var)) # Clean nonlinear_terms by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end
     end

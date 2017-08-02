@@ -2,7 +2,7 @@ using POD, JuMP, Ipopt, Gurobi, MathProgBase
 
 function max_cover_var_picker(m::POD.PODNonlinearModel)
 	nodes = Set()
-	for pair in keys(m.nonlinear_info)
+	for pair in keys(m.nonlinear_terms)
 		for i in pair
 			@assert isa(i.args[2], Int)
 			push!(nodes, i.args[2])

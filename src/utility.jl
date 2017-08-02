@@ -297,8 +297,8 @@ end
 function convexification_exam(m::PODNonlinearModel)
 
     # Other more advanced convexification check goes here
-    for term in keys(m.nonlinear_info)
-        if !m.nonlinear_info[term][:convexified]
+    for term in keys(m.nonlinear_terms)
+        if !m.nonlinear_terms[term][:convexified]
             warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
             return
         end
@@ -326,7 +326,7 @@ function pick_vars_discretization(m::PODNonlinearModel)
     if isa(m.discretization_var_pick_algo, Function)
         (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
         eval(m.discretization_var_pick_algo)(m)
-        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_info) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
         if m.discretization_var_pick_algo == 0 || m.discretization_var_pick_algo == "max_cover"
             max_cover(m)
@@ -408,7 +408,7 @@ function min_vertex_cover(m::PODNonlinearModel)
     # Collect the information for arcs and nodes
     nodes = Set()
     arcs = Set()
-    for pair in keys(m.nonlinear_info)
+    for pair in keys(m.nonlinear_terms)
         arc = []
         if length(pair) > 2
             warn("min_vertex_cover discretizing variable selection method only support bi-linear problems, enfocing thie method may produce mistakes...")
@@ -450,7 +450,7 @@ A built-in method for selecting variables for discretization. It selects all var
 function max_cover(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
-    for pair in keys(m.nonlinear_info)
+    for pair in keys(m.nonlinear_terms)
         if length(pair) > 2
             warn("max-cover discretizing variable selection method only support bi-linear problems. enforcing may produce mistakes...")
         end
