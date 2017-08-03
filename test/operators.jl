@@ -93,7 +93,6 @@
         @test m.internalModel.nonlinear_terms[[:(x[7]), :(x[16])]][:id] == 13
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[8])]][:id] == 14
         @test m.internalModel.nonlinear_terms[[:(x[18]), :(x[3])]][:id] == 15
-
     end
 
     @testset "Validation Test on expression parsing: part3" begin
@@ -157,7 +156,6 @@
         @test m.internalModel.nonlinear_terms[[:(x[8]), :(x[12])]][:id] == 17
         @test m.internalModel.nonlinear_terms[[:(x[21]), :(x[16])]][:id] == 18
         @test m.internalModel.nonlinear_terms[[:(x[22]), :(x[19])]][:id] == 19
-
     end
 
     @testset "Validation Test on expression parsing: part7" begin
@@ -207,7 +205,6 @@
         @test m.internalModel.nonlinear_terms[Set(Any[:(x[1]),:(x[8]),:(x[10]),:(x[4])])][:id] == 9 #13
         @test m.internalModel.nonlinear_terms[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[11])])][:id] == 10 #14
         @test m.internalModel.nonlinear_terms[Set(Any[:(x[6]),:(x[8]),:(x[10]),:(x[11])])][:id] == 11 #15
-
     end
 
     @testset "Validation Test on expression parsing: part8" begin
@@ -258,7 +255,42 @@
         @test haskey(m.internalModel.nonlinear_terms, Set(Any[:(x[18]),:(x[13]),:(x[20])])) #22
         @test haskey(m.internalModel.nonlinear_terms, Set(Any[:(x[7]),:(x[10]),:(x[13])])) #23
         @test haskey(m.internalModel.nonlinear_terms, [:(x[23]), :(x[20])]) #24
+    end
 
+    @testset "Validation Test on constraint parsing: part1" begin
+        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+                           mip_solver=CbcSolver(OutputFlag=0),
+                           log_level=0))
+
+        @variable(m, x[1:5])
+        
+        @constraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                             # true
+        @constraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                         # true
+        @constraint(m, 3(x[1]x[1]) + 4*x[2]*x[2] <= -5)                             # false
+        @constraint(m, 3(x[1]x[1]) + 4*x[2]^2 <= 10)                                # true
+        @constraint(m, 3x[1]^2 + 4x[2]^2 + 6x[3]^2 <= 10)                           # true
+
+        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                           # true
+        @NLconstraint(m, (3*x[1]*x[1] + 4*x[2]*x[2]) <= 25)                         # true
+        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] - 25 <= 0)                       # true
+        @NLconstraint(m, -3*x[1]*x[1] -4*x[2]*x[2] >= -25)                          # true
+        @NLconstraint(m, 3*x[1]*x[1] + 5x[2]*x[2] <= 25)                            # true
+
+        @NLconstraint(m, 4*x[1]^2 + 5x[2]^2 <= 25)                                  # Pass
+        @NLconstraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                       # false (unsupported)
+        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[1] <= 25)                           # false
+        @NLconstraint(m, 3*x[1]*x[1] + 16*x[2]^2 <= 40)                             # true
+        @NLconstraint(m, 3*x[1]^2 + 16*x[2]^2 + 17 <= 16)                           # false
+
+        @NLconstraint(m, 3*x[1]^3 + 16*x[2]^2 <= 20 - 20)                           # false
+        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] + 5*x[3]*x[3] + 6x[4]x[4] <= 15) # true
+        @NLconstraint(m, 3x[1]x[1] + 4x[2]x[2] + 5x[3]^2 <= -15)                    # false
+        @NLconstraint(m, 3x[1]^2 + 4x[2]^2 >= 15)                                   # false
+        @NLconstraint(m, - 3x[1]^2 - 4x[3]^2 >= -15)                                # ?
+
+        JuMP.build(m)
+
+        # Write tests here
     end
 
 end

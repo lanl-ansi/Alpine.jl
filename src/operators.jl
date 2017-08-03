@@ -99,7 +99,7 @@ function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int; kwargs...)
     linear && (m.structural_constr[idx] = :linear)
 
     # Recognize built-in special structural patterns
-    convex, expr = expr_isconvex_constr(expr)
+    convex, expr = resolve_convex_constr(expr)
     convex && (m.structural_constr[idx] = :convex)
 
     # The rest of the constraints will be recognized as :nonlinear
@@ -180,17 +180,17 @@ function expr_resolve_term_pattern(expr, m::PODNonlinearModel; kwargs...)
     end
 
     # Recognize all built-in structural patterns
-    skip, expr = resolve_bilinear(expr, m)
+    skip, expr = resolve_bilinar_term(expr, m)
     skip && return expr
 
-    skip, expr = resolve_monomial(expr, m)
+    skip, expr = resolve_monomial_term(expr, m)
     skip && return expr
 
-    skip, expr = resolve_multilinear(expr, m)
+    skip, expr = resolve_multilinear_term(expr, m)
     skip && return expr
 
-    # resolve_sin(expr,m) && return expr
-    # resolve_cos(expr,m) && return expr
+    # resolve_sin_term(expr,m) && return expr
+    # resolve_cos_term(expr,m) && return expr
 
     return expr # if no structure is detected, simply return the original tree
 end
@@ -198,11 +198,11 @@ end
 """
     TODO: docstring
 """
-function resolve_bilinear(expr, m::PODNonlinearModel)
+function resolve_bilinar_term(expr, m::PODNonlinearModel)
 
     @assert expr.head == :call
 
-    function store_bilinear()
+    function store_bilinear_term()
         y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])))
@@ -214,7 +214,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
                                         :convexified => false)
     end
 
-    function lift_bilinear()
+    function lift_bilinear_term()
         if scalar == 1
             return m.nonlinear_terms[term_key][:lifted_var_ref]
         else
@@ -243,10 +243,10 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if (term_key in keys(m.nonlinear_terms) || reverse(term_key) in keys(m.nonlinear_terms))
                 (term_key in keys(m.nonlinear_terms)) ? term_key = term_key : term_key = reverse(term_key)
-                return true, lift_bilinear()
+                return true, lift_bilinear_term()
             else
-                store_bilinear()
-                return true, lift_bilinear()
+                store_bilinear_term()
+                return true, lift_bilinear_term()
             end
         end
     end
@@ -257,9 +257,9 @@ end
 """
     TODO: docstring
 """
-function resolve_multilinear(expr, m::PODNonlinearModel)
+function resolve_multilinear_term(expr, m::PODNonlinearModel)
 
-    function store_multilinear()
+    function store_multilinear_term()
         y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         constr_block = "x[$(y_idx)]=="
@@ -278,7 +278,7 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
                                             :convexified => false)
     end
 
-    function lift_multilinear()
+    function lift_multilinear_term()
         if scalar == 1
             return m.nonlinear_terms[term_key][:lifted_var_ref]
         else
@@ -305,10 +305,10 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
             term_key = Set()
             [push!(term_key, Expr(:ref, :x, idx)) for idx in var_idxs]
             if term_key in keys(m.nonlinear_terms)
-                return true, lift_multilinear()
+                return true, lift_multilinear_term()
             else
-                store_multilinear()
-                return true, lift_multilinear()
+                store_multilinear_term()
+                return true, lift_multilinear_term()
             end
         end
     end
@@ -319,9 +319,9 @@ end
 """
     TODO: docstring
 """
-function resolve_monomial(expr, m::PODNonlinearModel)
+function resolve_monomial_term(expr, m::PODNonlinearModel)
 
-    function store_monomial()
+    function store_monomial_term()
         y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[1])))
@@ -333,7 +333,7 @@ function resolve_monomial(expr, m::PODNonlinearModel)
                                             :convexified => false)
     end
 
-    function lift_monomial()
+    function lift_monomial_term()
         new_expr = m.nonlinear_terms[term_key][:lifted_var_ref] #TODO: check if this will actually be replaced
         return new_expr
     end
@@ -359,10 +359,10 @@ function resolve_monomial(expr, m::PODNonlinearModel)
             end
 
             if term_key in keys(m.nonlinear_terms)
-                return true, lift_monomial()
+                return true, lift_monomial_term()
             else
-                store_monomial()
-                return true, lift_monomial()
+                store_monomial_term()
+                return true, lift_monomial_term()
             end
         end
     end
@@ -373,7 +373,7 @@ end
 """
     TODO: doc
 """
-function resolve_sine(expr, m::PODNonlinearModel)
+function resolve_sin_terme(expr, m::PODNonlinearModel)
 
     function store_sin()
     end
@@ -402,7 +402,7 @@ end
 """
     TODO: doc
 """
-function resolve_cos(expr, m::PODNonlinearModel)
+function resolve_cos_term(expr, m::PODNonlinearModel)
 
     function store_sin()
     end

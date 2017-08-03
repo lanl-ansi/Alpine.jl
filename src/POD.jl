@@ -11,6 +11,7 @@ include("solver.jl")
 # Engine for expression handling
 include("nlexpr.jl")
 include("operators.jl")
+include("parseconstr.jl")
 
 # Main Algorithmic Process
 include("presolve.jl")
