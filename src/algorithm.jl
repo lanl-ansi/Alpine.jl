@@ -18,11 +18,12 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # convexification method tuning
     bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
-    bilinear_convexhull::Bool                               # disbale convex hull representation mtehod used for convexify nonlinear terms
+    bilinear_convexhull::Bool                                   # disbale convex hull representation mtehod used for convexify nonlinear terms
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
-    expr_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize expressions
+    term_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize nonlinear terms in constraint expression
+    constr_patterns::Array{Function}                            # Array of functions that user wish to use to parse/recognize structural constraint from expression
 
     # parameters used in partitioning algorithm
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
@@ -94,6 +95,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted terms
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
+    structural_constr::Vector{Symbol}                           # A vector indicate whether a constraint is with sepcial structure
     bounding_obj_expr_mip::Expr                                 # Lifted objective expression; if linear, same as obj_expr_orig
     bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
@@ -126,7 +128,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 bilinear_mccormick,
                                 bilinear_convexhull,
                                 method_convexification,
-                                expr_patterns,
+                                term_patterns,
+                                constr_patterns,
                                 discretization_var_pick_algo,
                                 discretization_ratio,
                                 discretization_add_partition_method,
@@ -154,7 +157,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.bilinear_convexhull = bilinear_convexhull
 
         m.method_convexification = method_convexification
-        m.expr_patterns = expr_patterns
+        m.term_patterns = term_patterns
+        m.constr_patterns = constr_patterns
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
         m.discretization_ratio = discretization_ratio
@@ -197,6 +201,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_var_lifted_mip = 0
         m.num_var_discretization_mip = 0
         m.num_constr_structural = 0
+        m.structural_constr = []
 
         m.user_parameters = Dict()
 
@@ -251,6 +256,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
             m.constr_type_orig[i] = :(<=)
         end
     end
+    m.structural_constr = [:none for i in 1:m.num_constr_orig]
 
     for i = 1:m.num_constr_orig
         if MathProgBase.isconstrlinear(m.d_orig, i)
@@ -493,11 +499,6 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
             m.status[:bound] = :Detected
         end
     elseif status in status_reroute
-        # print_iis_gurobi(m.model_mip)  # Used for debugging
-        #= Case when this happens::
-            1) :UserLimits ? but will this return :UserLimits?
-            2) :Numerical Difficult
-        =#
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = status
         error("[PROBLEM INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")

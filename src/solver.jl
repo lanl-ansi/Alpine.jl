@@ -22,7 +22,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     bilinear_convexhull::Bool
 
     method_convexification::Array{Function}
-    expr_patterns::Array{Function}
+    term_patterns::Array{Function}
+    constr_patterns::Array{Function}
 
     discretization_var_pick_algo::Any
     discretization_ratio::Any
@@ -58,7 +59,8 @@ function PODSolver(;
     bilinear_convexhull = false,
 
     method_convexification = Array{Function}(0),
-    expr_patterns = Array{Function}(0),
+    term_patterns = Array{Function}(0),
+    constr_patterns = Array{Function}(0),
 
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
@@ -91,7 +93,8 @@ function PODSolver(;
         bilinear_mccormick,
         bilinear_convexhull,
         method_convexification,
-        expr_patterns,
+        term_patterns,
+        constr_patterns,
         discretization_var_pick_algo,
         discretization_ratio,
         discretization_add_partition_method,
@@ -124,7 +127,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     bilinear_convexhull = s.bilinear_convexhull
 
     method_convexification = s.method_convexification
-    expr_patterns = s.expr_patterns
+    term_patterns = s.term_patterns
+    constr_patterns = s.constr_patterns
 
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
@@ -151,7 +155,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             bilinear_mccormick,
                             bilinear_convexhull,
                             method_convexification,
-                            expr_patterns,
+                            term_patterns,
+                            constr_patterns,
                             discretization_var_pick_algo,
                             discretization_ratio,
                             discretization_add_partition_method,

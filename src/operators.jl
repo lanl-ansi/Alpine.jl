@@ -58,10 +58,10 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
     end
 
     # 2 : most important
-    m.bounding_obj_expr_mip = expr_parsing(m.bounding_obj_expr_mip, m)
+    m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
     for i in 1:m.num_constr_orig
         # Expression parsing and recognizing
-        m.bounding_constr_expr_mip[i] = expr_parsing(m.bounding_constr_expr_mip[i], m)
+        m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], m)
     end
 
     # 3 : extract some information
@@ -83,9 +83,58 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
 end
 
 """
-    expr_parsing(expr, m::PODNonlinearModel, level=0)
+    expr_constr_parsing(expr, m::PODNonlinearModel)
+
+Recognize structural constraints.
 """
-function expr_parsing(expr, m::PODNonlinearModel, level=0;options...)
+function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int; kwargs...)
+
+    # First process user-defined structures in-cases of over-ride
+    for i in 1:length(m.constr_patterns)
+        skip, expr = eval(m.constr_patterns[i])(expr, m)
+        skip && return expr
+    end
+
+    # Recognize linear constriant
+    linear && (m.structural_constr[idx] = :linear)
+
+    # Recognize built-in special structural patterns
+    convex, expr = expr_isconvex_constr(expr)
+    convex && (m.structural_constr[idx] = :convex)
+
+    # The rest of the constraints will be recognized as :nonlinear
+    m.structural_constr[idx] = :nonlinear
+
+    return expr
+end
+
+"""
+	Check if a sub-tree(:call) is totally composed of constant values
+"""
+function expr_isconst(expr)
+
+	(isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return true
+
+	const_tree = true
+	for i in 1:length(expr.args)
+		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
+			continue
+		elseif expr.args[i].head == :call
+			const_tree *= expr_isconst(expr.args[i])
+		elseif expr.args[i].head == :ref
+			return false
+		end
+	end
+
+	return const_tree
+end
+
+"""
+    expr_term_parsing(expr, m::PODNonlinearModel, level=0)
+
+Recognize and process nonlinear terms in an expression
+"""
+function expr_term_parsing(expr, m::PODNonlinearModel, level=0;options...)
 
     cnt = 0
     for node in expr.args
@@ -93,7 +142,7 @@ function expr_parsing(expr, m::PODNonlinearModel, level=0;options...)
         if isa(node, Float64) || isa(node, Int) || isa(node, Symbol)
             continue
         elseif node.head == :call
-            expr.args[cnt] = expr_parsing(node, m, level+1)
+            expr.args[cnt] = expr_term_parsing(node, m, level+1)
         elseif node.head == :ref
             continue
         else
@@ -101,11 +150,11 @@ function expr_parsing(expr, m::PODNonlinearModel, level=0;options...)
         end
     end
 
-    return expr_resolve_pattern(expr, m)
+    return expr_resolve_term_pattern(expr, m)
 end
 
 """
-    expr_resolve_pattern(expr, m::PODNonlinearModel)
+    expr_resolve_term_pattern(expr, m::PODNonlinearModel)
 
 This function recognizes, stores, and replaces a sub-tree `expr` with available
 user-defined/built-in structures patterns. The procedure is creates the required number
@@ -122,11 +171,11 @@ Available structures patterns are:
 
 Specific structure pattern information will be described formally.
 """
-function expr_resolve_pattern(expr, m::PODNonlinearModel; kwargs...)
+function expr_resolve_term_pattern(expr, m::PODNonlinearModel; kwargs...)
 
     # First process user-defined structures in-cases of over-ride
-    for i in 1:length(m.expr_patterns)
-        skip, expr = eval(m.expr_patterns[i])(expr, m)
+    for i in 1:length(m.term_patterns)
+        skip, expr = eval(m.term_patterns[i])(expr, m)
         skip && return expr
     end
 

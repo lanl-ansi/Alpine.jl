@@ -400,27 +400,6 @@ function expr_resolve_const(expr)
 end
 
 """
-	Check if a sub-tree(:call) is totally composed of constant values
-"""
-function expr_isconst(expr)
-
-	(isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return true
-
-	const_tree = true
-	for i in 1:length(expr.args)
-		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
-			continue
-		elseif expr.args[i].head == :call
-			const_tree *= expr_isconst(expr.args[i])
-		elseif expr.args[i].head == :ref
-			return false
-		end
-	end
-
-	return const_tree
-end
-
-"""
 	Check if a division's denominator is pure numerical and replace it with a multiply
 """
 function expr_resolve_divdenominator(args)
