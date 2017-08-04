@@ -25,3 +25,29 @@ function circle(;verbose=false, solver=nothing)
 
 	return m
 end
+
+function circleN(;verbose=false, solver=nothing, convhull=false, N=2)
+
+	if solver == nothing
+		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+								   mip_solver=GurobiSolver(OutputFlag=1),
+								   monomial_convexhull=convhull,
+								   maxiter=1,
+								   discretization_add_partition_method="uniform",
+								   discretization_uniform_rate=30,
+								   presolve_bound_tightening=false,
+								   log_level=1))
+	else
+		m = Model(solver=solver)
+	end
+
+    @variable(m, 0<=x[1:N]<=N)
+    @NLconstraint(m, sum(x[i]^2 for i in 1:N) >= N)
+    @objective(m, Min, sum(x))
+
+	if verbose
+		print(m)
+	end
+
+	return m
+end

@@ -1,4 +1,4 @@
-using JuMP, MathProgBase, CPLEX, Ipopt, POD
+using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
 println("--------------------------------------------")
 println("Multi4 - exprmode 1 -> X1 * X2 * X3 * X4")
@@ -19,7 +19,6 @@ function pick_my_var(m::Any)
 	# Perform a max-cover locally and exclude the target term
 	nodes = Set()
 	for pair in keys(m.nonlinear_info)
-		# Assumption Max cover is always safe
 		for i in pair
 			@assert isa(i.args[2], Int)
 			push!(nodes, i.args[2])
@@ -37,7 +36,7 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+								   mip_solver=GurobiSolver(OutputFlag=0),
 								   rel_gap=0.0001,
 								   bilinear_convexhull=true,
 								   convhull_sweep_limit=1,
@@ -92,15 +91,15 @@ println("Multi3 - exprmode 2 -> (X1*X2) * X3")
 println("Multi3 - exprmode 3 -> X1 * (X2*X3)")
 println("--------------------------------------------")
 
-function multi3(;verbose=false,solver=nothing, exprmode=1)
+function multi3(;verbose=false, solver=nothing, exprmode=1, convhull=false)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
-								   rel_gap=0.001,
-								   bilinear_convexhull=false,
-								#    discretization_add_partition_method="uniform",
-								#    discretization_uniform_rate=3,
+								   mip_solver=GurobiSolver(OutputFlag=1, Presolve=0),
+								   maxiter=1,
+								   bilinear_convexhull=convhull,
+								   discretization_add_partition_method="uniform",
+								   discretization_uniform_rate=5,
 								   presolve_bound_tightening=false,
 								   log_level=1))
 	else
@@ -109,7 +108,7 @@ function multi3(;verbose=false,solver=nothing, exprmode=1)
 
 	srand(1)
 	ub = rand()
-    @variable(m, 0.1<=x[1:3]<=ub*100)
+    @variable(m, 0.1<=x[1:3]<=ub*1000)
 	if exprmode == 1
 		@NLobjective(m, Max, x[1]*x[2]*x[3])
 	elseif exprmode == 2
@@ -134,7 +133,7 @@ function multi2(;verbose=false,solver=nothing)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=true,
 								   discretization_add_partition_method="uniform",
 								   presolve_bound_tightening=false,
