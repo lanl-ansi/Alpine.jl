@@ -16,7 +16,7 @@ m = Model()
 @NLconstraint(m, 3*x[1]*x[1] + 5x[2]*x[2] <= 25)                            # true
 
 @NLconstraint(m, 4*x[1]^2 + 5x[2]^2 <= 25)                                  # Pass
-@NLconstraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                       # false (unsupported)
+@NLconstraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                       # false (unsupported when with @NLconstraint)
 @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[1] <= 25)                           # false
 @NLconstraint(m, 3*x[1]*x[1] + 16*x[2]^2 <= 40)                             # true
 @NLconstraint(m, 3*x[1]^2 + 16*x[2]^2 + 17 <= 16)                           # false
@@ -32,6 +32,8 @@ m = Model()
 @NLconstraint(m, 3x[1]^4 + 4x[2]^2*x[2]*x[2] <= 200)                        # true
 @NLconstraint(m, 3x[1]^4 + 4x[2]^3 <= 200)                                  # false
 @NLconstraint(m, 3x[1]^8 + 16*25*x[2]^8 - 30x[3]^8 <= 50)                   # false
+
+@NLconstraint(m, )
 
 test_range = 25
 
