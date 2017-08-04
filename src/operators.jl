@@ -58,10 +58,17 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
     end
 
     # 2 : most important
-    m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
+    is_strucural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
+    if !is_strucural
+        m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
+        m.structural_obj = :linear
+    end
     for i in 1:m.num_constr_orig
-        # Expression parsing and recognizing
-        m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], m)
+        is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
+        if !is_strucural
+            m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], m)
+            m.structural_constr[i] = :linear
+        end
     end
 
     # 3 : extract some information
@@ -82,31 +89,7 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
     return m
 end
 
-"""
-    expr_constr_parsing(expr, m::PODNonlinearModel)
 
-Recognize structural constraints.
-"""
-function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int; kwargs...)
-
-    # First process user-defined structures in-cases of over-ride
-    for i in 1:length(m.constr_patterns)
-        skip, expr = eval(m.constr_patterns[i])(expr, m)
-        skip && return expr
-    end
-
-    # Recognize linear constriant
-    linear && (m.structural_constr[idx] = :linear)
-
-    # Recognize built-in special structural patterns
-    convex, expr = resolve_convex_constr(expr)
-    convex && (m.structural_constr[idx] = :convex)
-
-    # The rest of the constraints will be recognized as :nonlinear
-    m.structural_constr[idx] = :nonlinear
-
-    return expr
-end
 
 """
 	Check if a sub-tree(:call) is totally composed of constant values

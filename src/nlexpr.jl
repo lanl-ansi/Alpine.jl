@@ -5,16 +5,23 @@
 function populate_bounding_mip_oc(m::PODNonlinearModel; kwargs...)
 
 	# Populate the affine data structure for the objective
-	m.bounding_obj_mip = expr_to_affine(m.bounding_obj_expr_mip)
+	if m.structural_obj == :linear
+		m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
+		m.structural_obj = :affine
+	end
+
 	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
-		push!(m.bounding_constr_mip, expr_to_affine(m.bounding_constr_expr_mip[i]))
-		m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
-		m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-        m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
-        m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
-        m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-		m.log_level > 99 && println("--------- =>")
+		if m.structural_constr[i] == :linear
+			push!(m.bounding_constr_mip, expr_linear_to_affine(m.bounding_constr_expr_mip[i]))
+			m.structural_constr[i] = :affine
+			m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
+			m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+	        m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
+	        m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
+	        m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+			m.log_level > 99 && println("--------- =>")
+		end
 	end
 
 	return
@@ -22,9 +29,9 @@ end
 
 """
 	This function takes a constraint/objective expression and converts it into a affine expression data structure
-	Use the function to traverse linear expressions traverse_expr_to_affine()
+	Use the function to traverse linear expressions traverse_expr_linear_to_affine()
 """
-function expr_to_affine(expr)
+function expr_linear_to_affine(expr)
 
 	# The input should follow :(<=, LHS, RHS)
 	affdict = Dict()
@@ -32,7 +39,7 @@ function expr_to_affine(expr)
 		@assert isa(expr.args[3], Float64) || isa(expr.args[3], Int)
 		@assert isa(expr.args[2], Expr)
 		# non are buffer spaces, not used anywhere
-		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr.args[2])
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_linear_to_affine(expr.args[2])
 		rhs = -rhs + expr.args[3]
 		affdict[:sense] = expr.args[1]
 	elseif expr.head == :ref  # For single variable objective expression
@@ -41,7 +48,7 @@ function expr_to_affine(expr)
 		rhs = 0
 		affdict[:sense] = nothing
 	else # For an objective expression
-		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr)
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_linear_to_affine(expr)
 		affdict[:sense] = nothing
 	end
 
@@ -56,12 +63,12 @@ end
 
 """
 
-	traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
+	traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
 
 This function traverse a left hand side tree to collect affine terms.
 Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled properly
 """
-function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
+function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
 
 	# @show expr, coef, bufferVal
 
@@ -108,7 +115,7 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	end
 
 	for i in start_pos:length(expr.args)
-		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
+		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_linear_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
 			if bufferVal != 0.0 && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
 				push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)

@@ -28,8 +28,12 @@ m = Model()
 @NLconstraint(m, - 3x[1]^2 - 4x[3]^2 >= -15)                                # true
 
 @NLconstraint(m, 3x[1]^4 + 4x[2]^4 <= 200)                                  # true
+@NLconstraint(m, 3x[1]^4 + 4x[2]x[2]x[2]x[2] - 200 <= 0)                    # true
+@NLconstraint(m, 3x[1]^4 + 4x[2]^2*x[2]*x[2] <= 200)                        # true
+@NLconstraint(m, 3x[1]^4 + 4x[2]^3 <= 200)                                  # false
+@NLconstraint(m, 3x[1]^8 + 16*25*x[2]^8 - 30x[3]^8 <= 50)                   # false
 
-test_range = 21
+test_range = 25
 
 d = JuMP.NLPEvaluator(m)
 MathProgBase.initialize(d, [:ExprGraph])
@@ -48,7 +52,7 @@ test_answer = [true, true, false, true, true,
                true, true, true, true, true,
                true, false, false, true, false,
                false, true, false, false, true,
-               true]
+               true, true, true, false, false]
 
 println("Test | Convex? | Expression")
 for ex_i in 1:test_range

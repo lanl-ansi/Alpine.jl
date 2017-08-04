@@ -95,6 +95,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted terms
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
+    structural_obj::Symbol                                      # A symbolic indicator of the expression type of objective function
     structural_constr::Vector{Symbol}                           # A vector indicate whether a constraint is with sepcial structure
     bounding_obj_expr_mip::Expr                                 # Lifted objective expression; if linear, same as obj_expr_orig
     bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
@@ -256,21 +257,26 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
             m.constr_type_orig[i] = :(<=)
         end
     end
+
+    m.structural_obj = :none
     m.structural_constr = [:none for i in 1:m.num_constr_orig]
 
     for i = 1:m.num_constr_orig
         if MathProgBase.isconstrlinear(m.d_orig, i)
             m.num_lconstr_orig += 1
+            m.structural_constr[i] = :linear
+        else
+            m.structural_constr[i] = :nonlinear
         end
     end
     m.num_nlconstr_orig = m.num_constr_orig - m.num_lconstr_orig
 
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
+    m.is_obj_linear_orig ? (m.structural_obj = :lienar) : (m.structural_obj = :nonlinear)
 
     # populate data to create the bounding model
     expr_batch_process(m)
-
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
     detect_bound_from_aff(m)        # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds

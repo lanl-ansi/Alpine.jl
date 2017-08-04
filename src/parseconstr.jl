@@ -1,3 +1,26 @@
+"""
+    expr_constr_parsing(expr, m::PODNonlinearModel)
+
+Recognize structural constraints.
+"""
+function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int; kwargs...)
+
+    isconvex = false
+
+    # First process user-defined structures in-cases of over-ride
+    for i in 1:length(m.constr_patterns)
+        is_strucural = eval(m.constr_patterns[i])(expr, m=m, idx=i)
+        return
+    end
+
+    # Recognize built-in special structural pattern
+    is_strucural = resolve_convex_constr(expr, m=m, idx=idx)
+
+    # More patterns goes here
+
+    return is_strucural
+end
+
 function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
 
     println("inner recursive input ", expr)
@@ -40,17 +63,21 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
     return scalar, var_idxs
 end
 
-function resolve_convex_constr(expr)
-
-    function mark_convex_constr()
-    end
+function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
 
     scalar_bin = []
     idxs_bin = []
     rhs = 0.0
 
-    !(expr.args[1] in [:(<=), :(>=)]) && return false   # First check: must take the entire constraint in
-    subs, rhs = expr_strip_const(expr.args[2])          # Focus on the regularized subtree (stripped with constants)
+    if expr.args[1] in [:(<=), :(>=)] && idx > 0
+        expr_orig = :constr
+        subs, rhs = expr_strip_const(expr.args[2])      # Focus on the regularized subtree (stripped with constants)
+    elseif expr.args[1] == :(==)
+        return false
+    elseif idx == 0
+        expr_orig = :obj
+        subs, rhs = expr_strip_const(expr)              # Focus on the regularized subtree (stripped with constants)
+    end
 
     @show "these are subs $subs with rhs=$rhs"
     for sub in subs
@@ -95,6 +122,29 @@ function resolve_convex_constr(expr)
         (expr.args[1] == :(>=)) && !(scalar_sign <= 0.0 && rhs <= 0.0) && return false
         (expr.args[1] == :(<=)) && (scalar_sign <= 0.0) && return false
         (expr.args[1] == :(>=)) && (scalar_sign >= 0.0) && return false
+    end
+
+    # For anything reaches this point, the return is true
+    if m != nothing
+        m.nonlinear_constrs[idx] = Dict(:expr_idx => idx,
+                                        :nonlinear_type => :convex,
+                                        :expr_orig => expr_orig,
+                                        :expr_ref => expr,
+                                        :convexified => false)
+        m.bounding_constr_expr_mip[idx] = expr
+        if expr_orig == :obj
+            m.structural_obj = :convex
+            m.bounding_obj_mip = Dict(:scalars => scalar_bin,
+                                      :vars => var_idxs,
+                                      :rhs => -rhs)
+        elseif expr_orig == :constr
+            m.structural_constr[idx] = :convex
+            m.bounding_constr_mip[idx] = Dict(:sense => (expr_orig == :obj) ? nothing
+                                              :scalars => scalar_bin,
+                                              :var_idx => var_idxs,
+                                              :rhs => rhs,
+                                              :cnt => length(var_idxs))
+        end
     end
 
     return true

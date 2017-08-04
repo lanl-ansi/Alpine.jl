@@ -109,22 +109,43 @@ end
 function amp_post_lifted_constraints(m::PODNonlinearModel)
 
     for i in 1:m.num_constr_orig
-        if m.constr_type_orig[i] == :(>=)
-            @constraint(m.model_mip,
-                sum(m.bounding_constr_mip[i][:coefs][j]*Variable(m.model_mip, m.bounding_constr_mip[i][:vars][j].args[2]) for j in 1:m.bounding_constr_mip[i][:cnt]) >= m.bounding_constr_mip[i][:rhs])
-        elseif m.constr_type_orig[i] == :(<=)
-            @constraint(m.model_mip,
-                sum(m.bounding_constr_mip[i][:coefs][j]*Variable(m.model_mip, m.bounding_constr_mip[i][:vars][j].args[2]) for j in 1:m.bounding_constr_mip[i][:cnt]) <= m.bounding_constr_mip[i][:rhs])
-        elseif m.constr_type_orig[i] == :(==)
-            @constraint(m.model_mip,
-                sum(m.bounding_constr_mip[i][:coefs][j]*Variable(m.model_mip, m.bounding_constr_mip[i][:vars][j].args[2]) for j in 1:m.bounding_constr_mip[i][:cnt]) == m.bounding_constr_mip[i][:rhs])
+        if m.structural_constr[i] == :affine
+            post_affine(m.model_mip, m.bounding_constr_mip[i])
+        elseif m.structural_constr[i] == :convex
+            error("Posting convex constraint :: Not implemented yet")
+        else
+            error("Unknown structural_constr type $(m.structural_constr[i])")
         end
     end
 
     return
 end
 
+function amp_post_affine_constraints(model_mip::JuMP.Model, affine::Dict)
+
+    if affine[:sense] == :(>=)
+        @constraint(model_mip,
+            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) >= affine[:rhs])
+    elseif affine[:sense] == :(<=)
+        @constraint(model_mip,
+            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) <= affine[:rhs])
+    elseif affine[:sense] == :(==)
+        @constraint(model_mip,
+            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) == affine[:rhs])
+    end
+
+    return
+end
+
 function amp_post_lifted_objective(m::PODNonlinearModel)
-    @objective(m.model_mip, m.sense_orig, sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
+
+    if m.structural_obj == :affine
+        @objective(m.model_mip, m.sense_orig, sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
+    elseif m.structural_obj == :convex
+        error("Posting convex objective :: Not implemented yet")
+    else
+        error("Unknown structural obj type $(m.structural_obj)")
+    end
+
     return
 end
