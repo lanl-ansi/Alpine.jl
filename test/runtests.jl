@@ -23,6 +23,7 @@ include("../examples/multi.jl")
 
 # Special Operator
 include("../examples/div.jl")
+include("../examples/circle.jl")
 
 # Performe Tests
 include("operators.jl")

@@ -28,6 +28,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_var_pick_algo::Any
     discretization_ratio::Any
     discretization_add_partition_method::Any
+    discretization_width_tol::Any
 
     presolve_track_time::Bool
     presolve_bound_tightening::Bool
@@ -65,6 +66,7 @@ function PODSolver(;
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
     discretization_add_partition_method = nothing, # Not ready for implementation
+    discretization_width_tol = 1e-4,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
@@ -98,6 +100,7 @@ function PODSolver(;
         discretization_var_pick_algo,
         discretization_ratio,
         discretization_add_partition_method,
+        discretization_width_tol,
         presolve_track_time,
         presolve_bound_tightening,
         presolve_maxiter,
@@ -137,6 +140,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_var_pick_algo = s.discretization_var_pick_algo
     discretization_ratio = s.discretization_ratio
     discretization_add_partition_method = s.discretization_add_partition_method
+    discretization_width_tol = s.discretization_width_tol
 
     presolve_track_time = s.presolve_track_time
     presolve_bound_tightening = s.presolve_bound_tightening
@@ -160,6 +164,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_var_pick_algo,
                             discretization_ratio,
                             discretization_add_partition_method,
+                            discretization_width_tol,
                             presolve_track_time,
                             presolve_bound_tightening,
                             presolve_maxiter,

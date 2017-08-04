@@ -140,7 +140,7 @@ end
 function amp_post_lifted_objective(m::PODNonlinearModel)
 
     if m.structural_obj == :affine
-        @objective(m.model_mip, m.sense_orig, sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
+        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
     elseif m.structural_obj == :convex
         error("Posting convex objective :: Not implemented yet")
     else
