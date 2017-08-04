@@ -192,7 +192,7 @@ function add_discretization(m::PODNonlinearModel; kwargs...)
                     #             pos = j
                     #         end
                     #     end
-                    #     rdius = distance / m.discretization_ratio
+                    #     radius = distance / m.discretization_ratio
                     #     lb_new = max(point - radius, lb_local)
                     #     ub_new = min(point + radius, ub_local)
                     #     if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
