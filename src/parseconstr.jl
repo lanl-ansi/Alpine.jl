@@ -1,20 +1,6 @@
-# This can be a cleaner version of resolve
-function expr_resolve_simple_tree(expr)
-    (isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return expr
-    (expr.head == :ref) && return expr
-
-    if ((expr.args[1] == :-) && (length(expr.args) == 2))
-        (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && return -expr.args[2]
-        if (expr.args[2].head in [:ref, :call])
-            return Expr(:call, :*, -1, expr.args[2])
-        end
-    end
-    return expr
-end
-
 function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
-    @show "inner input ", expr
 
+    println("inner recursive input ", expr)
     !(expr.args[1] in [:*,:^]) && return nothing, nothing         # Limited Area
 
     if expr.args[1] == :*
@@ -50,7 +36,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
 
     !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing
 
-    @show "inner", scalar, var_idxs
+    println("inner recursive", scalar, var_idxs)
     return scalar, var_idxs
 end
 
@@ -63,29 +49,27 @@ function resolve_convex_constr(expr)
     idxs_bin = []
     rhs = 0.0
 
-    !(expr.args[1] in [:(<=), :(>=)]) && return false              # First check
+    !(expr.args[1] in [:(<=), :(>=)]) && return false   # First check: must take the entire constraint in
+    subs, rhs = expr_strip_const(expr.args[2])          # Focus on the regularized subtree (stripped with constants)
 
-    # ===================================== #
-    subs, rhs = expr_strip_const(expr.args[2])   # Focus on the regularized subtree
-    # ===================================== #
-
-    @show "show ready subs $subs with rhs=$rhs"
+    @show "these are subs $subs with rhs=$rhs"
     for sub in subs
         (isa(sub, Float64) || isa(sub, Int) || isa(sub, Symbol)) && return false
+        !(sub.args[1] in [:+,:-,:*]) && return false
         (sub.head == :ref) && return false
-        (sub.head == :call) && (length(sub.args) < 3) && return false # Second check
+        (sub.head == :call) && (length(sub.args) < 3) && return false
         if sub.args[1] in [:-, :+]
             for i in 2:length(sub.args)
-                @show "OUTER $i", sub.args[i]
                 if isa(sub.args[i], Float64) || isa(sub.args[i], Int)
                     (sub.args[1] == [:-]) && ((i == 1) ? rhs += sub.args[i] : rhs -= sub.args[i])
                     (sub.args[1] == [:+]) && (rhs += sub.args[i])
                 elseif (sub.args[i].head == :ref)
                     return false
                 elseif (sub.args[i].head == :call)
-                    scalar, idxs = expr_is_axn(sub.args[i], N=2)
+                    scalar, idxs = expr_is_axn(sub.args[i])
                     (scalar == nothing) && return false
-                    (length(idxs) == 2 && length(Set(idxs)) == 1) ? push!(idxs_bin, idxs) : return false
+                    (mod(length(idxs),2)==0 && length(Set(idxs)) == 1) ? push!(idxs_bin, idxs) : return false
+                    (length(idxs) > 1) && !(length(idxs[end]) == length(idxs[end-1])) && return false
                     (sub.args[1] == :-) && ((i == 2) ? push!(scalar_bin, scalar) : push!(scalar_bin, -scalar))
                     (sub.args[1] == :+) && (push!(scalar_bin, scalar))
                 end

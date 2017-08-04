@@ -200,6 +200,20 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 	return
 end
 
+# This can be a cleaner version of the above function
+function expr_resolve_simple_tree(expr)
+    (isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return expr
+    (expr.head == :ref) && return expr
+
+    if ((expr.args[1] == :-) && (length(expr.args) == 2))
+        (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && return -expr.args[2]
+        if (expr.args[2].head in [:ref, :call])
+            return Expr(:call, :*, -1, expr.args[2])
+        end
+    end
+    return expr
+end
+
 """
 	Recursivly pre-process expression by treating the coefficients
 	TODO: this function requires a lot of refining.

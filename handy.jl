@@ -25,9 +25,11 @@ m = Model()
 @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] + 5*x[3]*x[3] + 6x[4]x[4] <= 15) # true
 @NLconstraint(m, 3x[1]x[1] + 4x[2]x[2] + 5x[3]^2 <= -15)                    # false
 @NLconstraint(m, 3x[1]^2 + 4x[2]^2 >= 15)                                   # false
-@NLconstraint(m, - 3x[1]^2 - 4x[3]^2 >= -15)                                # ?
+@NLconstraint(m, - 3x[1]^2 - 4x[3]^2 >= -15)                                # true
 
-test_range = 20
+@NLconstraint(m, 3x[1]^4 + 4x[2]^4 <= 200)                                  # true
+
+test_range = 21
 
 d = JuMP.NLPEvaluator(m)
 MathProgBase.initialize(d, [:ExprGraph])
@@ -45,13 +47,14 @@ test_map = Dict(true=>"pass", false=>"fail")
 test_answer = [true, true, false, true, true,
                true, true, true, true, true,
                true, false, false, true, false,
-               false, true, false, false, true]
+               false, true, false, false, true,
+               true]
 
-println(" Convexity | Test | Expression")
+println("Test | Convex? | Expression")
 for ex_i in 1:test_range
     if exs_convex[ex_i]
-        println("$(ex_i) -> $(test_map[exs_convex[ex_i] == test_answer[ex_i]]) | $(exs_convex[ex_i])  | $(exs[ex_i])")
+        println("$(test_map[exs_convex[ex_i] == test_answer[ex_i]]) | $(exs_convex[ex_i])    | $(exs[ex_i])")
     else
-        println("$(ex_i) -> $(test_map[exs_convex[ex_i] == test_answer[ex_i]]) | $(exs_convex[ex_i]) | $(exs[ex_i])")
+        println("$(test_map[exs_convex[ex_i] == test_answer[ex_i]]) | $(exs_convex[ex_i])   | $(exs[ex_i])")
     end
 end
