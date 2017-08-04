@@ -213,4 +213,16 @@
         @test isapprox(m.internalModel.l_var_tight[8], 352.0; atol=1e-1)
     end
 
+    @testset " Validation Test || AMP || special problem || ... " begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=GurobiSolver(OutputFlag=0),
+                               presolve_bound_tightening = bt,
+                               presolve_bound_tightening_algo = 1,
+                               presolve_bt_output_tol = 1e-1,
+                               log_level=0)
+
+        m = circle(solver=test_solver)
+
+        solve(m)
+    end
 end
