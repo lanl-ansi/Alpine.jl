@@ -29,6 +29,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_ratio::Any
     discretization_uniform_rate::Int
     discretization_add_partition_method::Any
+    discretization_width_tol::Any
 
     convhull_sweep_limit::Int
 
@@ -68,7 +69,8 @@ function PODSolver(;
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
     discretization_uniform_rate = 2,
-    discretization_add_partition_method = add_adaptive_partition, # Not ready for implementation
+    discretization_add_partition_method = nothing, # Not ready for implementation
+    discretization_width_tol = 1e-4,
 
     convhull_sweep_limit = 1,
 
@@ -105,6 +107,7 @@ function PODSolver(;
         discretization_ratio,
         discretization_uniform_rate,
         discretization_add_partition_method,
+        discretization_width_tol,
         convhull_sweep_limit,
         presolve_track_time,
         presolve_bound_tightening,
@@ -146,6 +149,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_ratio = s.discretization_ratio
     discretization_uniform_rate = s.discretization_uniform_rate
     discretization_add_partition_method = s.discretization_add_partition_method
+    discretization_width_tol = s.discretization_width_tol
 
     convhull_sweep_limit = s.convhull_sweep_limit
 
@@ -172,6 +176,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_ratio,
                             discretization_uniform_rate,
                             discretization_add_partition_method,
+                            discretization_width_tol,
                             convhull_sweep_limit,
                             presolve_track_time,
                             presolve_bound_tightening,

@@ -118,7 +118,7 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
 end
 
 function amp_post_lifted_objective(m::PODNonlinearModel)
-    @objective(m.model_mip, m.sense_orig, sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
+    @objective(m.model_mip, m.sense_orig, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
     return
 end
 
@@ -141,7 +141,7 @@ function add_partition(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    add_adaptive_partition(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
+    add_discretization(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
 
 Basic built-in method used to add a new partition on feasible domains of discretizing variables.
 This method make modification in .discretization
@@ -161,6 +161,8 @@ There are two options for this function,
 
     * `use_discretization(default=m.discretization)`:: to regulate which is the base to add new partitions on
     * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
+
+TODO: also need to document the speical diverted cases when new partition touches both sides
 
 This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
 """
@@ -190,13 +192,41 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     radius = distance / m.discretization_ratio
                     lb_new = max(point - radius, lb_local)
                     ub_new = min(point + radius, ub_local)
-                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
+                    ub_touch = true
+                    lb_touch = true
+                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.discretization_width_tol)  # Insert new UB-based partition
                         insert!(discretization[i], j+1, ub_new)
+                        ub_touch = false
                     end
-                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
+                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.discretization_width_tol)  # Insert new LB-based partition
                         insert!(discretization[i], j+1, lb_new)
+                        lb_touch = false
                     end
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    if ub_touch && lb_touch
+                        distance = -1.0
+                        pos = -1
+                        for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
+                            if (discretization[i][j] - discretization[i][j-1]) > distance
+                                lb_local = discretization[i][j-1]
+                                ub_local = discretization[i][j]
+                                distance = ub_local - lb_local
+                                point = lb_local + (ub_local - lb_local) / 2   # reset point
+                                pos = j
+                            end
+                        end
+                        radius = distance / m.discretization_ratio
+                        lb_new = max(point - radius, lb_local)
+                        ub_new = min(point + radius, ub_local)
+                        if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
+                            insert!(discretization[i], pos, ub_new)
+                        end
+                        if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
+                            insert!(discretization[i], pos, lb_new)
+                        end
+                        m.log_level > 99 && println("[DEBUG] VAR$(i): !diverted! : SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    else
+                        m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    end
                     break
                 end
             end

@@ -30,6 +30,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_uniform_rate::Int                            # Discretization rate parameter when using uniform partitions
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
+    discretization_width_tol::Float64                           # tolerance used when setting up partition/discretizations
 
     # parameters used to control convhull formulation
     convhull_sweep_limit::Int
@@ -135,6 +136,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_ratio,
                                 discretization_uniform_rate,
                                 discretization_add_partition_method,
+                                discretization_width_tol,
                                 convhull_sweep_limit,
                                 presolve_track_time,
                                 presolve_bound_tightening,
@@ -167,6 +169,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_ratio = discretization_ratio
         m.discretization_uniform_rate = discretization_uniform_rate
         m.discretization_add_partition_method = discretization_add_partition_method
+        m.discretization_width_tol = discretization_width_tol
 
         m.convhull_sweep_limit = convhull_sweep_limit
 
