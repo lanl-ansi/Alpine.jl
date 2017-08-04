@@ -28,6 +28,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
+    discretization_width_tol::Float64                           # tolerance used when setting up partition/discretizations
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
@@ -128,6 +129,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_var_pick_algo,
                                 discretization_ratio,
                                 discretization_add_partition_method,
+                                discretization_width_tol,
                                 presolve_track_time,
                                 presolve_bound_tightening,
                                 presolve_maxiter,
@@ -157,6 +159,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_var_pick_algo = discretization_var_pick_algo
         m.discretization_ratio = discretization_ratio
         m.discretization_add_partition_method = discretization_add_partition_method
+        m.discretization_width_tol = discretization_width_tol
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bound_tightening = presolve_bound_tightening
@@ -478,7 +481,7 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     status_reroute = [:Infeasible]
 
     if status in status_solved
-        candidate_bound = getobjbound(m.model_mip)
+        candidate_bound = getobjectivevalue(m.model_mip)
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
