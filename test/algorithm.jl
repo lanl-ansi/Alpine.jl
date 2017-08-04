@@ -102,8 +102,8 @@
         m = nlp1(solver=test_solver)
         status = solve(m)
 
-        @show m.internalModel.l_var_tight
-        @show m.internalModel.u_var_tight
+        # @show m.internalModel.l_var_tight
+        # @show m.internalModel.u_var_tight
 
         @test status == :Optimal
         @test m.internalModel.logs[:n_iter] == 3
@@ -134,12 +134,12 @@
         m = nlp1(solver=test_solver)
         status = solve(m)
 
-        @show m.internalModel.l_var_tight
-        @show m.internalModel.u_var_tight
+        # @show m.internalModel.l_var_tight
+        # @show m.internalModel.u_var_tight
 
         @test status == :Optimal
         @test m.internalModel.logs[:n_iter] == 2
-        @show m.internalModel.l_var_tight
+        # @show m.internalModel.l_var_tight
         @test isapprox(m.internalModel.l_var_tight[1], 2.5; atol=1e-2)
         @test isapprox(m.internalModel.l_var_tight[2], 3.1; atol=1e-2)
         @test isapprox(m.internalModel.l_var_tight[3], 6.25; atol=1e-2)

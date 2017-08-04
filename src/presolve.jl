@@ -126,7 +126,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     (m.log_level > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
 
     # Update the bounds with the tightened ones
-    @show discretization
+    # @show discretization
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
