@@ -39,7 +39,7 @@
 
 High-level warpper for processing expression with sub-tree operators
 """
-function expr_batch_process(m::PODNonlinearModel;kwargs...)
+function expr_batch_process(m::PODNonlinearModel; kwargs...)
 
 	# 0 : deepcopy data into mip lifted expr place holders
 	m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
@@ -58,6 +58,7 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
     end
 
     # 2 : most important
+    #       A successful parsing means the expression have been converted to linear
     is_strucural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
     if !is_strucural
         m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
@@ -84,32 +85,26 @@ function expr_batch_process(m::PODNonlinearModel;kwargs...)
     m.num_var_lifted_mip = length(m.nonlinear_terms)
 
     # 4 : convert expression graph into affine functions
-    populate_bounding_mip_oc(m)
+    if m.structural_obj == :linear
+        m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
+        m.structural_obj = :affine
+    end
+
+    # Populate the affine data structure for the constraints
+    for i in 1:m.num_constr_orig
+        if m.structural_constr[i] == :linear
+            push!(m.bounding_constr_mip, expr_linear_to_affine(m.bounding_constr_expr_mip[i]))
+            m.structural_constr[i] = :affine
+            m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
+            m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+            m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
+            m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
+            m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+            m.log_level > 99 && println("--------- =>")
+        end
+    end
 
     return m
-end
-
-
-
-"""
-	Check if a sub-tree(:call) is totally composed of constant values
-"""
-function expr_isconst(expr)
-
-	(isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return true
-
-	const_tree = true
-	for i in 1:length(expr.args)
-		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
-			continue
-		elseif expr.args[i].head == :call
-			const_tree *= expr_isconst(expr.args[i])
-		elseif expr.args[i].head == :ref
-			return false
-		end
-	end
-
-	return const_tree
 end
 
 """
