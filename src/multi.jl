@@ -161,6 +161,10 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
         # Add x = f(λ) for convex representation of x value
         sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt]
         @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
+
+        # Add x = f(α) for regulating the domains
+        @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1))
+        @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
     end
 
     return
@@ -168,15 +172,16 @@ end
 
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
 
+    partition_cnt = length(α[monomial_idx])
+    lambda_cnt = length(discretization[monomial_idx])
+    @assert lambda_cnt == partition_cnt + 1r
+
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[monomial_idx][:vars]) == 1)
     @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) <= dot(λ[monomial_idx][:vars], λ[monomial_idx][:vals]))
     @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >= Variable(m.model_mip, monomial_idx)^2)
 
-    partition_cnt = length(α[monomial_idx])
-    lambda_cnt = length(discretization[monomial_idx])
-    @assert lambda_cnt == partition_cnt + 1
-
+    # Add SOS-2 Constraints with basic encoding
     for i in 1:lambda_cnt
         if i == 1
             @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i])
@@ -187,7 +192,13 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
         end
     end
 
+    # Add x= f(λ) for convex representation
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
+
+    # Add x = f(α) for regulating the domains
+    @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
+    @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
+
     return
 end
 
