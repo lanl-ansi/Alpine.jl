@@ -32,11 +32,11 @@ function circleN(;verbose=false, solver=nothing, convhull=false, N=2)
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=1),
 								   monomial_convexhull=convhull,
-								   maxiter=1,
-								   discretization_add_partition_method="uniform",
-								   discretization_uniform_rate=30,
+								#    maxiter=1,
+								#    discretization_add_partition_method="uniform",
+								#    discretization_uniform_rate=50,
 								   presolve_bound_tightening=false,
-								   log_level=1))
+								   log_level=100))
 	else
 		m = Model(solver=solver)
 	end
