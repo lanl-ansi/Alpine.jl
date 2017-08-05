@@ -174,7 +174,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
 
     partition_cnt = length(α[monomial_idx])
     lambda_cnt = length(discretization[monomial_idx])
-    @assert lambda_cnt == partition_cnt + 1r
+    @assert lambda_cnt == partition_cnt + 1
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[monomial_idx][:vars]) == 1)
