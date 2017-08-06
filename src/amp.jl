@@ -119,6 +119,11 @@ end
 
 function amp_post_lifted_objective(m::PODNonlinearModel)
     @objective(m.model_mip, m.sense_orig, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
+    # if m.sense_orig == :Min && m.best_bound > -Inf
+    #     @constraint(m.model_mip, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]) >= m.best_bound)
+    # elseif m.sense_orig == :Max && m.best_bound < Inf
+    #     @constraint(m.model_mip, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]) <= m.best_bound)
+    # end
     return
 end
 
@@ -194,11 +199,11 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     ub_new = min(point + radius, ub_local)
                     ub_touch = true
                     lb_touch = true
-                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.discretization_width_tol)  # Insert new UB-based partition
+                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.discretization_abs_width_tol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > m.discretization_rel_width_tol    # Insert new UB-based partition
                         insert!(discretization[i], j+1, ub_new)
                         ub_touch = false
                     end
-                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.discretization_width_tol)  # Insert new LB-based partition
+                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.discretization_abs_width_tol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > m.discretization_rel_width_tol # Insert new LB-based partition
                         insert!(discretization[i], j+1, lb_new)
                         lb_touch = false
                     end

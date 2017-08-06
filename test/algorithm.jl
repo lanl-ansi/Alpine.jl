@@ -245,7 +245,7 @@
     @testset " Validation Test || AMP || special problem || ... " begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=GurobiSolver(OutputFlag=0),
-                               discretization_width_tol=1e-2,
+                               discretization_abs_width_tol=1e-2,
                                discretization_ratio=4,
                                presolve_bound_tightening = false,
                                presolve_bound_tightening_algo = 1,

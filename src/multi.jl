@@ -192,6 +192,13 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
         end
     end
 
+    # Equalivent SOS-2 : A different encoding (solwer performance)
+    # for i in 1:partition_cnt
+    #     @constraint(m.model_mip, α[monomial_idx][i] <= λ[monomial_idx][:vars][i] + λ[monomial_idx][:vars][i+1])
+    # end
+    # @constraint(m.model_mip, α[monomial_idx][1] >= λ[monomial_idx][:vars][1])
+    # @constraint(m.model_mip, α[monomial_idx][end] >= λ[monomial_idx][:vars][end])
+
     # Add x= f(λ) for convex representation
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
 
