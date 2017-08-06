@@ -39,71 +39,14 @@
 
 High-level warpper for processing expression with sub-tree operators
 """
-function expr_batch_process(m::PODNonlinearModel; kwargs...)
+function process_expr(m::PODNonlinearModel)
 
-	# 0 : deepcopy data into mip lifted expr place holders
-	m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
-	for i in 1:m.num_constr_orig
-        push!(m.bounding_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
-    end
-
-    # 1 : pre-process the negative sign in expressions
-    expr_resolve_const(m.bounding_obj_expr_mip)
-    expr_resolve_sign(m.bounding_obj_expr_mip)
-    expr_flatten(m.bounding_obj_expr_mip)
-    for i in 1:m.num_constr_orig
-        expr_resolve_const(m.bounding_constr_expr_mip[i])
-        expr_resolve_sign(m.bounding_constr_expr_mip[i])
-        expr_flatten(m.bounding_constr_expr_mip[i].args[2])
-    end
-
-    # 2 : most important
-    #       A successful parsing means the expression have been converted to linear
-    is_strucural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
-    if !is_strucural
-        m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
-        m.structural_obj = :linear
-    end
-    for i in 1:m.num_constr_orig
-        is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
-        if !is_strucural
-            m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], m)
-            m.structural_constr[i] = :linear
-        end
-    end
-
-    # 3 : extract some information
-    for i in keys(m.nonlinear_terms)
-        for var in i
-            @assert isa(var.args[2], Int)
-            if !(var.args[2] in m.all_nonlinear_vars)
-                push!(m.all_nonlinear_vars, var.args[2])
-            end
-        end
-    end
-    m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
-    m.num_var_lifted_mip = length(m.nonlinear_terms)
-
-    # 4 : convert expression graph into affine functions
-    if m.structural_obj == :linear
-        m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
-        m.structural_obj = :affine
-    end
-
-    # Populate the affine data structure for the constraints
-    for i in 1:m.num_constr_orig
-        if m.structural_constr[i] == :linear
-            push!(m.bounding_constr_mip, expr_linear_to_affine(m.bounding_constr_expr_mip[i]))
-            m.structural_constr[i] = :affine
-            m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
-            m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-            m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
-            m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
-            m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-            m.log_level > 99 && println("--------- =>")
-        end
-    end
-
+    expr_initialization(m)      # 0 : initialize the space for parsing and analyzing
+    expr_preprocess(m)          # 1 : pre-process the negative sign in expressions
+    expr_parsing(m)             # 2 : parsing the expressions for nonlinear information
+    expr_conversion(m)          # 3 : convert lifted(linear) expressions into affine function
+    expr_finalized(m)           # 4 : finalize process by extracting some measurements
+    
     return m
 end
 

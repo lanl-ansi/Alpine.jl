@@ -1,4 +1,111 @@
 """
+	STEP 1
+"""
+function expr_initialization(m::PODNonlinearModel)
+
+	# 0 : deepcopy data into mip lifted expr place holders
+	m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
+	m.bounding_obj_mip = Dict()
+	for i in 1:m.num_constr_orig
+		push!(m.bounding_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
+		push!(m.bounding_constr_mip, Dict())
+	end
+
+	return
+end
+
+"""
+	STEP 2
+"""
+function expr_preprocess(m::PODNonlinearModel)
+
+	expr_resolve_const(m.bounding_obj_expr_mip)
+	expr_resolve_sign(m.bounding_obj_expr_mip)
+	expr_flatten(m.bounding_obj_expr_mip)
+	for i in 1:m.num_constr_orig
+		expr_resolve_const(m.bounding_constr_expr_mip[i])
+		expr_resolve_sign(m.bounding_constr_expr_mip[i])
+		expr_flatten(m.bounding_constr_expr_mip[i].args[2])
+	end
+
+	return
+end
+
+"""
+	STEP 3: need better name
+"""
+function expr_parsing(m::PODNonlinearModel)
+
+	is_strucural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
+	if !is_strucural
+		m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
+		m.structural_obj = :linear
+	end
+
+	for i in 1:m.num_constr_orig
+		is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
+		if !is_strucural
+			m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], m)
+			m.structural_constr[i] = :linear
+		end
+	end
+
+	return
+end
+
+"""
+	STEP 4:
+"""
+function expr_conversion(m::PODNonlinearModel)
+
+	if m.structural_obj == :linear
+		m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
+		m.structural_obj = :affine
+		m.log_level > 99 && println("lifted ::", m.bounding_obj_expr_mip)
+		m.log_level > 99 && println("coeffs ::", m.bounding_obj_mip[i][:coefs])
+		m.log_level > 99 && println("vars ::", m.bounding_obj_mip[i][:vars])
+		m.log_level > 99 && println("sense ::", m.bounding_obj_mip[i][:sense])
+		m.log_level > 99 && println("rhs ::", m.bounding_obj_mip[i][:rhs])
+		m.log_level > 99 && println("----------------")
+	end
+
+	for i in 1:m.num_constr_orig
+		if m.structural_constr[i] == :linear
+			m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
+			m.structural_constr[i] = :affine
+			m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
+			m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+			m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
+			m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
+			m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+			m.log_level > 99 && println("----------------")
+		end
+	end
+
+	return
+end
+
+"""
+	STEP 5:
+"""
+function expr_finalized(m::PODNonlinearModel)
+
+	for i in keys(m.nonlinear_terms)
+		for var in i
+			@assert isa(var.args[2], Int)
+			if !(var.args[2] in m.all_nonlinear_vars)
+				push!(m.all_nonlinear_vars, var.args[2])
+			end
+		end
+	end
+	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
+	m.num_var_lifted_mip = length(m.nonlinear_terms)
+
+	return m
+end
+
+
+"""
 	This function takes a constraint/objective expression and converts it into a affine expression data structure
 	Use the function to traverse linear expressions traverse_expr_linear_to_affine()
 """
@@ -373,6 +480,9 @@ function expr_islinear(expr)
 	end
 end
 
+"""
+	Check if a sub-tree is pure constant or not
+"""
 function expr_resolve_const(expr)
 
 	for i in 1:length(expr.args)

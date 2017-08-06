@@ -279,7 +279,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig ? (m.structural_obj = :lienar) : (m.structural_obj = :nonlinear)
 
     # populate data to create the bounding model
-    expr_batch_process(m)
+    process_expr(m)
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
     detect_bound_from_aff(m)        # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
