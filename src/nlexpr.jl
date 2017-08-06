@@ -61,25 +61,28 @@ function expr_conversion(m::PODNonlinearModel)
 	if m.structural_obj == :linear
 		m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
 		m.structural_obj = :affine
-		m.log_level > 99 && println("lifted ::", m.bounding_obj_expr_mip)
-		m.log_level > 99 && println("coeffs ::", m.bounding_obj_mip[i][:coefs])
-		m.log_level > 99 && println("vars ::", m.bounding_obj_mip[i][:vars])
-		m.log_level > 99 && println("sense ::", m.bounding_obj_mip[i][:sense])
-		m.log_level > 99 && println("rhs ::", m.bounding_obj_mip[i][:rhs])
-		m.log_level > 99 && println("----------------")
 	end
+	m.log_level > 99 && println("type :: ", m.structural_obj)
+	m.log_level > 99 && println("lifted ::", m.bounding_obj_expr_mip)
+	m.log_level > 99 && println("coeffs ::", m.bounding_obj_mip[:coefs])
+	m.log_level > 99 && println("vars ::", m.bounding_obj_mip[:vars])
+	m.log_level > 99 && println("sense ::", m.bounding_obj_mip[:sense])
+	m.log_level > 99 && println("rhs ::", m.bounding_obj_mip[:rhs])
+	m.log_level > 99 && println("----------------")
+
 
 	for i in 1:m.num_constr_orig
 		if m.structural_constr[i] == :linear
 			m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
 			m.structural_constr[i] = :affine
-			m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
-			m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-			m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
-			m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
-			m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-			m.log_level > 99 && println("----------------")
 		end
+		m.log_level > 99 && println("type :: ", m.structural_constr[i])
+		m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
+		m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+		m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
+		m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
+		m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+		m.log_level > 99 && println("----------------")
 	end
 
 	return

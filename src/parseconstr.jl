@@ -3,7 +3,7 @@
 
 Recognize structural constraints.
 """
-function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int; kwargs...)
+function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int=0)
 
     isconvex = false
 
@@ -32,7 +32,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
                 scalar *= expr.args[i]
             elseif (expr.args[i].head == :ref)
                 @assert isa(expr.args[i].args[2], Int)
-                push!(var_idxs, expr.args[i].args[2])
+                push!(var_idxs, expr.args[i])
             elseif (expr.args[i].head == :call)
                 scalar, var_idxs = expr_is_axn(expr.args[i], scalar, var_idxs)
             end
@@ -45,7 +45,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
                 power = expr.args[i]
                 continue
             elseif (expr.args[i].head == :ref)
-                idx = expr.args[i].args[2]
+                idx = expr.args[i]
                 continue
             elseif (expr.args[i].head == :call)
                 return nothing, nothing
@@ -59,15 +59,19 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
 
     !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing
 
-    println("inner recursive", scalar, var_idxs)
+    println("inner recursive ", scalar, " ", var_idxs)
     return scalar, var_idxs
 end
 
+"""
+    A scatch for type-A convex constraint expression
+"""
 function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
 
     scalar_bin = []
     idxs_bin = []
     rhs = 0.0
+    sense = expr.args[1]
 
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
@@ -95,8 +99,8 @@ function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
                 elseif (sub.args[i].head == :call)
                     scalar, idxs = expr_is_axn(sub.args[i])
                     (scalar == nothing) && return false
-                    (mod(length(idxs),2)==0 && length(Set(idxs)) == 1) ? push!(idxs_bin, idxs) : return false
-                    (length(idxs) > 1) && !(length(idxs[end]) == length(idxs[end-1])) && return false
+                    # (mod(length(idxs),2)==0 && length(Set(idxs)) == 1) ? push!(idxs_bin, idxs) : return false
+                    (length(idxs) == 2 && length(Set(idxs)) == 1) ? push!(idxs_bin, idxs[1]) : return false
                     (sub.args[1] == :-) && ((i == 2) ? push!(scalar_bin, scalar) : push!(scalar_bin, -scalar))
                     (sub.args[1] == :+) && (push!(scalar_bin, scalar))
                 end
@@ -104,7 +108,7 @@ function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
         elseif sub.args[1] in [:*]
             scalar, idxs = expr_is_axn(sub, N=2)
             (scalar == nothing) && return false
-            (length(idxs) == 2 && length(Set(idxs)) == 1) ? push!(idxs_bin, idxs) : return false
+            (length(idxs) == 2 && length(Set(idxs)) == 1) ? push!(idxs_bin, idxs[1]) : return false
             push!(scalar_bin, scalar)
         else
             return false    # don't support other operators
@@ -134,16 +138,18 @@ function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
         m.bounding_constr_expr_mip[idx] = expr
         if expr_orig == :obj
             m.structural_obj = :convex
-            m.bounding_obj_mip = Dict(:scalars => scalar_bin,
-                                      :vars => var_idxs,
-                                      :rhs => -rhs)
+            m.bounding_obj_mip = Dict(:sense => nothing,
+                                      :coefs => scalar_bin,
+                                      :vars => idxs_bin,
+                                      :rhs => -rhs,
+                                      :cnt => length(idxs_bin))
         elseif expr_orig == :constr
             m.structural_constr[idx] = :convex
-            m.bounding_constr_mip[idx] = Dict(:sense => (expr_orig == :obj) ? nothing
-                                              :scalars => scalar_bin,
-                                              :var_idx => var_idxs,
+            m.bounding_constr_mip[idx] = Dict(:sense => sense,
+                                              :coefs => scalar_bin,
+                                              :vars => idxs_bin,
                                               :rhs => rhs,
-                                              :cnt => length(var_idxs))
+                                              :cnt => length(idxs_bin))
         end
     end
 

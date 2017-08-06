@@ -110,9 +110,9 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
 
     for i in 1:m.num_constr_orig
         if m.structural_constr[i] == :affine
-            post_affine(m.model_mip, m.bounding_constr_mip[i])
+            amp_post_affine_constraint(m.model_mip, m.bounding_constr_mip[i])
         elseif m.structural_constr[i] == :convex
-            error("Posting convex constraint :: Not implemented yet")
+            amp_post_convex_constraint(m.model_mip, m.bounding_constr_mip[i])
         else
             error("Unknown structural_constr type $(m.structural_constr[i])")
         end
@@ -121,7 +121,7 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
     return
 end
 
-function amp_post_affine_constraints(model_mip::JuMP.Model, affine::Dict)
+function amp_post_affine_constraint(model_mip::JuMP.Model, affine::Dict)
 
     if affine[:sense] == :(>=)
         @constraint(model_mip,
@@ -137,12 +137,28 @@ function amp_post_affine_constraints(model_mip::JuMP.Model, affine::Dict)
     return
 end
 
+function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
+
+    if convex[:sense] == :(>=)
+        @constraint(model_mip,
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
+    elseif convex[:sense] == :(<=)
+        @constraint(model_mip,
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) <= convex[:rhs])
+    elseif convex[:sense] == :(==)
+        @constraint(model_mip,
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) == convex[:rhs])
+    end
+
+    return
+end
+
 function amp_post_lifted_objective(m::PODNonlinearModel)
 
     if m.structural_obj == :affine
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
     elseif m.structural_obj == :convex
-        error("Posting convex objective :: Not implemented yet")
+        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
         error("Unknown structural obj type $(m.structural_obj)")
     end

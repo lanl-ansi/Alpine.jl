@@ -279,7 +279,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig ? (m.structural_obj = :lienar) : (m.structural_obj = :nonlinear)
 
     # populate data to create the bounding model
-    process_expr(m)
+    process_expr(m)                 # Compact process of every expression
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
     detect_bound_from_aff(m)        # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
@@ -392,6 +392,7 @@ function global_solve(m::PODNonlinearModel)
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)      # Build the bounding ATMC model
+        print(m.model_mip)
         bounding_solve(m)           # Solve bounding model
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
