@@ -1,11 +1,12 @@
 """
-	STEP 1
+	STEP 1: initialize the expression/ space
 """
 function expr_initialization(m::PODNonlinearModel)
 
 	# 0 : deepcopy data into mip lifted expr place holders
 	m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
 	m.bounding_obj_mip = Dict()
+
 	for i in 1:m.num_constr_orig
 		push!(m.bounding_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
 		push!(m.bounding_constr_mip, Dict())
@@ -15,7 +16,7 @@ function expr_initialization(m::PODNonlinearModel)
 end
 
 """
-	STEP 2
+	STEP 2: preprocess expression for trivial sub-trees and nasty pieces for easier later process
 """
 function expr_preprocess(m::PODNonlinearModel)
 
@@ -32,33 +33,35 @@ function expr_preprocess(m::PODNonlinearModel)
 end
 
 """
-	STEP 3: need better name
+	STEP 3: parse expression for patterns on either the generic level or term level
 """
 function expr_parsing(m::PODNonlinearModel)
 
 	is_strucural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
 	if !is_strucural
 		m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
-		m.structural_obj = :linear
+		m.structural_obj = :generic_linear
 	end
+	(m.log_level > 99) && println("$(m.structural_obj) | [OBJ] $(m.obj_expr_orig)")
 
 	for i in 1:m.num_constr_orig
 		is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
 		if !is_strucural
 			m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], m)
-			m.structural_constr[i] = :linear
+			m.structural_constr[i] = :generic_linear
 		end
+		(m.log_level > 99) && println("$(m.structural_constr[i]) | [CONSTR] $(m.constr_expr_orig[i])")
 	end
 
 	return
 end
 
 """
-	STEP 4:
+	STEP 4: convert the parsed expressions into affine-based function that can be used for adding JuMP constraints
 """
 function expr_conversion(m::PODNonlinearModel)
 
-	if m.structural_obj == :linear
+	if m.structural_obj == :generic_linear
 		m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
 		m.structural_obj = :affine
 	end
@@ -72,7 +75,7 @@ function expr_conversion(m::PODNonlinearModel)
 
 
 	for i in 1:m.num_constr_orig
-		if m.structural_constr[i] == :linear
+		if m.structural_constr[i] == :generic_linear
 			m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
 			m.structural_constr[i] = :affine
 		end
@@ -88,8 +91,9 @@ function expr_conversion(m::PODNonlinearModel)
 	return
 end
 
+
 """
-	STEP 5:
+	STEP 5: collect measurements and information as needed for handly operations in the algorithm section
 """
 function expr_finalized(m::PODNonlinearModel)
 
@@ -103,6 +107,7 @@ function expr_finalized(m::PODNonlinearModel)
 	end
 	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
 	m.num_var_lifted_mip = length(m.nonlinear_terms)
+	m.num_constr_convex = length([i for i in m.structural_constr if i == :convex])
 
 	return m
 end

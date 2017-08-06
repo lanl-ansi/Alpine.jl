@@ -18,6 +18,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     minlp_local_solver::MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
+    recognize_convex::Bool
     bilinear_mccormick::Bool
     bilinear_convexhull::Bool
 
@@ -56,6 +57,7 @@ function PODSolver(;
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
+    recognize_convex = true,
     bilinear_mccormick = false,
     bilinear_convexhull = false,
 
@@ -92,6 +94,7 @@ function PODSolver(;
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
         deepcopy(mip_solver),
+        recognize_convex,
         bilinear_mccormick,
         bilinear_convexhull,
         method_convexification,
@@ -126,6 +129,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     rel_gap = s.rel_gap
     tol = s.tol
 
+    recognize_convex = s.recognize_convex
     bilinear_mccormick = s.bilinear_mccormick
     bilinear_convexhull = s.bilinear_convexhull
 
@@ -156,6 +160,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             nlp_local_solver,
                             minlp_local_solver,
                             mip_solver,
+                            recognize_convex,
                             bilinear_mccormick,
                             bilinear_convexhull,
                             method_convexification,

@@ -41,13 +41,13 @@ High-level warpper for processing expression with sub-tree operators
 """
 function process_expr(m::PODNonlinearModel)
 
-    expr_initialization(m)      # 0 : initialize the space for parsing and analyzing
-    expr_preprocess(m)          # 1 : pre-process the negative sign in expressions
-    expr_parsing(m)             # 2 : parsing the expressions for nonlinear information
-    expr_conversion(m)          # 3 : convert lifted(linear) expressions into affine function
-    expr_finalized(m)           # 4 : finalize process by extracting some measurements
-    
-    return m
+    expr_initialization(m)      # S0 : initialize the space for parsing and analyzing
+    expr_preprocess(m)          # S1 : pre-process the negative sign in expressions
+    expr_parsing(m)             # S2 : parsing the expressions for nonlinear information
+    expr_conversion(m)          # S3 : convert lifted(linear) expressions into affine function
+    expr_finalized(m)           # S4 : finalize process by extracting some measurements
+
+    return
 end
 
 """
@@ -174,6 +174,7 @@ function resolve_bilinar_term(expr, m::PODNonlinearModel)
 
     return false, expr
 end
+
 
 """
     TODO: docstring

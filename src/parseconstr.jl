@@ -5,8 +5,6 @@ Recognize structural constraints.
 """
 function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int=0)
 
-    isconvex = false
-
     # First process user-defined structures in-cases of over-ride
     for i in 1:length(m.constr_patterns)
         is_strucural = eval(m.constr_patterns[i])(expr, m=m, idx=i)
@@ -14,16 +12,19 @@ function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int=0)
     end
 
     # Recognize built-in special structural pattern
-    is_strucural = resolve_convex_constr(expr, m=m, idx=idx)
+    if m.recognize_convex
+        is_convex = resolve_convex_constr(expr, m=m, idx=idx)
+        is_convex && return true
+    end
 
     # More patterns goes here
 
-    return is_strucural
+    return false
 end
 
 function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
 
-    println("inner recursive input ", expr)
+    # println("inner recursive input ", expr)
     !(expr.args[1] in [:*,:^]) && return nothing, nothing         # Limited Area
 
     if expr.args[1] == :*
@@ -59,7 +60,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[]; N=nothing)
 
     !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing
 
-    println("inner recursive ", scalar, " ", var_idxs)
+    # println("inner recursive ", scalar, " ", var_idxs)
     return scalar, var_idxs
 end
 
@@ -83,7 +84,7 @@ function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
         subs, rhs = expr_strip_const(expr)              # Focus on the regularized subtree (stripped with constants)
     end
 
-    @show "these are subs $subs with rhs=$rhs"
+    # @show "these are subs $subs with rhs=$rhs"
     for sub in subs
         (isa(sub, Float64) || isa(sub, Int) || isa(sub, Symbol)) && return false
         !(sub.args[1] in [:+,:-,:*]) && return false
@@ -114,7 +115,7 @@ function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
             return false    # don't support other operators
         end
 
-        @show rhs, scalar_bin, idxs_bin
+        # @show rhs, scalar_bin, idxs_bin
         scalar_sign = sign(scalar_bin[1])
         if length(scalar_bin) > 1
             for i in 2:length(scalar_bin)
@@ -135,7 +136,9 @@ function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
                                         :expr_orig => expr_orig,
                                         :expr_ref => expr,
                                         :convexified => false)
+
         m.bounding_constr_expr_mip[idx] = expr
+
         if expr_orig == :obj
             m.structural_obj = :convex
             m.bounding_obj_mip = Dict(:sense => nothing,
@@ -151,6 +154,7 @@ function resolve_convex_constr(expr; m::PODNonlinearModel=nothing, idx::Int=0)
                                               :rhs => rhs,
                                               :cnt => length(idxs_bin))
         end
+
     end
 
     return true

@@ -17,6 +17,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     tol::Float64                                                # Numerical tol used in the algorithmic process
 
     # convexification method tuning
+    recognize_convex::Bool                                      # recognize convex expressions in parsing objective functions and constraints
     bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
     bilinear_convexhull::Bool                                   # disbale convex hull representation mtehod used for convexify nonlinear terms
 
@@ -92,7 +93,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     num_var_lifted_mip::Int                                     # Number of lifted variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
-    num_constr_structural::Int                                  # Number of structural constraints
+    num_constr_convex::Int                                  # Number of structural constraints
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted terms
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
@@ -127,6 +128,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
+                                recognize_convex,
                                 bilinear_mccormick,
                                 bilinear_convexhull,
                                 method_convexification,
@@ -156,6 +158,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.rel_gap = rel_gap
         m.tol = tol
 
+        m.recognize_convex = recognize_convex
         m.bilinear_mccormick = bilinear_mccormick
         m.bilinear_convexhull = bilinear_convexhull
 
@@ -204,7 +207,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization = Dict()
         m.num_var_lifted_mip = 0
         m.num_var_discretization_mip = 0
-        m.num_constr_structural = 0
+        m.num_constr_convex = 0
         m.structural_constr = []
 
         m.user_parameters = Dict()
@@ -267,16 +270,16 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     for i = 1:m.num_constr_orig
         if MathProgBase.isconstrlinear(m.d_orig, i)
             m.num_lconstr_orig += 1
-            m.structural_constr[i] = :linear
+            m.structural_constr[i] = :generic_linear
         else
-            m.structural_constr[i] = :nonlinear
+            m.structural_constr[i] = :generic_nonlinear
         end
     end
     m.num_nlconstr_orig = m.num_constr_orig - m.num_lconstr_orig
 
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
-    m.is_obj_linear_orig ? (m.structural_obj = :lienar) : (m.structural_obj = :nonlinear)
+    m.is_obj_linear_orig ? (m.structural_obj = :generic_linear) : (m.structural_obj = :generic_nonlinear)
 
     # populate data to create the bounding model
     process_expr(m)                 # Compact process of every expression

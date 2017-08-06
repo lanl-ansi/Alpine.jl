@@ -1,24 +1,25 @@
 using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
-function convex(;verbose=false, solver=nothing)
+function convex(;verbose=false, solver=nothing, recognize=true)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=1),
                                    discretization_ratio=4,
+								   recognize_convex=recognize,
 								   presolve_bound_tightening=false,
 								   log_level=200))
 	else
 		m = Model(solver=solver)
 	end
 
-    @variable(m, 0<=x[1:2]<=2)
+    @variable(m, 0<=x[1:5]<=2)
 
     @constraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                             # true
-    # @constraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                         # true
-    # @constraint(m, 3(x[1]x[1]) + 4*x[2]*x[2] <= -5)                             # false
-    # @constraint(m, 3(x[1]x[1]) + 4*x[2]^2 <= 10)                                # true
-    # @constraint(m, 3x[1]^2 + 4x[2]^2 + 6x[3]^2 <= 10)                           # true
+    @constraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                         # true
+    @constraint(m, 3(x[1]x[1]) + 4*x[2]*x[2] <= -5)                             # false
+    @constraint(m, 3(x[1]x[1]) + 4*x[2]^2 <= 10)                                # true
+    @constraint(m, 3x[1]^2 + 4x[2]^2 + 6x[3]^2 <= 10)                           # true
     #
     @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                           # true
     # @NLconstraint(m, (3*x[1]*x[1] + 4*x[2]*x[2]) <= 25)                         # true
