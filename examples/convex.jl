@@ -20,11 +20,15 @@ function convex_test(;verbose=false, solver=nothing, recognize=true)
     @constraint(m, 3(x[1]x[1]) + 4*x[2]*x[2] <= -5)                             # false
     @constraint(m, 3(x[1]x[1]) + 4*x[2]^2 <= 10)                                # true
     @constraint(m, 3x[1]^2 + 4x[2]^2 + 6x[3]^2 <= 10)                           # true
-	#
+
+	@NLconstraint(m, 3x[1]^0.5 + 4x[2]^0.5 + 5x[5]^0.5 <= 100)					# true | type-C
+	@NLconstraint(m, -3x[1]^0.5 -4x[2]^0.5 >= -100)								# true | type-C
+
     @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                           # true
+
     # @NLconstraint(m, (3*x[1]*x[1] + 4*x[2]*x[2]) <= 25)                         # true
     # @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] - 25 <= 0)                       # true
-    # @NLconstraint(m, -3*x[1]*x[1] -4*x[2]*x[2] >= -25)                          # true
+    @NLconstraint(m, -3*x[1]*x[1] -4*x[2]*x[2] >= -25)                          # true
     # @NLconstraint(m, 3*x[1]*x[1] + 5x[2]*x[2] <= 25)                            # true
 	#
     # @NLconstraint(m, 4*x[1]^2 + 5x[2]^2 <= 25)                                  # Pass
@@ -44,9 +48,7 @@ function convex_test(;verbose=false, solver=nothing, recognize=true)
     # @NLconstraint(m, 3x[1]^4 + 4x[2]^2*x[2]*x[2] <= 200)                        # true
     # @NLconstraint(m, 3x[1]^4 + 4x[2]^3 <= 200)                                  # false
     # @NLconstraint(m, 3x[1]^8 + 16*25*x[2]^8 - 30x[3]^8 <= 50)                   # false
-	#
-	# @NLconstraint(m, 3x[1]^0.5 + 4x[2]^0.5 + 5x[5]^0.5 <= 100)					# true | type-C
-	# @NLconstraint(m, -3x[1]^0.5 - 4x[2]^0.5 - 5x[5]^0.5 >= -100))				# true | type-C
+
 
     @objective(m, Max, x[1]^2+x[3]^2)
 

@@ -45,7 +45,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
                 push!(power, expr.args[i])
                 continue
             elseif (expr.args[i].head == :ref)
-                push!(var_idxs, idx)
+                push!(var_idxs, expr.args[i])
                 continue
             elseif (expr.args[i].head == :call)
                 return nothing, nothing, nothing
@@ -64,13 +64,7 @@ end
 """
     A scatch for type-A convex constraint expression
 """
-function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0)
-
-    scalar_bin = []
-    idxs_bin = []
-    power_bin = []
-    rhs = 0.0
-    sense = expr.args[1]
+function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
 
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
