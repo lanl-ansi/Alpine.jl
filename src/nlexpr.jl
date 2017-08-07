@@ -105,6 +105,7 @@ function expr_finalized(m::PODNonlinearModel)
 			end
 		end
 	end
+
 	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
 	m.num_var_lifted_mip = length(m.nonlinear_terms)
 	m.num_constr_convex = length([i for i in m.structural_constr if i == :convex])
