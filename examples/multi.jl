@@ -161,6 +161,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	end
 
 	M = 1+3*N
+	srand(100)
 	isa(randomub, Bool) ? @variable(m, 0.1 <= x[1:M] <= 100*rand()) : @variable(m, 0.1 <= x[1:M] <= randomub)
 
 	if exprmode == 1
@@ -271,6 +272,7 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	end
 
 	M = 1+(K-1)*N
+	srand(100)
 	isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
 	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-1):(M-1)))
 	@constraint(m, [i in 1:(K-1):(M-1)], sum(x[i+k] for k in 0:(K-1)) <= K)
