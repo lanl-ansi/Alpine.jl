@@ -34,7 +34,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizationss
 
     # parameters used to control convhull formulation
-    convhull_sweep_limit::Int
+    convexhull_sweep_limit::Int
+    convexhull_use_sos2::Bool                                   # Speical convex hull formulation
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
@@ -139,7 +140,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_add_partition_method,
                                 discretization_abs_width_tol,
                                 discretization_rel_width_tol,
-                                convhull_sweep_limit,
+                                convexhull_sweep_limit,
+                                convexhull_use_sos2,
                                 presolve_track_time,
                                 presolve_bound_tightening,
                                 presolve_maxiter,
@@ -174,7 +176,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_abs_width_tol = discretization_abs_width_tol
         m.discretization_rel_width_tol = discretization_rel_width_tol
 
-        m.convhull_sweep_limit = convhull_sweep_limit
+        m.convexhull_sweep_limit = convexhull_sweep_limit
+        m.convexhull_use_sos2 = convexhull_use_sos2
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bound_tightening = presolve_bound_tightening
@@ -278,7 +281,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     expr_batch_process(m)           # Expression handling
     populate_lifted_affine(m)       # Construct affine function
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    bounds_propagation(m)           # Fetch bounds from constraints
+    # bounds_propagation(m)           # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary

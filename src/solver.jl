@@ -32,7 +32,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_abs_width_tol::Float64
     discretization_rel_width_tol::Float64
 
-    convhull_sweep_limit::Int
+    convexhull_sweep_limit::Int
+    convexhull_use_sos2::Bool
 
     presolve_track_time::Bool
     presolve_bound_tightening::Bool
@@ -74,7 +75,8 @@ function PODSolver(;
     discretization_abs_width_tol = 1e-4,
     discretization_rel_width_tol = 1e-9,
 
-    convhull_sweep_limit = 1,
+    convexhull_sweep_limit = 1,
+    convexhull_use_sos2 = false,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
@@ -111,7 +113,8 @@ function PODSolver(;
         discretization_add_partition_method,
         discretization_abs_width_tol,
         discretization_rel_width_tol,
-        convhull_sweep_limit,
+        convexhull_sweep_limit,
+        convexhull_use_sos2,
         presolve_track_time,
         presolve_bound_tightening,
         presolve_maxiter,
@@ -155,7 +158,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_abs_width_tol = s.discretization_abs_width_tol
     discretization_rel_width_tol = s.discretization_rel_width_tol
 
-    convhull_sweep_limit = s.convhull_sweep_limit
+    convexhull_sweep_limit = s.convexhull_sweep_limit
+    convexhull_use_sos2 = s.convexhull_use_sos2
 
     presolve_track_time = s.presolve_track_time
     presolve_bound_tightening = s.presolve_bound_tightening
@@ -182,7 +186,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_add_partition_method,
                             discretization_abs_width_tol,
                             discretization_rel_width_tol,
-                            convhull_sweep_limit,
+                            convexhull_sweep_limit,
+                            convexhull_use_sos2,
                             presolve_track_time,
                             presolve_bound_tightening,
                             presolve_maxiter,

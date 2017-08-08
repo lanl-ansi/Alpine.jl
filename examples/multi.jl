@@ -21,6 +21,7 @@ println("                 Options")
 println("N | convhull | exprmode | unifrom | randomub ")
 println("--------------------------------------------")
 
+
 function multi4(;verbose=false,solver=nothing, exprmode=1)
 
 	if solver == nothing
@@ -28,7 +29,7 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   rel_gap=0.0001,
 								   bilinear_convexhull=true,
-								   convhull_sweep_limit=1,
+								   convexhull_sweep_limit=1,
 								#    discretization_var_pick_algo=pick_my_var,
 								   presolve_bound_tightening=false,
 								   presolve_track_time=true,
@@ -197,12 +198,13 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	return m
 end
 
-function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4)
+function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=false)
 
 	if solver == nothing
 		if uniform > 0.0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
+									   convexhull_use_sos2=sos2,
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
 									   discretization_add_partition_method="uniform",
@@ -212,6 +214,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
+									   convexhull_use_sos2=sos2,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=false,
@@ -222,7 +225,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	end
 
 	M = 1+2*N
-
+	srand(100)
     isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
 	if exprmode == 1
 		@NLobjective(m, Max, sum(x[i]*x[i+1]*x[i+2] for i in 1:2:(M-1)))
@@ -258,6 +261,7 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
+									   maxiter=3,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=false,
 									   log_level=100))
