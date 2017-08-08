@@ -179,61 +179,63 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
 
     # ? Perform discretization base on type of nonlinear terms
-    for i in 1:m.num_var_orig
-        point = point_vec[i]
+    for i in m.var_discretization_mip
+        if i <= length(point_vec)
+            point = point_vec[i]
+        else
+            point = discretization[i][1] + (discretization[i][end] - discretization[i][1])/2
+        end
         # @show i, point, discretization[i]
         @assert point >= discretization[i][1] - m.tol       # Solution validation
         @assert point <= discretization[i][end] + m.tol
         # Safety Scheme
         (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
         (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
-        if i in m.var_discretization_mip  # Only construct when discretized
-            for j in 1:length(discretization[i])
-                if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                    @assert j < length(m.discretization[i])
-                    lb_local = discretization[i][j]
-                    ub_local = discretization[i][j+1]
-                    distance = ub_local - lb_local
+        for j in 1:length(discretization[i])
+            if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+                @assert j < length(m.discretization[i])
+                lb_local = discretization[i][j]
+                ub_local = discretization[i][j+1]
+                distance = ub_local - lb_local
+                radius = distance / m.discretization_ratio
+                lb_new = max(point - radius, lb_local)
+                ub_new = min(point + radius, ub_local)
+                ub_touch = true
+                lb_touch = true
+                if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.discretization_abs_width_tol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > m.discretization_rel_width_tol    # Insert new UB-based partition
+                    insert!(discretization[i], j+1, ub_new)
+                    ub_touch = false
+                end
+                if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.discretization_abs_width_tol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > m.discretization_rel_width_tol # Insert new LB-based partition
+                    insert!(discretization[i], j+1, lb_new)
+                    lb_touch = false
+                end
+                if ub_touch && lb_touch
+                    distance = -1.0
+                    pos = -1
+                    for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
+                        if (discretization[i][j] - discretization[i][j-1]) > distance
+                            lb_local = discretization[i][j-1]
+                            ub_local = discretization[i][j]
+                            distance = ub_local - lb_local
+                            point = lb_local + (ub_local - lb_local) / 2   # reset point
+                            pos = j
+                        end
+                    end
                     radius = distance / m.discretization_ratio
                     lb_new = max(point - radius, lb_local)
                     ub_new = min(point + radius, ub_local)
-                    ub_touch = true
-                    lb_touch = true
-                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.discretization_abs_width_tol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > m.discretization_rel_width_tol    # Insert new UB-based partition
-                        insert!(discretization[i], j+1, ub_new)
-                        ub_touch = false
+                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
+                        insert!(discretization[i], pos, ub_new)
                     end
-                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.discretization_abs_width_tol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > m.discretization_rel_width_tol # Insert new LB-based partition
-                        insert!(discretization[i], j+1, lb_new)
-                        lb_touch = false
+                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
+                        insert!(discretization[i], pos, lb_new)
                     end
-                    if ub_touch && lb_touch
-                        distance = -1.0
-                        pos = -1
-                        for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
-                            if (discretization[i][j] - discretization[i][j-1]) > distance
-                                lb_local = discretization[i][j-1]
-                                ub_local = discretization[i][j]
-                                distance = ub_local - lb_local
-                                point = lb_local + (ub_local - lb_local) / 2   # reset point
-                                pos = j
-                            end
-                        end
-                        radius = distance / m.discretization_ratio
-                        lb_new = max(point - radius, lb_local)
-                        ub_new = min(point + radius, ub_local)
-                        if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
-                            insert!(discretization[i], pos, ub_new)
-                        end
-                        if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
-                            insert!(discretization[i], pos, lb_new)
-                        end
-                        m.log_level > 99 && println("[DEBUG] VAR$(i): !diverted! : SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
-                    else
-                        m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
-                    end
-                    break
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): !diverted! : SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                else
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                 end
+                break
             end
         end
     end

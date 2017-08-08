@@ -141,7 +141,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	if solver == nothing
 		if uniform >0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=0),
+									   mip_solver=GurobiSolver(OutputFlag=1),
 									   bilinear_convexhull=convhull,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
@@ -150,7 +150,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 									   log_level=1))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=0),
+									   mip_solver=GurobiSolver(OutputFlag=1),
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=false,
 									   log_level=1))
@@ -197,12 +197,12 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	return m
 end
 
-function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1)
+function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4)
 
 	if solver == nothing
 		if uniform > 0.0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=0),
+									   mip_solver=GurobiSolver(OutputFlag=1),
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
 									   discretization_add_partition_method="uniform",
@@ -211,7 +211,8 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   log_level=100))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=0),
+									   mip_solver=GurobiSolver(OutputFlag=1),
+									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=false,
 									   log_level=100))
@@ -234,6 +235,41 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	end
 
 	@constraint(m, [i in 1:2:(M-1)], x[i] + x[i+1] + x[i+2] <= 3)
+
+	if verbose
+		print(m)
+	end
+
+	return m
+end
+
+function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, K=2)
+
+	if solver == nothing
+		if uniform > 0.0
+			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+									   mip_solver=GurobiSolver(OutputFlag=1),
+									   maxiter=1,
+									   bilinear_convexhull=convhull,
+									   discretization_add_partition_method="uniform",
+									   discretization_uniform_rate=uniform,
+									   presolve_bound_tightening=false,
+									   log_level=100))
+		else
+			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+									   mip_solver=GurobiSolver(OutputFlag=1),
+									   bilinear_convexhull=convhull,
+									   presolve_bound_tightening=false,
+									   log_level=100))
+		end
+	else
+		m = Model(solver=solver)
+	end
+
+	M = 1+(K-1)*N
+	isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
+	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-1):(M-1)))
+	@constraint(m, [i in 1:(K-1):(M-1)], sum(x[i+k] for k in 0:(K-1)) <= K)
 
 	if verbose
 		print(m)
