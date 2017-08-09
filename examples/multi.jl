@@ -21,7 +21,6 @@ println("                 Options")
 println("N | convhull | exprmode | unifrom | randomub ")
 println("--------------------------------------------")
 
-
 function multi4(;verbose=false,solver=nothing, exprmode=1)
 
 	if solver == nothing
@@ -137,24 +136,27 @@ function multi2(;verbose=false,solver=nothing)
 	return m
 end
 
-function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1, uniform=-1, randomub=true)
+function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1, uniform=-1, randomub=true, sos2=true, delta=4)
 
 	if solver == nothing
 		if uniform >0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
 									   bilinear_convexhull=convhull,
+									   convexhull_use_sos2=sos2,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   maxiter=1,
 									   presolve_bound_tightening=false,
-									   log_level=1))
+									   log_level=100))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
+									   discretization_ratio=delta,
+									   convexhull_use_sos2=sos2,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=false,
-									   log_level=1))
+									   log_level=100))
 		end
 	else
 		m = Model(solver=solver)
@@ -247,7 +249,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	return m
 end
 
-function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, K=2)
+function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, randomub=true, N=1, K=2, delta=4ß)
 
 	if solver == nothing
 		if uniform > 0.0
@@ -255,6 +257,8 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   mip_solver=GurobiSolver(OutputFlag=1),
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
+									   convexhull_use_sos2=sos2,
+									   discretization_ratio=4,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   presolve_bound_tightening=false,
@@ -262,7 +266,8 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
-									   maxiter=3,
+									   convexhull_use_sos2=sos2,
+									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=false,
 									   log_level=100))
