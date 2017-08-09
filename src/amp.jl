@@ -176,15 +176,15 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
-    haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
+    haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) : point_vec = copy(m.best_bound_sol)
+
+    @show point_vec
+    (length(point_vec) < m.num_var_orig+m.num_var_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
+    @show point_vec
 
     # ? Perform discretization base on type of nonlinear terms
     for i in m.var_discretization_mip
-        if i <= length(point_vec)
-            point = point_vec[i]
-        else
-            point = discretization[i][1] + (discretization[i][end] - discretization[i][1])/2
-        end
+        point = point_vec[i]                # Original Variable
         # @show i, point, discretization[i]
         @assert point >= discretization[i][1] - m.tol       # Solution validation
         @assert point <= discretization[i][end] + m.tol

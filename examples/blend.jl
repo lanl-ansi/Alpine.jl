@@ -1,11 +1,11 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function blend029(;verbose=false, solver=nothing, convhull=false)
+function blend029(;verbose=false, solver=nothing, convhull=true, delta=16)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=10000"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
                                     log_level=100,
                                     rel_gap=0.001))
@@ -251,16 +251,17 @@ function blend029(;verbose=false, solver=nothing, convhull=false)
     return m
 end
 
-function blend146(;verbose=false, solver=nothing)
+function blend146(;verbose=false, solver=nothing, convhull=true, delta=16)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=240"]),
                                     mip_solver=GurobiSolver(OutputFlag=1),
-                                    discretization_ratio=8,
-                                    bilinear_convexhull=true,
+                                    discretization_ratio=delta,
+                                    bilinear_convexhull=convhull,
                                     discretization_var_pick_algo=1,
+                                    presolve_bound_tightening=true,
                                     log_level=100,
-                                    rel_gap=0.001))
+                                    rel_gap=0.0001))
     else
         m = Model(solver=solver)
     end
@@ -915,12 +916,13 @@ function blend146(;verbose=false, solver=nothing)
     return m
 end
 
-function blend480(;verbose=false, solver=nothing)
+function blend480(;verbose=false, solver=nothing, convhull=true, delta=16)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    discretization_ratio=delta,
+                                    bilinear_convexhull=convhull,
                                     log_level=100,
                                     rel_gap=0.001))
     else
@@ -1839,12 +1841,13 @@ function blend480(;verbose=false, solver=nothing)
     return m
 end
 
-function blend531(;verbose=false, solver=nothing)
+function blend531(;verbose=false, solver=nothing, convhull=true, delta=16)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    discretization_ratio=delta,
+                                    bilinear_convexhull=convhull,
                                     log_level=100,
                                     rel_gap=0.001))
     else
@@ -2617,12 +2620,13 @@ function blend531(;verbose=false, solver=nothing)
     return m
 end
 
-function blend718(;verbose=false, solver=nothing)
+function blend718(;verbose=false, solver=nothing, convhull=true, delta=16)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    bilinear_convexhull=convhull,
+                                    discretization_ratio=delta,
                                     log_level=100,
                                     rel_gap=0.001))
     else
@@ -3174,11 +3178,12 @@ function blend718(;verbose=false, solver=nothing)
     return m
 end
 
-function blend721(;verbose=false, solver=nothing)
+function blend721(;verbose=false, solver=nothing, convhull=true, delta=16)
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    bilinear_convexhull=convhull,
+                                    discretization_ratio=delta,
                                     log_level=100,
                                     rel_gap=0.001))
     else
@@ -4103,12 +4108,13 @@ function blend721(;verbose=false, solver=nothing)
     return m
 end
 
-function blend852(;verbose=false, solver=nothing)
+function blend852(;verbose=false, solver=nothing, convhull=true, delta=16)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    bilinear_convexhull=convhull,
+                                    discretization_ratio=delta,
                                     log_level=100,
                                     rel_gap=0.001))
     else

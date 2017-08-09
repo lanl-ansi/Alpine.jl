@@ -1,13 +1,14 @@
-using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
+using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
 function eniplac(;verbose=false, solver=nothing, convhull=true, exprmode=1)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"; "bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
-                                    mip_solver=GurobiSolver(OutputFlag=0),
+                                    mip_solver=CplexSolver(CPX_PARAM_SCRIND=1),
                                     presolve_bound_tightening=false,
-                                    bilinear_convexhull=true,
+                                    bilinear_convexhull=false,
                                     monomial_convexhull=convhull,
+									convexhull_use_sos2=false,
                                     discretization_ratio=8,
                                     # discretization_var_pick_algo="min_vertex_cover",
                                     log_level=1,

@@ -278,3 +278,24 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
 
 	return indices
 end
+
+function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
+
+    @assert length(sol_vec) == m.num_var_orig
+    sol_vec = [sol_vec; fill(NaN, m.num_var_lifted_mip)]
+
+    for i in 1:length(m.nonlinear_info)
+        for bi in keys(m.nonlinear_info)
+            if m.nonlinear_info[bi][:id] == i
+                lvar_idx = m.num_var_orig + i
+                if haskey(m.nonlinear_info[bi], :evaluator)
+                    sol_vec[lvar_idx] = m.nonlinear_info[bi][:evaluator](m.nonlinear_info[bi], sol_vec)
+                else
+                    sol_vec[lvar_idx] = 0.5*m.discretization[lvar_idx][1] + 0.5*m.discretization[lvar_idx][end]
+                end
+            end
+        end
+    end
+
+    return sol_vec
+end

@@ -1,12 +1,12 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function lee1(;verbose=false, solver=nothing, convhull=true)
+function lee1(;verbose=false, solver=nothing, convhull=true, delta=8)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
 																	"bonmin.time_limit=60"]),
                                     mip_solver=GurobiSolver(OutputFlag=1),
-                                    discretization_ratio=8,
+                                    discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
                                     monomial_convexhull=convhull,
                                     log_level=100,
@@ -162,7 +162,7 @@ function lee1(;verbose=false, solver=nothing, convhull=true)
     return m
 end
 
-function lee2(;verbose=false, solver=nothing, convhull=true)
+function lee2(;verbose=false, solver=nothing, convhull=true, delta=8)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
@@ -170,7 +170,7 @@ function lee2(;verbose=false, solver=nothing, convhull=true)
 									mip_solver=GurobiSolver(OutputFlag=0),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
-									discretization_ratio=32,
+									discretization_ratio=8,
 									log_level=200,
 									rel_gap=0.001))
 	else
@@ -382,7 +382,7 @@ function lee2(;verbose=false, solver=nothing, convhull=true)
 	return m
 end
 
-function meyer4(;verbose=false, solver=nothing, convhull=true)
+function meyer4(;verbose=false, solver=nothing, convhull=true, delta=8)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
@@ -390,7 +390,7 @@ function meyer4(;verbose=false, solver=nothing, convhull=true)
 									mip_solver=GurobiSolver(OutputFlag=0),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
-									discretization_ratio=8,
+									discretization_ratio=delta,
 									discretization_var_pick_algo="min_vertex_cover",
 									log_level=200,
 									rel_gap=0.001))
@@ -693,7 +693,7 @@ function meyer4(;verbose=false, solver=nothing, convhull=true)
     return m
 end
 
-function meyer10(;verbose=false, solver=nothing)
+function meyer10(;verbose=false, solver=nothing, convhull=true, delta=8)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
@@ -701,7 +701,7 @@ function meyer10(;verbose=false, solver=nothing)
 									mip_solver=GurobiSolver(OutputFlag=0),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
-									discretization_ratio=32,
+									discretization_ratio=delta,
 									log_level=100,
 									rel_gap=0.001))
 	else
@@ -1751,15 +1751,15 @@ function meyer10(;verbose=false, solver=nothing)
     return m
 end
 
-function meyer15(;verbose=false, solver=nothing)
+function meyer15(;verbose=false, solver=nothing, convhull=true, delta=32)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
 																	"bonmin.time_limit=60"]),
-									mip_solver=GurobiSolver(OutputFlag=0),
+									mip_solver=GurobiSolver(OutputFlag=1),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
-									discretization_ratio=32,
+									discretization_ratio=delta,
 									log_level=100,
 									rel_gap=0.001))
 	else

@@ -1,4 +1,4 @@
-using JuMP, MathProgBase, Gurobi, Ipopt, POD
+using JuMP, MathProgBase, CPLEX, Ipopt, POD
 
 println("--------------------------------------------")
 println("Multi4/N - exprmode 1 -> X1 * X2 * X3 * X4")
@@ -206,7 +206,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	if solver == nothing
 		if uniform > 0.0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=1),
+									   mip_solve=CplexSolver(OutputFlag=1),
 									   convexhull_use_sos2=sos2,
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
@@ -216,7 +216,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   log_level=100))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=1),
+									   mip_solver=CplexSolver(CPX_PARAM_SCRIND=1),
 									   convexhull_use_sos2=sos2,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,

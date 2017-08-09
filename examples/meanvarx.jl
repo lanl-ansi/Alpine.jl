@@ -1,13 +1,13 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function meanvarx(;verbose=false, solver=nothing, convhull=true)
+function meanvarx(;verbose=false, solver=nothing, convhull=true, delta=4)
 
     if solver==nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
                                    mip_solver=GurobiSolver(OutputFlag=0),
                                    rel_gap=0.0001,
                                    log_level=1,
-                                   discretization_ratio=4,
+                                   discretization_ratio=delta,
                                    bilinear_convexhull=convhull,
                                    monomial_convexhull=convhull,
                                    presolve_bt_output_tol=1e-2,

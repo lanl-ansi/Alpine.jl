@@ -156,6 +156,8 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
                                         :id => length(keys(m.nonlinear_info)) + 1,
                                         :ref => term_key,
+                                        :orig_vars => var_idxs,
+                                        :evaluator => bi(k, vec) = prod([vec[i] for i in k[:orig_vars]]),
                                         :lifted_constr_ref => lifted_constr_ref,
                                         :nonlinear_type => :bilinear,
                                         :convexified => false)
@@ -220,6 +222,8 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
                                             :id => length(keys(m.nonlinear_info)) + 1,
                                             :ref => term_key,
+                                            :orig_vars => var_idxs,
+                                            :evaluator => bi(k, vec) = prod([vec[i] for i in k[:orig_vars]]),
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :nonlinear_type => :multilinear,
                                             :convexified => false)
@@ -277,6 +281,8 @@ function resolve_monomial(expr, m::PODNonlinearModel)
         m.nonlinear_info[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
                                             :id => length(keys(m.nonlinear_info)) + 1,
                                             :ref => term_key,
+                                            :orig_vars => var_idxs,
+                                            :evaluator => bi(k, vec) = prod([vec[i] for i in k[:orig_vars]]),
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :nonlinear_type => :monomial,
                                             :convexified => false)

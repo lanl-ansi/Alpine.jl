@@ -61,9 +61,9 @@ function PODSolver(;
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
-    bilinear_mccormick = true,      # by default, deal with bilinear terms using mccormick since the convhull is under tests
-    bilinear_convexhull = false,
-    monomial_convexhull = false,
+    bilinear_mccormick = false,      # by default, deal with bilinear terms using mccormick since the convhull is under tests
+    bilinear_convexhull = true,
+    monomial_convexhull = true,
 
     method_convexification = Array{Function}(0),
     expr_patterns = Array{Function}(0),
@@ -76,7 +76,7 @@ function PODSolver(;
     discretization_rel_width_tol = 1e-9,
 
     convexhull_sweep_limit = 1,
-    convexhull_use_sos2 = false,
+    convexhull_use_sos2 = true,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
