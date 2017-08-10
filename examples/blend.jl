@@ -1,14 +1,17 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function blend029(;verbose=false, solver=nothing, convhull=true, delta=16)
+function blend029(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=10000"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=300"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
-                                    log_level=100,
-                                    rel_gap=0.001))
+                                    presolve_bound_tightening=(presolve>0),
+                                    discretization_var_pick_algo=presolve,
+                                    presolve_track_time=true,
+                                    presolve_bound_tightening_algo=1,
+                                    log_level=100))
     else
         m = Model(solver=solver)
     end
@@ -251,17 +254,18 @@ function blend029(;verbose=false, solver=nothing, convhull=true, delta=16)
     return m
 end
 
-function blend146(;verbose=false, solver=nothing, convhull=true, delta=16)
+function blend146(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=240"]),
-                                    mip_solver=GurobiSolver(OutputFlag=1),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=300"]),
+                                    mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
-                                    discretization_var_pick_algo=1,
-                                    presolve_bound_tightening=true,
-                                    log_level=100,
-                                    rel_gap=0.0001))
+                                    presolve_bound_tightening=(presolve>0),
+                                    discretization_var_pick_algo=presolve,
+                                    presolve_track_time=true,
+                                    presolve_bound_tightening_algo=1,
+                                    log_level=100))
     else
         m = Model(solver=solver)
     end
@@ -916,15 +920,18 @@ function blend146(;verbose=false, solver=nothing, convhull=true, delta=16)
     return m
 end
 
-function blend480(;verbose=false, solver=nothing, convhull=true, delta=16)
+function blend480(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=-1)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=60"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
-                                    log_level=100,
-                                    rel_gap=0.001))
+                                    discretization_var_pick_algo=1,
+                                    presolve_track_time=true,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
+                                    log_level=1))
     else
         m = Model(solver=solver)
     end
@@ -1841,15 +1848,18 @@ function blend480(;verbose=false, solver=nothing, convhull=true, delta=16)
     return m
 end
 
-function blend531(;verbose=false, solver=nothing, convhull=true, delta=16)
+function blend531(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=-1)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=60"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
-                                    log_level=100,
-                                    rel_gap=0.001))
+                                    discretization_var_pick_algo=1,
+                                    presolve_track_time=true,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
+                                    log_level=1))
     else
         m = Model(solver=solver)
     end
@@ -2620,15 +2630,18 @@ function blend531(;verbose=false, solver=nothing, convhull=true, delta=16)
     return m
 end
 
-function blend718(;verbose=false, solver=nothing, convhull=true, delta=16)
+function blend718(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=-1)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=60"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    bilinear_convexhull=convhull,
                                     discretization_ratio=delta,
-                                    log_level=100,
-                                    rel_gap=0.001))
+                                    bilinear_convexhull=convhull,
+                                    discretization_var_pick_algo=1,
+                                    presolve_track_time=true,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
+                                    log_level=1))
     else
         m = Model(solver=solver)
     end
@@ -3178,14 +3191,18 @@ function blend718(;verbose=false, solver=nothing, convhull=true, delta=16)
     return m
 end
 
-function blend721(;verbose=false, solver=nothing, convhull=true, delta=16)
+function blend721(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=-1)
+
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=60"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    bilinear_convexhull=convhull,
                                     discretization_ratio=delta,
-                                    log_level=100,
-                                    rel_gap=0.001))
+                                    bilinear_convexhull=convhull,
+                                    discretization_var_pick_algo=1,
+                                    presolve_track_time=true,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
+                                    log_level=1))
     else
         m = Model(solver=solver)
     end
@@ -4108,15 +4125,18 @@ function blend721(;verbose=false, solver=nothing, convhull=true, delta=16)
     return m
 end
 
-function blend852(;verbose=false, solver=nothing, convhull=true, delta=16)
+function blend852(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=-1)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=60"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    bilinear_convexhull=convhull,
                                     discretization_ratio=delta,
-                                    log_level=100,
-                                    rel_gap=0.001))
+                                    bilinear_convexhull=convhull,
+                                    discretization_var_pick_algo=1,
+                                    presolve_track_time=true,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
+                                    log_level=1))
     else
         m = Model(solver=solver)
     end

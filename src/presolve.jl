@@ -97,7 +97,8 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                     elseif status in status_reroute
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
                     else
-                        error("bound tightening sub-problem solves to an error status [$(status)]")
+                        print("!")
+                        temp_bounds[var_idx][tell_side[sense]] = temp_bounds[var_idx][tell_side[sense]]
                     end
                     m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
@@ -183,7 +184,6 @@ function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
-    #TODO handle the infeasible cases when time limit is applied
     # ========= MILP Solve ========= #
 
     return status

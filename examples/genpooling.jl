@@ -9,6 +9,8 @@ function lee1(;verbose=false, solver=nothing, convhull=true, delta=8)
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
                                     monomial_convexhull=convhull,
+                                    discretization_ratio=8,
+                                    
                                     log_level=100,
                                     rel_gap=0.001))
     else

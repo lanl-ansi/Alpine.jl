@@ -1,14 +1,15 @@
 using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function eniplac(;verbose=false, solver=nothing, convhull=true, exprmode=1)
+function eniplac(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos2=true, presolve=0)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"; "bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
                                     mip_solver=CplexSolver(CPX_PARAM_SCRIND=1),
-                                    presolve_bound_tightening=false,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
                                     bilinear_convexhull=false,
                                     monomial_convexhull=convhull,
-									convexhull_use_sos2=false,
+									convexhull_use_sos2=sos2,
                                     discretization_ratio=8,
                                     # discretization_var_pick_algo="min_vertex_cover",
                                     log_level=1,
