@@ -454,7 +454,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         m.status[:local_solve] = :Unbounded
         return
     else
-        (presolve == true) && error("[PRESOLVE] NLP solve failure.")
+		(presolve == true) && error("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).")
         (presolve == false) && warn("[LOCAL SOLVE] NLP local solve failure.")
         m.status[:local_solve] = :Error
         return

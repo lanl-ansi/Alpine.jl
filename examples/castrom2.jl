@@ -5275,7 +5275,7 @@ function castro11m2(;verbose=false, solver=nothing, convhull=true, presolve=0, d
                                     bilinear_convexhull=convhull,
                                     presolve_bound_tightening=(presolve>0),
                                     presolve_bound_tightening_algo=presolve,
-                                    discretization_var_pick_algo=0,
+                                    discretization_var_pick_algo=1,
                                     log_level=1))
     else
         m = Model(solver=solver)
@@ -6160,8 +6160,8 @@ function castro12m2(;verbose=false, solver=nothing, convhull=true, presolve=0, d
                                     bilinear_convexhull=convhull,
                                     presolve_bound_tightening=(presolve>0),
                                     presolve_bound_tightening_algo=presolve,
-                                    discretization_var_pick_algo=0,
-                                    log_level=1))
+                                    discretization_var_pick_algo=1,
+                                    log_level=100))
     else
         m = Model(solver=solver)
     end

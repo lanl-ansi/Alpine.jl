@@ -183,9 +183,11 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     # ? Perform discretization base on type of nonlinear terms
     for i in m.var_discretization_mip
         point = point_vec[i]                # Original Variable
-        # @show i, point, discretization[i]
-        @assert point >= discretization[i][1] - m.tol       # Solution validation
-        @assert point <= discretization[i][end] + m.tol
+        #@show i, point, discretization[i]
+        if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
+			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
+			point = 0.5*(discretization[i][1]+discretization[i][end])
+		end
         # Safety Scheme
         (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
         (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])

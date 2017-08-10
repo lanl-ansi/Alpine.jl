@@ -1,4 +1,4 @@
-using JuMP, MathProgBase, CPLEX, Ipopt, POD
+using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
 function circle(;verbose=false, solver=nothing)
 
@@ -31,7 +31,7 @@ function circleN(;verbose=false, solver=nothing, convhull=false, N=2, uniform=-1
 	if solver == nothing
 		if uniform > 0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+									   mip_solver=GurobiSolver(),
 									   monomial_convexhull=convhull,
 									   discretization_abs_width_tol=1e-2,
 									   maxiter=1,
@@ -41,7 +41,7 @@ function circleN(;verbose=false, solver=nothing, convhull=false, N=2, uniform=-1
 									   log_level=100))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=CplexSolver(CPX_PARAM_SCRIND=0),
+									   mip_solver=GurobiSolver(),
 									   monomial_convexhull=convhull,
 									   discretization_abs_width_tol=1e-2,
 									   presolve_bound_tightening=false,

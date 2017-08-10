@@ -699,7 +699,7 @@ function meyer10(;verbose=false, solver=nothing, convhull=true, delta=8)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
-																	"bonmin.time_limit=60"]),
+																"bonmin.time_limit=300"]),
 									mip_solver=GurobiSolver(OutputFlag=0),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
@@ -1753,14 +1753,17 @@ function meyer10(;verbose=false, solver=nothing, convhull=true, delta=8)
     return m
 end
 
-function meyer15(;verbose=false, solver=nothing, convhull=true, delta=32)
+function meyer15(;verbose=false, solver=nothing, convhull=true, delta=32, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
-																	"bonmin.time_limit=60"]),
+		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=5",
+															  		"bonmin.num_resolve_at_root=5",
+																	"bonmin.time_limit=300"]),
 									mip_solver=GurobiSolver(OutputFlag=1),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
+								   presolve_bound_tightening=(presolve>0),
+								   presolve_bound_tightening_algo=presolve,
 									discretization_ratio=delta,
 									log_level=100,
 									rel_gap=0.001))

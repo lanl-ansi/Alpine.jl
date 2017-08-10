@@ -3,7 +3,7 @@ using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 function ex1264(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -105,7 +105,7 @@ end
 function ex1265(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -163,8 +163,7 @@ function ex1265(;verbose=false, solver=nothing, convhull=true, delta=16, presolv
     @constraint(m, -x[1]-x[6]-x[11]-x[16]-x[21]+x[101]<=0)  #= e17: =#
     @constraint(m, -x[2]-x[7]-x[12]-x[17]-x[22]+x[102]<=0)  #= e18: =#
     @constraint(m, -x[3]-x[8]-x[13]-x[18]-x[23]+x[103]<=0)  #= e19: =#
-    @constraint(m, -x[4]-x[9]-x[14]-        @constraint(m, x[i] >= 0.0)
-        @constraint(m, x[i] <= 5.0)x[19]-x[24]+x[104]<=0)  #= e20: =#
+    @constraint(m, -x[4]-x[9]-x[14]-x[19]-x[24]+x[104]<=0)  #= e20: =#
     @constraint(m, -x[5]-x[10]-x[15]-x[20]-x[25]+x[105]<=0)  #= e21: =#
     @constraint(m, x[1]+x[6]+x[11]+x[16]+x[21]-5*x[101]<=0)  #= e22: =#
     @constraint(m, x[2]+x[7]+x[12]+x[17]+x[22]-5*x[102]<=0)  #= e23: =#
@@ -231,7 +230,7 @@ end
 function ex1266(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -377,7 +376,7 @@ end
 function ex1223a(;verbose=false, solver=nothing)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=32,
                                     log_level=100,

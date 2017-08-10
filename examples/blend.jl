@@ -8,7 +8,8 @@ function blend029(;verbose=false, solver=nothing, convhull=true, delta=16, preso
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
                                     presolve_bound_tightening=(presolve>0),
-                                    discretization_var_pick_algo=presolve,
+									presolve_bound_tightening_algo=presolve,
+                                    discretization_var_pick_algo=1,
                                     presolve_track_time=true,
                                     presolve_bound_tightening_algo=1,
                                     log_level=100))
@@ -262,7 +263,8 @@ function blend146(;verbose=false, solver=nothing, convhull=true, delta=16, preso
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
                                     presolve_bound_tightening=(presolve>0),
-                                    discretization_var_pick_algo=presolve,
+									presolve_bound_tightening_algo=presolve,
+                                    discretization_var_pick_algo=1,
                                     presolve_track_time=true,
                                     presolve_bound_tightening_algo=1,
                                     log_level=100))
@@ -923,7 +925,9 @@ end
 function blend480(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=-1)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=60"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_root=5", 
+																	"bonmin.num_resolve_at_node=5",
+																	"bonmin.time_limit=500"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -1851,7 +1855,7 @@ end
 function blend531(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=-1)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=60"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=300"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -2641,7 +2645,7 @@ function blend718(;verbose=false, solver=nothing, convhull=true, delta=16, preso
                                     presolve_track_time=true,
                                     presolve_bound_tightening=(presolve>0),
                                     presolve_bound_tightening_algo=presolve,
-                                    log_level=1))
+                                    log_level=100))
     else
         m = Model(solver=solver)
     end
