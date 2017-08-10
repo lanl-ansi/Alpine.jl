@@ -99,7 +99,6 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                     else
                         error("bound tightening sub-problem solves to an error status [$(status)]")
                     end
-                    # TODO: discuss feasibility tols and where to put them and apt default
                     m.log_level > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
             end

@@ -178,9 +178,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
     haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) : point_vec = copy(m.best_bound_sol)
 
-    @show point_vec
     (length(point_vec) < m.num_var_orig+m.num_var_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
-    @show point_vec
 
     # ? Perform discretization base on type of nonlinear terms
     for i in m.var_discretization_mip
@@ -197,7 +195,13 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                 lb_local = discretization[i][j]
                 ub_local = discretization[i][j+1]
                 distance = ub_local - lb_local
-                radius = distance / m.discretization_ratio
+                if isa(m.discretization_ratio, Float64) || isa(m.discretization_ratio, Int)
+                    radius = distance / m.discretization_ratio
+                elseif isa(m.discretization_ratio, Function)
+                    radius = distance / m.discretization_ratio(m)
+                else
+                    error("Undetermined discretization_ratio")
+                end
                 lb_new = max(point - radius, lb_local)
                 ub_new = min(point + radius, ub_local)
                 ub_touch = true

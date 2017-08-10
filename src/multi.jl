@@ -227,7 +227,9 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
                 @constraint(m.model_mip, sum(λ[ml_indices][:vars][sliced_indices]) <= sum(α[var_ind][(j-1):j]))
             end
         end
+
     else
+
         # Constriant cluster of α <= f(λ)
         for j in 1:partition_cnt
             for i in 1:max(1, min(partition_cnt-j+1, m.convexhull_sweep_limit)) # At least one
@@ -236,13 +238,14 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
             end
         end
 
-        # Constraint cluster of α >= f(λ)
-        for j in 1:min(partition_cnt, m.convexhull_sweep_limit) # Construct cuts by sweeping in both directions
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
-            @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
-            @constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-        end
+    end
+
+    # Constraint cluster of α >= f(λ)
+    for j in 1:min(partition_cnt, m.convexhull_sweep_limit) # Construct cuts by sweeping in both directions
+        sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+        @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
+        sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
+        @constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
     end
 
     return

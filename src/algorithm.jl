@@ -26,7 +26,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     expr_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize expressions
 
     # parameters used in partitioning algorithm
-    discretization_ratio::Float64                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
+    discretization_ratio::Any                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     discretization_uniform_rate::Int                            # Discretization rate parameter when using uniform partitions
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
