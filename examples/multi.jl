@@ -214,7 +214,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   presolve_bound_tightening=false,
-									   log_level=100))
+									   log_level=1))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=0),
@@ -224,7 +224,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   presolve_bound_tightening=false,
 									   presolve_bound_tightening_algo=2,
 									   discretization_var_pick_algo=0,
-									   log_level=100))
+									   log_level=1))
 		end
 	else
 		m = Model(solver=solver)
