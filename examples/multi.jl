@@ -251,7 +251,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	return m
 end
 
-function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, randomub=true, N=1, K=2, delta=4, presolve=0)
+function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, facet=false, randomub=true, N=1, K=2, delta=4, presolve=0)
 
 	if solver == nothing
 		if uniform > 0.0
@@ -260,6 +260,7 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
 									   convexhull_use_sos2=sos2,
+									   convexhull_use_facet=facet,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   presolve_bound_tightening=false,
@@ -268,6 +269,7 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
 									   convexhull_use_sos2=sos2,
+									   convexhull_use_facet=facet,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=(presolve>0),
