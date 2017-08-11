@@ -1,10 +1,11 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function util(;verbose=false, solver=nothing)
+function util(;verbose=false, solver=nothing, convhull=true)
 
     if solver==nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.nlp_log_level=0", "bonmin.bb_log_level=0"]),
     							   mip_solver=GurobiSolver(OutputFlag=0),
+                                   bilinear_convexhull=convhull,
                                    log_level=1))
     else
         m = Model(solver=solver)

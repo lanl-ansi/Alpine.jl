@@ -7,7 +7,6 @@ function initialize_tight_bounds(m::PODNonlinearModel)
 
     m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_lifted_mip);]
     m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_lifted_mip);]
-
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
@@ -26,43 +25,7 @@ Detect bounds from parse affine constraint. This function examines the one varia
 x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_tight.
 This function can potential grow to be smarter.
 """
-function detect_bound_from_aff(m::PODNonlinearModel)
-
-    for aff in m.lifted_constr_aff_mip
-        if length(aff[:coefs]) == 1 && length(aff[:vars]) == 1
-            var_idx = aff[:vars][1].args[2]
-            @assert (isa(var_idx, Float64) || isa(var_idx, Int))
-            if aff[:sense] == :(==)
-                m.l_var_tight[var_idx] = aff[:coefs][1] * aff[:rhs]
-                m.u_var_tight[var_idx] = aff[:coefs][1] * aff[:rhs]
-                (m.log_level > 99) && println("[VAR$(var_idx)] Both bound $(aff[:rhs]) detected from constraints")
-            elseif aff[:sense] == :(>=) && aff[:coefs][1] > 0.0
-                eval_bound = aff[:rhs]/aff[:coefs][1]
-                if eval_bound > m.l_var_tight[var_idx] + m.tol
-                    m.l_var_tight[var_idx] = eval_bound
-                    (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) detected from constraints")
-                end
-            elseif aff[:sense] == :(>=) && aff[:coefs][1] < 0.0  # Flip sign
-                eval_bound = aff[:rhs]/aff[:coefs][1]
-                if eval_bound < m.u_var_tight[var_idx] - m.tol
-                    m.u_var_tight[var_idx] = eval_bound
-                    (m.log_level > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) detected from constraints")
-                end
-            elseif aff[:sense] == :(<=) && aff[:coefs][1] > 0.0
-                eval_bound = aff[:rhs]/aff[:coefs][1]
-                if eval_bound < m.u_var_tight[var_idx] - m.tol
-                    m.u_var_tight[var_idx] = eval_bound
-                    (m.log_level > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) detected from constraints")
-                end
-            elseif aff[:sense] == :(<=) && aff[:coefs][1] < 0.0  # Flip sign
-                eval_bound = aff[:rhs]/aff[:coefs][1]
-                if eval_bound > m.l_var_tight[var_idx] + m.tol
-                    m.l_var_tight[var_idx] = eval_bound
-                    (m.log_level > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) detected from constraints")
-                end
-            end
-        end
-    end
+function bounds_propagation(m::PODNonlinearModel)
 
     exhausted = false
     while !exhausted
@@ -175,18 +138,30 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
+    # TODO: need to consider negative values
     for i in 1:length(m.nonlinear_info)
         for bi in keys(m.nonlinear_info)
-            if (m.nonlinear_info[bi][:id]) == i && (m.nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial])
-                idx_a = bi[1].args[2]
-                idx_b = bi[2].args[2]
-                idx_ab = m.nonlinear_info[bi][:lifted_var_ref].args[2]
-                bound = [m.l_var_tight[idx_a], m.u_var_tight[idx_a]] * [m.l_var_tight[idx_b], m.u_var_tight[idx_b]]'
-                if minimum(bound) > m.l_var_tight[idx_ab] + m.tol
-                    m.l_var_tight[idx_ab] = minimum(bound)
+            if (m.nonlinear_info[bi][:id]) == i && (m.nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial, :multilinear])
+                lifted_idx = m.nonlinear_info[bi][:lifted_var_ref].args[2]
+                cnt = 0
+                bound = []
+                for var in bi
+                    cnt += 1
+                    var_idx = var.args[2]
+                    var_bounds = [m.l_var_tight[var_idx], m.u_var_tight[var_idx]]
+                    if cnt == 1
+                        bound = copy(var_bounds)
+                    elseif cnt == 2
+                        bound = bound * var_bounds'
+                    else
+                        bound = diag(bound) * var_bounds'
+                    end
                 end
-                if maximum(bound) < m.u_var_tight[idx_ab] + m.tol
-                    m.u_var_tight[idx_ab] = maximum(bound)
+                if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
+                    m.l_var_tight[lifted_idx] = minimum(bound)
+                end
+                if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
+                    m.u_var_tight[lifted_idx] = maximum(bound)
                 end
             end
         end
@@ -209,14 +184,28 @@ function resolve_lifted_var_bounds(nonlinear_info::Dict, discretization::Dict; k
     # Potentially, additional mapping can be applied to reduce the complexity
     for i in 1:length(nonlinear_info)
         for bi in keys(nonlinear_info)
-            if (nonlinear_info[bi][:id] == i) && (nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial])
-                idx_a = bi[1].args[2]
-                idx_b = bi[2].args[2]
-                idx_ab = nonlinear_info[bi][:lifted_var_ref].args[2]
-                bound = [discretization[idx_a][1], discretization[idx_a][end]] * [discretization[idx_b][1], discretization[idx_b][end]]'
-                discretization[idx_ab] = [-Inf, Inf]
-                discretization[idx_ab][1] = minimum(bound)
-                discretization[idx_ab][2] = maximum(bound)
+            if (nonlinear_info[bi][:id] == i) && (nonlinear_info[bi][:nonlinear_type] in [:bilinear, :monomial, :multilinear])
+                lifted_idx = nonlinear_info[bi][:lifted_var_ref].args[2]
+                cnt = 0
+                bound = []
+                for var in bi
+                    cnt += 1
+                    var_idx = var.args[2]
+                    var_bounds = [discretization[var_idx][1], discretization[var_idx][end]]
+                    if cnt == 1
+                        bound = copy(var_bounds)
+                    elseif cnt == 2
+                        bound = bound * var_bounds'
+                    else
+                        bound = diag(bound) * var_bounds'
+                    end
+                end
+                if minimum(bound) > discretization[lifted_idx][1]
+                    discretization[lifted_idx][1] = minimum(bound)
+                end
+                if maximum(bound) < discretization[lifted_idx][end]
+                    discretization[lifted_idx][end] = maximum(bound)
+                end
             end
         end
     end
@@ -242,4 +231,30 @@ function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
     end
 
     return
+end
+
+"""
+    update_var_bounds(m::PODNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
+
+This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
+
+Output::
+
+    l_var::Vector{Float64}, u_var::Vector{Float64}
+"""
+function update_var_bounds(discretization; kwargs...)
+
+    options = Dict(kwargs)
+
+    haskey(options, :len) ? len = options[:len] : len = length(keys(discretization))
+
+    l_var = fill(-Inf, len)
+    u_var = fill(Inf, len)
+
+    for var_idx in keys(discretization)
+        l_var[var_idx] = discretization[var_idx][1]
+        u_var[var_idx] = discretization[var_idx][end]
+    end
+
+    return l_var, u_var
 end

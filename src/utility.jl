@@ -23,37 +23,22 @@ function update_opt_gap(m::PODNonlinearModel)
 end
 
 """
-    update_var_bounds(m::PODNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
-
-This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
-
-Output::
-
-    l_var::Vector{Float64}, u_var::Vector{Float64}
-"""
-function update_var_bounds(discretization; kwargs...)
-
-    options = Dict(kwargs)
-
-    haskey(options, :len) ? len = options[:len] : len = length(keys(discretization))
-
-    l_var = fill(-Inf, len)
-    u_var = fill(Inf, len)
-
-    for var_idx in keys(discretization)
-        l_var[var_idx] = discretization[var_idx][1]
-        u_var[var_idx] = discretization[var_idx][end]
-    end
-
-    return l_var, u_var
-end
-
-"""
     discretization_to_bounds(d::Dict, l::Int)
 
 Same as [`update_var_bounds`](@ref)
 """
 discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
+
+
+"""
+    Utility function for debugging.
+"""
+function show_solution(m::JuMP.Model)
+    for i in 1:length(m.colNames)
+        println("$(m.colNames[i])=$(m.colVal[i])")
+    end
+    return
+end
 
 """
     initialize_discretization(m::PODNonlinearModel)
@@ -86,6 +71,7 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
 
     options = Dict(kwargs)
 
+    @assert length(lbs) == length(ubs)
     var_discretization = Dict()
     for var in 1:m.num_var_orig
         lb = lbs[var]
@@ -93,10 +79,18 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
         var_discretization[var] = [lb, ub]
     end
 
-    for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
-        lb = -Inf
-        ub = Inf
-        var_discretization[var] = [lb, ub]
+    if length(lbs) == (m.num_var_orig+m.num_var_lifted_mip)
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+            lb = lbs[var]
+            ub = ubs[var]
+            var_discretization[var] = [lb, ub]
+        end
+    else
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+            lb = -Inf
+            ub = Inf
+            var_discretization[var] = [lb, ub]
+        end
     end
 
     return var_discretization
@@ -116,102 +110,6 @@ function flatten_discretization(discretization::Dict; kwargs...)
     end
 
     return flatten_discretization
-end
-
-"""
-    add_discretization(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
-
-Basic built-in method used to add a new partition on feasible domains of discretizing variables.
-This method make modification in .discretization
-
-Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
-Use ^ as the new partition, "|" as the original partition
-
-A case when discretize ratio = 4
-| -------- | - ^ -- * -- ^ ---- | -------- |
-0          3  3.5   4   4.5     7          9
-
-A special case when discretize ratio = 2
-| -------- | ---- * ---- ^ ---- | -------- |
-0          3      4      5      7          9
-
-There are two options for this function,
-
-    * `use_discretization(default=m.discretization)`:: to regulate which is the base to add new partitions on
-    * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
-
-TODO: also need to document the speical diverted cases when new partition touches both sides
-
-This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
-"""
-function add_discretization(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-
-    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
-    haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
-
-    # ? Perform discretization base on type of nonlinear terms
-    for i in 1:m.num_var_orig
-        point = point_vec[i]
-        # @show i, point, discretization[i]
-        @assert point >= discretization[i][1] - m.tol       # Solution validation
-        @assert point <= discretization[i][end] + m.tol
-        # Safety Scheme
-        (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
-        (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
-        if i in m.var_discretization_mip  # Only construct when discretized
-            for j in 1:length(discretization[i])
-                if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                    @assert j < length(m.discretization[i])
-                    lb_local = discretization[i][j]
-                    ub_local = discretization[i][j+1]
-                    distance = ub_local - lb_local
-                    radius = distance / m.discretization_ratio
-                    lb_new = max(point - radius, lb_local)
-                    ub_new = min(point + radius, ub_local)
-                    ub_touch = true
-                    lb_touch = true
-                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.discretization_width_tol)  # Insert new UB-based partition
-                        insert!(discretization[i], j+1, ub_new)
-                        ub_touch = false
-                    end
-                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.discretization_width_tol)  # Insert new LB-based partition
-                        insert!(discretization[i], j+1, lb_new)
-                        lb_touch = false
-                    end
-                    if ub_touch && lb_touch
-                        distance = -1.0
-                        pos = -1
-                        for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
-                            if (discretization[i][j] - discretization[i][j-1]) > distance
-                                lb_local = discretization[i][j-1]
-                                ub_local = discretization[i][j]
-                                distance = ub_local - lb_local
-                                point = lb_local + (ub_local - lb_local) / 2   # reset point
-                                pos = j
-                            end
-                        end
-                        radius = distance / m.discretization_ratio
-                        lb_new = max(point - radius, lb_local)
-                        ub_new = min(point + radius, ub_local)
-                        if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
-                            insert!(discretization[i], pos, ub_new)
-                        end
-                        if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
-                            insert!(discretization[i], pos, lb_new)
-                        end
-                        m.log_level > 99 && println("[DEBUG] VAR$(i): !diverted! : SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
-                    else
-                        m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
-                    end
-                    break
-                end
-            end
-        end
-    end
-
-    return discretization
 end
 
 """
@@ -332,8 +230,10 @@ function convexification_exam(m::PODNonlinearModel)
     # Other more advanced convexification check goes here
     for term in keys(m.nonlinear_info)
         if !m.nonlinear_info[term][:convexified]
-            warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
+            error("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
             return
+        else
+            m.nonlinear_info[term][:convexified] = false    # Reset status for next iteration
         end
     end
 
@@ -371,60 +271,6 @@ function pick_vars_discretization(m::PODNonlinearModel)
     else
         error("Input for parameter :discretization_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
     end
-
-    return
-end
-
-"""
-    mccormick(m::JuMP.Model, xy, x, y, x_l, x_u, y_l, y_u)
-
-Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
-"""
-function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
-    @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
-    @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
-    @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
-    @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
-    return
-end
-
-function mccormick_bin(m,xy,x,y)
-
-    @constraint(m, xy <= x)
-    @constraint(m, xy <= y)
-    @constraint(m, xy >= x+y-1)
-
-    return
-end
-
-function mccormick_monomial(m,xy,x,xˡ,xᵘ)
-    @constraint(m, xy >= x^2)
-    @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
-    return
-end
-
-function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
-    if lazy == 1
-        function GetLazyCuts_quad(cb)
-            TOL1 = 1e-6
-            if (getvalue(x)^p > (getvalue(x_p) + TOL1))
-                a = p*getvalue(x)^(p-1)
-                b = (1-p)*getvalue(x)^p
-                @lazyconstraint(cb, a*x + b <= x_p)
-            end
-        end
-        addlazycallback(m, GetLazyCuts_quad)
-    elseif p == 2 && quad == 1
-        @constraint(m, x_p >= x^2)
-    else
-        x0_vec = sort(union(xˡ, xᵘ))
-        for x0 in x0_vec
-            @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
-        end
-    end
-
-    A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
-    @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
 
     return
 end
@@ -471,6 +317,7 @@ function min_vertex_cover(m::PODNonlinearModel)
     m.num_var_discretization_mip = Int(sum(xVal))
     m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
 
+    return
 end
 
 """
@@ -484,9 +331,7 @@ function max_cover(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
     for pair in keys(m.nonlinear_info)
-        if length(pair) > 2
-            warn("max-cover discretizing variable selection method only support bi-linear problems. enforcing may produce mistakes...")
-        end
+        # Assumption Max cover is always safe
         for i in pair
             @assert isa(i.args[2], Int)
             push!(nodes, i.args[2])
@@ -495,6 +340,40 @@ function max_cover(m::PODNonlinearModel; kwargs...)
     nodes = collect(nodes)
     m.num_var_discretization_mip = length(nodes)
     m.var_discretization_mip = nodes
+
+    return
+end
+
+function print_iis_gurobi(m::JuMP.Model)
+
+    grb = MathProgBase.getrawsolver(internalmodel(m))
+    Gurobi.computeIIS(grb)
+    numconstr = Gurobi.num_constrs(grb)
+    numvar = Gurobi.num_vars(grb)
+
+    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+
+    info("Irreducible Inconsistent Subsystem (IIS)")
+    info("Variable bounds:")
+    for i in 1:numvar
+        v = Variable(m, i)
+        if iislb[i] != 0 && iisub[i] != 0
+            println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+        elseif iislb[i] != 0
+            println(getname(v), " >= ", getlowerbound(v))
+        elseif iisub[i] != 0
+            println(getname(v), " <= ", getupperbound(v))
+        end
+    end
+
+    info("Constraints:")
+    for i in 1:numconstr
+        if iisconstr[i] != 0
+            println(m.linconstr[i])
+        end
+    end
 
     return
 end

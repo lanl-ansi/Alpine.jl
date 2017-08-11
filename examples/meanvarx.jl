@@ -1,14 +1,17 @@
 using POD, JuMP, Gurobi, AmplNLWriter, CoinOptServices, MathProgBase
 
-function meanvarx(;verbose=false, solver=nothing)
+function meanvarx(;verbose=false, solver=nothing, convhull=true, delta=4, presolve=0)
 
     if solver==nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_root=1"; "bonmin.num_resolve_at_node=1"]),
                                    mip_solver=GurobiSolver(OutputFlag=0),
-                                   rel_gap=0.001, log_level=100,
-                                   discretization_ratio=4,
-                                   presolve_bt_output_tol=1e-2,
-                                   presolve_bound_tightening=false))
+                                   log_level=100,
+                                   discretization_ratio=delta,
+                                   bilinear_convexhull=convhull,
+                                   monomial_convexhull=convhull,
+                                   presolve_bt_osutput_tol=1e-2,
+                                   presolve_bound_tightening=(presolve>0),
+                                   presolve_bound_tightening_algo=presolve))
     else
         m = Model(solver=solver)
     end
@@ -71,5 +74,6 @@ function meanvarx(;verbose=false, solver=nothing)
     @constraint(m, x[27]+x[34]<=1)  #= e43: =#
     @constraint(m, x[28]+x[35]<=1)  #= e44: =#
 
+    verbose && print(m)
     return m
 end
