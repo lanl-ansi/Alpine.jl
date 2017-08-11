@@ -5,6 +5,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # external developer parameters for testing and debugging
     dev_debug::Bool                                             # Turn on the debug mode
     dev_test::Bool                                              # Turn on for testing new code with
+    colorful_pod::Bool                                          # Turn on for a color solver
     # Temporary internal place-holder for testing differnt things
     dump::Any
 
@@ -26,7 +27,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     expr_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize expressions
 
     # parameters used in partitioning algorithm
-    discretization_ratio::Any                               # Discretization ratio parameter (use a fixed value for now, later switch to a function)
+    discretization_ratio::Any                                   # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     discretization_uniform_rate::Int                            # Discretization rate parameter when using uniform partitions
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
@@ -34,8 +35,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizationss
 
     # parameters used to control convhull formulation
-    convexhull_sweep_limit::Int
+    convexhull_sweep_limit::Int                                 # Contoller for formulation density
     convexhull_use_sos2::Bool                                   # Speical convex hull formulation
+    convexhull_use_facet::Bool                                  # Use the facets contraint generated from PORTA
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
@@ -124,7 +126,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(dev_debug, dev_test,
+    function PODNonlinearModel(dev_debug, dev_test,colorful_pod,
                                 log_level, timeout, maxiter, rel_gap, tol,
                                 nlp_local_solver,
                                 minlp_local_solver,
@@ -142,6 +144,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_rel_width_tol,
                                 convexhull_sweep_limit,
                                 convexhull_use_sos2,
+                                convexhull_use_facet,
                                 presolve_track_time,
                                 presolve_bound_tightening,
                                 presolve_maxiter,
@@ -153,6 +156,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m = new()
 
+        m.colorful_pod = colorful_pod
         m.dev_debug = dev_debug
         m.dev_test = dev_test
 
@@ -178,6 +182,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.convexhull_sweep_limit = convexhull_sweep_limit
         m.convexhull_use_sos2 = convexhull_use_sos2
+        m.convexhull_use_facet = convexhull_use_facet
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bound_tightening = presolve_bound_tightening

@@ -344,7 +344,7 @@ function max_cover(m::PODNonlinearModel; kwargs...)
     return
 end
 
-function print_iis_gurobi(m::Model)
+function print_iis_gurobi(m::JuMP.Model)
 
     grb = MathProgBase.getrawsolver(internalmodel(m))
     Gurobi.computeIIS(grb)

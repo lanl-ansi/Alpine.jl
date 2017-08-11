@@ -3,7 +3,7 @@ using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 function ex1264(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=2,bonmin.num_resolve_at_root=2"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -105,7 +105,7 @@ end
 function ex1265(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=2,bonmin.num_resolve_at_root=2"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -230,7 +230,7 @@ end
 function ex1266(;verbose=false, solver=nothing, convhull=true, delta=16, presolve=0)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=2,bonmin.num_resolve_at_root=2"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     discretization_ratio=delta,
                                     bilinear_convexhull=convhull,
@@ -373,12 +373,14 @@ function ex1266(;verbose=false, solver=nothing, convhull=true, delta=16, presolv
     return m
 end
 
-function ex1223a(;verbose=false, solver=nothing)
+function ex1223a(;verbose=false, solver=nothing, delta=16, convhull=true)
 
     if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.time_limit=100"]),
+        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=2,bonmin.num_resolve_at_root=2"]),
                                     mip_solver=GurobiSolver(OutputFlag=0),
-                                    discretization_ratio=32,
+                                    bilinear_convexhull=convhull,
+                                    monomial_convexhull=convhull,
+                                    discretization_ratio=delta,
                                     log_level=100,
                                     rel_gap=0.001))
     else

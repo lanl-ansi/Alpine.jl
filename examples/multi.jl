@@ -1,6 +1,6 @@
 using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
-println("--------------------------------------------")
+println("--------------------------------------------------------------------------")
 println("Multi4/N - exprmode 1 -> X1 * X2 * X3 * X4")
 println("Multi4/N - exprmode 2 -> (X1*X2) * (X3*X4)")
 println("Multi4/N - exprmode 3 -> (X1*X2) * X3 * X4")
@@ -12,14 +12,14 @@ println("Multi4/N - exprmode 8 -> X1 * (X2*X3) * X4")
 println("Multi4/N - exprmode 9 -> X1 * (X2*X3*X4)")
 println("Multi4/N - exprmode 10 -> X1 * ((X2*X3) * X4)")
 println("Multi4/N - exprmode 11 -> (X1 * (X2*X3)) * X4")
-println("--------------------------------------------")
+println("--------------------------------------------------------------------------")
 println("Multi3/N - exprmode 1 -> X1 * X2 * X3")
 println("Multi3/N - exprmode 2 -> (X1*X2) * X3")
 println("Multi3/N - exprmode 3 -> X1 * (X2*X3)")
-println("--------------------------------------------")
-println("                 Options")
-println("N | convhull | exprmode | unifrom | randomub ")
-println("--------------------------------------------")
+println("--------------------------------------------------------------------------")
+println("                                Options")
+println("N | K | convhull | exprmode | unifrom | randomub | sos2 | presolve | delta")
+println("--------------------------------------------------------------------------")
 
 function multi4(;verbose=false,solver=nothing, exprmode=1)
 
@@ -136,7 +136,7 @@ function multi2(;verbose=false,solver=nothing)
 	return m
 end
 
-function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1, uniform=-1, randomub=true, sos2=true, delta=4)
+function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1, uniform=-1, randomub=true, sos2=true, delta=4, presolve=0)
 
 	if solver == nothing
 		if uniform >0
@@ -147,7 +147,6 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   maxiter=1,
-									   presolve_bound_tightening=false,
 									   log_level=100))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
@@ -155,8 +154,8 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 									   discretization_ratio=delta,
 									   convexhull_use_sos2=sos2,
 									   bilinear_convexhull=convhull,
-									   presolve_bound_tightening=false,
-									   presolve_bound_tightening_algo=2,
+									   presolve_bound_tightening=(presolve>0),
+									   presolve_bound_tightening_algo=presolve,
 									   log_level=100))
 		end
 	else
@@ -202,7 +201,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	return m
 end
 
-function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=false)
+function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=false, presolve=0)
 
 	if solver == nothing
 		if uniform > 0.0
@@ -221,8 +220,8 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   convexhull_use_sos2=sos2,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
-									   presolve_bound_tightening=false,
-									   presolve_bound_tightening_algo=2,
+									   presolve_bound_tightening=(presolve>0),
+									   presolve_bound_tightening_algo=presolve,
 									   discretization_var_pick_algo=0,
 									   log_level=1))
 		end
@@ -252,7 +251,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	return m
 end
 
-function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, randomub=true, N=1, K=2, delta=4ß)
+function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, randomub=true, N=1, K=2, delta=4, presolve=0)
 
 	if solver == nothing
 		if uniform > 0.0
@@ -261,7 +260,6 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
 									   convexhull_use_sos2=sos2,
-									   discretization_ratio=4,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   presolve_bound_tightening=false,
@@ -272,7 +270,8 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   convexhull_use_sos2=sos2,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
-									   presolve_bound_tightening=false,
+									   presolve_bound_tightening=(presolve>0),
+									   presolve_bound_tightening=presolve,
 									   log_level=100))
 		end
 	else
@@ -280,14 +279,13 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	end
 
 	M = 1+(K-1)*N
+
 	srand(100)
 	isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
 	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-1):(M-1)))
 	@constraint(m, [i in 1:(K-1):(M-1)], sum(x[i+k] for k in 0:(K-1)) <= K)
 
-	if verbose
-		print(m)
-	end
+	verbose && print(m)
 
 	return m
 end

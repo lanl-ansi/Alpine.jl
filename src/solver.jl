@@ -7,6 +7,7 @@ end
 type PODSolver <: MathProgBase.AbstractMathProgSolver
     dev_debug::Bool
     dev_test::Bool
+    colorful_pod::Bool
 
     log_level::Int
     timeout::Float64
@@ -34,6 +35,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     convexhull_sweep_limit::Int
     convexhull_use_sos2::Bool
+    convexhull_use_facet::Bool
 
     presolve_track_time::Bool
     presolve_bound_tightening::Bool
@@ -50,6 +52,7 @@ end
 function PODSolver(;
     dev_debug = false,
     dev_test = false,
+    colorful_pod = true,
 
     log_level = 1,
     timeout = Inf,
@@ -77,6 +80,7 @@ function PODSolver(;
 
     convexhull_sweep_limit = 1,
     convexhull_use_sos2 = true,
+    convexhull_use_facet = false,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
@@ -97,7 +101,7 @@ function PODSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(dev_debug, dev_test,
+    PODSolver(dev_debug, dev_test, colorful_pod,
         log_level, timeout, maxiter, rel_gap, tol,
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
@@ -115,6 +119,7 @@ function PODSolver(;
         discretization_rel_width_tol,
         convexhull_sweep_limit,
         convexhull_use_sos2,
+        convexhull_use_facet,
         presolve_track_time,
         presolve_bound_tightening,
         presolve_maxiter,
@@ -133,6 +138,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     # Translate options into old nonlinearmodel.jl fields
     dev_test = s.dev_test
     dev_debug = s.dev_debug
+    colorful_pod = s.colorful_pod
 
     log_level = s.log_level
     timeout = s.timeout
@@ -160,6 +166,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     convexhull_sweep_limit = s.convexhull_sweep_limit
     convexhull_use_sos2 = s.convexhull_use_sos2
+    convexhull_use_facet = s.convexhull_use_facet
 
     presolve_track_time = s.presolve_track_time
     presolve_bound_tightening = s.presolve_bound_tightening
@@ -170,7 +177,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_mip_relaxation = s.presolve_mip_relaxation
     presolve_mip_timelimit = s.presolve_mip_timelimit
 
-    return PODNonlinearModel(dev_debug, dev_test,
+    return PODNonlinearModel(dev_debug, dev_test, colorful_pod,
                             log_level, timeout, maxiter, rel_gap, tol,
                             nlp_local_solver,
                             minlp_local_solver,
@@ -188,6 +195,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_rel_width_tol,
                             convexhull_sweep_limit,
                             convexhull_use_sos2,
+                            convexhull_use_facet,
                             presolve_track_time,
                             presolve_bound_tightening,
                             presolve_maxiter,

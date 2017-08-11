@@ -199,7 +199,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
     # @constraint(m.model_mip, α[monomial_idx][1] >= λ[monomial_idx][:vars][1])
     # @constraint(m.model_mip, α[monomial_idx][end] >= λ[monomial_idx][:vars][end])
 
-    # Add x= f(λ) for convex representation
+    # Add x = f(λ) for convex representation
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
 
     # Add x = f(α) for regulating the domains
@@ -215,6 +215,23 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
     partition_cnt = length(α[var_ind])
     lambda_cnt = length(discretization[var_ind])
 
+    if m.convexhull_use_facet
+        # Constraint cluster of α >= f(λ)
+        for j in 1:(partition_cnt-1) # Construct cuts by sweeping in both directions
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+            @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
+        end
+
+        # Constriant cluster of α <= f(λ)
+        for j in 1:(partition_cnt-1)
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
+            @constraint(m.model_mip, sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices]))
+        end
+
+        return
+    end
+
+
     if m.convexhull_use_sos2
         # Encoding of λ -> α goes here
         for j in 1:lambda_cnt
@@ -228,41 +245,24 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
             end
         end
 
-    else
-		
-    	# Constraint cluster of α >= f(λ)
-    	for j in 1:min(partition_cnt, m.convexhull_sweep_limit) # Construct cuts by sweeping in both directions
-        	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
-        	@constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-        	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
-        	@constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-    	end
+        return
+    end
 
-		# Constriant cluster of α <= f(λ)
-    	for j in 1:partition_cnt
-       		for i in 1:max(1, min(partition_cnt-j+1, m.convexhull_sweep_limit)) # At least one
-            	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j:(j+i);], dim)
-            	@constraint(m.model_mip, sum(α[var_ind][j:(j+i-1)]) <= sum(λ[ml_indices][:vars][sliced_indices]))
-        	end
-    	end
-		
-		
-		#=  Jeff's Version (PORTA)
-    	# Constraint cluster of α >= f(λ)
-		for j in 1:(partition_cnt-1) # Construct cuts by sweeping in both directions
-        	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
-        	@constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-    	end
-
-		# Constriant cluster of α <= f(λ)
-		for j in 1:(partition_cnt-1)
-			sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
-            @constraint(m.model_mip, sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices]))
-    	end
-		=#
-
+	# Constraint cluster of α >= f(λ)
+	for j in 1:min(partition_cnt, m.convexhull_sweep_limit) # Construct cuts by sweeping in both directions
+    	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+    	@constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
+    	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
+    	@constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
 	end
 
+	# Constriant cluster of α <= f(λ)
+	for j in 1:partition_cnt
+   		for i in 1:max(1, min(partition_cnt-j+1, m.convexhull_sweep_limit)) # At least one
+        	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j:(j+i);], dim)
+        	@constraint(m.model_mip, sum(α[var_ind][j:(j+i-1)]) <= sum(λ[ml_indices][:vars][sliced_indices]))
+    	end
+	end
 
     return
 end

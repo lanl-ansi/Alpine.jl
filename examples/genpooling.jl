@@ -1,18 +1,18 @@
 using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
 
-function lee1(;verbose=false, solver=nothing, convhull=true, delta=8)
+function lee1(;verbose=false, solver=nothing, convhull=true, delta=8, presolve=0)
 
     if solver == nothing
         m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
 																	"bonmin.time_limit=60"]),
                                     mip_solver=GurobiSolver(OutputFlag=1),
                                     discretization_ratio=delta,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
                                     bilinear_convexhull=convhull,
                                     monomial_convexhull=convhull,
-                                    discretization_ratio=8,
-                                    
-                                    log_level=100,
-                                    rel_gap=0.001))
+                                    discretization_ratio=delta,
+                                    log_level=100))
     else
         m = Model(solver=solver)
     end
@@ -24,7 +24,7 @@ function lee1(;verbose=false, solver=nothing, convhull=true, delta=8)
       setcategory(x[i], :Bin)
     end
 
-    for i =1:20
+    for i=1:20
       setlowerbound(x[i], 0.0)
       setupperbound(x[i], 686.0)
     end
@@ -164,7 +164,7 @@ function lee1(;verbose=false, solver=nothing, convhull=true, delta=8)
     return m
 end
 
-function lee2(;verbose=false, solver=nothing, convhull=true, delta=8)
+function lee2(;verbose=false, solver=nothing, convhull=true, delta=8, presolve=0)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
@@ -172,6 +172,8 @@ function lee2(;verbose=false, solver=nothing, convhull=true, delta=8)
 									mip_solver=GurobiSolver(OutputFlag=0),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
 									discretization_ratio=8,
 									log_level=200,
 									rel_gap=0.001))
@@ -384,7 +386,7 @@ function lee2(;verbose=false, solver=nothing, convhull=true, delta=8)
 	return m
 end
 
-function meyer4(;verbose=false, solver=nothing, convhull=true, delta=8)
+function meyer4(;verbose=false, solver=nothing, convhull=true, delta=8, presolve=0)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
@@ -394,7 +396,9 @@ function meyer4(;verbose=false, solver=nothing, convhull=true, delta=8)
 									monomial_convexhull=convhull,
 									discretization_ratio=delta,
 									discretization_var_pick_algo="min_vertex_cover",
-									log_level=200,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
+									log_level=100,
 									rel_gap=0.001))
 	else
 		m = Model(solver=solver)
@@ -695,15 +699,18 @@ function meyer4(;verbose=false, solver=nothing, convhull=true, delta=8)
     return m
 end
 
-function meyer10(;verbose=false, solver=nothing, convhull=true, delta=8)
+function meyer10(;verbose=false, solver=nothing, convhull=true, delta=8, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=1",
+		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=4",
+                                                                "bonmin.num_resolve_at_root=4"
 																"bonmin.time_limit=300"]),
 									mip_solver=GurobiSolver(OutputFlag=0),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
 									discretization_ratio=delta,
+                                    presolve_bound_tightening=(presolve>0),
+                                    presolve_bound_tightening_algo=presolve,
 									log_level=100,
 									rel_gap=0.001))
 	else
@@ -1759,11 +1766,11 @@ function meyer15(;verbose=false, solver=nothing, convhull=true, delta=32, presol
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.num_resolve_at_node=5",
 															  		"bonmin.num_resolve_at_root=5",
 																	"bonmin.time_limit=300"]),
-									mip_solver=GurobiSolver(OutputFlag=1),
+									mip_solver=GurobiSolver(OutputFlag=0),
 									bilinear_convexhull=convhull,
 									monomial_convexhull=convhull,
-								   presolve_bound_tightening=(presolve>0),
-								   presolve_bound_tightening_algo=presolve,
+								    presolve_bound_tightening=(presolve>0),
+								    presolve_bound_tightening_algo=presolve,
 									discretization_ratio=delta,
 									log_level=100,
 									rel_gap=0.001))

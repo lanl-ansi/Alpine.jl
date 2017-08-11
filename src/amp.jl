@@ -119,11 +119,6 @@ end
 
 function amp_post_lifted_objective(m::PODNonlinearModel)
     @objective(m.model_mip, m.sense_orig, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
-    # if m.sense_orig == :Min && m.best_bound > -Inf
-    #     @constraint(m.model_mip, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]) >= m.best_bound)
-    # elseif m.sense_orig == :Max && m.best_bound < Inf
-    #     @constraint(m.model_mip, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]) <= m.best_bound)
-    # end
     return
 end
 

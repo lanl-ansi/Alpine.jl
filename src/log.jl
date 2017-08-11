@@ -29,8 +29,9 @@ function reset_timer(m::PODNonlinearModel)
 end
 
 function logging_summary(m::PODNonlinearModel)
+
     if m.log_level > 0
-        @printf "full problem loaded into POD.\n"
+        print_with_color(:light_yellow, "full problem loaded into POD\n")
         @printf "number of constraints = %d.\n" m.num_constr_orig
         @printf "number of non-linear constraints = %d.\n" m.num_nlconstr_orig
         @printf "number of linear constraints = %d.\n" m.num_lconstr_orig
@@ -39,18 +40,30 @@ function logging_summary(m::PODNonlinearModel)
         println("NLP solver = ", split(string(m.nlp_local_solver),".")[1])
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
 
-        println("regulated maximum solution time = ", m.timeout)
-        println("regulated maximum iterations =  ", m.maxiter)
+        println("maximum solution time = ", m.timeout)
+        println("maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
         println("detected nonlinear terms = $(length(m.nonlinear_info))")
         println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")
-        println("algorithm for selecting variables to discretize = $(m.discretization_var_pick_algo)")
         println("number of selected variables to discretize = $(length(m.var_discretization_mip))")
+
+        m.bilinear_convexhull && println("bilinear treatment = convex hull formulation")
+        m.monomial_convexhull && println("monomial treatment = convex hull formulation")
+
+        m.convexhull_use_facet && println("using convex hull : facet formulation")
+        m.convexhull_use_sos2 && println("using convex hull : sos2 formulation")
+
+        (m.discretization_add_partition_method == "adpative") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
+        (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
+
     end
+
+    # Additional warnings
+    string(m.mip_solver)[1:6] == "Gurobi" && warn("POD support Gurobi solver 7.0+ ...")
 end
 
 function logging_head()
-    println(" | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | TIME LEFT     | Iter   ")
+    print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | TIME LEFT     | Iter   \n")
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)
@@ -67,7 +80,31 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
     LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
     ITER_block = string(" ", m.logs[:n_iter])
-    println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
+
+    if m.colorful_pod
+        colors = [:blue, :cyan, :green, :red, :light_red, :light_blue, :light_cyan, :light_green, :light_magenta, :light_re, :light_yellow, :white, :yellow]
+        print(" |")
+        print_with_color(rand(colors),UB_block)
+        print("|")
+        print_with_color(rand(colors),LB_block)
+        print("||")
+        print_with_color(rand(colors),incumb_UB_block)
+        print("|")
+        print_with_color(rand(colors),incumb_LB_block)
+        print("|")
+        print_with_color(rand(colors),GAP_block)
+        print("|")
+        print_with_color(rand(colors),UTIME_block)
+        print("|")
+        print_with_color(rand(colors),LTIME_block)
+        print("|")
+        print_with_color(rand(colors),ITER_block)
+        print("\n")
+    else
+        println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
+    end
+
+    return
 end
 
 
@@ -103,10 +140,15 @@ function summary_status(m::PODNonlinearModel)
             m.pod_status = :Optimal
         end
     elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
+        print_
         m.pod_status = :Infeasible
     elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
         m.pod_status = :Heuristic
     else
         error("[UNEXPECTED] Missing bound and feasible solution during status summary.")
     end
+
+    print_with_color(:green, "\n POD ended with status $(m.pod_status)\n")
+
+    return
 end
