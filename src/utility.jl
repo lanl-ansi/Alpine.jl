@@ -498,3 +498,32 @@ function max_cover(m::PODNonlinearModel; kwargs...)
 
     return
 end
+
+"""
+    Collects distance of each variable's bounding solution to best feasible solution and select the ones that is the furthest
+    Currently don't support recursively convexification
+"""
+function update_discretization_var_set(m::PODNonlinearModel)
+
+    var_idxs = [1:m.num_var_orig;]
+    var_diffs = []
+
+    for i in 1:m.num_var_orig
+        push!(var_diffs, abs(m.best_sol[i]-m.best_bound_sol[i]))
+    end
+
+    @assert length(var_idxs) == length(var_diffs)
+
+    idxs_diffs = Dict(zip(var_idxs,var_diffs))
+    ranked_pairs = sort(collect(idxs_diffs), by=x->x[2])
+
+    for i in ranked_pairs
+        println(i)
+    end
+
+    # TODO :: think about how to do this adpative using the collected information
+    # m.var_discretization_mip = []
+    # m.num_var_discretization_mip = length(m.var_discretization_mip)
+
+    return
+end
