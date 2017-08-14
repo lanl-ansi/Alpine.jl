@@ -1,4 +1,47 @@
-using POD, JuMP, Ipopt, Gurobi, MathProgBase
+using JuMP, MathProgBase, Gurobi, Ipopt, POD
+
+function nlp1(;verbose=false,solver=nothing, convhull=false)
+
+	if solver == nothing
+		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+								   mip_solver=GurobiSolver(OutputFlag=0),
+								   bilinear_convexhull=convhull,
+								   monomial_convexhull=convhull,
+								   presolve_bound_tightening=true,
+								   presolve_bound_tightening_algo=2,
+								   presolve_bt_output_tol=1e-1,
+								   log_level=100))
+	else
+		m = Model(solver=solver)
+	end
+
+    @variable(m, 1<=x[1:2]<=10)
+
+	@NLconstraint(m, x[1]*x[2] >= 8)
+	@NLobjective(m, Min, 6*x[1]^2 + 4*x[2]^2 - 2.5*x[1]*x[2])
+
+	if verbose
+		print(m)
+	end
+	return m
+end
+
+function nlp2(verbose=false)
+
+	info("This model's expression is currently not suitable for expression operations...")
+	error("Quitting... so that ")
+
+	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=CplexSolver()))
+	@variable(m, -500<=x[1:2]<=500)
+
+	@NLobjective(m, Min, sum((x[1]^2 - i)^2 for i in 1:2))
+
+	if verbose
+		print(m)
+	end
+
+	return m
+end
 
 function max_cover_var_picker(m::POD.PODNonlinearModel)
 	nodes = Set()
@@ -15,17 +58,19 @@ function max_cover_var_picker(m::POD.PODNonlinearModel)
 end
 
 
-function nlp3(;verbose=false, solver=nothing)
+function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, presolve=0, delta=16)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   log_level=1,
-								   rel_gap=0.01,
+								   rel_gap=0.0001,
+								   bilinear_convexhull=convhull,
+								   discretization_ratio=delta,
 								   presolve_bt_width_tol=1e-3,
 								   presolve_bt_output_tol=1e-1,
-								   presolve_bound_tightening=false,
-	                               presolve_bound_tightening_algo=2,
+								   presolve_bound_tightening=(presolve>0),
+	                               presolve_bound_tightening_algo=1,
 								   discretization_var_pick_algo=0))
 	else
 		m = Model(solver=solver)

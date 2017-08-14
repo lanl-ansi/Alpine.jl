@@ -359,9 +359,9 @@
         JuMP.build(m) # Setup internal model
 
         @test length(keys(m.internalModel.nonlinear_info)) == 1
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2])])][:id] == 1
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2])])][:lifted_var_ref] == :(x[4])
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2])])][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3])]][:lifted_var_ref] == :(x[4])
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :multilinear
 
         @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
         @test m.internalModel.lifted_obj_aff_mip[:vars] == Expr[:(x[4])]
@@ -423,9 +423,9 @@
         @test m.internalModel.lifted_obj_aff_mip[:cnt] == 1
         @test m.internalModel.lifted_obj_aff_mip[:sense] == nothing
 
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:id] == 1
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[3]), :(x[2]), :(x[4])])][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:lifted_var_ref] == :(x[5])
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
 
         @test m.internalModel.lifted_constr_aff_mip[1][:rhs] == 4.0
         @test m.internalModel.lifted_constr_aff_mip[1][:vars] == Any[:(x[1]), :(x[2]), :(x[3]), :(x[4])]
@@ -466,9 +466,9 @@
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[5]), :(x[3]), :(x[4])])][:id] == 2
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[5]), :(x[3]), :(x[4])])][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[5]), :(x[3]), :(x[4])])][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[3]), :(x[4])]][:id] == 2
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[3]), :(x[4])]][:lifted_var_ref] == :(x[6])
+        @test m.internalModel.nonlinear_info[[:(x[5]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
 
 
         @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
@@ -486,9 +486,9 @@
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:id] == 1
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[5])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[5]), :(x[1]), :(x[2])])][:id] == 2
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[5]), :(x[1]), :(x[2])])][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[5]), :(x[1]), :(x[2])])][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[5])]][:id] == 2
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[5])]][:lifted_var_ref] == :(x[6])
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[5])]][:nonlinear_type] == :multilinear
 
 
         @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
@@ -526,9 +526,9 @@
 
         @test length(keys(m.internalModel.nonlinear_info)) == 2
 
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[3]), :(x[1]), :(x[2])])][:id] == 1
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[3]), :(x[1]), :(x[2])])][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[3]), :(x[1]), :(x[2])])][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3])]][:lifted_var_ref] == :(x[5])
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :multilinear
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:id] == 2
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[6])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
@@ -572,9 +572,9 @@
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:id] == 1
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[5])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[5]), :(x[4])])][:id] == 2
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[5]), :(x[4])])][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[1]), :(x[5]), :(x[4])])][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[5]), :(x[4])]][:id] == 2
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[5]), :(x[4])]][:lifted_var_ref] == :(x[6])
+        @test m.internalModel.nonlinear_info[[:(x[1]), :(x[5]), :(x[4])]][:nonlinear_type] == :multilinear
 
 
         @test m.internalModel.lifted_obj_aff_mip[:rhs] == 0
@@ -590,9 +590,9 @@
 
         @test length(keys(m.internalModel.nonlinear_info)) == 2
 
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[3]), :(x[4]), :(x[2])])][:id] == 1
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[3]), :(x[4]), :(x[2])])][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_info[Set(Any[:(x[3]), :(x[4]), :(x[2])])][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[3]), :(x[4])]][:id] == 1
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[3]), :(x[4])]][:lifted_var_ref] == :(x[5])
+        @test m.internalModel.nonlinear_info[[:(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:id] == 2
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:lifted_var_ref] == :(x[6])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:nonlinear_type] == :bilinear
