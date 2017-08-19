@@ -32,5 +32,6 @@ function div(;verbose=false,solver=nothing)
 	if verbose
 		print(m)
 	end
+
 	return m
 end

@@ -3,20 +3,16 @@ using JuMP, Ipopt, MathProgBase, Cbc, Gurobi
 using POD
 
 # Expression Testing Instances
-include("../examples/operator_c.jl")
 include("../examples/exprstest.jl")
 
 # NLP Testing Instances
-include("../examples/nlp1.jl")
-include("../examples/nlp2.jl")
-include("../examples/nlp3.jl")
-include("../examples/castro02m2.jl")
-include("../examples/castro03m2.jl")
+include("../examples/nlp.jl")
+include("../examples/castrom2.jl")
 
 # MINLP Testing Instances
 include("../examples/util.jl")
 include("../examples/meanvarx.jl")
-include("../examples/blend029.jl")
+include("../examples/blend.jl")
 
 # Multilinear Testing Instances
 include("../examples/multi.jl")

@@ -7,6 +7,7 @@ end
 type PODSolver <: MathProgBase.AbstractMathProgSolver
     dev_debug::Bool
     dev_test::Bool
+    colorful_pod::Bool
 
     log_level::Int
     timeout::Float64
@@ -21,6 +22,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     recognize_convex::Bool
     bilinear_mccormick::Bool
     bilinear_convexhull::Bool
+    monomial_convexhull::Bool
 
     method_convexification::Array{Function}
     term_patterns::Array{Function}
@@ -28,8 +30,14 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     discretization_var_pick_algo::Any
     discretization_ratio::Any
+    discretization_uniform_rate::Int
     discretization_add_partition_method::Any
-    discretization_width_tol::Any
+    discretization_abs_width_tol::Float64
+    discretization_rel_width_tol::Float64
+
+    convexhull_sweep_limit::Int
+    convexhull_use_sos2::Bool
+    convexhull_use_facet::Bool
 
     presolve_track_time::Bool
     presolve_bound_tightening::Bool
@@ -46,6 +54,7 @@ end
 function PODSolver(;
     dev_debug = false,
     dev_test = false,
+    colorful_pod = true,
 
     log_level = 1,
     timeout = Inf,
@@ -59,7 +68,8 @@ function PODSolver(;
 
     recognize_convex = true,
     bilinear_mccormick = false,
-    bilinear_convexhull = false,
+    bilinear_convexhull = true,
+    monomial_convexhull = true,
 
     method_convexification = Array{Function}(0),
     term_patterns = Array{Function}(0),
@@ -67,8 +77,14 @@ function PODSolver(;
 
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
-    discretization_add_partition_method = nothing, # Not ready for implementation
-    discretization_width_tol = 1e-4,
+    discretization_uniform_rate = 2,
+    discretization_add_partition_method = "adaptive",
+    discretization_abs_width_tol = 1e-6,
+    discretization_rel_width_tol = 1e-9,
+
+    convexhull_sweep_limit = 1,
+    convexhull_use_sos2 = true,
+    convexhull_use_facet = false,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
@@ -89,7 +105,7 @@ function PODSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(dev_debug, dev_test,
+    PODSolver(dev_debug, dev_test, colorful_pod,
         log_level, timeout, maxiter, rel_gap, tol,
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
@@ -97,13 +113,19 @@ function PODSolver(;
         recognize_convex,
         bilinear_mccormick,
         bilinear_convexhull,
+        monomial_convexhull,
         method_convexification,
         term_patterns,
         constr_patterns,
         discretization_var_pick_algo,
         discretization_ratio,
+        discretization_uniform_rate,
         discretization_add_partition_method,
-        discretization_width_tol,
+        discretization_abs_width_tol,
+        discretization_rel_width_tol,
+        convexhull_sweep_limit,
+        convexhull_use_sos2,
+        convexhull_use_facet,
         presolve_track_time,
         presolve_bound_tightening,
         presolve_maxiter,
@@ -122,6 +144,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     # Translate options into old nonlinearmodel.jl fields
     dev_test = s.dev_test
     dev_debug = s.dev_debug
+    colorful_pod = s.colorful_pod
 
     log_level = s.log_level
     timeout = s.timeout
@@ -132,6 +155,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     recognize_convex = s.recognize_convex
     bilinear_mccormick = s.bilinear_mccormick
     bilinear_convexhull = s.bilinear_convexhull
+    monomial_convexhull = s.monomial_convexhull
 
     method_convexification = s.method_convexification
     term_patterns = s.term_patterns
@@ -143,8 +167,14 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     discretization_var_pick_algo = s.discretization_var_pick_algo
     discretization_ratio = s.discretization_ratio
+    discretization_uniform_rate = s.discretization_uniform_rate
     discretization_add_partition_method = s.discretization_add_partition_method
-    discretization_width_tol = s.discretization_width_tol
+    discretization_abs_width_tol = s.discretization_abs_width_tol
+    discretization_rel_width_tol = s.discretization_rel_width_tol
+
+    convexhull_sweep_limit = s.convexhull_sweep_limit
+    convexhull_use_sos2 = s.convexhull_use_sos2
+    convexhull_use_facet = s.convexhull_use_facet
 
     presolve_track_time = s.presolve_track_time
     presolve_bound_tightening = s.presolve_bound_tightening
@@ -155,7 +185,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_mip_relaxation = s.presolve_mip_relaxation
     presolve_mip_timelimit = s.presolve_mip_timelimit
 
-    return PODNonlinearModel(dev_debug, dev_test,
+    return PODNonlinearModel(dev_debug, dev_test, colorful_pod,
                             log_level, timeout, maxiter, rel_gap, tol,
                             nlp_local_solver,
                             minlp_local_solver,
@@ -163,13 +193,19 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             recognize_convex,
                             bilinear_mccormick,
                             bilinear_convexhull,
+                            monomial_convexhull,
                             method_convexification,
                             term_patterns,
                             constr_patterns,
                             discretization_var_pick_algo,
                             discretization_ratio,
+                            discretization_uniform_rate,
                             discretization_add_partition_method,
-                            discretization_width_tol,
+                            discretization_abs_width_tol,
+                            discretization_rel_width_tol,
+                            convexhull_sweep_limit,
+                            convexhull_use_sos2,
+                            convexhull_use_facet,
                             presolve_track_time,
                             presolve_bound_tightening,
                             presolve_maxiter,

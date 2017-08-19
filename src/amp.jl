@@ -70,15 +70,8 @@ function amp_post_convexification(m::PODNonlinearModel; kwargs...)
         eval(m.method_convexification[i])(m)
     end
 
-    if !m.bilinear_mccormick
-        amp_post_tmc_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
-    end
-
-    if !m.bilinear_convexhull
-        # convex hull representation
-        # amp_post_convhull(m, use_discretization=discretization)
-    end
-
+    amp_post_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
+    amp_post_convhull(m, use_discretization=discretization)         # convex hull representation
     convexification_exam(m)
 
     return
@@ -164,4 +157,146 @@ function amp_post_lifted_objective(m::PODNonlinearModel)
     end
 
     return
+end
+
+function add_partition(m::PODNonlinearModel; kwargs...)
+    options = Dict(kwargs)
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+    haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
+
+    if isa(m.discretization_add_partition_method, Function)
+        m.discretization = eval(m.discretization_add_partition_method)(m, use_discretization=discretization, use_solution=point_vec)
+    elseif m.discretization_add_partition_method == "adaptive"
+        m.discretization = add_adaptive_partition(m, use_discretization=discretization, use_solution=point_vec)
+    elseif m.discretization_add_partition_method == "uniform"
+        m.discretization = add_uniform_partition(m, use_discretization=discretization)
+    else
+        error("Unknown input on how to add partitions.")
+    end
+
+    return
+end
+
+"""
+    add_discretization(m::PODNonlinearModel; use_discretization::Dict, use_solution::Vector)
+
+Basic built-in method used to add a new partition on feasible domains of discretizing variables.
+This method make modification in .discretization
+
+Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
+Use ^ as the new partition, "|" as the original partition
+
+A case when discretize ratio = 4
+| -------- | - ^ -- * -- ^ ---- | -------- |
+0          3  3.5   4   4.5     7          9
+
+A special case when discretize ratio = 2
+| -------- | ---- * ---- ^ ---- | -------- |
+0          3      4      5      7          9
+
+There are two options for this function,
+
+    * `use_discretization(default=m.discretization)`:: to regulate which is the base to add new partitions on
+    * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
+
+TODO: also need to document the speical diverted cases when new partition touches both sides
+
+This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
+"""
+function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+    haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) : point_vec = copy(m.best_bound_sol)
+
+    (length(point_vec) < m.num_var_orig+m.num_var_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
+
+    # ? Perform discretization base on type of nonlinear terms
+    for i in m.var_discretization_mip
+        point = point_vec[i]                # Original Variable
+        #@show i, point, discretization[i]
+        if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
+			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
+			point = 0.5*(discretization[i][1]+discretization[i][end])
+		end
+        # Safety Scheme
+        (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
+        (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
+        for j in 1:length(discretization[i])
+            if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+                @assert j < length(m.discretization[i])
+                lb_local = discretization[i][j]
+                ub_local = discretization[i][j+1]
+                distance = ub_local - lb_local
+                if isa(m.discretization_ratio, Float64) || isa(m.discretization_ratio, Int)
+                    radius = distance / m.discretization_ratio
+                elseif isa(m.discretization_ratio, Function)
+                    radius = distance / m.discretization_ratio(m)
+                else
+                    error("Undetermined discretization_ratio")
+                end
+                lb_new = max(point - radius, lb_local)
+                ub_new = min(point + radius, ub_local)
+                ub_touch = true
+                lb_touch = true
+                if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.discretization_abs_width_tol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > m.discretization_rel_width_tol    # Insert new UB-based partition
+                    insert!(discretization[i], j+1, ub_new)
+                    ub_touch = false
+                end
+                if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.discretization_abs_width_tol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > m.discretization_rel_width_tol # Insert new LB-based partition
+                    insert!(discretization[i], j+1, lb_new)
+                    lb_touch = false
+                end
+                if ub_touch && lb_touch
+                    distance = -1.0
+                    pos = -1
+                    for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
+                        if (discretization[i][j] - discretization[i][j-1]) > distance
+                            lb_local = discretization[i][j-1]
+                            ub_local = discretization[i][j]
+                            distance = ub_local - lb_local
+                            point = lb_local + (ub_local - lb_local) / 2   # reset point
+                            pos = j
+                        end
+                    end
+                    radius = distance / m.discretization_ratio
+                    lb_new = max(point - radius, lb_local)
+                    ub_new = min(point + radius, ub_local)
+                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
+                        insert!(discretization[i], pos, ub_new)
+                    end
+                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
+                        insert!(discretization[i], pos, lb_new)
+                    end
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): !diverted! : SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                else
+                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                end
+                break
+            end
+        end
+    end
+
+    return discretization
+end
+
+function add_uniform_partition(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+
+    for i in 1:m.num_var_orig
+        if i in m.var_discretization_mip  # Only construct when discretized
+            lb_local = discretization[i][1]
+            ub_local = discretization[i][end]
+            distance = ub_local - lb_local
+            chunk = distance / ((m.logs[:n_iter]+1)*m.discretization_uniform_rate)
+            discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.discretization_uniform_rate]
+            push!(discretization[i], ub_local)   # Safety Scheme
+            (m.log_level > 99) && println("[DEBUG] VAR$(i): RATE=$(m.discretization_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.discretization_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
+        end
+    end
+
+    return discretization
 end

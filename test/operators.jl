@@ -174,6 +174,7 @@
 
         JuMP.build(m)
 
+<<<<<<< HEAD
         @test m.internalModel.bounding_constr_expr_mip[1] == :(x[5]-1.0 >= 0.0)
         @test m.internalModel.bounding_constr_expr_mip[2] == :(x[7]-1.0 >= 0.0)
         @test m.internalModel.bounding_constr_expr_mip[3] == :(x[9]-1.0 >= 0.0)
@@ -205,6 +206,40 @@
         @test m.internalModel.nonlinear_terms[Set(Any[:(x[1]),:(x[8]),:(x[10]),:(x[4])])][:id] == 9 #13
         @test m.internalModel.nonlinear_terms[Set(Any[:(x[6]),:(x[2]),:(x[3]),:(x[11])])][:id] == 10 #14
         @test m.internalModel.nonlinear_terms[Set(Any[:(x[6]),:(x[8]),:(x[10]),:(x[11])])][:id] == 11 #15
+=======
+        @test m.internalModel.lifted_constr_expr_mip[1] == :(x[5]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[2] == :(x[7]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[3] == :(x[9]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[4] == :(x[12]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[5] == :(x[13]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[6] == :(x[14]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[7] == :(x[15]-1.0 >= 0.0)
+
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[2]),:(x[3]),:(x[4])]) #5
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[1])]) #6
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[6]),:(x[2]),:(x[3]),:(x[4])]) #7
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[2]),:(x[2])]) #8
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[3]),:(x[4]),:(x[8])]) #9
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[3]),:(x[3])]) #10
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[4]),:(x[4])]) #11
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[2]),:(x[10]),:(x[11])]) #12
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[4]),:(x[8]),:(x[10])]) #13
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[6]),:(x[11]),:(x[2]),:(x[3])]) #14
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[6]),:(x[8]),:(x[10]),:(x[11])]) #15
+
+        @test m.internalModel.nonlinear_terms[[:(x[1]),:(x[2]),:(x[3]),:(x[4])]][:id] == 1 #5
+        @test m.internalModel.nonlinear_terms[[:(x[1]),:(x[1])]][:id] == 2 #6
+        @test m.internalModel.nonlinear_terms[[:(x[6]),:(x[2]),:(x[3]),:(x[4])]][:id] == 3 #7
+        @test m.internalModel.nonlinear_terms[[:(x[2]),:(x[2])]][:id] == 4 #8
+        @test m.internalModel.nonlinear_terms[[:(x[1]),:(x[3]),:(x[4]),:(x[8])]][:id] == 5 #9
+        @test m.internalModel.nonlinear_terms[[:(x[3]),:(x[3])]][:id] == 6 #10
+        @test m.internalModel.nonlinear_terms[[:(x[4]),:(x[4])]][:id] == 7 #11
+        @test m.internalModel.nonlinear_terms[[:(x[1]),:(x[2]),:(x[10]),:(x[11])]][:id] ==  8  #12
+        @test m.internalModel.nonlinear_terms[[:(x[1]),:(x[4]),:(x[8]),:(x[10])]][:id] == 9 #13
+        @test m.internalModel.nonlinear_terms[[:(x[6]),:(x[11]),:(x[2]),:(x[3])]][:id] == 10 #14
+        @test m.internalModel.nonlinear_terms[[:(x[6]),:(x[8]),:(x[10]),:(x[11])]][:id] == 11 #15
+
+>>>>>>> a5cacc71cd62fcac60289f5cf605f55cd88072c2
     end
 
     @testset "Validation Test on expression parsing: part8" begin
@@ -225,6 +260,7 @@
 
         JuMP.build(m)
 
+<<<<<<< HEAD
         @test m.internalModel.bounding_constr_expr_mip[1] == :(x[6]-1.0 >= 0.0)
         @test m.internalModel.bounding_constr_expr_mip[2] == :(x[9]-1.0 >= 0.0)
         @test m.internalModel.bounding_constr_expr_mip[3] == :(x[12]-1.0 >= 0.0)
@@ -289,6 +325,38 @@
         @NLconstraint(m, - 3x[1]^2 - 4x[3]^2 >= -15)                                # ?
 
         JuMP.build(m)
+=======
+        @test m.internalModel.lifted_constr_expr_mip[1] == :(x[6]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[2] == :(x[9]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[3] == :(x[12]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[4] == :(x[15]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[5] == :(x[17]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[6] == :(x[19]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[7] == :(x[21]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[8] == :(x[22]-1.0 >= 0.0)
+        @test m.internalModel.lifted_constr_expr_mip[9] == :(x[24]-1.0 >= 0.0)
+
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[2]),:(x[3])]) #5
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[5]),:(x[4])]) #6
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[1])]) #7
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[7]),:(x[2]),:(x[3])]) #8
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[8]),:(x[4])]) #9
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[2]),:(x[2])]) #10
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[10]),:(x[3])]) #11
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[4]),:(x[11])]) #12
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[3]),:(x[3])]) #13
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[2]),:(x[13])]) #14
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[4]),:(x[14])]) #15
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[10])]) #16
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[16]),:(x[3]),:(x[4])]) #17
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[2])]) #18
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[18]),:(x[13]),:(x[4])]) #19
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[4]),:(x[4])]) #20
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[18]),:(x[20]),:(x[3])]) #21
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[18]),:(x[13]),:(x[20])]) #22
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[7]),:(x[10]),:(x[13])]) #23
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[23]),:(x[20])]) #24
+>>>>>>> a5cacc71cd62fcac60289f5cf605f55cd88072c2
 
         # Write tests here
     end
