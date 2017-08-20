@@ -68,7 +68,10 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
 
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
-        subs, rhs = expr_strip_const(expr.args[2])      # Focus on the regularized subtree (stripped with constants)
+        sense = expr.args[1]
+        rhs = expr.args[3]
+        subs, rhs_strip = expr_strip_const(expr.args[2])      # Focus on the regularized subtree (stripped with constants)
+        rhs += rhs_strip                                      # TODO: check if sign is flipped
     elseif expr.args[1] == :(==)
         return false
     elseif idx == 0
@@ -138,7 +141,7 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
         # Type-A: Convex constraint
         # sum_i (c_i*x_i^p) <= K (K > 0, p >= 1 and x_i >= 0)                           => Convex
         lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
-        power_check = [(i >= 1.0) for i in power_bin]
+        power_check = [(i > 1.0) for i in power_bin]
         prod(lb_check) && prod(power_check) && (convex_type = :convexA)
 
         # Convex constraint Type-B

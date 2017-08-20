@@ -330,15 +330,8 @@ A built-in method for selecting variables for discretization. It selects all var
 function max_cover(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
-<<<<<<< HEAD
-    for pair in keys(m.nonlinear_terms)
-        if length(pair) > 2
-            warn("max-cover discretizing variable selection method only support bi-linear problems. enforcing may produce mistakes...")
-        end
-=======
     for pair in keys(m.nonlinear_terms)
         # Assumption Max cover is always safe
->>>>>>> a5cacc71cd62fcac60289f5cf605f55cd88072c2
         for i in pair
             @assert isa(i.args[2], Int)
             push!(nodes, i.args[2])

@@ -96,7 +96,7 @@ function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, presolve
 	setupperbound(x[7], 1000)
 	setupperbound(x[8], 1000)
 
-	@constraint(m, 0.0025*(x[4]+x[6]) <= 1)
+	@constraint(m, 0.0025*(x[4] + x[6]) <= 1)
 	@constraint(m, 0.0025*(x[5] - x[4] + x[7]) <= 1)
 	@constraint(m, 0.01(x[8]-x[5]) <= 1)
 	@NLconstraint(m, 100*x[1] - x[1]*x[6] + 833.33252*x[4] <= 83333.333)

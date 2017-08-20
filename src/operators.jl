@@ -228,19 +228,12 @@ function resolve_multilinear_term(expr, m::PODNonlinearModel)
         end
         if length(var_idxs) > 2
             (m.log_level > 99) && println("found multilinear term $expr")
-<<<<<<< HEAD
-            term_key = Set()
-            [push!(term_key, Expr(:ref, :x, idx)) for idx in var_idxs]
-            if term_key in keys(m.nonlinear_terms)
-                return true, lift_multilinear_term()
-=======
             term_key = []
             for idx in var_idxs
                 push!(term_key, Expr(:ref, :x, idx))
             end
             if term_key in keys(m.nonlinear_terms)
                 return true, lift_multilinear()
->>>>>>> a5cacc71cd62fcac60289f5cf605f55cd88072c2
             else
                 store_multilinear_term()
                 return true, lift_multilinear_term()
@@ -270,18 +263,12 @@ function resolve_monomial_term(expr, m::PODNonlinearModel)
                                             :convexified => false)
     end
 
-<<<<<<< HEAD
-    function lift_monomial_term()
-        new_expr = m.nonlinear_terms[term_key][:lifted_var_ref] #TODO: check if this will actually be replaced
-        return new_expr
-=======
     function lift_monomial()
         if scalar == 1.0
             return m.nonlinear_terms[term_key][:lifted_var_ref]
         else
             return Expr(:call, :*, m.nonlinear_terms[term_key][:lifted_var_ref], scalar)
         end
->>>>>>> a5cacc71cd62fcac60289f5cf605f55cd88072c2
     end
 
     # Type 1 monomial
