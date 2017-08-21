@@ -51,12 +51,6 @@ function expr_parsing(m::PODNonlinearModel)
 			m.structural_constr[i] = :generic_linear
 		end
 		(m.log_level > 99) && println("$(m.structural_constr[i]) | [CONSTR] $(m.constr_expr_orig[i])")
-		m.log_level > 199 && println("lifted ::", m.bounding_constr_expr_mip[i])
-		m.log_level > 199 && println("coeffs ::", m.bounding_constr_aff_mip[i][:coefs])
-		m.log_level > 199 && println("vars ::", m.bounding_constr_aff_mip[i][:vars])
-		m.log_level > 199 && println("sense ::", m.bounding_constr_aff_mip[i][:sense])
-		m.log_level > 199 && println("rhs ::", m.bounding_constr_aff_mip[i][:rhs])
-		m.log_level > 199 && println("--------- =>")
 	end
 
 	return

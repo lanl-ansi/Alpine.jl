@@ -138,16 +138,16 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
         # Now, we should use the differences to indicate different types of convex expression
         convex_type = :Unknown
 
-        # Type-A: Convex constraint
+        # Convex constraint Type-A
+        # sum_i (c_i*x_i^p) <= K (K > 0, p is an even positive integer and x_i \in R)   => Convex
+        power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]
+        prod(power_check) && (convex_type = :convexA)
+
+        # Type-B: Convex constraint
         # sum_i (c_i*x_i^p) <= K (K > 0, p >= 1 and x_i >= 0)                           => Convex
         lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
         power_check = [(i > 1.0) for i in power_bin]
-        prod(lb_check) && prod(power_check) && (convex_type = :convexA)
-
-        # Convex constraint Type-B
-        # sum_i (c_i*x_i^p) <= K (K > 0, p is an even positive integer and x_i \in R)   => Convex
-        power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]
-        prod(power_check) && (convex_type = :convexB)
+        prod(lb_check) && prod(power_check) && (convex_type = :convexB)
 
         # Convex constraint Type-C
         # sum_i (c_i*x_i^p) >= K (K > 0, 0 < p < 1 and x_i >= 0)                        => Convex
@@ -192,15 +192,15 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
         # Follows the same mapping to convex constraints
 
         # Type-A: Convex objective function
-        # sum_i (c_i*x_i^p) (p >= 1 and x_i >= 0)                           => Convex
-        lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
-        power_check = [i >= 1.0 for i in power_bin]
-        prod(lb_check) && prod(power_check) && (convex_type = :convexA)
-
-        # Type-B: Convex objective function
         # sum_i (c_i*x_i^p) (p is an even positive integer and x_i \in R)   => Convex
         power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]
-        prod(power_check) && (convex_type = :convexB)
+        prod(power_check) && (convex_type = :convexA)
+
+        # Type-B: Convex objective function
+        # sum_i (c_i*x_i^p) (p >= 1 and x_i >= 0)                           => Convex
+        lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
+        power_check = [i > 1.0 for i in power_bin]
+        prod(lb_check) && prod(power_check) && (convex_type = :convexB)
 
         # Type-D: Convex objective function
         # sum_i (c_i*x_i^p) (p <= 0 and x_i > 0) => Convex

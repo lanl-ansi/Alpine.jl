@@ -1,39 +1,3 @@
-#  Proposed built-in structure patterns
-#   Plan for the following non-linear subtree structure
-#   1. bilinear tree
-#           (:*)        x*y
-#           /  \
-#         y     x
-#   2. monomial tree
-#           (:^)        x^2
-#           /  \
-#         x     2
-#   3. power tree       x^a, a>2
-#           (:^)
-#           /  \
-#         x    >2
-#   3. multilinear tree  x*z*y
-#           (:*)
-#          /| ..\
-#        x  z   y
-#   4. hierarchical bilinear tree (upon 1)  (x*y)*z
-#           (:*)
-#           /  \
-#         (:*)  z
-#         /  \
-#        x    y
-#   5. sin tree  (can fit 1, 2, 3)   sin(x)
-#          (:sin)
-#             |
-#             x
-#   6. cos tree (can fit 1, 2, 3)    cos(x)
-#           (:cos)
-#             |
-#             x
-#   7. user-defined tree (can over-ride built-in structural trees)
-#
-#
-
 """
     process_expr(expr; kwargs...)
 
@@ -177,7 +141,6 @@ function resolve_bilinar_term(expr, m::PODNonlinearModel)
     return false, expr
 end
 
-
 """
     TODO: docstring
 """
@@ -233,7 +196,34 @@ function resolve_multilinear_term(expr, m::PODNonlinearModel)
                 push!(term_key, Expr(:ref, :x, idx))
             end
             if term_key in keys(m.nonlinear_terms)
-                return true, lift_multilinear()
+                return true, lift_multilinear_term()
+            else
+                store_multilinear_term()
+                return true, lift_multilinear_term()
+            end
+        end
+    elseif (expr.args[1] == :^) && length(expr.args) == 3
+        # Pattern: (x)^(>2)
+        var_idxs = []
+        power_scalar = 0
+        scalar = 1.0
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                power_scalar += expr.args[i]
+                continue
+            end
+            (isa(expr.args[i], Symbol)) && continue
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+            (expr.args[i].head == :call) && return false, expr
+        end
+        if length(var_idxs) == 1 && power_scalar > 2.0
+            (m.log_level > 99) && println("found multilinear term $expr")
+            term_key = []
+            for i in 1:power_scalar
+                push!(term_key, Expr(:ref, :x, var_idxs[1]))
+            end
+            if term_key in keys(m.nonlinear_terms)
+                return true, lift_multilinear_term()
             else
                 store_multilinear_term()
                 return true, lift_multilinear_term()
@@ -263,7 +253,7 @@ function resolve_monomial_term(expr, m::PODNonlinearModel)
                                             :convexified => false)
     end
 
-    function lift_monomial()
+    function lift_monomial_term()
         if scalar == 1.0
             return m.nonlinear_terms[term_key][:lifted_var_ref]
         else
@@ -323,10 +313,10 @@ function resolve_monomial_term(expr, m::PODNonlinearModel)
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if term_key in keys(m.nonlinear_terms)
                 term_key in keys(m.nonlinear_terms)
-                return true, lift_monomial()
+                return true, lift_monomial_term()
             else
-                store_monomial()
-                return true, lift_monomial()
+                store_monomial_term()
+                return true, lift_monomial_term()
             end
         end
     end

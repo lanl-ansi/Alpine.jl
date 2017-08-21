@@ -102,7 +102,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     num_var_lifted_mip::Int                                     # Number of lifted variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
-    num_constr_convex::Int                                  # Number of structural constraints
+    num_constr_convex::Int                                      # Number of structural constraints
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted terms
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
