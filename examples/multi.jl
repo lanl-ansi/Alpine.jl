@@ -201,13 +201,14 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	return m
 end
 
-function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=false, presolve=0)
+function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=true, sos2_alter=false, presolve=0)
 
 	if solver == nothing
 		if uniform > 0.0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
 									   convexhull_use_sos2=sos2,
+									   convexhull_use_sos2_alter=sos2_alter,
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
 									   discretization_add_partition_method="uniform",
@@ -218,6 +219,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=0),
 									   convexhull_use_sos2=sos2,
+									   convexhull_use_sos2_alter=sos2_alter,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=(presolve>0),

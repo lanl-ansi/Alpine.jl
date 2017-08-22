@@ -36,7 +36,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # parameters used to control convhull formulation
     convexhull_sweep_limit::Int                                 # Contoller for formulation density
-    convexhull_use_sos2::Bool                                   # Speical convex hull formulation
+    convexhull_use_sos2::Bool                                   # Convex hull formulation with SOS-2 representation (numerically best so far)
+    convexhull_use_sos2_alter::Bool                             # Speical SOS-2 formulation that utilized auxilary variables
     convexhull_use_facet::Bool                                  # Use the facets contraint generated from PORTA
 
     # parameters related to presolving
@@ -144,6 +145,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_rel_width_tol,
                                 convexhull_sweep_limit,
                                 convexhull_use_sos2,
+                                convexhull_use_sos2_alter,
                                 convexhull_use_facet,
                                 presolve_track_time,
                                 presolve_bound_tightening,
@@ -182,6 +184,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.convexhull_sweep_limit = convexhull_sweep_limit
         m.convexhull_use_sos2 = convexhull_use_sos2
+        m.convexhull_use_sos2_alter = convexhull_use_sos2_alter
         m.convexhull_use_facet = convexhull_use_facet
 
         m.presolve_track_time = presolve_track_time
@@ -394,7 +397,7 @@ function global_solve(m::PODNonlinearModel)
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)                                                  # Build the bounding ATMC model
-        bounding_solve(m)   # Solve bounding model
+        bounding_solve(m)                                                       # Solve bounding model
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)                                                          # Solve upper bounding model
