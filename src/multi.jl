@@ -157,15 +157,16 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     cnt = 0
     for i in ml_indices
         cnt += 1
-        lambda_cnt = length(discretization[i])
-        sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt] # Add x = f(λ) for convex representation of x value
-        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
         valid_inequalities(m, discretization, λ, α, ml_indices, dim, i, cnt)        # Add links between λ and α
         if m.convexhull_use_sos2_alter
             @constraint(m.model_mip, Variable(m.model_mip, i) == dot(α[i], discretization[i]))
         else
             partition_cnt = length(α[i])
+            lambda_cnt = length(discretization[i])
             @assert lambda_cnt == partition_cnt + 1
+            sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt] # Add x = f(λ) for convex representation of x value
+            @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
+
             @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
             @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
         end
@@ -224,7 +225,7 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
     if m.convexhull_use_sos2_alter
         for j in 1:lambda_cnt
             sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
-            @constraint(m.model_mip, α[var_ind][j] <= sum(λ[ml_indices][:vars][sliced_indices]))
+            @constraint(m.model_mip, α[var_ind][j] == sum(λ[ml_indices][:vars][sliced_indices]))
         end
         return
     end
