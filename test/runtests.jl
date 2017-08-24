@@ -22,7 +22,6 @@ include("../examples/div.jl")
 include("../examples/circle.jl")
 
 # Performe Tests
-include("operators.jl")
 include("solver.jl")
 include("expression.jl")
-include("algorithm.jl")
+# include("algorithm.jl")

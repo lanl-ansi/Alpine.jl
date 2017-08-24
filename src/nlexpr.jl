@@ -1,118 +1,102 @@
-"""
-	STEP 1: initialize the expression/ space
-"""
-function expr_initialization(m::PODNonlinearModel)
+function expr_strip_const(expr, subs=[], rhs=0.0)
 
-	# 0 : deepcopy data into mip lifted expr place holders
-	m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
-	m.bounding_obj_mip = Dict()
+    exhaust_const = [!(expr.args[1] in [:+, :-]) || !(isa(expr.args[i], Float64) || isa(expr.args[i], Int)) for i in 2:length(expr.args)]
+    if prod(exhaust_const)
+        push!(subs, expr)
+        return subs, rhs
+    end
 
-	for i in 1:m.num_constr_orig
-		push!(m.bounding_constr_expr_mip, deepcopy(m.constr_expr_orig[i]))
-		push!(m.bounding_constr_mip, Dict())
-	end
+    for i in 2:length(expr.args)
+        if (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol))
+            (expr.args[1] == :+) && (rhs -= expr.args[i])
+            (expr.args[1] == :-) && ((i == 2) ? rhs -= expr.args[i] : rhs += expr.args[i])
+        elseif expr.args[i].head == :ref
+            continue
+        elseif expr.args[i].head == :call
+            subs, rhs = expr_strip_const(expr.args[i], subs, rhs)
+        end
+    end
+    return subs, rhs
+end
 
-	return
+function preprocess_expression(expr)
+
+    for i in 1:length(expr.args)
+        expr.args[i] = expr_resolve_simple_tree(expr.args[i])
+        if (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol))
+            continue
+        elseif (expr.args[i].head == :ref)
+            continue
+        elseif (expr.args[i].head == :call)
+            preprocess_expression(expr.args[i])
+        end
+    end
+
+    return
 end
 
 """
-	STEP 2: preprocess expression for trivial sub-trees and nasty pieces for easier later process
+    expr_constr_parsing(expr, m::PODNonlinearModel)
+
+Recognize structural constraints.
 """
-function expr_preprocess(m::PODNonlinearModel)
+function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int=0)
 
-	expr_resolve_const(m.bounding_obj_expr_mip)
-	expr_resolve_sign(m.bounding_obj_expr_mip)
-	expr_flatten(m.bounding_obj_expr_mip)
-	for i in 1:m.num_constr_orig
-		expr_resolve_const(m.bounding_constr_expr_mip[i])
-		expr_resolve_sign(m.bounding_constr_expr_mip[i])
-		expr_flatten(m.bounding_constr_expr_mip[i].args[2])
-	end
+    # First process user-defined structures in-cases of over-ride
+    for i in 1:length(m.constr_patterns)
+        is_strucural = eval(m.constr_patterns[i])(expr, m, idx)
+        return
+    end
 
-	return
+    # Recognize built-in special structural pattern
+    if m.recognize_convex
+        is_convex = resolve_convex_constr(expr, m, idx)
+        is_convex && return true
+    end
+
+    # More patterns goes here
+
+    return false
 end
 
-"""
-	STEP 3: parse expression for patterns on either the generic level or term level
-"""
-function expr_parsing(m::PODNonlinearModel)
+function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
 
-	is_strucural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
-	if !is_strucural
-		m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, m)
-		m.structural_obj = :generic_linear
-	end
-	(m.log_level > 99) && println("$(m.structural_obj) | [OBJ] $(m.obj_expr_orig)")
+    # println("inner recursive input ", expr)
+    !(expr.args[1] in [:*,:^]) && return nothing, nothing, nothing         # Limited Area
 
-	for i in 1:m.num_constr_orig
-		is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
-		if !is_strucural
-			m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], m)
-			m.structural_constr[i] = :generic_linear
-		end
-		(m.log_level > 99) && println("$(m.structural_constr[i]) | [CONSTR] $(m.constr_expr_orig[i])")
-	end
+    if expr.args[1] == :*
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                scalar *= expr.args[i]
+            elseif (expr.args[i].head == :ref)
+                @assert isa(expr.args[i].args[2], Int)
+                push!(var_idxs, expr.args[i])
+                push!(power, 1)
+            elseif (expr.args[i].head == :call)
+                scalar, var_idxs, power = expr_is_axn(expr.args[i], scalar, var_idxs, power)
+            end
+        end
+    elseif expr.args[1] == :^
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                push!(power, expr.args[i])
+                continue
+            elseif (expr.args[i].head == :ref)
+                push!(var_idxs, expr.args[i])
+                continue
+            elseif (expr.args[i].head == :call)
+                return nothing, nothing, nothing
+            end
+        end
+    end
 
-	return
+    # If the user wants a specific N
+    !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
+
+    # println("inner recursive ", scalar, " ", var_idxs)
+    @assert length(var_idxs) == length(power)
+    return scalar, var_idxs, power
 end
-
-"""
-	STEP 4: convert the parsed expressions into affine-based function that can be used for adding JuMP constraints
-"""
-function expr_conversion(m::PODNonlinearModel)
-
-	if m.structural_obj == :generic_linear
-		m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
-		m.structural_obj = :affine
-	end
-	m.log_level > 99 && println("type :: ", m.structural_obj)
-	m.log_level > 99 && println("lifted ::", m.bounding_obj_expr_mip)
-	m.log_level > 99 && println("coeffs ::", m.bounding_obj_mip[:coefs])
-	m.log_level > 99 && println("vars ::", m.bounding_obj_mip[:vars])
-	m.log_level > 99 && println("sense ::", m.bounding_obj_mip[:sense])
-	m.log_level > 99 && println("rhs ::", m.bounding_obj_mip[:rhs])
-	m.log_level > 99 && println("----------------")
-
-
-	for i in 1:m.num_constr_orig
-		if m.structural_constr[i] == :generic_linear
-			m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
-			m.structural_constr[i] = :affine
-		end
-		m.log_level > 99 && println("type :: ", m.structural_constr[i])
-		m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
-		m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-		m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
-		m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
-		m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-		m.log_level > 99 && println("----------------")
-	end
-
-	return
-end
-
-
-"""
-	STEP 5: collect measurements and information as needed for handly operations in the algorithm section
-"""
-function expr_finalized(m::PODNonlinearModel)
-
-	for i in keys(m.nonlinear_terms)
-		for var in i
-			@assert isa(var.args[2], Int)
-			if !(var.args[2] in m.all_nonlinear_vars)
-				push!(m.all_nonlinear_vars, var.args[2])
-			end
-		end
-	end
-
-	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
-	m.num_var_lifted_mip = length(m.nonlinear_terms)
-	m.num_constr_convex = length([i for i in m.structural_constr if i == :convex])
-
-	return m
-end
-
 
 """
 	This function takes a constraint/objective expression and converts it into a affine expression data structure

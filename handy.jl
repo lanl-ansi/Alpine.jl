@@ -34,7 +34,7 @@ m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
 @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] + 5*x[3]*x[3] + 6x[4]x[4] <= 15) # 22: :convex
 @NLconstraint(m, 3x[1]x[1] + 4x[2]x[2] + 5x[3]^2 <= -15)                    # 23: :affine
 @NLconstraint(m, 3x[1]^2 + 4x[2]^2 >= 15)                                   # 24: :affine
-@NLconstraint(m, - 3x[1]^2 - 4x[3]^2 >= -15)                                # 25: :convex
+@NLconstraint(m, sum(x[i]^2 for i in 1:5) <= 99999)                         # 25: :convex
 
 @NLconstraint(m, 3x[1]^4 + 4x[2]^4 <= 200)                                  # 26: :convex
 @NLconstraint(m, 3x[1]^4 + 4x[2]x[2]x[2]x[2] - 200 <= 0)                    # 27: :convex
