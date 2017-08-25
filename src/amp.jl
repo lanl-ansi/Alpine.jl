@@ -249,16 +249,14 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
 
-    for i in 1:m.num_var_orig
-        if i in m.var_discretization_mip  # Only construct when discretized
-            lb_local = discretization[i][1]
-            ub_local = discretization[i][end]
-            distance = ub_local - lb_local
-            chunk = distance / ((m.logs[:n_iter]+1)*m.discretization_uniform_rate)
-            discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.discretization_uniform_rate]
-            push!(discretization[i], ub_local)   # Safety Scheme
-            (m.log_level > 99) && println("[DEBUG] VAR$(i): RATE=$(m.discretization_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.discretization_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
-        end
+    for i in m.var_discretization_mip  # Only construct when discretized
+    	lb_local = discretization[i][1]
+    	ub_local = discretization[i][end]
+    	distance = ub_local - lb_local
+    	chunk = distance / ((m.logs[:n_iter]+1)*m.discretization_uniform_rate)
+    	discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.discretization_uniform_rate]
+    	push!(discretization[i], ub_local)   # Safety Scheme
+    	(m.log_level > 99) && println("[DEBUG] VAR$(i): RATE=$(m.discretization_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.discretization_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
     end
 
     return discretization
