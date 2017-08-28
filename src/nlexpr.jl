@@ -92,6 +92,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
 
     # If the user wants a specific N
     !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
+    (var_idxs == nothing) && (scalar == nothing) && (power == nothing) && return nothing, nothing, nothing # Unrecognized sub-structure
 
     # println("inner recursive ", scalar, " ", var_idxs)
     @assert length(var_idxs) == length(power)

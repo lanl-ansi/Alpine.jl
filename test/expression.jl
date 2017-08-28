@@ -741,7 +741,7 @@
         @test aff_mip[11][:cnt] == 3
     end
 
-    @testset " Validation Test on expression parsing : part1 " begin
+    @testset "Validation Test on expression parsing: part1 " begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                    mip_solver=CbcSolver(OutputFlag=0),
                                    log_level=0))
@@ -781,7 +781,7 @@
         @test m.internalModel.nonlinear_terms[[:(x[5]), :(x[12])]][:id] == 9
     end
 
-    @testset " Validation Test on expression parsing : part2" begin
+    @testset "Validation Test on expression parsing: part2" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
                                log_level=0))
@@ -916,13 +916,13 @@
 
         JuMP.build(m)
 
-        @test m.internalModel.lifted_constr_expr_mip[1] == :(x[5]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[2] == :(x[7]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[3] == :(x[9]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[4] == :(x[12]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[5] == :(x[13]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[6] == :(x[14]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[7] == :(x[15]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[1] == :(x[5]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[2] == :(x[7]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[3] == :(x[9]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[4] == :(x[12]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[5] == :(x[13]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[6] == :(x[14]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[7] == :(x[15]-1.0 >= 0.0)
 
         @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[2]),:(x[3]),:(x[4])]) #5
         @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[1])]) #6
@@ -967,15 +967,15 @@
 
         JuMP.build(m)
 
-        @test m.internalModel.lifted_constr_expr_mip[1] == :(x[6]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[2] == :(x[9]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[3] == :(x[12]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[4] == :(x[15]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[5] == :(x[17]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[6] == :(x[19]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[7] == :(x[21]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[8] == :(x[22]-1.0 >= 0.0)
-        @test m.internalModel.lifted_constr_expr_mip[9] == :(x[24]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[1] == :(x[6]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[2] == :(x[9]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[3] == :(x[12]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[4] == :(x[15]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[5] == :(x[17]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[6] == :(x[19]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[7] == :(x[21]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[8] == :(x[22]-1.0 >= 0.0)
+        @test m.internalModel.bounding_constr_expr_mip[9] == :(x[24]-1.0 >= 0.0)
 
         @test haskey(m.internalModel.nonlinear_terms, [:(x[1]),:(x[2]),:(x[3])]) #5
         @test haskey(m.internalModel.nonlinear_terms, [:(x[5]),:(x[4])]) #6
@@ -1048,17 +1048,17 @@
         JuMP.build(m)
 
         @test m.internalModel.num_constr_convex == 21
-        @test length(m.internalModel.nonlinear_terms) ==
 
         # 0 : OBJ
         @test m.internalModel.structural_obj == :convex
-        @test m.internalModel.nonlinear_constrs[0][:expr_orig] == :objecive
+        @show m.internalModel.nonlinear_constrs[0][:expr_orig]
+        @test m.internalModel.nonlinear_constrs[0][:expr_orig] == :objective
         @test m.internalModel.nonlinear_constrs[0][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[0][:convexified] == false
 
         @test m.internalModel.bounding_obj_mip[:sense] == nothing
         @test m.internalModel.bounding_obj_mip[:coefs] == [1.0, 1.0]
-        @test m.internalModel.bounding_obj_mip[:vars] == [:(x[1]), :(x[2])]
+        @test m.internalModel.bounding_obj_mip[:vars] == [:(x[1]), :(x[3])]
         @test m.internalModel.bounding_obj_mip[:rhs] == 0.0
         @test m.internalModel.bounding_obj_mip[:powers] == [2, 2]
         @test m.internalModel.bounding_obj_mip[:cnt] == 2
@@ -1189,7 +1189,7 @@
         @test m.internalModel.nonlinear_constrs[15][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[15][:convexified] == :false
         @test m.internalModel.bounding_constr_mip[15][:sense] == :(<=)
-        @test m.internalModel.bounding_constr_mip[15][:coefs] == [3.0, 4.0, 1.0]
+        @test m.internalModel.bounding_constr_mip[15][:coefs] == [3.0, 5.0, 1.0]
         @test m.internalModel.bounding_constr_mip[15][:vars] == [:(x[1]), :(x[2]), :(x[4])]
         @test m.internalModel.bounding_constr_mip[15][:rhs] == 25.0
         @test m.internalModel.bounding_constr_mip[15][:powers] == [2, 2, 2]
@@ -1226,7 +1226,7 @@
         @test m.internalModel.nonlinear_constrs[25][:convexified] == :false
         @test m.internalModel.bounding_constr_mip[25][:sense] == :(<=)
         @test m.internalModel.bounding_constr_mip[25][:coefs] == [1.0, 1.0, 1.0, 1.0, 1.0]
-        @test m.internalModel.bounding_constr_mip[25][:vars] == [:(x[1]), :(x[2]), :(x[3]), :(x[4]) :(x[5])]
+        @test m.internalModel.bounding_constr_mip[25][:vars] == [:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]
         @test m.internalModel.bounding_constr_mip[25][:rhs] == 99999.0
         @test m.internalModel.bounding_constr_mip[25][:powers] == [2, 2, 2, 2, 2]
         @test m.internalModel.bounding_constr_mip[25][:cnt] == 5
@@ -1241,7 +1241,7 @@
         @test m.internalModel.bounding_constr_mip[26][:vars] == [:(x[1]), :(x[2])]
         @test m.internalModel.bounding_constr_mip[26][:rhs] == 200.0
         @test m.internalModel.bounding_constr_mip[26][:powers] == [4, 4]
-        @test m.internalModel.bounding_constr_mip[26][:cnt] == 4
+        @test m.internalModel.bounding_constr_mip[26][:cnt] == 2
     end
 
 end

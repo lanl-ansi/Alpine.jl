@@ -1,5 +1,6 @@
 using Base.Test
-using JuMP, Ipopt, MathProgBase, Cbc, Gurobi
+using JuMP, Ipopt, MathProgBase
+using GLPKMathProgInterface, Cbc, Gurobi
 using POD
 
 # Expression Testing Instances
@@ -20,8 +21,9 @@ include("../examples/multi.jl")
 # Special Operator
 include("../examples/div.jl")
 include("../examples/circle.jl")
+include("../examples/convex.jl")
 
 # Performe Tests
-include("solver.jl")
-include("expression.jl")
-# include("algorithm.jl")
+# include("solver.jl")
+# include("expression.jl")
+include("algorithm.jl")
