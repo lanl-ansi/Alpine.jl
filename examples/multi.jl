@@ -251,7 +251,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	return m
 end
 
-function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, facet=false, randomub=true, N=1, K=2, delta=4, presolve=0)
+function multiKND(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, facet=false, randomub=true, N=1, K=2, D=1, delta=4, presolve=0)
 
 	if solver == nothing
 		if uniform > 0.0
@@ -280,12 +280,11 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 		m = Model(solver=solver)
 	end
 
-	M = 1+(K-1)*N
-
+	M = K+(K-D)*(N-1)
 	srand(100)
 	isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
-	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-1):(M-1)))
-	@constraint(m, [i in 1:(K-1):(M-1)], sum(x[i+k] for k in 0:(K-1)) <= K)
+	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-D):(M-D)))
+	@constraint(m, [i in 1:(K-D):(M-D)], sum(x[i+k] for k in 0:(K-1)) <= K)
 
 	verbose && print(m)
 
