@@ -32,7 +32,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
     discretization_abs_width_tol::Float64                       # absolute tolerance used when setting up partition/discretizations
-    discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizationss
+    discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizations
+    discretization_consecutive_forbid::Int                      # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
 
     # parameters used to control convhull formulation
     convexhull_sweep_limit::Int                                 # Contoller for formulation density
@@ -118,6 +119,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     best_sol::Vector{Float64}                                   # Best feasible solution
     best_bound_sol::Vector{Float64}                             # Best bound solution
     best_rel_gap::Float64                                       # Relative optimality gap = |best_bound - best_obj|/|best_obj|
+    bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by parameter discretization_consecutive_forbid
     final_soln::Vector{Float64}                                 # Final solution
 
     # Logging information and status
@@ -142,6 +144,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_add_partition_method,
                                 discretization_abs_width_tol,
                                 discretization_rel_width_tol,
+                                discretization_consecutive_forbid,
                                 convexhull_sweep_limit,
                                 convexhull_use_sos2,
                                 convexhull_use_facet,
@@ -179,6 +182,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_add_partition_method = discretization_add_partition_method
         m.discretization_abs_width_tol = discretization_abs_width_tol
         m.discretization_rel_width_tol = discretization_rel_width_tol
+        m.discretization_consecutive_forbid = discretization_consecutive_forbid
 
         m.convexhull_sweep_limit = convexhull_sweep_limit
         m.convexhull_use_sos2 = convexhull_use_sos2
@@ -217,6 +221,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.lifted_constr_aff_mip = []
         m.var_discretization_mip = []
         m.discretization = Dict()
+        m.bound_sol_history = []
 
         m.user_parameters = Dict()
 
@@ -291,6 +296,10 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
 
+    # Setup the memory space for recording bounding solutions
+    m.bound_sol_history = Vector{Vector{Float64}}(m.discretization_consecutive_forbid)
+
+    # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
 
     logging_summary(m)
@@ -418,8 +427,15 @@ Otherwise, the function is invoked from [`bounding_solve`](@ref).
 function local_solve(m::PODNonlinearModel; presolve = false)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
-    # TODO: Need to add update solver time
-    local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+
+    if (presolve && m.minlp_local_solver != UnsetSolver())
+        local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_local_solver)
+    else
+        local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+        var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
+        !isempty(var_type_screener) && warn("Discrete variable detected with no minlp_local_solver indicated. Error can be caused with nlp_local_solver not handling these variables.")
+    end
+
     if presolve == false
         l_var, u_var = fix_domains(m)
     else
@@ -496,13 +512,14 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
     status_reroute = [:Infeasible]
-
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
+        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig+m.num_var_lifted_mip]
+        (m.discretization_consecutive_forbid>0) && (m.bound_sol_history[mod(m.logs[:n_iter]-1, m.discretization_consecutive_forbid)+1] = copy(candidate_bound_sol)) # Requires proper offseting
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
-            m.best_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig+m.num_var_lifted_mip]
+            m.best_bound_sol = copy(candidate_bound_sol)
             m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig+m.num_var_lifted_mip] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected

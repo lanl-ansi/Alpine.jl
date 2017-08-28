@@ -9,7 +9,7 @@ function meanvarx(;verbose=false, solver=nothing, convhull=true, delta=4, presol
                                    discretization_ratio=delta,
                                    bilinear_convexhull=convhull,
                                    monomial_convexhull=convhull,
-                                   presolve_bt_osutput_tol=1e-2,
+                                   presolve_bt_output_tol=1e-2,
                                    presolve_bound_tightening=(presolve>0),
                                    presolve_bound_tightening_algo=presolve))
     else

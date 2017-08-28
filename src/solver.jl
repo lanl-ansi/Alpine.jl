@@ -32,6 +32,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_add_partition_method::Any
     discretization_abs_width_tol::Float64
     discretization_rel_width_tol::Float64
+    discretization_consecutive_forbid::Int
 
     convexhull_sweep_limit::Int
     convexhull_use_sos2::Bool
@@ -52,7 +53,7 @@ end
 function PODSolver(;
     dev_debug = false,
     dev_test = false,
-    colorful_pod = true,
+    colorful_pod = false,
 
     log_level = 1,
     timeout = Inf,
@@ -75,8 +76,9 @@ function PODSolver(;
     discretization_ratio = 4,
     discretization_uniform_rate = 2,
     discretization_add_partition_method = "adaptive",
-    discretization_abs_width_tol = 1e-6,
-    discretization_rel_width_tol = 1e-9,
+    discretization_abs_width_tol = 1e-3,
+    discretization_rel_width_tol = 1e-6,
+    discretization_consecutive_forbid = 0,
 
     convexhull_sweep_limit = 1,
     convexhull_use_sos2 = true,
@@ -117,6 +119,7 @@ function PODSolver(;
         discretization_add_partition_method,
         discretization_abs_width_tol,
         discretization_rel_width_tol,
+        discretization_consecutive_forbid,
         convexhull_sweep_limit,
         convexhull_use_sos2,
         convexhull_use_facet,
@@ -163,6 +166,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_add_partition_method = s.discretization_add_partition_method
     discretization_abs_width_tol = s.discretization_abs_width_tol
     discretization_rel_width_tol = s.discretization_rel_width_tol
+    discretization_consecutive_forbid = s.discretization_consecutive_forbid
 
     convexhull_sweep_limit = s.convexhull_sweep_limit
     convexhull_use_sos2 = s.convexhull_use_sos2
@@ -193,6 +197,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_add_partition_method,
                             discretization_abs_width_tol,
                             discretization_rel_width_tol,
+                            discretization_consecutive_forbid,
                             convexhull_sweep_limit,
                             convexhull_use_sos2,
                             convexhull_use_facet,

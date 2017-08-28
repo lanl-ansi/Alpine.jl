@@ -188,10 +188,12 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
         (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
         for j in 1:length(discretization[i])
             if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+
                 @assert j < length(m.discretization[i])
                 lb_local = discretization[i][j]
                 ub_local = discretization[i][j+1]
                 distance = ub_local - lb_local
+
                 if isa(m.discretization_ratio, Float64) || isa(m.discretization_ratio, Int)
                     radius = distance / m.discretization_ratio
                 elseif isa(m.discretization_ratio, Function)
@@ -199,6 +201,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                 else
                     error("Undetermined discretization_ratio")
                 end
+
                 lb_new = max(point - radius, lb_local)
                 ub_new = min(point + radius, ub_local)
                 ub_touch = true
@@ -211,7 +214,8 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     insert!(discretization[i], j+1, lb_new)
                     lb_touch = false
                 end
-                if ub_touch && lb_touch
+                # @show i, ub_touch, lb_touch,  check_solution_history(m, i)
+                if (ub_touch && lb_touch) || (m.discretization_consecutive_forbid>0 && check_solution_history(m, i))
                     distance = -1.0
                     pos = -1
                     for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions

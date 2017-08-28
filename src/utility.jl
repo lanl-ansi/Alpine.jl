@@ -190,6 +190,24 @@ function update_boundstop_options(m::PODNonlinearModel)
     return
 end
 
+
+"""
+    check_solution_history(m::PODNonlinearModel, ind::Int)
+
+Check if the solution is alwasy the same within the last discretization_consecutive_forbid iterations. Return true if suolution in invariant.
+"""
+function check_solution_history(m::PODNonlinearModel, ind::Int)
+
+    (m.logs[:n_iter] < m.discretization_consecutive_forbid) && return false
+
+    sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, m.discretization_consecutive_forbid)+1][ind]
+    for i in 1:(m.discretization_consecutive_forbid-1)
+        search_pos = mod(m.logs[:n_iter]-1-i, m.discretization_consecutive_forbid)+1
+        !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=m.discretization_rel_width_tol) && return false
+    end
+    return true
+end
+
 """
 
     fix_domains(m::PODNonlinearModel)
