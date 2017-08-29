@@ -123,15 +123,16 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
-    for i in 1:length(m.mip_solver.options)
-        if fetch_timeleft_symbol(m) in collect(m.mip_solver.options[i])
-            deleteat!(m.mip_solver.options, i)
-            break
-        end
-    end
-
-    if m.timeout != Inf
-        push!(m.mip_solver.options, (fetch_timeleft_symbol(m), timelimit))
+    if m.mip_solver_identifier == "CPLEX"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.mip_solver_identifier == "Gurobi"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
+    elseif m.mip_solver_identifier == "Cbc"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
+    elseif m.mip_solver_identifier == "GLPK"
+        insert_timeleft_symbol(m.mip_solver.opt)
+    else found == nothing
+        error("Needs support for this MIP solver")
     end
 
     return
@@ -139,19 +140,74 @@ end
 
 """
 
-    fetch_timeleft_symbol(m::PODNonlinearModel)
+    update_mip_time_limit(m::PODNonlinearModel)
 
-An utility function used to recognize differnt sub-solvers return the timelimit setup keywords.
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
-function fetch_timeleft_symbol(m::PODNonlinearModel)
-    if string(m.mip_solver)[1:5] == "CPLEX"
-        return :CPX_PARAM_TILIM
-    elseif string(m.mip_solver)[1:6] == "Gurobi"
-        return :TimeLimit
-    elseif string(m.mip_solver)[1:3] == "Cbc"
-        return :seconds
+function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.nlp_local_solver_identifier == "Ipopt"
+        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.nlp_local_solver_identifier == "Pajarito"
+        (timeout < Inf) && (m.nlp_local_solver.timeout = timelimit)
+    elseif m.nlp_local_solver_identifier == "AmplNL"
+        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
+    elseif m.nlp_local_solver_identifier == "Knitro"
+        error("You never tell me anything about knitro. Probably because they charge everything they own.")
     else found == nothing
         error("Needs support for this MIP solver")
+    end
+
+    return
+end
+
+"""
+
+    update_mip_time_limit(m::PODNonlinearModel)
+
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+"""
+function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.minlp_local_solver_identifier == "Pajarito"
+        (timeout < Inf) && (m.minlp_local_solver.timeout = timelimit)
+    elseif m.minlp_local_solver_identifier == "AmplNL"
+        insert_timeleft_symbol(m.minlp_local_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
+    elseif m.minlp_local_solver_identifier == "Knitro"
+        error("You never tell me anything about knitro. Probably because they charge everything they own.")
+    else found == nothing
+        error("Needs support for this MIP solver")
+    end
+
+    return
+end
+
+"""
+    @docstring
+"""
+function insert_timeleft_symbol(options, val::Float64, keywords::Symbol, timeout; options_string_type=1)
+    for i in 1:length(options)
+        if options_string_type == 1
+            if keywords in collect(options[i])
+                deleteat!(options, i)
+            end
+        elseif options_string_type == 2
+            if keywords == split(options[i],"=")[1]
+                deleteat!(options, i)
+            end
+        end
+    end
+
+    if options_string_type == 1
+        (timeout != Inf) && push!(options, (keywords, val))
+    elseif options_string_type == 2
+        (timeout != Inf) && push!(options, "$(keywords)=$(val)")
     end
     return
 end
@@ -163,29 +219,30 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
-    # Calculation of the bound
-    if m.sense_orig == :Min
-        stopbound = (1-m.rel_gap+m.tol) * m.best_obj
-    elseif m.sense_orig == :Max
-        stopbound = (1+m.rel_gap-m.tol) * m.best_obj
-    end
 
-    for i in 1:length(m.mip_solver.options)
-        if m.mip_solver.options[i][1] == :BestBdStop
-            deleteat!(m.mip_solver.options, i)
-            if string(m.mip_solver)[1:6] == "Gurobi"
-                push!(m.mip_solver.options, (:BestBdStop, stopbound))
-            else
-                return
-            end
-        end
-    end
-
-    if string(m.mip_solver)[1:6] == "Gurobi"
-        push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    else
-        return
-    end
+    # # Calculation of the bound
+    # if m.sense_orig == :Min
+    #     stopbound = (1-m.rel_gap+m.tol) * m.best_obj
+    # elseif m.sense_orig == :Max
+    #     stopbound = (1+m.rel_gap-m.tol) * m.best_obj
+    # end
+    #
+    # for i in 1:length(m.mip_solver.options)
+    #     if m.mip_solver.options[i][1] == :BestBdStop
+    #         deleteat!(m.mip_solver.options, i)
+    #         if string(m.mip_solver)[1:6] == "Gurobi"
+    #             push!(m.mip_solver.options, (:BestBdStop, stopbound))
+    #         else
+    #             return
+    #         end
+    #     end
+    # end
+    #
+    # if string(m.mip_solver)[1:6] == "Gurobi"
+    #     push!(m.mip_solver.options, (:BestBdStop, stopbound))
+    # else
+    #     return
+    # end
 
     return
 end
@@ -361,6 +418,60 @@ function max_cover(m::PODNonlinearModel; kwargs...)
 
     return
 end
+
+function fetch_mip_solver_identifier(m::PODNonlinearModel)
+
+    @show string(m.nlp_local_solver)
+    if string(m.mip_solver)[1:6] == "Gurobi"
+        m.mip_solver_identifier = "Gurobi"
+    elseif string(m.mip_solver)[1:7] == "CPLEX"
+        m.mip_solver_identifier = "Cplex"
+    elseif string(m.mip_solver)[1:3] == "Cbc"
+        m.mip_solver_identifier = "Cbc"
+    elseif string(m.mip_solver)[1:4] == "GLPK"
+        m.mip_solver_identifier = "GLPK"
+    else
+        error("Unsupported mip solver name. Using blank")
+    end
+
+    return
+end
+
+function fetch_nlp_solver_identifier(m::PODNonlinearModel)
+
+    @show string(m.nlp_local_solver)
+    if string(m.nlp_local_solver)[1:5] == "Ipopt"
+        m.nlp_local_solver_identifier = "Ipopt"
+    elseif string(m.nlp_local_solver)[1:6] == "AmplNL"
+        m.nlp_local_solver_identifier = "Bonmin"
+    elseif string(m.nlp_local_solver)[1:6] == "Knitro"
+        m.nlp_local_solver_identifier = "Knitro"
+    elseif string(m.nlp_local_solver)[1:8] == "Pajarito"
+        m.nlp_local_solver_identifier = "Pajarito"
+    else
+        error("Unsupported nlp solver name. Using blank")
+    end
+
+    return
+end
+
+function fetch_minlp_solver_identifier(m::PODNonlinearModel)
+
+    (m.minlp_local_solver == UnsetSolver()) && return
+    @show string(m.minlp_local_solver)
+    if string(m.minlp_local_solver)[1:6] == "AmplNL"
+        m.minlp_local_solver_identifier = "Bonmin"
+    elseif string(m.minlp_local_solver)[1:6] == "Knitro"
+        m.minlp_local_solver_identifier = "Knitro"
+    elseif string(m.minlp_local_solver)[1:8] == "Pajarito"
+        m.minlp_local_solver_identifier = "Pajarito"
+    else
+        error("Unsupported nlp solver name. Using blank")
+    end
+
+    return
+end
+
 
 function print_iis_gurobi(m::JuMP.Model)
 

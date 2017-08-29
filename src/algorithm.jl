@@ -57,7 +57,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
     minlp_local_solver::MathProgBase.AbstractMathProgSolver     # Local MINLP solver for solving MINLPs at each iteration
     mip_solver::MathProgBase.AbstractMathProgSolver             # MILP solver for successive lower bound solves
-    # other options go here
+
+    # identifiers of the sub-solvers
+    nlp_local_solver_identifier::AbstractString
+    minlp_local_solver_identifier::AbstractString
+    mip_solver_identifier::AbstractString
 
     # initial data provided by user
     num_var_orig::Int                                           # Initial number of variables
@@ -302,7 +306,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
 
+    fetch_mip_solver_identifier(m)
+    fetch_nlp_solver_identifier(m)
+    fetch_minlp_solver_identifier(m)
+
     logging_summary(m)
+
+    return
 end
 
 function MathProgBase.optimize!(m::PODNonlinearModel)
@@ -311,6 +321,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     end
     presolve(m)
     global_solve(m)
+    (m.log_level > 0) && logging_row_entry(m, finsih_entry=true)
     summary_status(m)
 end
 
@@ -428,12 +439,22 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
 
-    if (presolve && m.minlp_local_solver != UnsetSolver())
-        local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_local_solver)
+    var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
+
+    if presolve
+        if !isempty(var_type_screener) && m.minlp_local_solver != UnsetSolver()
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_local_solver)
+        else
+            warn("Discrete variable detected with no minlp_local_solver indicated. Error can be caused with nlp_local_solver not handling discrete variables.")
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+        end
     else
-        local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
-        var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
-        !isempty(var_type_screener) && warn("Discrete variable detected with no minlp_local_solver indicated. Error can be caused with nlp_local_solver not handling these variables.")
+        if m.nlp_local_solver != UnsetSolver()
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+        else
+            warn("Handling NLP problem with minlp solver, could result in error due to MINLP solver.")
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_local_solver)
+        end
     end
 
     if presolve == false

@@ -67,6 +67,9 @@ function logging_head()
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+
     b_len = 14
     if isa(m.logs[:obj][end], Float64)
         UB_block = string(" ", round(m.logs[:obj][end],4), " " ^ (b_len - length(string(round(m.logs[:obj][end], 4)))))
@@ -79,7 +82,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     GAP_block = string(" ", round(m.best_rel_gap*100,5), " " ^ (b_len - length(string(round(m.best_rel_gap*100,5)))))
     UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
     LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
-    ITER_block = string(" ", m.logs[:n_iter])
+    haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish")) : (ITER_block = string(" ", m.logs[:n_iter]))
 
     if m.colorful_pod
         colors = [:blue, :cyan, :green, :red, :light_red, :light_blue, :light_cyan, :light_green, :light_magenta, :light_re, :light_yellow, :white, :yellow]
@@ -140,7 +143,6 @@ function summary_status(m::PODNonlinearModel)
             m.pod_status = :Optimal
         end
     elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
-        print_
         m.pod_status = :Infeasible
     elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
         m.pod_status = :Heuristic

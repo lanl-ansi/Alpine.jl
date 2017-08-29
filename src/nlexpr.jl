@@ -9,6 +9,7 @@ function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
+		m.log_level > 199 && println("origin ::", m.constr_expr_orig[i])
 		m.log_level > 199 && println("lifted ::", m.lifted_constr_expr_mip[i])
 		m.log_level > 199 && println("coeffs ::", m.lifted_constr_aff_mip[i][:coefs])
         m.log_level > 199 && println("vars ::", m.lifted_constr_aff_mip[i][:vars])
@@ -299,14 +300,18 @@ function expr_arrangeargs(args::Array; kwargs...)
 		end
 
 		# Re-arrange children :: without actually doing anything on them
-		if Bool(valinit)
-			return [args[1];val;refs;exprs]
-		elseif Bool(refinit)
-			return [args[1];refs;val;exprs]
-		elseif Bool(callinit)
-			return [args[1];exprs;refs;val]
-		else
-			error("Unexpected condition encountered...")
+		if args[1] in [:*]
+			return[args[1];val;refs;exprs]
+		elseif args[1] in [:+, :-]
+			if Bool(valinit)
+				return [args[1];val;refs;exprs]
+			elseif Bool(refinit)
+				return [args[1];refs;val;exprs]
+			elseif Bool(callinit)
+				return [args[1];exprs;refs;val]
+			else
+				error("Unexpected condition encountered...")
+			end
 		end
 	else
 		error("Unsupported expression arguments $args")
