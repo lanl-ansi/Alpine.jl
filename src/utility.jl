@@ -136,7 +136,7 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
     elseif m.mip_solver_identifier == "GLPK"
         insert_timeleft_symbol(m.mip_solver.opt)
-    else found == nothing
+    else
         error("Needs support for this MIP solver")
     end
 
@@ -162,7 +162,7 @@ function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
     elseif m.nlp_local_solver_identifier == "Knitro"
         error("You never tell me anything about knitro. Probably because they charge everything they own.")
-    else found == nothing
+    else
         error("Needs support for this MIP solver")
     end
 
@@ -186,7 +186,7 @@ function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.minlp_local_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
     elseif m.minlp_local_solver_identifier == "Knitro"
         error("You never tell me anything about knitro. Probably because they charge everything they own.")
-    else found == nothing
+    else
         error("Needs support for this MIP solver")
     end
 
@@ -426,11 +426,10 @@ end
 
 function fetch_mip_solver_identifier(m::PODNonlinearModel)
 
-    @show string(m.nlp_local_solver)
     if string(m.mip_solver)[1:6] == "Gurobi"
         m.mip_solver_identifier = "Gurobi"
-    elseif string(m.mip_solver)[1:7] == "CPLEX"
-        m.mip_solver_identifier = "Cplex"
+    elseif string(m.mip_solver)[1:5] == "CPLEX"
+        m.mip_solver_identifier = "CPLEX"
     elseif string(m.mip_solver)[1:3] == "Cbc"
         m.mip_solver_identifier = "Cbc"
     elseif string(m.mip_solver)[1:4] == "GLPK"
@@ -444,7 +443,6 @@ end
 
 function fetch_nlp_solver_identifier(m::PODNonlinearModel)
 
-    @show string(m.nlp_local_solver)
     if string(m.nlp_local_solver)[1:5] == "Ipopt"
         m.nlp_local_solver_identifier = "Ipopt"
     elseif string(m.nlp_local_solver)[1:6] == "AmplNL"
@@ -463,7 +461,6 @@ end
 function fetch_minlp_solver_identifier(m::PODNonlinearModel)
 
     (m.minlp_local_solver == UnsetSolver()) && return
-    @show string(m.minlp_local_solver)
     if string(m.minlp_local_solver)[1:6] == "AmplNL"
         m.minlp_local_solver_identifier = "Bonmin"
     elseif string(m.minlp_local_solver)[1:6] == "Knitro"
