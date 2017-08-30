@@ -50,6 +50,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     presolve_mip_relaxation::Bool                               # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_mip_timelimit::Float64                             # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
 
+    # Domain Reduction
+    bound_basic_propagation::Bool                               # Conduct basic bound propagation
+
     # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
@@ -159,7 +162,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_bt_output_tol,
                                 presolve_bound_tightening_algo,
                                 presolve_mip_relaxation,
-                                presolve_mip_timelimit)
+                                presolve_mip_timelimit，
+                                bound_basic_propagation)
 
         m = new()
 
@@ -200,6 +204,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.presolve_bound_tightening_algo = presolve_bound_tightening_algo
         m.presolve_mip_relaxation = presolve_mip_relaxation
         m.presolve_mip_timelimit = presolve_mip_timelimit
+
+        m.bound_basic_propagation = bound_basic_propagation
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -295,7 +301,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     expr_batch_process(m)           # Expression handling
     populate_lifted_affine(m)       # Construct affine function
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    # bounds_propagation(m)           # Fetch bounds from constraints
+    m.bound_basic_propagation && bounds_propagation(m) # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary

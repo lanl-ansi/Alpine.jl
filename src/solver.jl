@@ -47,6 +47,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     presolve_mip_relaxation::Bool
     presolve_mip_timelimit::Float64
 
+    bound_basic_propagation::Bool
+
     # other options to be added later on
 end
 
@@ -92,6 +94,8 @@ function PODSolver(;
     presolve_bound_tightening_algo = 1,
     presolve_mip_relaxation = false,
     presolve_mip_timelimit = Inf,
+
+    bound_basic_propagation = false,
     )
 
     if nlp_local_solver == UnsetSolver()
@@ -129,7 +133,9 @@ function PODSolver(;
         presolve_bt_width_tol,
         presolve_bt_output_tol,
         presolve_bound_tightening_algo,
-        presolve_mip_relaxation,presolve_mip_timelimit)
+        presolve_mip_relaxation,
+        presolve_mip_timelimit,
+        bound_basic_propagation)
     end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -181,6 +187,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_mip_relaxation = s.presolve_mip_relaxation
     presolve_mip_timelimit = s.presolve_mip_timelimit
 
+    bound_basic_propagation = s.bound_basic_propagation
+
     return PODNonlinearModel(dev_debug, dev_test, colorful_pod,
                             log_level, timeout, maxiter, rel_gap, tol,
                             nlp_local_solver,
@@ -208,5 +216,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             presolve_bt_output_tol,
                             presolve_bound_tightening_algo,
                             presolve_mip_relaxation,
-                            presolve_mip_timelimit)
+                            presolve_mip_timelimit,
+                            bound_basic_propagation)
 end
