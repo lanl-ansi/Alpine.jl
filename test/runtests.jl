@@ -24,6 +24,6 @@ include("../examples/circle.jl")
 include("../examples/convex.jl")
 
 # Performe Tests
-# include("solver.jl")
-# include("expression.jl")
+include("solver.jl")
+include("expression.jl")
 include("algorithm.jl")
