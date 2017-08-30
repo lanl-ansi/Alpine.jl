@@ -104,7 +104,7 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 		if (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && (expr.args[3].head == :call)
 			coef = expr.args[2]
 			start_pos = 3
-			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix...")
+			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix...", once=true)
 		end
 	end
 

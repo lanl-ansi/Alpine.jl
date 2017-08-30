@@ -150,6 +150,7 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
     @assert expr.head == :call
 
     function store_bilinear()
+        (m.log_level) > 99 && println("found bilinear term $expr")
         y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])))
@@ -188,7 +189,6 @@ function resolve_bilinear(expr, m::PODNonlinearModel)
         end
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && length(Set(var_idxs)) == 2
-            (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if (term_key in keys(m.nonlinear_info) || reverse(term_key) in keys(m.nonlinear_info))
                 (term_key in keys(m.nonlinear_info)) ? term_key = term_key : term_key = reverse(term_key)
@@ -209,6 +209,7 @@ end
 function resolve_multilinear(expr, m::PODNonlinearModel)
 
     function store_multilinear()
+        (m.log_level > 99) && println("found multilinear term $expr")
         y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         constr_block = "x[$(y_idx)]=="
@@ -252,7 +253,6 @@ function resolve_multilinear(expr, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         if length(var_idxs) > 2
-            (m.log_level > 99) && println("found multilinear term $expr")
             term_key = []
             for idx in var_idxs
                 push!(term_key, Expr(:ref, :x, idx))
@@ -275,6 +275,7 @@ end
 function resolve_monomial(expr, m::PODNonlinearModel)
 
     function store_monomial()
+        (m.log_level > 99) && println("found monomial term $expr")
         y_idx = m.num_var_orig + length(keys(m.nonlinear_info)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[1])))
@@ -312,7 +313,6 @@ function resolve_monomial(expr, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         if length(var_idxs) == 1 && power_scalar == 2.0
-            (m.log_level > 99) && println("found monomial term $expr")
             term_key = []
             for i in 1:2
                 push!(term_key, Expr(:ref, :x, var_idxs[1]))

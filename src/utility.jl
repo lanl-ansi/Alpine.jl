@@ -162,6 +162,8 @@ function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
     elseif m.nlp_local_solver_identifier == "Knitro"
         error("You never tell me anything about knitro. Probably because they charge everything they own.")
+    elseif m.nlp_local_solver_identifier == "NLopt"
+        m.nlp_local_solver.maxtime = timelimit
     else
         error("Needs support for this MIP solver")
     end
@@ -186,6 +188,8 @@ function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.minlp_local_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
     elseif m.minlp_local_solver_identifier == "Knitro"
         error("You never tell me anything about knitro. Probably because they charge everything they own.")
+    elseif m.minlp_local_solver_identifier == "NLopt"
+        m.minlp_local_solver.maxtime = timelimit
     else
         error("Needs support for this MIP solver")
     end
@@ -451,6 +455,8 @@ function fetch_nlp_solver_identifier(m::PODNonlinearModel)
         m.nlp_local_solver_identifier = "Knitro"
     elseif string(m.nlp_local_solver)[1:8] == "Pajarito"
         m.nlp_local_solver_identifier = "Pajarito"
+    elseif string(m.nlp_local_solver)[1:5] == "NLopt"
+        m.nlp_local_solver_identifier = "NLopt"
     else
         error("Unsupported nlp solver name. Using blank")
     end
@@ -467,6 +473,8 @@ function fetch_minlp_solver_identifier(m::PODNonlinearModel)
         m.minlp_local_solver_identifier = "Knitro"
     elseif string(m.minlp_local_solver)[1:8] == "Pajarito"
         m.minlp_local_solver_identifier = "Pajarito"
+    elseif string(m.nlp_local_solver)[1:5] == "NLopt"
+        m.nlp_local_solver_identifier = "NLopt"
     else
         error("Unsupported nlp solver name. Using blank")
     end
