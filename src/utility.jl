@@ -16,7 +16,12 @@ The absolute gap calculation is
 """
 function update_opt_gap(m::PODNonlinearModel)
 
-    m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+    if m.best_obj in [Inf, -Inf]
+        m.best_rel_gap = Inf
+        return
+    else
+        m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+    end
     # absoluate or anyother bound calculation shows here...
 
     return
