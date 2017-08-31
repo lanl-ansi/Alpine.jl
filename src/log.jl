@@ -60,11 +60,18 @@ function logging_summary(m::PODNonlinearModel)
     end
 
     # Additional warnings
-    string(m.mip_solver)[1:6] == "Gurobi" && warn("POD support Gurobi solver 7.0+ ...")
+    m.mip_solver_identifier == "Gurobi" && warn("POD support Gurobi solver 7.0+ ...")
 end
 
-function logging_head()
-    print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | TIME LEFT     | Iter   \n")
+function logging_head(m::PODNonlinearModel)
+	@show m.logs[:time_left]
+	if m.logs[:time_left] < Inf
+		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | TIME LEFT     | Iter   \n")
+	else
+		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | | Iter   \n")
+	end
+
+	return
 end
 
 function logging_row_entry(m::PODNonlinearModel; kwargs...)
@@ -82,8 +89,11 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     incumb_LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))
     GAP_block = string(" ", round(m.best_rel_gap*100,5), " " ^ (b_len - length(string(round(m.best_rel_gap*100,5)))))
     UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
-    if m.logs[:time_left] ==
-    LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
+    if m.logs[:time_left] < Inf
+		LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
+	else
+		LTIME_block = " "
+	end
     haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish")) : (ITER_block = string(" ", m.logs[:n_iter]))
 
     if m.colorful_pod

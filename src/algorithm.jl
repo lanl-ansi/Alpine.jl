@@ -162,7 +162,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_bt_output_tol,
                                 presolve_bound_tightening_algo,
                                 presolve_mip_relaxation,
-                                presolve_mip_timelimit，
+                                presolve_mip_timelimit,
                                 bound_basic_propagation)
 
         m = new()
@@ -415,7 +415,7 @@ For example, this algorithm can easily be reformed as a uniform-partitioning alg
 """
 function global_solve(m::PODNonlinearModel)
 
-    (m.log_level > 0) && logging_head()
+    (m.log_level > 0) && logging_head(m)
     (!m.presolve_track_time) && reset_timer(m)
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
