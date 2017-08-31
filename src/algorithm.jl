@@ -391,6 +391,8 @@ function presolve(m::PODNonlinearModel)
             bounding_solve(m)            # Solve bounding model
             add_partition(m, use_solution=m.best_bound_sol)
         end
+    elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
+        error("NLP solver returns $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this.")
     else
         error("NLP local solve is $(m.status[:local_solve]) - quitting solve.")
         quit()
