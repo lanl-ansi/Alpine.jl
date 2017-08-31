@@ -36,6 +36,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     convexhull_sweep_limit::Int
     convexhull_use_sos2::Bool
+    convexhull_use_sos2_alter::Bool
     convexhull_use_facet::Bool
 
     presolve_track_time::Bool
@@ -84,6 +85,7 @@ function PODSolver(;
 
     convexhull_sweep_limit = 1,
     convexhull_use_sos2 = true,
+    convexhull_use_sos2_alter = false,
     convexhull_use_facet = false,
 
     presolve_track_time = false,
@@ -126,6 +128,7 @@ function PODSolver(;
         discretization_consecutive_forbid,
         convexhull_sweep_limit,
         convexhull_use_sos2,
+        convexhull_use_sos2_alter,
         convexhull_use_facet,
         presolve_track_time,
         presolve_bound_tightening,
@@ -176,6 +179,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     convexhull_sweep_limit = s.convexhull_sweep_limit
     convexhull_use_sos2 = s.convexhull_use_sos2
+    convexhull_use_sos2_alter = s.convexhull_use_sos2_alter
     convexhull_use_facet = s.convexhull_use_facet
 
     presolve_track_time = s.presolve_track_time
@@ -208,6 +212,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_consecutive_forbid,
                             convexhull_sweep_limit,
                             convexhull_use_sos2,
+                            convexhull_use_sos2_alter,
                             convexhull_use_facet,
                             presolve_track_time,
                             presolve_bound_tightening,

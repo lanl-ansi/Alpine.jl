@@ -133,9 +133,15 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::T
 
     for i in ml_indices
         if !(i in keys(α))
-            partition_cnt = length(discretization[i]) - 1
-            α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
-            @constraint(m.model_mip, sum(α[i]) == 1)
+            if m.convexhull_use_sos2_alter
+                intersect_cnt = length(discretization[i])
+                α[i] = @variable(m.model_mip, [1:intersect_cnt], lowerbound=0.0, upperbound=1.0, basename="A$(i)")
+                addSOS2(m.model_mip, α[i])
+            else
+                partition_cnt = length(discretization[i]) - 1
+                α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
+                @constraint(m.model_mip, sum(α[i]) == 1)
+            end
         end
     end
 
@@ -151,20 +157,19 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     cnt = 0
     for i in ml_indices
         cnt += 1
-        partition_cnt = length(α[i])
-        lambda_cnt = length(discretization[i])
-        @assert lambda_cnt == partition_cnt + 1
+        valid_inequalities(m, discretization, λ, α, ml_indices, dim, i, cnt)        # Add links between λ and α
+        if m.convexhull_use_sos2_alter
+            @constraint(m.model_mip, Variable(m.model_mip, i) == dot(α[i], discretization[i]))
+        else
+            partition_cnt = length(α[i])
+            lambda_cnt = length(discretization[i])
+            @assert lambda_cnt == partition_cnt + 1
+            sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt] # Add x = f(λ) for convex representation of x value
+            @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
 
-        # Add links between λ and α
-        valid_inequalities(m, discretization, λ, α, ml_indices, dim, i, cnt)
-
-        # Add x = f(λ) for convex representation of x value
-        sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt]
-        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
-
-        # Add x = f(α) for regulating the domains
-        @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1))
-        @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
+            @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
+            @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
+        end
     end
 
     return
@@ -206,6 +211,8 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
 
+    (m.convexhull_use_sos2_alter) && warn("Not considering alternative SOS2-Formulation for monomial terms")
+
     return
 end
 
@@ -214,6 +221,14 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
 
     partition_cnt = length(α[var_ind])
     lambda_cnt = length(discretization[var_ind])
+
+    if m.convexhull_use_sos2_alter
+        for j in 1:lambda_cnt
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
+            @constraint(m.model_mip, α[var_ind][j] == sum(λ[ml_indices][:vars][sliced_indices]))
+        end
+        return
+    end
 
     if m.convexhull_use_facet
         # Constraint cluster of α >= f(λ)
