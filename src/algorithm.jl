@@ -37,9 +37,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # parameters used to control convhull formulation
     convexhull_sweep_limit::Int                                 # Contoller for formulation density
-    convexhull_use_sos2::Bool                                   # Convex hull formulation with SOS-2 representation (numerically best so far)
-    convexhull_use_sos2_alter::Bool                             # Speical SOS-2 formulation that utilized auxilary variables
-    convexhull_use_facet::Bool                                  # Use the facets contraint generated from PORTA
+    convhull_formulation_sos2::Bool                                   # Convex hull formulation with SOS-2 representation (numerically best so far)
+    convhull_formulation_sos2aux::Bool                                # Speical SOS-2 formulation that utilized auxilary variables
+    convhull_formulation_facet::Bool                                  # Use the facets contraint generated from PORTA
+    convhull_formulation_minib::Bool                                  # Use minimum formulation with boundary cuts
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
@@ -154,9 +155,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_rel_width_tol,
                                 discretization_consecutive_forbid,
                                 convexhull_sweep_limit,
-                                convexhull_use_sos2,
-                                convexhull_use_sos2_alter,
-                                convexhull_use_facet,
+                                convhull_formulation_sos2,
+                                convhull_formulation_sos2aux,
+                                convhull_formulation_facet,
+                                convhull_formulation_minib,
                                 presolve_track_time,
                                 presolve_bound_tightening,
                                 presolve_maxiter,
@@ -165,7 +167,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_bound_tightening_algo,
                                 presolve_mip_relaxation,
                                 presolve_mip_timelimit,
-                                bound_basic_propagation)
+                                bound_basic_propagation,
+                                user_parameters)
 
         m = new()
 
@@ -195,9 +198,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_consecutive_forbid = discretization_consecutive_forbid
 
         m.convexhull_sweep_limit = convexhull_sweep_limit
-        m.convexhull_use_sos2 = convexhull_use_sos2
-        m.convexhull_use_sos2_alter = convexhull_use_sos2_alter
-        m.convexhull_use_facet = convexhull_use_facet
+        m.convhull_formulation_sos2 = convhull_formulation_sos2
+        m.convhull_formulation_sos2aux = convhull_formulation_sos2aux
+        m.convhull_formulation_facet = convhull_formulation_facet
+        m.convhull_formulation_minib = convhull_formulation_minib
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bound_tightening = presolve_bound_tightening
@@ -453,8 +457,10 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     if presolve
         if !isempty(var_type_screener) && m.minlp_local_solver != UnsetSolver()
             local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_local_solver)
-        else
+        elseif !isempty(var_type_screener) && m.minlp_local_solver == UnsetSolver()
             warn("Discrete variable detected with no minlp_local_solver indicated. Error can be caused with nlp_local_solver not handling discrete variables.")
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+        else
             local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
         end
     else

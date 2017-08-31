@@ -35,9 +35,10 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_consecutive_forbid::Int
 
     convexhull_sweep_limit::Int
-    convexhull_use_sos2::Bool
-    convexhull_use_sos2_alter::Bool
-    convexhull_use_facet::Bool
+    convhull_formulation_sos2::Bool
+    convhull_formulation_sos2aux::Bool
+    convhull_formulation_facet::Bool
+    convhull_formulation_minib::Bool
 
     presolve_track_time::Bool
     presolve_bound_tightening::Bool
@@ -49,6 +50,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     presolve_mip_timelimit::Float64
 
     bound_basic_propagation::Bool
+
+    user_parameters::Dict
 
     # other options to be added later on
 end
@@ -84,9 +87,10 @@ function PODSolver(;
     discretization_consecutive_forbid = 0,
 
     convexhull_sweep_limit = 1,
-    convexhull_use_sos2 = true,
-    convexhull_use_sos2_alter = false,
-    convexhull_use_facet = false,
+    convhull_formulation_sos2 = true,
+    convhull_formulation_sos2aux = false,
+    convhull_formulation_facet = false,
+    convhull_formulation_minib = false,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
@@ -98,6 +102,7 @@ function PODSolver(;
     presolve_mip_timelimit = Inf,
 
     bound_basic_propagation = false,
+    user_parameters = Dict(),
     )
 
     if nlp_local_solver == UnsetSolver()
@@ -127,9 +132,10 @@ function PODSolver(;
         discretization_rel_width_tol,
         discretization_consecutive_forbid,
         convexhull_sweep_limit,
-        convexhull_use_sos2,
-        convexhull_use_sos2_alter,
-        convexhull_use_facet,
+        convhull_formulation_sos2,
+        convhull_formulation_sos2aux,
+        convhull_formulation_facet,
+        convhull_formulation_minib,
         presolve_track_time,
         presolve_bound_tightening,
         presolve_maxiter,
@@ -138,7 +144,8 @@ function PODSolver(;
         presolve_bound_tightening_algo,
         presolve_mip_relaxation,
         presolve_mip_timelimit,
-        bound_basic_propagation)
+        bound_basic_propagation,
+        user_parameters)
     end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -178,9 +185,10 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_consecutive_forbid = s.discretization_consecutive_forbid
 
     convexhull_sweep_limit = s.convexhull_sweep_limit
-    convexhull_use_sos2 = s.convexhull_use_sos2
-    convexhull_use_sos2_alter = s.convexhull_use_sos2_alter
-    convexhull_use_facet = s.convexhull_use_facet
+    convhull_formulation_sos2 = s.convhull_formulation_sos2
+    convhull_formulation_sos2aux = s.convhull_formulation_sos2aux
+    convhull_formulation_facet = s.convhull_formulation_facet
+    convhull_formulation_minib = s.convhull_formulation_minib
 
     presolve_track_time = s.presolve_track_time
     presolve_bound_tightening = s.presolve_bound_tightening
@@ -192,6 +200,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_mip_timelimit = s.presolve_mip_timelimit
 
     bound_basic_propagation = s.bound_basic_propagation
+
+    user_parameters = s.user_parameters
 
     return PODNonlinearModel(dev_debug, dev_test, colorful_pod,
                             log_level, timeout, maxiter, rel_gap, tol,
@@ -211,9 +221,10 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_rel_width_tol,
                             discretization_consecutive_forbid,
                             convexhull_sweep_limit,
-                            convexhull_use_sos2,
-                            convexhull_use_sos2_alter,
-                            convexhull_use_facet,
+                            convhull_formulation_sos2,
+                            convhull_formulation_sos2aux,
+                            convhull_formulation_facet,
+                            convhull_formulation_minib,
                             presolve_track_time,
                             presolve_bound_tightening,
                             presolve_maxiter,
@@ -222,5 +233,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             presolve_bound_tightening_algo,
                             presolve_mip_relaxation,
                             presolve_mip_timelimit,
-                            bound_basic_propagation)
+                            bound_basic_propagation,
+                            user_parameters)
 end

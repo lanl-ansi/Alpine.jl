@@ -51,8 +51,8 @@ function logging_summary(m::PODNonlinearModel)
         m.bilinear_convexhull && println("bilinear treatment = convex hull formulation")
         m.monomial_convexhull && println("monomial treatment = convex hull formulation")
 
-        m.convexhull_use_facet && println("using convex hull : facet formulation")
-        m.convexhull_use_sos2 && println("using convex hull : sos2 formulation")
+        m.convhull_formulation_facet && println("using convex hull : facet formulation")
+        m.convhull_formulation_sos2 && println("using convex hull : sos2 formulation")
 
         (m.discretization_add_partition_method == "adpative") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
         (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
