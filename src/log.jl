@@ -33,10 +33,10 @@ function logging_summary(m::PODNonlinearModel)
     if m.log_level > 0
         print_with_color(:light_yellow, "full problem loaded into POD\n")
         println("problen sense $(m.sense_orig)")
-        @printf "number of constraints = %d.\n" m.num_constr_orig
-        @printf "number of non-linear constraints = %d.\n" m.num_nlconstr_orig
-        @printf "number of linear constraints = %d.\n" m.num_lconstr_orig
-        @printf "number of variables = %d.\n" m.num_var_orig
+        @printf "number of constraints = %d\n" m.num_constr_orig
+        @printf "number of non-linear constraints = %d\n" m.num_nlconstr_orig
+        @printf "number of linear constraints = %d\n" m.num_lconstr_orig
+        @printf "number of variables = %d\n" m.num_var_orig
 
         println("NLP solver = ", split(string(m.nlp_local_solver),".")[1])
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
@@ -82,6 +82,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     incumb_LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))
     GAP_block = string(" ", round(m.best_rel_gap*100,5), " " ^ (b_len - length(string(round(m.best_rel_gap*100,5)))))
     UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
+    if m.logs[:time_left] ==
     LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
     haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish")) : (ITER_block = string(" ", m.logs[:n_iter]))
 
