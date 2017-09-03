@@ -266,7 +266,7 @@
 
         @test status == :Optimal
         @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
-        @test m.internalModel.logs[:n_iter] == 3
+        @test m.internalModel.logs[:n_iter] == 1
     end
 
     @testset " Validation Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
