@@ -227,16 +227,10 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                             pos = j
                         end
                     end
-                    radius = distance / m.discretization_ratio
-                    lb_new = max(point - radius, lb_local)
-                    ub_new = min(point + radius, ub_local)
-                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
-                        insert!(discretization[i], pos, ub_new)
-                    end
-                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
-                        insert!(discretization[i], pos, lb_new)
-                    end
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): !diverted! : SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    chunk = (ub_local - lb_local)/2
+                    insert!(discretization[i], pos, lb_local + chunk)
+                    # insert!(discretization[i], pos+1, lb_local + chunk*2)
+                    (m.log_level > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
                 else
                     m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                 end

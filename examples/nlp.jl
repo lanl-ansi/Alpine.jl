@@ -69,7 +69,7 @@ function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alt
 								   convhull_formulation_sos2=sos2,
 								   convhull_formulation_sos2aux=sos2_alter,
 								   discretization_ratio=delta,
-								   presolve_bt_width_tol=1e-3,
+								   presolve_bt_width_tol=1,
 								   presolve_bt_output_tol=1e-1,
 								   presolve_bound_tightening=(presolve>0),
 	                               presolve_bound_tightening_algo=1,
