@@ -35,10 +35,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_add_partition_method::Any                    # Additional methods to add discretization
     discretization_abs_width_tol::Float64                       # absolute tolerance used when setting up partition/discretizations
     discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizations
-<<<<<<< HEAD
-=======
     discretization_consecutive_forbid::Int                      # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
->>>>>>> 683a3b9a78e699024ac540acac76b9bfc8225d5e
 
     # parameters used to control convhull formulation
     convexhull_sweep_limit::Int                                 # Contoller for formulation density
