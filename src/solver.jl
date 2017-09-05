@@ -27,6 +27,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     expr_patterns::Array{Function}
 
     discretization_var_pick_algo::Any
+    discretization_var_pick_dynamic::Bool
     discretization_var_minimum::Int
     discretization_var_level::Float64
     discretization_ratio::Any
@@ -81,6 +82,7 @@ function PODSolver(;
     expr_patterns = Array{Function}(0),
 
     discretization_var_pick_algo = 0,           # By default pick all variables
+    discretization_var_pick_dynamic = false,
     discretization_var_minimum = 1,
     discretization_var_level = 0.8,
     discretization_ratio = 4,
@@ -129,6 +131,7 @@ function PODSolver(;
         method_convexification,
         expr_patterns,
         discretization_var_pick_algo,
+        discretization_var_pick_dynamic,
         discretization_var_minimum,
         discretization_var_level,
         discretization_ratio,
@@ -183,6 +186,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     mip_solver = s.mip_solver
 
     discretization_var_pick_algo = s.discretization_var_pick_algo
+    discretization_var_pick_dynamic = s.discretization_var_pick_dynamic
     discretization_var_minimum = s.discretization_var_minimum
     discretization_var_level = s.discretization_var_level
     discretization_ratio = s.discretization_ratio
@@ -222,6 +226,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             method_convexification,
                             expr_patterns,
                             discretization_var_pick_algo,
+                            discretization_var_pick_dynamic,
                             discretization_var_minimum,
                             discretization_var_level,
                             discretization_ratio,

@@ -523,24 +523,40 @@ end
 """
 function update_discretization_var_set(m::PODNonlinearModel)
 
+    pf = "BETA: "
+    info("FUNTION TESTING", prefix=pf)
+
+    # If no feasible solution found, do NOT update
+    if m.status[:feasible_solution] != :Detected
+        info("No feasible solution detected. No update disc var selection.", prefix=pf)
+        return
+    end
+
+    println("")
     var_idxs = [1:m.num_var_orig;]
     var_diffs = []
 
+    info("Not considering lifted VAR partitioning...", prefix=pf)
     for i in 1:m.num_var_orig
         push!(var_diffs, abs(m.best_sol[i]-m.best_bound_sol[i]))
+        info("VAR-$(i) DIFF = $(var_diffs[end])")
     end
 
     @assert length(var_idxs) == length(var_diffs)
-
     idxs_diffs = Dict(zip(var_idxs,var_diffs))
-    ranked_pairs = sort(collect(idxs_diffs), by=x->x[2])
+    ranked_pairs = sort(collect(idxs_diffs), by=x->x[2], rev=true)
 
+    var_cnt = max(m.discretization_var_minimum, Int(ceil(m.num_var_orig*m.discretization_var_level)))
+    info(" #$(var_cnt) cnt of variable is required to be selected", prefix=pf)
+
+    m.var_discretization_mip = []
+    cnt = 0
     for i in ranked_pairs
-        println(i)
+        cnt += 1
+        push!(m.var_discretization_mip,i[1])
+        (cnt >= var_cnt) && break
     end
 
-    # TODO :: think about how to do this adpative using the collected information
-    # m.var_discretization_mip = []
-    # m.num_var_discretization_mip = length(m.var_discretization_mip)
-
+    info("UPDATE VAR SELECTION => $(m.var_discretization_mip)")
+    return
 end
