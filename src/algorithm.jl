@@ -28,11 +28,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # parameters used in partitioning algorithm
     discretization_ratio::Any                                   # Discretization ratio parameter (use a fixed value for now, later switch to a function)
+    discretization_var_minimum::Int                             # minimum count of variables to be discretized
+    discretization_var_level::Int                               # level of variable epoch that is required for discretization
     discretization_uniform_rate::Int                            # Discretization rate parameter when using uniform partitions
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     discretization_add_partition_method::Any                    # Additional methods to add discretization
     discretization_abs_width_tol::Float64                       # absolute tolerance used when setting up partition/discretizations
-    discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizationss
+    discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizations
 
     # parameters used to control convhull formulation
     convexhull_sweep_limit::Int                                 # Contoller for formulation density
@@ -137,6 +139,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 method_convexification,
                                 expr_patterns,
                                 discretization_var_pick_algo,
+                                discretization_var_minimum,
+                                discretization_var_level,
                                 discretization_ratio,
                                 discretization_uniform_rate,
                                 discretization_add_partition_method,
@@ -174,6 +178,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.expr_patterns = expr_patterns
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
+        m.discretization_var_minimum = discretization_var_minimum
+        m.discretization_var_level = discretization_var_level
         m.discretization_ratio = discretization_ratio
         m.discretization_uniform_rate = discretization_uniform_rate
         m.discretization_add_partition_method = discretization_add_partition_method
