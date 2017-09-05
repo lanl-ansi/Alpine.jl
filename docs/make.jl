@@ -5,12 +5,13 @@ makedocs(
     sitename = "POD",
     pages = [
         "Introduction" => "intro.md",
-        "Installation" => "installation.md",
-        "Demo" => "demo.md",
+        "How to Use" => "installation.md",
+        "Choosing Sub-Solvers" => "choosingsolver.md",
+        "Algorithm" => "algorithm.md",
+        "Expression Guideline" => "expression.md",
         "Parameters" => "parameters.md",
-        "Choosing Solvers" => "choosingsolver.md",
         "Methods" => "functions.md",
-        "Hacking" => "hacking.md"
+        "Hacking POD" => "hacking.md"
     ]
 )
 

@@ -31,17 +31,17 @@ function circleN(;verbose=false, solver=nothing, convhull=false, N=2, uniform=-1
 	if solver == nothing
 		if uniform > 0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(),
+									   mip_solver=GurobiSolver(OutputFlag=0),
 									   monomial_convexhull=convhull,
 									   discretization_abs_width_tol=1e-2,
 									   maxiter=1,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   presolve_bound_tightening=false,
-									   log_level=100))
+									   log_level=1))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(),
+									   mip_solver=GurobiSolver(OutputFlag=0),
 									   monomial_convexhull=convhull,
 									   discretization_abs_width_tol=1e-2,
 									   presolve_bound_tightening=false,

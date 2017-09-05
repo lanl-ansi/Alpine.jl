@@ -1,5 +1,5 @@
 using Base.Test
-using JuMP, Ipopt, MathProgBase, Cbc, Gurobi
+using JuMP, Ipopt, MathProgBase, Cbc, Gurobi, AmplNLWriter
 using POD
 
 # Expression Testing Instances
@@ -7,14 +7,10 @@ include("../examples/exprstest.jl")
 
 # NLP Testing Instances
 include("../examples/nlp.jl")
-include("../examples/castrom2.jl")
-
-# MINLP Testing Instances
-include("../examples/util.jl")
-include("../examples/meanvarx.jl")
-include("../examples/blend.jl")
+include("../examples/castro2m2.jl")
 
 # Multilinear Testing Instances
+include("../examples/blend029.jl")
 include("../examples/multi.jl")
 
 # Special Operator
@@ -25,4 +21,4 @@ include("../examples/circle.jl")
 include("operators.jl")
 include("solver.jl")
 include("expression.jl")
-include("algorithm.jl")
+# include("algorithm.jl")

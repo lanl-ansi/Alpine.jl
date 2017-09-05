@@ -143,7 +143,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
 									   bilinear_convexhull=convhull,
-									   convexhull_use_sos2=sos2,
+									   convhull_formulation_sos2=sos2,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   maxiter=1,
@@ -152,7 +152,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=0),
 									   discretization_ratio=delta,
-									   convexhull_use_sos2=sos2,
+									   convhull_formulation_sos2=sos2,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=(presolve>0),
 									   presolve_bound_tightening_algo=presolve,
@@ -201,13 +201,14 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	return m
 end
 
-function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=false, presolve=0)
+function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=true, sos2_alter=false, presolve=0)
 
 	if solver == nothing
 		if uniform > 0.0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
-									   convexhull_use_sos2=sos2,
+									   convhull_formulation_sos2=sos2,
+									   convhull_formulation_sos2aux=sos2_alter,
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
 									   discretization_add_partition_method="uniform",
@@ -217,7 +218,8 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=0),
-									   convexhull_use_sos2=sos2,
+									   convhull_formulation_sos2=sos2,
+									   convhull_formulation_sos2aux=sos2_alter,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=(presolve>0),
@@ -251,7 +253,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	return m
 end
 
-function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, facet=false, randomub=true, N=1, K=2, delta=4, presolve=0)
+function multiKND(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, facet=false, randomub=true, N=1, K=2, D=1, delta=4, presolve=0)
 
 	if solver == nothing
 		if uniform > 0.0
@@ -259,8 +261,8 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   mip_solver=GurobiSolver(OutputFlag=1),
 									   maxiter=1,
 									   bilinear_convexhull=convhull,
-									   convexhull_use_sos2=sos2,
-									   convexhull_use_facet=facet,
+									   convhull_formulation_sos2=sos2,
+									   convhull_formulation_facet=facet,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
 									   presolve_bound_tightening=false,
@@ -268,8 +270,8 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
-									   convexhull_use_sos2=sos2,
-									   convexhull_use_facet=facet,
+									   convhull_formulation_sos2=sos2,
+									   convhull_formulation_facet=facet,
 									   discretization_ratio=delta,
 									   bilinear_convexhull=convhull,
 									   presolve_bound_tightening=(presolve>0),
@@ -280,12 +282,11 @@ function multiKN(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 		m = Model(solver=solver)
 	end
 
-	M = 1+(K-1)*N
-
+	M = K+(K-D)*(N-1)
 	srand(100)
 	isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
-	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-1):(M-1)))
-	@constraint(m, [i in 1:(K-1):(M-1)], sum(x[i+k] for k in 0:(K-1)) <= K)
+	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-D):(M-D)))
+	@constraint(m, [i in 1:(K-D):(M-D)], sum(x[i+k] for k in 0:(K-1)) <= K)
 
 	verbose && print(m)
 
