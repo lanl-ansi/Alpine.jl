@@ -103,7 +103,11 @@ function PODSolver(;
 
     bound_basic_propagation = false,
     user_parameters = Dict(),
+    kwargs...
     )
+
+    unsupport_opts = Dict(kwargs)
+    !isempty(keys(unsupport_opts)) && warn("Detected unsupported/experimental arguments = $(keys(unsupported_opts))")
 
     if nlp_local_solver == UnsetSolver()
         error("No NLP local solver specified (set nlp_local_solver)\n")
