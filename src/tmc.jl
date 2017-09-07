@@ -87,9 +87,9 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Error condition
-                    if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
-                        error("Error case. At least one term should show up in discretization choices.")
-                    end
+                    #if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip) 
+                    #    error("Error case. At least one term should show up in discretization choices.")
+                    #end
                 end
             end
         end

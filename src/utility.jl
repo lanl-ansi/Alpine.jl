@@ -533,11 +533,11 @@ function update_discretization_var_set(m::PODNonlinearModel)
     end
 
     println("")
-    var_idxs = [1:m.num_var_orig;]
+	var_idxs = copy(m.all_nonlinear_vars)
     var_diffs = []
 
     info("Not considering lifted VAR partitioning...", prefix=pf)
-    for i in 1:m.num_var_orig
+    for i in m.all_nonlinear_vars
         push!(var_diffs, abs(m.best_sol[i]-m.best_bound_sol[i]))
         info("VAR-$(i) DIFF = $(var_diffs[end])")
     end
@@ -546,7 +546,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
     idxs_diffs = Dict(zip(var_idxs,var_diffs))
     ranked_pairs = sort(collect(idxs_diffs), by=x->x[2], rev=true)
 
-    var_cnt = max(m.discretization_var_minimum, Int(ceil(m.num_var_orig*m.discretization_var_level)))
+	var_cnt = max(m.discretization_var_minimum, Int(ceil(length(m.all_nonlinear_vars)*m.discretization_var_level)))
     info(" #$(var_cnt) cnt of variable is required to be selected", prefix=pf)
 
     m.var_discretization_mip = []
