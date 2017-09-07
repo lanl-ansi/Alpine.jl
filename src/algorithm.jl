@@ -443,8 +443,8 @@ function global_solve(m::PODNonlinearModel)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)                                                          # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        m.discretization_var_pick_dynamic && update_discretization_var_set(m)
-        add_partition(m)                                 # Add extra discretizations
+        (m.discretization_var_pick_algo == "dynamic") && update_discretization_var_set(m)
+        add_partition(m)                                                        # Add extra discretizations
     end
 
     return

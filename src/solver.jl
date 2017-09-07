@@ -123,6 +123,9 @@ function PODSolver(;
         error("NO MIP solver specififed (set mip_solver)\n")
     end
 
+    @show unsupport_opts
+    @show discretization_var_pick_algo
+
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(dev_debug, dev_test, colorful_pod,
         log_level, timeout, maxiter, rel_gap, tol,

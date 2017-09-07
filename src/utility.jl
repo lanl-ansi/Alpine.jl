@@ -340,8 +340,8 @@ For more information, read more details at [Hacking Solver](@ref).
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
+    (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
     if isa(m.discretization_var_pick_algo, Function)
-        (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
         eval(m.discretization_var_pick_algo)(m)
         (length(m.var_discretization_mip) == 0 && length(m.nonlinear_info) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
@@ -349,6 +349,12 @@ function pick_vars_discretization(m::PODNonlinearModel)
             max_cover(m)
         elseif m.discretization_var_pick_algo == 1 || m.discretization_var_pick_algo == "min_vertex_cover"
             min_vertex_cover(m)
+        elseif m.discretization_var_pick_algo == 2 || m.discretization_var_pick_algo == "dynamic"
+            if length(m.all_nonlinear_vars) > 25
+                min_vertex_cover(m)
+            else
+                max_cover(m)
+            end
         else
             error("Unsupported default indicator for picking variables for discretization")
         end

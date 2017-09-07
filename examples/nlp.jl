@@ -58,7 +58,7 @@ function max_cover_var_picker(m::POD.PODNonlinearModel)
 end
 
 
-function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alter=false, presolve=0, delta=16, dynamic=false, level=0.8, minimum=1)
+function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alter=false, presolve=0, delta=16, dynamic="dynamic", level=0.8, minimum=1)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
@@ -69,14 +69,13 @@ function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alt
 								   convhull_formulation_sos2=sos2,
 								   convhull_formulation_sos2aux=sos2_alter,
 								   discretization_ratio=delta,
-								   discretization_var_pick_dynamic=dynamic,
+								   discretization_var_pick_algo=dynamic,
 								   discretization_var_level=level,
 								   discretization_var_minimum=minimum,
 								   presolve_bt_width_tol=1e-3,
 								   presolve_bt_output_tol=1e-1,
 								   presolve_bound_tightening=(presolve>0),
-	                               presolve_bound_tightening_algo=1,
-								   discretization_var_pick_algo=0))
+	                               presolve_bound_tightening_algo=1))
 	else
 		m = Model(solver=solver)
 	end

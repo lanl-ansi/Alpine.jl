@@ -11,7 +11,7 @@ function blend029(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos
                                     presolve_bound_tightening_algo=presolve,
                                     bilinear_convexhull=false,
                                     monomial_convexhull=convhull,
-                                    discretization_var_pick_dynamic=dynamic,
+                                    discretization_var_pick_algo=dynamic,
                                     discretization_var_level=level,
                                     discretization_var_minimum=minimum,
 									convhull_formulation_sos2=sos2,

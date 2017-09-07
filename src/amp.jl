@@ -188,7 +188,6 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
         (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
         for j in 1:length(discretization[i])
             if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-
                 @assert j < length(m.discretization[i])
                 lb_local = discretization[i][j]
                 ub_local = discretization[i][j+1]
@@ -229,7 +228,6 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     end
                     chunk = (ub_local - lb_local)/2
                     insert!(discretization[i], pos, lb_local + chunk)
-                    # insert!(discretization[i], pos+1, lb_local + chunk*2)
                     (m.log_level > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
                 else
                     m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
