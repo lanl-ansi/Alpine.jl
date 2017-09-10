@@ -129,11 +129,11 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
     if m.mip_solver_identifier == "CPLEX"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+        insert_timeleft_symbol(m.mip_solver.options, timelimit,:CPX_PARAM_TILIM, m.timeout)
     elseif m.mip_solver_identifier == "Gurobi"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
+        insert_timeleft_symbol(m.mip_solver.options, timelimit,:TimeLimit, m.timeout)
     elseif m.mip_solver_identifier == "Cbc"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
+        insert_timeleft_symbol(m.mip_solver.options, timelimit,:seconds, m.timeout)
     elseif m.mip_solver_identifier == "GLPK"
         insert_timeleft_symbol(m.mip_solver.opt)
     else
@@ -201,6 +201,7 @@ end
     @docstring
 """
 function insert_timeleft_symbol(options, val::Float64, keywords::Symbol, timeout; options_string_type=1)
+
     for i in 1:length(options)
         if options_string_type == 1
             if keywords in collect(options[i])
@@ -214,10 +215,11 @@ function insert_timeleft_symbol(options, val::Float64, keywords::Symbol, timeout
     end
 
     if options_string_type == 1
-        (timeout != Inf) && push!(options, (keywords, val))
+        (val != Inf) && push!(options, (keywords, val))
     elseif options_string_type == 2
-        (timeout != Inf) && push!(options, "$(keywords)=$(val)")
+        (val != Inf) && push!(options, "$(keywords)=$(val)")
     end
+
     return
 end
 

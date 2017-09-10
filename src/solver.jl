@@ -33,6 +33,9 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     discretization_abs_width_tol::Float64
     discretization_rel_width_tol::Float64
     discretization_consecutive_forbid::Int
+    disc_ratio_branch::Bool
+    disc_ratio_branch_timeout::Float64
+    disc_ratio_branch_focus::Any
 
     convexhull_sweep_limit::Int
     convhull_formulation_sos2::Bool
@@ -86,6 +89,10 @@ function PODSolver(;
     discretization_rel_width_tol = 1e-6,
     discretization_consecutive_forbid = 0,
 
+    disc_ratio_branch=false,
+    disc_ratio_branch_timeout=1,
+    disc_ratio_branch_focus="gap",
+
     convexhull_sweep_limit = 1,
     convhull_formulation_sos2 = true,
     convhull_formulation_sos2aux = false,
@@ -135,6 +142,9 @@ function PODSolver(;
         discretization_abs_width_tol,
         discretization_rel_width_tol,
         discretization_consecutive_forbid,
+        disc_ratio_branch,
+        disc_ratio_branch_timeout,
+        disc_ratio_branch_focus,
         convexhull_sweep_limit,
         convhull_formulation_sos2,
         convhull_formulation_sos2aux,
@@ -188,6 +198,10 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     discretization_rel_width_tol = s.discretization_rel_width_tol
     discretization_consecutive_forbid = s.discretization_consecutive_forbid
 
+    disc_ratio_branch = s.disc_ratio_branch
+    disc_ratio_branch_timeout = s.disc_ratio_branch_timeout
+    disc_ratio_branch_focus = s.disc_ratio_branch_focus
+
     convexhull_sweep_limit = s.convexhull_sweep_limit
     convhull_formulation_sos2 = s.convhull_formulation_sos2
     convhull_formulation_sos2aux = s.convhull_formulation_sos2aux
@@ -224,6 +238,9 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             discretization_abs_width_tol,
                             discretization_rel_width_tol,
                             discretization_consecutive_forbid,
+                            disc_ratio_branch,
+                            disc_ratio_branch_timeout,
+                            disc_ratio_branch_focus,
                             convexhull_sweep_limit,
                             convhull_formulation_sos2,
                             convhull_formulation_sos2aux,

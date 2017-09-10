@@ -34,6 +34,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_abs_width_tol::Float64                       # absolute tolerance used when setting up partition/discretizations
     discretization_rel_width_tol::Float64                       # relative width tolerance when setting up partition/discretizations
     discretization_consecutive_forbid::Int                      # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
+    disc_ratio_branch::Bool
+    disc_ratio_branch_timeout::Float64
+    disc_ratio_branch_focus::Any
 
     # parameters used to control convhull formulation
     convexhull_sweep_limit::Int                                 # Contoller for formulation density
@@ -154,6 +157,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 discretization_abs_width_tol,
                                 discretization_rel_width_tol,
                                 discretization_consecutive_forbid,
+                                disc_ratio_branch,
+                                disc_ratio_branch_timeout,
+                                disc_ratio_branch_focus,
                                 convexhull_sweep_limit,
                                 convhull_formulation_sos2,
                                 convhull_formulation_sos2aux,
@@ -196,6 +202,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.discretization_abs_width_tol = discretization_abs_width_tol
         m.discretization_rel_width_tol = discretization_rel_width_tol
         m.discretization_consecutive_forbid = discretization_consecutive_forbid
+
+        m.disc_ratio_branch = disc_ratio_branch
+        m.disc_ratio_branch_timeout = disc_ratio_branch_timeout
+        m.disc_ratio_branch_focus = disc_ratio_branch_focus
 
         m.convexhull_sweep_limit = convexhull_sweep_limit
         m.convhull_formulation_sos2 = convhull_formulation_sos2
@@ -329,9 +339,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 end
 
 function MathProgBase.optimize!(m::PODNonlinearModel)
-    if any(isnan, m.best_sol)
-        m.best_sol = zeros(length(m.best_sol))
-    end
+    any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
     presolve(m)
     global_solve(m)
     (m.log_level > 0) && logging_row_entry(m, finsih_entry=true)
@@ -376,6 +384,7 @@ function presolve(m::PODNonlinearModel)
     if m.status[:local_solve] in status_pass
         bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
         (m.presolve_bound_tightening) && initialize_discretization(m)      # Reinitialize discretization dictionary on tight bounds
+        (m.disc_ratio_branch) && (m.discretization_ratio = disc_ratio_branch(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
         (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
@@ -383,12 +392,13 @@ function presolve(m::PODNonlinearModel)
         (m.log_level > 0) && println("second attempt at local solve using tightened bounds...")
         local_solve(m, presolve = true) # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
         if m.status in status_pass  # successful second try
+            (m.disc_ratio_branch) && (m.discretization_ratio = disc_ratio_branch(m, true))
             add_partition(m, use_solution=m.best_sol)
         else    # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
             (m.log_level > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
-            # TODO: Make sure the discretization dictionary is clean
             create_bounding_mip(m)       # Build the bounding ATMC model
             bounding_solve(m)            # Solve bounding model
+            (m.disc_ratio_branch) && (m.discretization_ratio = disc_ratio_branch(m))
             add_partition(m, use_solution=m.best_bound_sol)
         end
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
@@ -428,12 +438,13 @@ function global_solve(m::PODNonlinearModel)
     (!m.presolve_track_time) && reset_timer(m)
     while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
-        create_bounding_mip(m)                                                  # Build the bounding ATMC model
-        bounding_solve(m)                                                       # Solve bounding model
+        create_bounding_mip(m)                           # Build the bounding ATMC model
+        bounding_solve(m)                                # Solve bounding model
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
-        local_solve(m)                                                          # Solve upper bounding model
+        local_solve(m)                                   # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
+        (m.disc_ratio_branch) && (m.discretization_ratio = disc_ratio_branch(m))
         add_partition(m)                                 # Add extra discretizations
     end
 
@@ -552,8 +563,8 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     status_reroute = [:Infeasible]
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
-        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig+m.num_var_lifted_mip]
-        (m.discretization_consecutive_forbid>0) && (m.bound_sol_history[mod(m.logs[:n_iter]-1, m.discretization_consecutive_forbid)+1] = copy(candidate_bound_sol)) # Requires proper offseting
+        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_lifted_mip)]
+        (m.discretization_consecutive_forbid > 0) && (m.bound_sol_history[mod(m.logs[:n_iter]-1, m.discretization_consecutive_forbid)+1] = copy(candidate_bound_sol)) # Requires proper offseting
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
@@ -573,4 +584,6 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     else
         error("[MIP UNEXPECTED] MIP solver failure $(status)")
     end
+
+    return
 end

@@ -172,36 +172,35 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
 
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
     haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) : point_vec = copy(m.best_bound_sol)
+    haskey(options, :use_ratio) ? ratio = options[:use_ratio] : ratio = m.discretization_ratio
+    haskey(options, :branching) ? branching = options[:branching] : branching = false
 
     (length(point_vec) < m.num_var_orig+m.num_var_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
 
-    # ? Perform discretization base on type of nonlinear terms
+    branching && (discretization = deepcopy(discretization))
+
+    # ? Perform discretization base on type of nonlinear terms ? #
     for i in m.var_discretization_mip
         point = point_vec[i]                # Original Variable
-        #@show i, point, discretization[i]
         if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
 			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
 			point = 0.5*(discretization[i][1]+discretization[i][end])
 		end
-        # Safety Scheme
         (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
         (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
         for j in 1:length(discretization[i])
             if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-
                 @assert j < length(m.discretization[i])
                 lb_local = discretization[i][j]
                 ub_local = discretization[i][j+1]
                 distance = ub_local - lb_local
-
-                if isa(m.discretization_ratio, Float64) || isa(m.discretization_ratio, Int)
-                    radius = distance / m.discretization_ratio
-                elseif isa(m.discretization_ratio, Function)
-                    radius = distance / m.discretization_ratio(m)
+                if isa(ratio, Float64) || isa(ratio, Int)
+                    radius = distance / ratio
+                elseif isa(ratio, Function)
+                    radius = distance / ratio(m)
                 else
-                    error("Undetermined discretization_ratio")
+                    error("Undetermined discretization ratio")
                 end
-
                 lb_new = max(point - radius, lb_local)
                 ub_new = min(point + radius, ub_local)
                 ub_touch = true
@@ -214,7 +213,6 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     insert!(discretization[i], j+1, lb_new)
                     lb_touch = false
                 end
-                # @show i, ub_touch, lb_touch,  check_solution_history(m, i)
                 if (ub_touch && lb_touch) || (m.discretization_consecutive_forbid>0 && check_solution_history(m, i))
                     distance = -1.0
                     pos = -1
@@ -229,10 +227,9 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     end
                     chunk = (ub_local - lb_local)/2
                     insert!(discretization[i], pos, lb_local + chunk)
-                    # insert!(discretization[i], pos+1, lb_local + chunk*2)
                     (m.log_level > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
                 else
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    (m.log_level > 99) && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                 end
                 break
             end
@@ -258,4 +255,83 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     end
 
     return discretization
+end
+
+
+"""
+    Beta FUNCTION
+"""
+function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
+
+    pf = "BETA :"
+    info("Funtion !", prefix=pf)
+
+    test_ratios = [4,8,16,32]
+    convertor = Dict(:Max=>:<, :Min=>:>)
+
+    incumb_ratio = test_ratios[1]
+    m.disc_ratio_branch_focus == "bound" && (incumb_res = -Inf)
+    m.disc_ratio_branch_focus == "gap" && (incumb_res = Inf)
+    for r in test_ratios
+        if presolve
+            branch_disc = add_adaptive_partition(m, use_discretization=m.discretization, branching=true, use_ratio=r, use_solution=m.best_sol)
+        else
+            branch_disc = add_adaptive_partition(m, use_discretization=m.discretization, branching=true, use_ratio=r)
+        end
+        create_bounding_mip(m, use_discretization=branch_disc)
+        res = branch_bounding_solve(m)
+        if m.disc_ratio_branch_focus == "bound"
+            if eval(convertor[m.sense_orig])(res, incumb_res)
+                incumb_res = res
+                incumb_ratio = r
+            end
+        elseif m.disc_ratio_branch_focus == "gap"
+            isapprox(res, 0.0;atol=10e-6) && return incumb_ratio
+            if res < incumb_res
+                incumb_res = res
+                incumb_ratio = r
+            end
+        end
+        info("BRANCH RATIO = $(r), METRIC = $(res)  || INCUMB_RATIO = $(incumb_ratio)", prefix=pf)
+    end
+
+    return incumb_ratio
+end
+
+function branch_bounding_solve(m::PODNonlinearModel)
+
+    # ================= Solve Start ================ #
+    update_mip_time_limit(m, timelimit=m.disc_ratio_branch_timeout)
+    start_bounding_solve = time()
+    status = solve(m.model_mip, suppress_warnings=true)
+    cputime_branch_bounding_solve = time() - start_bounding_solve
+    m.logs[:total_time] += cputime_branch_bounding_solve
+    m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
+    # ================= Solve End ================ #
+
+    if status in [:Optimal, :Suboptimal] # Early finish
+        if m.disc_ratio_branch_focus == "bound"
+            return m.model_mip.objBound
+        elseif m.disc_ratio_branch_focus == "gap"
+            return 0.0
+        else
+            error("Unkown focus target for discretization branching $(m.disc_ratio_branch_focus)")
+        end
+    elseif status in [:UserLimit]
+        if m.disc_ratio_branch_focus == "bound"
+            return m.model_mip.objBound
+        elseif m.disc_ratio_branch_focus == "gap"
+            if m.model_mip.objVal in [Inf, -Inf] || m.model_mip.objBound in [Inf, -Inf]
+                return Inf
+            else
+                return abs(m.model_mip.objBound-m.model_mip.objVal)/abs((m.rel_gap*10.0^-6)*m.model_mip.objVal)
+            end
+        else
+            error("Unkown focus target for discretization branching $(m.disc_ratio_branch_focus)")
+        end
+    else
+        error("Unexpected condition $(status)")
+    end
+
+    return
 end
