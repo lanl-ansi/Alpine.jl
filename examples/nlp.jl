@@ -63,7 +63,7 @@ function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alt
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
-								   log_level=100,
+								   log_level=1,
 								   rel_gap=0.0001,
 								   bilinear_convexhull=convhull,
 								   convhull_formulation_sos2=sos2,

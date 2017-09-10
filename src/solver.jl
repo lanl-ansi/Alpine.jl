@@ -7,7 +7,7 @@ end
 type PODSolver <: MathProgBase.AbstractMathProgSolver
     dev_debug::Bool
     dev_test::Bool
-    colorful_pod::Bool
+    colorful_pod::Any
 
     log_level::Int
     timeout::Float64
