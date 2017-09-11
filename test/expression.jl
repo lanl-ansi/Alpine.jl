@@ -503,17 +503,6 @@
 
         @test length(keys(m.internalModel.nonlinear_terms)) == 3
 
-<<<<<<< HEAD
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 3)]][:id] == 2
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:id] == 3
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[7])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
-=======
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
@@ -523,7 +512,6 @@
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:id] == 3
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[7])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
->>>>>>> d69a83c9c97fb8df180304d66e10bd1a6ad2dffa
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -618,20 +606,6 @@
         m = multi4(solver=test_solver, exprmode=10)
 
         JuMP.build(m)
-<<<<<<< HEAD
-
-        @test length(keys(m.internalModel.nonlinear_terms)) == 3
-
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:id] == 1
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:id] == 2
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:id] == 3
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:lifted_var_ref] == :(x[7])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:nonlinear_type] == :bilinear
-=======
         @show keys(m.internalModel.nonlinear_info)
         @test length(keys(m.internalModel.nonlinear_info)) == 3
 
@@ -644,7 +618,6 @@
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:id] == 3
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:lifted_var_ref] == :(x[7])
         @test m.internalModel.nonlinear_info[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:nonlinear_type] == :bilinear
->>>>>>> d69a83c9c97fb8df180304d66e10bd1a6ad2dffa
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
