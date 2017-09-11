@@ -9,7 +9,7 @@ function eniplac(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos2
                                     presolve_bound_tightening_algo=presolve,
                                     bilinear_convexhull=false,
                                     monomial_convexhull=convhull,
-									convexhull_use_sos2=sos2,
+									convhull_formulation_sos2=sos2,
                                     discretization_ratio=8,
                                     # discretization_var_pick_algo="min_vertex_cover",
                                     log_level=1,

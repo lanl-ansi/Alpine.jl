@@ -180,9 +180,10 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	start_pos = 1
 	if (expr.args[1] == :*) && (length(expr.args) == 3)
 		if (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && (expr.args[3].head == :call)
-			coef = expr.args[2]
+			(coef != 0.0) ? coef = expr.args[2] * coef : coef = expr.args[2]	# Patch
+			# coef = expr.args[2]
 			start_pos = 3
-			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix...")
+			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix...", once=true)
 		end
 	end
 
@@ -392,14 +393,18 @@ function expr_arrangeargs(args::Array; kwargs...)
 		end
 
 		# Re-arrange children :: without actually doing anything on them
-		if Bool(valinit)
-			return [args[1];val;refs;exprs]
-		elseif Bool(refinit)
-			return [args[1];refs;val;exprs]
-		elseif Bool(callinit)
-			return [args[1];exprs;refs;val]
-		else
-			error("Unexpected condition encountered...")
+		if args[1] in [:*]
+			return[args[1];val;refs;exprs]
+		elseif args[1] in [:+, :-]
+			if Bool(valinit)
+				return [args[1];val;refs;exprs]
+			elseif Bool(refinit)
+				return [args[1];refs;val;exprs]
+			elseif Bool(callinit)
+				return [args[1];exprs;refs;val]
+			else
+				error("Unexpected condition encountered...")
+			end
 		end
 	else
 		error("Unsupported expression arguments $args")

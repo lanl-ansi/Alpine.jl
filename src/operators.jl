@@ -203,6 +203,7 @@ function resolve_bilinar_term(expr, constr_id::Int, m::PODNonlinearModel)
     @assert expr.head == :call
 
     function store_bilinear_term()
+        (m.log_level) > 99 && println("found bilinear term $expr")
         y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])))
@@ -243,7 +244,6 @@ function resolve_bilinar_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && length(Set(var_idxs)) == 2
-            (m.log_level) > 99 && println("found bilinear term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if (term_key in keys(m.nonlinear_terms) || reverse(term_key) in keys(m.nonlinear_terms))
                 (term_key in keys(m.nonlinear_terms)) ? term_key = term_key : term_key = reverse(term_key)
@@ -264,6 +264,7 @@ end
 function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
 
     function store_multilinear_term()
+        (m.log_level > 99) && println("found multilinear term $expr")
         y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         constr_block = "x[$(y_idx)]=="
@@ -309,7 +310,6 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         if length(var_idxs) > 2
-            (m.log_level > 99) && println("found multilinear term $expr")
             term_key = []
             for idx in var_idxs
                 push!(term_key, Expr(:ref, :x, idx))
@@ -336,7 +336,6 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         if length(var_idxs) == 1 && power_scalar > 2.0
-            (m.log_level > 99) && println("found multilinear term $expr")
             term_key = []
             for i in 1:power_scalar
                 push!(term_key, Expr(:ref, :x, var_idxs[1]))
@@ -359,6 +358,7 @@ end
 function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
 
     function store_monomial_term()
+        (m.log_level > 99) && println("found monomial term $expr")
         y_idx = m.num_var_orig + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[1])))
@@ -398,7 +398,6 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             (expr.args[i].head == :call) && return false, expr
         end
         if length(var_idxs) == 1 && power_scalar == 2.0
-            (m.log_level > 99) && println("found monomial term $expr")
             term_key = []
             for i in 1:2
                 push!(term_key, Expr(:ref, :x, var_idxs[1]))
@@ -430,7 +429,6 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
-            (m.log_level) > 99 && println("found monomial term $expr")
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if term_key in keys(m.nonlinear_terms)
                 term_key in keys(m.nonlinear_terms)

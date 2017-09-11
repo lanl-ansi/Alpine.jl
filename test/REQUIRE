@@ -1,3 +1,7 @@
 julia 0.5
 Ipopt
 JuMP
+Gurobi
+Cbc
+AmplNLWriter
+CoinOptServices
