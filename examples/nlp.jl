@@ -37,7 +37,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   presolve_bound_tightening=(presolve>0),
 								   presolve_bound_tightening_algo=presolve,
 								   presolve_bt_output_tol=1e-1,
-								   log_level=1))
+								   log_level=100))
 	else
 		m = Model(solver=solver)
 	end

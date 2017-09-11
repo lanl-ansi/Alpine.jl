@@ -192,7 +192,7 @@ For discretization to be performed, we do not allow for a variable being discret
 The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
 can help speed up the subsequent solve in subsequent iterations.
 """
-function resolve_lifted_var_bounds(nonlinear_terms::Dict, discretization::Dict; kwargs...)
+function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, discretization::Dict; kwargs...)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
@@ -226,16 +226,16 @@ function resolve_lifted_var_bounds(nonlinear_terms::Dict, discretization::Dict; 
     end
 
     # Resolve bounds for lifted linear terms
-    for i in keys(m.linear_terms)
-        lifted_idx = m.linear_terms[i][:y_idx]
+    for i in keys(linear_terms)
+        lifted_idx = linear_terms[i][:y_idx]
         ub = 0.0
         lb = 0.0
-        for j in m.linear_terms[i][:ref][:coef_var]
+        for j in linear_terms[i][:ref][:coef_var]
             (j[1] > 0.0) ? ub += abs(j[1])*discretization[j[2]][end] : ub -= abs(j[1])*discretization[j[2]][1]
             (j[1] > 0.0) ? lb += abs(j[1])*discretization[j[2]][1] : lb -= abs(j[1])*discretization[j[2]][end]
         end
-        lb += m.linear_terms[i][:ref][:scalar]
-        ub += m.linear_terms[i][:ref][:scalar]
+        lb += linear_terms[i][:ref][:scalar]
+        ub += linear_terms[i][:ref][:scalar]
         (lb > discretization[lifted_idx][1] + m.tol) && (discretization[lifted_idx][1] = lb)
         (ub < discretization[lifted_idx][end] - m.tol) && (discretization[lifted_idx][end] = ub)
     end
