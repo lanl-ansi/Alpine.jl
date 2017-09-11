@@ -188,10 +188,12 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
         (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
         for j in 1:length(discretization[i])
             if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+
                 @assert j < length(m.discretization[i])
                 lb_local = discretization[i][j]
                 ub_local = discretization[i][j+1]
                 distance = ub_local - lb_local
+
                 if isa(m.discretization_ratio, Float64) || isa(m.discretization_ratio, Int)
                     radius = distance / m.discretization_ratio
                 elseif isa(m.discretization_ratio, Function)
@@ -199,6 +201,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                 else
                     error("Undetermined discretization_ratio")
                 end
+
                 lb_new = max(point - radius, lb_local)
                 ub_new = min(point + radius, ub_local)
                 ub_touch = true
@@ -211,7 +214,8 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     insert!(discretization[i], j+1, lb_new)
                     lb_touch = false
                 end
-                if ub_touch && lb_touch
+                # @show i, ub_touch, lb_touch,  check_solution_history(m, i)
+                if (ub_touch && lb_touch) || (m.discretization_consecutive_forbid>0 && check_solution_history(m, i))
                     distance = -1.0
                     pos = -1
                     for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
@@ -223,16 +227,10 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                             pos = j
                         end
                     end
-                    radius = distance / m.discretization_ratio
-                    lb_new = max(point - radius, lb_local)
-                    ub_new = min(point + radius, ub_local)
-                    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.tol)  # Insert new UB-based partition
-                        insert!(discretization[i], pos, ub_new)
-                    end
-                    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.tol)  # Insert new LB-based partition
-                        insert!(discretization[i], pos, lb_new)
-                    end
-                    m.log_level > 99 && println("[DEBUG] VAR$(i): !diverted! : SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    chunk = (ub_local - lb_local)/2
+                    insert!(discretization[i], pos, lb_local + chunk)
+                    # insert!(discretization[i], pos+1, lb_local + chunk*2)
+                    (m.log_level > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
                 else
                     m.log_level > 99 && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(m.discretization_ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                 end
@@ -249,16 +247,14 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
 
-    for i in 1:m.num_var_orig
-        if i in m.var_discretization_mip  # Only construct when discretized
-            lb_local = discretization[i][1]
-            ub_local = discretization[i][end]
-            distance = ub_local - lb_local
-            chunk = distance / ((m.logs[:n_iter]+1)*m.discretization_uniform_rate)
-            discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.discretization_uniform_rate]
-            push!(discretization[i], ub_local)   # Safety Scheme
-            (m.log_level > 99) && println("[DEBUG] VAR$(i): RATE=$(m.discretization_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.discretization_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
-        end
+    for i in m.var_discretization_mip  # Only construct when discretized
+        lb_local = discretization[i][1]
+        ub_local = discretization[i][end]
+        distance = ub_local - lb_local
+        chunk = distance / ((m.logs[:n_iter]+1)*m.discretization_uniform_rate)
+        discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.discretization_uniform_rate]
+        push!(discretization[i], ub_local)   # Safety Scheme
+        (m.log_level > 99) && println("[DEBUG] VAR$(i): RATE=$(m.discretization_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.discretization_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
     end
 
     return discretization

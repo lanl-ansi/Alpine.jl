@@ -9,6 +9,7 @@ function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
 	# Populate the affine data structure for the constraints
 	for i in 1:m.num_constr_orig
 		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
+		m.log_level > 199 && println("origin ::", m.constr_expr_orig[i])
 		m.log_level > 199 && println("lifted ::", m.lifted_constr_expr_mip[i])
 		m.log_level > 199 && println("coeffs ::", m.lifted_constr_aff_mip[i][:coefs])
         m.log_level > 199 && println("vars ::", m.lifted_constr_aff_mip[i][:vars])
@@ -101,9 +102,10 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	start_pos = 1
 	if (expr.args[1] == :*) && (length(expr.args) == 3)
 		if (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && (expr.args[3].head == :call)
-			coef = expr.args[2]
+			(coef != 0.0) ? coef = expr.args[2] * coef : coef = expr.args[2]	# Patch
+			# coef = expr.args[2]
 			start_pos = 3
-			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix...")
+			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix...", once=true)
 		end
 	end
 
@@ -299,14 +301,18 @@ function expr_arrangeargs(args::Array; kwargs...)
 		end
 
 		# Re-arrange children :: without actually doing anything on them
-		if Bool(valinit)
-			return [args[1];val;refs;exprs]
-		elseif Bool(refinit)
-			return [args[1];refs;val;exprs]
-		elseif Bool(callinit)
-			return [args[1];exprs;refs;val]
-		else
-			error("Unexpected condition encountered...")
+		if args[1] in [:*]
+			return[args[1];val;refs;exprs]
+		elseif args[1] in [:+, :-]
+			if Bool(valinit)
+				return [args[1];val;refs;exprs]
+			elseif Bool(refinit)
+				return [args[1];refs;val;exprs]
+			elseif Bool(callinit)
+				return [args[1];exprs;refs;val]
+			else
+				error("Unexpected condition encountered...")
+			end
 		end
 	else
 		error("Unsupported expression arguments $args")
