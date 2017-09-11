@@ -244,6 +244,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
 
+        m.linear_terms = Dict()
         m.nonlinear_terms = Dict()
         m.nonlinear_constrs = Dict()
         m.all_nonlinear_vars = Int[]

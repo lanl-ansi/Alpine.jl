@@ -167,6 +167,21 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
         end
     end
 
+    # Resolve bounds for lifted linear terms
+    for i in keys(m.linear_terms)
+        lifted_idx = m.linear_terms[i][:y_idx]
+        ub = 0.0
+        lb = 0.0
+        for j in m.linear_terms[i][:ref][:coef_var]
+            (j[1] > 0.0) ? ub += abs(j[1])*m.u_var_tight[j[2]] : ub -= abs(j[1])*m.l_var_tight[j[2]]
+            (j[1] > 0.0) ? lb += abs(j[1])*m.l_var_tight[j[2]] : lb -= abs(j[1])*m.u_var_tight[j[2]]
+        end
+        lb += m.linear_terms[i][:ref][:scalar]
+        ub += m.linear_terms[i][:ref][:scalar]
+        (lb > m.l_var_tight[lifted_idx] + m.tol) && (m.l_var_tight[lifted_idx] = lb)
+        (ub < m.u_var_tight[lifted_idx] - m.tol) && (m.u_var_tight[lifted_idx] = ub)
+    end
+
     return
 end
 
@@ -208,6 +223,21 @@ function resolve_lifted_var_bounds(nonlinear_terms::Dict, discretization::Dict; 
                 end
             end
         end
+    end
+
+    # Resolve bounds for lifted linear terms
+    for i in keys(m.linear_terms)
+        lifted_idx = m.linear_terms[i][:y_idx]
+        ub = 0.0
+        lb = 0.0
+        for j in m.linear_terms[i][:ref][:coef_var]
+            (j[1] > 0.0) ? ub += abs(j[1])*discretization[j[2]][end] : ub -= abs(j[1])*discretization[j[2]][1]
+            (j[1] > 0.0) ? lb += abs(j[1])*discretization[j[2]][1] : lb -= abs(j[1])*discretization[j[2]][end]
+        end
+        lb += m.linear_terms[i][:ref][:scalar]
+        ub += m.linear_terms[i][:ref][:scalar]
+        (lb > discretization[lifted_idx][1] + m.tol) && (discretization[lifted_idx][1] = lb)
+        (ub < discretization[lifted_idx][end] - m.tol) && (discretization[lifted_idx][end] = ub)
     end
 
     return discretization

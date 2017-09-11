@@ -20,8 +20,16 @@ function update_opt_gap(m::PODNonlinearModel)
         m.best_rel_gap = Inf
         return
     else
+        p = round(abs(log(10,m.rel_gap)))
+        n = round(abs(m.best_obj-m.best_bound), Int(p))
+        dn = round(abs(1e-12+abs(m.best_obj)), Int(p))
+        if (n == 0.0) && (dn == 0.0)
+            m.best_rel_gap = 0.0
+            return
+        end
         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
     end
+
     # absoluate or anyother bound calculation shows here...
 
     return

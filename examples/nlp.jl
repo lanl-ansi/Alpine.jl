@@ -26,15 +26,25 @@ function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 	return m
 end
 
-function nlp2(verbose=false)
+function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
-	info("This model's expression is currently not suitable for expression operations...")
-	error("Quitting... so that ")
+	if solver == nothing
+		m = Model(solver=PODSolver(colorful_pod="warmer",
+								   nlp_local_solver=IpoptSolver(print_level=0),
+								   mip_solver=GurobiSolver(OutputFlag=0),
+								   bilinear_convexhull=convhull,
+								   monomial_convexhull=convhull,
+								   presolve_bound_tightening=(presolve>0),
+								   presolve_bound_tightening_algo=presolve,
+								   presolve_bt_output_tol=1e-1,
+								   log_level=1))
+	else
+		m = Model(solver=solver)
+	end
 
-	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=CplexSolver()))
 	@variable(m, -500<=x[1:2]<=500)
 
-	@NLobjective(m, Min, sum((x[1]^2 - i)^2 for i in 1:2))
+	@NLobjective(m, Min, sum((x[i]^2 - i)^2 for i in 1:2))
 
 	if verbose
 		print(m)

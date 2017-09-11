@@ -72,6 +72,8 @@ function amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
     amp_post_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
     amp_post_convhull(m, use_discretization=discretization)         # convex hull representation
+
+    # Exam to see if all non-linear terms have been convexificed
     convexification_exam(m)
 
     return
@@ -99,6 +101,7 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     return
 end
 
+
 function amp_post_lifted_constraints(m::PODNonlinearModel)
 
     for i in 1:m.num_constr_orig
@@ -109,6 +112,10 @@ function amp_post_lifted_constraints(m::PODNonlinearModel)
         else
             error("Unknown structural_constr type $(m.structural_constr[i])")
         end
+    end
+
+    for i in keys(m.linear_terms)
+        amp_post_linear_lift_constraints(m.model_mip, m.linear_terms[i])
     end
 
     return
@@ -146,6 +153,13 @@ function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
     return
 end
 
+function amp_post_linear_lift_constraints(model_mip::JuMP.Model, l::Dict)
+
+    @assert l[:ref][:sign] == :+
+    @constraint(model_mip, Variable(model_mip, l[:y_idx]) == sum(i[1]*Variable(model_mip, i[2]) for i in l[:ref][:coef_var]) + l[:ref][:scalar])
+    return
+end
+
 function amp_post_lifted_objective(m::PODNonlinearModel)
 
     if m.structural_obj == :affine
@@ -160,6 +174,7 @@ function amp_post_lifted_objective(m::PODNonlinearModel)
 end
 
 function add_partition(m::PODNonlinearModel; kwargs...)
+
     options = Dict(kwargs)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
