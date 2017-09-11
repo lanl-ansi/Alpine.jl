@@ -110,10 +110,12 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    num_var_lifted_mip::Int                                     # Number of lifted variables
+    num_var_linear_lifted_mip::Int                             # Number of linear lifting variables required.
+    num_var_nonlinear_lifted_mip::Int                                     # Number of lifted variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
     num_constr_convex::Int                                      # Number of structural constraints
-    nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted terms
+    linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
+    nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
     structural_obj::Symbol                                      # A symbolic indicator of the expression type of objective function
@@ -249,7 +251,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.bounding_constr_mip = []
         m.var_discretization_mip = []
         m.discretization = Dict()
-        m.num_var_lifted_mip = 0
+        m.num_var_linear_lifted_mip = 0
+        m.num_var_nonlinear_lifted_mip = 0
         m.num_var_discretization_mip = 0
         m.num_constr_convex = 0
         m.structural_constr = []
@@ -572,13 +575,13 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     status_reroute = [:Infeasible]
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
-        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig+m.num_var_lifted_mip]
+        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip]
         (m.discretization_consecutive_forbid>0) && (m.bound_sol_history[mod(m.logs[:n_iter]-1, m.discretization_consecutive_forbid)+1] = copy(candidate_bound_sol)) # Requires proper offseting
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
             m.best_bound_sol = copy(candidate_bound_sol)
-            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig+m.num_var_lifted_mip] # can remove this
+            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
         end

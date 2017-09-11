@@ -123,7 +123,8 @@ function expr_finalized(m::PODNonlinearModel)
 	end
 
 	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
-	m.num_var_lifted_mip = length(m.nonlinear_terms)
+    m.num_var_linear_lifted_mip = length(m.linear_terms)
+	m.num_var_nonlinear_lifted_mip = length(m.nonlinear_terms)
 	m.num_constr_convex = length([i for i in m.structural_constr if i == :convex])
 
 	return m
@@ -193,6 +194,55 @@ function expr_resolve_term_pattern(expr, constr_id::Int, m::PODNonlinearModel; k
     # resolve_cos_term(expr, constr_id, m) && return expr
 
     return expr # if no structure is detected, simply return the original tree
+end
+
+"""
+    Recognize simple linear terms
+"""
+function resolve_linear_term(expr, constr_id::int, m::PODNonlinearModel)
+
+    @assert expr.head == :call
+    coef_fetch = Dict(:+=>1.0, :-=>-1.0)
+    function store_linear_term()
+    end
+
+    function lift_linear_term()
+    end
+
+    if expr.args[1] in [:+, -]
+        scalar = 0.0
+        coefs = []
+        var_idxs = []
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                (i==2) ? scalar=expr.args[i] : eval(scalar, expr.args[i])
+                continue
+            end
+            (isa(expr.args[i], Symbol)) && continue #should never happen
+            if (expr.args[i].head==:ref) && isa(expr.args[i],args[2], Int)
+                push!(var_idxs, expr.args[i].args[2])
+                (i == 2) ? push!(coefs, 1.0) : push!(coefs, coef_fetch(expr.args[1]))
+                continue
+            end
+            if expr.args[i].head == :call && expr.args[i].args[1] == :* && length(expr.args[i].args) == 3
+                sub_coef = [i for i in expr.args[i].args if (isa(i, Int) || isa(i, Float64))]
+                sub_vars = [i.args[2] for i in expr.args[i].args if ((:head in fieldnames(i)) && i.head == :ref)]
+                (isempty(sub_coef) || isempty(sub_vars)) return false, expr
+                (length(sub_coef) != 1 || length(sub_vars) != 1) return false, expr
+                (i == 2) ? push!(coefs, 1.0*sub_coef[1]) : push!(coefs, coef_fetch[expr.args[1]]*sub_coef[1])
+                push!(var_idxs, sub_vars[1])
+                continue
+            else
+                return false, expr
+            end
+        end
+
+        # By reaching here, it is already certain that we have found the term.
+        term_key = Dict(:scalar=>scalar, :coefs=>coefs, :idxs=>var_idxs)
+
+    end
+
+    return false, expr
 end
 
 """

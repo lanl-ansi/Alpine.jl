@@ -82,15 +82,15 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     if haskey(options, :use_discretization)
-        l_var = [options[:use_discretization][i][1]   for i in 1:(m.num_var_orig+m.num_var_lifted_mip)]
-        u_var = [options[:use_discretization][i][end] for i in 1:(m.num_var_orig+m.num_var_lifted_mip)]
+        l_var = [options[:use_discretization][i][1]   for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
+        u_var = [options[:use_discretization][i][end] for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
     else
         l_var = m.l_var_tight
         u_var = m.u_var_tight
     end
 
-    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_lifted_mip)])
-    for i in 1:(m.num_var_orig+m.num_var_lifted_mip)
+    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)])
+    for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
         (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
         (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
         (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
@@ -210,7 +210,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
     haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) : point_vec = copy(m.best_bound_sol)
 
-    (length(point_vec) < m.num_var_orig+m.num_var_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
+    (length(point_vec) < m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
 
     # ? Perform discretization base on type of nonlinear terms
     for i in m.var_discretization_mip

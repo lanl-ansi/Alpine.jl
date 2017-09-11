@@ -55,7 +55,7 @@ function initialize_discretization(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
-    for var in 1:(m.num_var_orig+m.num_var_lifted_mip)
+    for var in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
         lb = m.l_var_tight[var]
         ub = m.u_var_tight[var]
         m.discretization[var] = [lb, ub]
@@ -84,14 +84,14 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
         var_discretization[var] = [lb, ub]
     end
 
-    if length(lbs) == (m.num_var_orig+m.num_var_lifted_mip)
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+    if length(lbs) == (m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
             lb = lbs[var]
             ub = ubs[var]
             var_discretization[var] = [lb, ub]
         end
     else
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
             lb = -Inf
             ub = Inf
             var_discretization[var] = [lb, ub]

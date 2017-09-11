@@ -5,8 +5,8 @@ Initial tight bound vectors for later operations
 """
 function initialize_tight_bounds(m::PODNonlinearModel)
 
-    m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_lifted_mip);]
-    m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_lifted_mip);]
+    m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip);]
+    m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip);]
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0

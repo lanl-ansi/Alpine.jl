@@ -318,7 +318,7 @@ end
 function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
 
     @assert length(sol_vec) == m.num_var_orig
-    sol_vec = [sol_vec; fill(NaN, m.num_var_lifted_mip)]
+    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
 
     for i in 1:length(m.nonlinear_terms)
         for bi in keys(m.nonlinear_terms)
