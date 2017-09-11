@@ -96,7 +96,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
 	end
     haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish")) : (ITER_block = string(" ", m.logs[:n_iter]))
 
-    if m.colorful_pod
+    if m.colorful_pod == "random"
         colors = [:blue, :cyan, :green, :red, :light_red, :light_blue, :light_cyan, :light_green, :light_magenta, :light_re, :light_yellow, :white, :yellow]
         print(" |")
         print_with_color(rand(colors),UB_block)
@@ -115,7 +115,11 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
         print("|")
         print_with_color(rand(colors),ITER_block)
         print("\n")
-    else
+    elseif m.colorful_pod == "solarized"
+        print_with_color(m.logs[:n_iter]+21, " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
+    elseif m.colorful_pod == "warmer"
+        print_with_color(max(20,170-m.logs[:n_iter]), " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
+    elseif m.colorful_pod == false
         println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
     end
 
