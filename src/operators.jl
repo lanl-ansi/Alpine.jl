@@ -446,7 +446,7 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
         m.nonlinear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
                                             :id => length(keys(m.nonlinear_terms)) + 1,
                                             :ref => term_key,
-                                            :orig_vars => var_idxs,
+                                            :orig_vars => [var_idxs[1]],
                                             :evaluator => monomial(k, vec) = prod([vec[i] for i in k[:orig_vars]]),
                                             :lifted_constr_ref => lifted_constr_ref,
                                             :constr_id => Set(),
@@ -489,7 +489,6 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             for i in 1:2
                 push!(term_key, Expr(:ref, :x, var_idxs[1]))
             end
-
             if term_key in keys(m.nonlinear_terms)
                 return true, lift_monomial_term()
             else

@@ -7,7 +7,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     dev_test::Bool                                              # Turn on for testing new code with
     colorful_pod::Any                                           # Turn on for a color solver
     mip_license::Any                                            # Granted solver identifier
-    
+
     # Temporary internal place-holder for testing differnt things
     dump::Any
 

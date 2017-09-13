@@ -144,6 +144,8 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
     elseif m.mip_solver_identifier == "GLPK"
         insert_timeleft_symbol(m.mip_solver.opt)
+    elseif m.mip_solver_identifier == "Pajarito"
+        (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     else
         error("Needs support for this MIP solver")
     end
@@ -446,6 +448,8 @@ function fetch_mip_solver_identifier(m::PODNonlinearModel)
         m.mip_solver_identifier = "Cbc"
     elseif string(m.mip_solver)[1:4] == "GLPK"
         m.mip_solver_identifier = "GLPK"
+    elseif string(m.mip_solver)[1:8] == "Pajarito"
+        m.mip_solver_identifier = "Pajarito"
     else
         error("Unsupported mip solver name. Using blank")
     end

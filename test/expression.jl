@@ -1243,10 +1243,13 @@
 
     @testset "Linear Lifting : nlp2" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=CbcSolver(OutputFlag=0),
+                                mip_solver=GurobiSolver(OutputFlag=0),
+                            #    mip_solver=PajaritoSolver(mip_solver=GurobiSolver(OutputFlag=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
                                log_level=0)
+
         m = nlp2(solver=test_solver)
-        JuMP.build(m) # Setup internal model
+
+        solve(m) #
 
         @test length(m.internalModel.linear_terms) == 2
         @test length(m.internalModel.nonlinear_terms) == 4
@@ -1274,15 +1277,93 @@
         @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[2])]][:lifted_var_ref].args[2] == 6
         @test m.internalModel.nonlinear_terms[[:(x[4]), :(x[4])]][:lifted_var_ref].args[2] == 5
         @test m.internalModel.nonlinear_terms[[:(x[7]), :(x[7])]][:lifted_var_ref].args[2] == 8
+
+        @test isapprox(m.objVal, 0.0; atol=1e-5)
     end
 
     @testset "Linear Lifting : general" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
                                log_level=0)
-        m = nlp2(solver=test_solver)
+
+        m = basic_linear_lift(solver=test_solver)
+
         JuMP.build(m) # Setup internal model
-        @test 1 == 1
+
+        lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 3.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1), (1.0, 3)])))
+        lk2 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(3.0, 2), (-1.0, 3)])))
+        lk3 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (-1.0, 2)])))
+        lk4 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (1.0, 3)])))
+        lk5 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1)])))
+
+        @test m.internalModel.linear_terms[lk1][:y_idx] == 16
+        @test m.internalModel.linear_terms[lk2][:y_idx] == 9
+        @test m.internalModel.linear_terms[lk3][:y_idx] == 8
+        @test m.internalModel.linear_terms[lk4][:y_idx] == 12
+        @test m.internalModel.linear_terms[lk5][:y_idx] == 14
+
+        @test m.internalModel.linear_terms[lk1][:lifted_var_ref].args[2] == 16
+        @test m.internalModel.linear_terms[lk2][:lifted_var_ref].args[2] == 9
+        @test m.internalModel.linear_terms[lk3][:lifted_var_ref].args[2] == 8
+        @test m.internalModel.linear_terms[lk4][:lifted_var_ref].args[2] == 12
+        @test m.internalModel.linear_terms[lk5][:lifted_var_ref].args[2] == 14
+
+        @test m.internalModel.linear_terms[lk1][:id] == 5
+        @test m.internalModel.linear_terms[lk2][:id] == 2
+        @test m.internalModel.linear_terms[lk3][:id] == 1
+        @test m.internalModel.linear_terms[lk4][:id] == 3
+        @test m.internalModel.linear_terms[lk5][:id] == 4
+
+        nlk1 = [:(x[8]), :(x[9]), :(x[12])]
+        nlk2 = [:(x[2]), :(x[2])]
+        nlk3 = [:(x[2]), :(x[3])]
+        nlk4 = [:(x[8]), :(x[8])]
+        nlk5 = [:(x[1]), :(x[3])]
+        nlk6 = [:(x[8]), :(x[9])]
+        nlk7 = [:(x[1]), :(x[2])]
+        nlk8 = [:(x[16]), :(x[15])]
+        nlk9 = [:(x[14]), :(x[14])]
+
+        @test m.internalModel.nonlinear_terms[nlk1][:id] == 7
+        @test m.internalModel.nonlinear_terms[nlk2][:id] == 3
+        @test m.internalModel.nonlinear_terms[nlk3][:id] == 4
+        @test m.internalModel.nonlinear_terms[nlk4][:id] == 6
+        @test m.internalModel.nonlinear_terms[nlk5][:id] == 2
+        @test m.internalModel.nonlinear_terms[nlk6][:id] == 5
+        @test m.internalModel.nonlinear_terms[nlk7][:id] == 1
+        @test m.internalModel.nonlinear_terms[nlk8][:id] == 9
+        @test m.internalModel.nonlinear_terms[nlk9][:id] == 8
+
+        @test m.internalModel.nonlinear_terms[nlk1][:lifted_var_ref].args[2] == 13
+        @test m.internalModel.nonlinear_terms[nlk2][:lifted_var_ref].args[2] == 6
+        @test m.internalModel.nonlinear_terms[nlk3][:lifted_var_ref].args[2] == 7
+        @test m.internalModel.nonlinear_terms[nlk4][:lifted_var_ref].args[2] == 11
+        @test m.internalModel.nonlinear_terms[nlk5][:lifted_var_ref].args[2] == 5
+        @test m.internalModel.nonlinear_terms[nlk6][:lifted_var_ref].args[2] == 10
+        @test m.internalModel.nonlinear_terms[nlk7][:lifted_var_ref].args[2] == 4
+        @test m.internalModel.nonlinear_terms[nlk8][:lifted_var_ref].args[2] == 17
+        @test m.internalModel.nonlinear_terms[nlk9][:lifted_var_ref].args[2] == 15
+
+        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :monomial
+        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :monomial
+        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :monomial
+
+        @test m.internalModel.nonlinear_terms[nlk1][:orig_vars] == [8,9,12]
+        @test m.internalModel.nonlinear_terms[nlk2][:orig_vars] == [2]
+        @test m.internalModel.nonlinear_terms[nlk3][:orig_vars] == [2,3]
+        @test m.internalModel.nonlinear_terms[nlk4][:orig_vars] == [8]
+        @test m.internalModel.nonlinear_terms[nlk5][:orig_vars] == [1,3]
+        @test m.internalModel.nonlinear_terms[nlk6][:orig_vars] == [8,9]
+        @test m.internalModel.nonlinear_terms[nlk7][:orig_vars] == [1,2]
+        @test m.internalModel.nonlinear_terms[nlk8][:orig_vars] == [16, 15]
+        @test m.internalModel.nonlinear_terms[nlk9][:orig_vars] == [14]
+
     end
 
 end
