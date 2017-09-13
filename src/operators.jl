@@ -210,7 +210,7 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
         lifted_var_ref = Expr(:ref, :x, y_idx)
         lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, expr)
         m.linear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                        :id => length(keys(m.nonlinear_terms)) + 1,
+                                        :id => length(keys(m.linear_terms)) + 1,
                                         :ref => term_key,
                                         :y_idx => y_idx,
                                         :evaluator => linear(k, vec) = sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]]),

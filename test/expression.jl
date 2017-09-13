@@ -740,7 +740,7 @@
         @test aff_mip[11][:cnt] == 3
     end
 
-    @testset " Validation Test on expression parsing : part1 " begin
+    @testset "Expression parsing || part1 " begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
 								   mip_solver=CbcSolver(OutputFlag=0),
 								   log_level=0))
@@ -779,7 +779,7 @@
         @test m.internalModel.nonlinear_terms[[:(x[5]), :(x[12])]][:id] == 9
     end
 
-    @testset " Validation Test on expression parsing : part2" begin
+    @testset "Expression parsing || part2" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
                                log_level=0))
@@ -835,7 +835,7 @@
         @test m.internalModel.nonlinear_terms[[:(x[3]), :(x[18])]][:id] == 15
     end
 
-    @testset "Validation Test on expression parsing: part3" begin
+    @testset "Expression parsing || part3" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
                                log_level=0))
@@ -898,7 +898,7 @@
         @test m.internalModel.nonlinear_terms[[:(x[22]), :(x[19])]][:id] == 19
     end
 
-    @testset "Validation Test on expression parsing: part7" begin
+    @testset "Expression parsing || part7" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
                                log_level=0))
@@ -947,7 +947,7 @@
         @test m.internalModel.nonlinear_terms[[:(x[6]),:(x[8]),:(x[10]),:(x[11])]][:id] == 11 #15
     end
 
-    @testset "Validation Test on expression parsing: part8" begin
+    @testset "Expression parsing || part8" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
                                log_level=0))
@@ -1239,6 +1239,50 @@
         @test m.internalModel.bounding_constr_mip[26][:rhs] == 200.0
         @test m.internalModel.bounding_constr_mip[26][:powers] == [4, 4]
         @test m.internalModel.bounding_constr_mip[26][:cnt] == 2
+    end
+
+    @testset "Linear Lifting : nlp2" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(OutputFlag=0),
+                               log_level=0)
+        m = nlp2(solver=test_solver)
+        JuMP.build(m) # Setup internal model
+
+        @test length(m.internalModel.linear_terms) == 2
+        @test length(m.internalModel.nonlinear_terms) == 4
+        l_key1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -1.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3)])))
+        l_key2 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -2.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6)])))
+        @test haskey(m.internalModel.linear_terms, l_key1)
+        @test haskey(m.internalModel.linear_terms, l_key2)
+        @test m.internalModel.linear_terms[l_key1][:id] == 1
+        @test m.internalModel.linear_terms[l_key2][:id] == 2
+        @test m.internalModel.linear_terms[l_key1][:lifted_constr_ref] == :(x[4] == x[3] - 1.0)
+        @test m.internalModel.linear_terms[l_key2][:lifted_constr_ref] == :(x[7] == x[6] - 2.0)
+        @test m.internalModel.linear_terms[l_key1][:lifted_var_ref].args[2] == 4
+        @test m.internalModel.linear_terms[l_key2][:lifted_var_ref].args[2] == 7
+        @test m.internalModel.linear_terms[l_key1][:y_idx] == 4
+        @test m.internalModel.linear_terms[l_key2][:y_idx] == 7
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[2]), :(x[2])])
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[4]), :(x[4])])
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[7]), :(x[7])])
+        @test haskey(m.internalModel.nonlinear_terms, [:(x[1]), :(x[1])])
+        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[1])]][:id] == 1
+        @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[2])]][:id] == 3
+        @test m.internalModel.nonlinear_terms[[:(x[4]), :(x[4])]][:id] == 2
+        @test m.internalModel.nonlinear_terms[[:(x[7]), :(x[7])]][:id] == 4
+        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[1])]][:lifted_var_ref].args[2] == 3
+        @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[2])]][:lifted_var_ref].args[2] == 6
+        @test m.internalModel.nonlinear_terms[[:(x[4]), :(x[4])]][:lifted_var_ref].args[2] == 5
+        @test m.internalModel.nonlinear_terms[[:(x[7]), :(x[7])]][:lifted_var_ref].args[2] == 8
+    end
+
+    @testset "Linear Lifting : general" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(OutputFlag=0),
+                               log_level=0)
+        m = nlp2(solver=test_solver)
+        JuMP.build(m) # Setup internal model
+        @test 1 == 1
     end
 
 end

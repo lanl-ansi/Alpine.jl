@@ -5,7 +5,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # external developer parameters for testing and debugging
     dev_debug::Bool                                             # Turn on the debug mode
     dev_test::Bool                                              # Turn on for testing new code with
-    colorful_pod::Any                                          # Turn on for a color solver
+    colorful_pod::Any                                           # Turn on for a color solver
+    mip_license::Any                                            # Granted solver identifier
+    
     # Temporary internal place-holder for testing differnt things
     dump::Any
 
