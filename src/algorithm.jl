@@ -30,7 +30,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     discretization_ratio::Any                                   # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     discretization_uniform_rate::Int                            # Discretization rate parameter when using uniform partitions
     discretization_var_pick_algo::Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
-    discretization_var_pick_dynamic::Bool                       # turn on choosing variable for discretization dynamically between iterations
     discretization_var_minimum::Int                             # minimum count of variables to be discretized
     discretization_var_level::Float64                           # level of variable epoch that is required for discretization
     discretization_add_partition_method::Any                    # Additional methods to add discretization
@@ -151,7 +150,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 method_convexification,
                                 expr_patterns,
                                 discretization_var_pick_algo,
-                                discretization_var_pick_dynamic,
                                 discretization_var_minimum,
                                 discretization_var_level,
                                 discretization_ratio,
@@ -196,7 +194,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.expr_patterns = expr_patterns
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
-        m.discretization_var_pick_dynamic = discretization_var_pick_dynamic
         m.discretization_var_minimum = discretization_var_minimum
         m.discretization_var_level = discretization_var_level
         m.discretization_ratio = discretization_ratio
@@ -443,7 +440,7 @@ function global_solve(m::PODNonlinearModel)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)                                                          # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        (m.discretization_var_pick_algo == "dynamic") && update_discretization_var_set(m)
+        (m.discretization_var_pick_algo == "experimental") && update_discretization_var_set(m)
         add_partition(m)                                                        # Add extra discretizations
     end
 

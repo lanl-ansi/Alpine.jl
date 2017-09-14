@@ -117,85 +117,6 @@ function flatten_discretization(discretization::Dict; kwargs...)
     return flatten_discretization
 end
 
-"""
-
-    update_mip_time_limit(m::PODNonlinearModel)
-
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
-"""
-function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-    if m.mip_solver_identifier == "CPLEX"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
-    elseif m.mip_solver_identifier == "Gurobi"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
-    elseif m.mip_solver_identifier == "Cbc"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
-    elseif m.mip_solver_identifier == "GLPK"
-        insert_timeleft_symbol(m.mip_solver.opt)
-    else
-        error("Needs support for this MIP solver")
-    end
-
-    return
-end
-
-"""
-
-    update_mip_time_limit(m::PODNonlinearModel)
-
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
-"""
-function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-    if m.nlp_local_solver_identifier == "Ipopt"
-        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
-    elseif m.nlp_local_solver_identifier == "Pajarito"
-        (timeout < Inf) && (m.nlp_local_solver.timeout = timelimit)
-    elseif m.nlp_local_solver_identifier == "AmplNL"
-        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
-    elseif m.nlp_local_solver_identifier == "Knitro"
-        error("You never tell me anything about knitro. Probably because they charge everything they own.")
-    elseif m.nlp_local_solver_identifier == "NLopt"
-        m.nlp_local_solver.maxtime = timelimit
-    else
-        error("Needs support for this MIP solver")
-    end
-
-    return
-end
-
-"""
-
-    update_mip_time_limit(m::PODNonlinearModel)
-
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
-"""
-function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-    if m.minlp_local_solver_identifier == "Pajarito"
-        (timeout < Inf) && (m.minlp_local_solver.timeout = timelimit)
-    elseif m.minlp_local_solver_identifier == "AmplNL"
-        insert_timeleft_symbol(m.minlp_local_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
-    elseif m.minlp_local_solver_identifier == "Knitro"
-        error("You never tell me anything about knitro. Probably because they charge everything they own.")
-    elseif m.minlp_local_solver_identifier == "NLopt"
-        m.minlp_local_solver.maxtime = timelimit
-    else
-        error("Needs support for this MIP solver")
-    end
-
-    return
-end
 
 """
     @docstring
@@ -349,12 +270,10 @@ function pick_vars_discretization(m::PODNonlinearModel)
             max_cover(m)
         elseif m.discretization_var_pick_algo == 1 || m.discretization_var_pick_algo == "min_vertex_cover"
             min_vertex_cover(m)
-        elseif m.discretization_var_pick_algo == 2 || m.discretization_var_pick_algo == "dynamic"
-            if length(m.all_nonlinear_vars) > 25
-                min_vertex_cover(m)
-            else
-                max_cover(m)
-            end
+        elseif m.discretization_var_pick_algo == 2 || m.discretization_var_pick_algo == "selective"
+            (length(m.all_nonlinear_vars) > 25) ? min_vertex_cover(m) : max_cover(m)
+        elseif m.discretization_var_pick_algo == "experimental"
+            (length(m.all_nonlinear_vars) > 25) ? min_vertex_cover(m) : max_cover(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
@@ -365,50 +284,7 @@ function pick_vars_discretization(m::PODNonlinearModel)
     return
 end
 
-"""
 
-    min_vertex_cover(m:PODNonlinearModel)
-
-A built-in method for selecting variables for discretization.
-
-"""
-function min_vertex_cover(m::PODNonlinearModel)
-
-    # Collect the information for arcs and nodes
-    nodes = Set()
-    arcs = Set()
-    for pair in keys(m.nonlinear_info)
-        arc = []
-        if length(pair) > 2
-            warn("min_vertex_cover discretizing variable selection method only support bi-linear problems, enfocing thie method may produce mistakes...")
-        end
-        for i in pair
-            @assert isa(i.args[2], Int)
-            push!(nodes, i.args[2])
-            push!(arc, i.args[2])
-        end
-        push!(arcs, arc)
-    end
-    nodes = collect(nodes)
-    arcs = collect(arcs)
-
-    # Set up minimum vertex cover problem
-    minvertex = Model(solver=m.mip_solver)
-    @variable(minvertex, x[nodes], Bin)
-    for arc in arcs
-        @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
-    end
-    @objective(minvertex, Min, sum(x))
-    status = solve(minvertex, suppress_warnings=true)
-
-    xVal = getvalue(x)
-
-    # Getting required information
-    m.num_var_discretization_mip = Int(sum(xVal))
-    m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
-
-    return
-end
 
 """
 
@@ -433,61 +309,6 @@ function max_cover(m::PODNonlinearModel; kwargs...)
 
     return
 end
-
-function fetch_mip_solver_identifier(m::PODNonlinearModel)
-
-    if string(m.mip_solver)[1:6] == "Gurobi"
-        m.mip_solver_identifier = "Gurobi"
-    elseif string(m.mip_solver)[1:5] == "CPLEX"
-        m.mip_solver_identifier = "CPLEX"
-    elseif string(m.mip_solver)[1:3] == "Cbc"
-        m.mip_solver_identifier = "Cbc"
-    elseif string(m.mip_solver)[1:4] == "GLPK"
-        m.mip_solver_identifier = "GLPK"
-    else
-        error("Unsupported mip solver name. Using blank")
-    end
-
-    return
-end
-
-function fetch_nlp_solver_identifier(m::PODNonlinearModel)
-
-    if string(m.nlp_local_solver)[1:5] == "Ipopt"
-        m.nlp_local_solver_identifier = "Ipopt"
-    elseif string(m.nlp_local_solver)[1:6] == "AmplNL"
-        m.nlp_local_solver_identifier = "Bonmin"
-    elseif string(m.nlp_local_solver)[1:6] == "Knitro"
-        m.nlp_local_solver_identifier = "Knitro"
-    elseif string(m.nlp_local_solver)[1:8] == "Pajarito"
-        m.nlp_local_solver_identifier = "Pajarito"
-    elseif string(m.nlp_local_solver)[1:5] == "NLopt"
-        m.nlp_local_solver_identifier = "NLopt"
-    else
-        error("Unsupported nlp solver name. Using blank")
-    end
-
-    return
-end
-
-function fetch_minlp_solver_identifier(m::PODNonlinearModel)
-
-    (m.minlp_local_solver == UnsetSolver()) && return
-    if string(m.minlp_local_solver)[1:6] == "AmplNL"
-        m.minlp_local_solver_identifier = "Bonmin"
-    elseif string(m.minlp_local_solver)[1:6] == "Knitro"
-        m.minlp_local_solver_identifier = "Knitro"
-    elseif string(m.minlp_local_solver)[1:8] == "Pajarito"
-        m.minlp_local_solver_identifier = "Pajarito"
-    elseif string(m.nlp_local_solver)[1:5] == "NLopt"
-        m.nlp_local_solver_identifier = "NLopt"
-    else
-        error("Unsupported nlp solver name. Using blank")
-    end
-
-    return
-end
-
 
 function print_iis_gurobi(m::JuMP.Model)
 
@@ -545,24 +366,109 @@ function update_discretization_var_set(m::PODNonlinearModel)
     info("Not considering lifted VAR partitioning...", prefix=pf)
     for i in m.all_nonlinear_vars
         push!(var_diffs, abs(m.best_sol[i]-m.best_bound_sol[i]))
-        info("VAR-$(i) DIFF = $(var_diffs[end])")
     end
 
     @assert length(var_idxs) == length(var_diffs)
-    idxs_diffs = Dict(zip(var_idxs,var_diffs))
-    ranked_pairs = sort(collect(idxs_diffs), by=x->x[2], rev=true)
+    distance = Dict(zip(var_idxs,var_diffs))
+    # ranked_pairs = sort(collect(distance), by=x->x[2], rev=true)
+	required_cnt = max(m.discretization_var_minimum, Int(ceil(length(m.all_nonlinear_vars)*m.discretization_var_level)))
 
-	var_cnt = max(m.discretization_var_minimum, Int(ceil(length(m.all_nonlinear_vars)*m.discretization_var_level)))
-    info(" #$(var_cnt) cnt of variable is required to be selected", prefix=pf)
+    weighted_min_vertex_cover(m, distance, required_cnt)
 
-    m.var_discretization_mip = []
-    cnt = 0
-    for i in ranked_pairs
-        cnt += 1
-        push!(m.var_discretization_mip,i[1])
-        (cnt >= var_cnt) && break
-    end
+    # info(" #$(var_cnt) cnt of variable is required to be selected", prefix=pf)
+    # m.var_discretization_mip = []
+    # cnt = 0
+    # for i in ranked_pairs
+    #     cnt += 1
+    #     push!(m.var_discretization_mip,i[1])
+    #     (cnt >= var_cnt) && break
+    # end
 
     info("UPDATE VAR SELECTION => $(m.var_discretization_mip)")
+    return
+end
+
+"""
+    Dedicated for bilinear info
+"""
+function collect_var_graph(m::PODNonlinearModel)
+
+    # Collect the information for arcs and nodes
+    nodes = Set()
+    arcs = Set()
+    for pair in keys(m.nonlinear_info)
+        arc = []
+        if length(pair) > 2
+            warn("min_vertex_cover discretizing variable selection method only support bi-linear problems, enfocing thie method may produce mistakes...")
+        end
+        for i in pair
+            @assert isa(i.args[2], Int)
+            push!(nodes, i.args[2])
+            push!(arc, i.args[2])
+        end
+        push!(arcs, arc)
+    end
+    nodes = collect(nodes)
+    arcs = collect(arcs)
+
+    return nodes, arcs
+end
+
+function min_vertex_cover(m::PODNonlinearModel)
+
+    nodes, arcs = collect_var_graph(m)
+
+    # Set up minimum vertex cover problem
+    minvertex = Model(solver=m.mip_solver)
+    @variable(minvertex, x[nodes], Bin)
+    for arc in arcs
+        @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
+    end
+    @objective(minvertex, Min, sum(x))
+    status = solve(minvertex, suppress_warnings=true)
+
+    xVal = getvalue(x)
+
+    # Getting required information
+    m.num_var_discretization_mip = Int(sum(xVal))
+    m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
+
+    return
+end
+
+
+function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict, required_cnt::Int)
+
+    nodes, arcs = collect_var_graph(m)
+
+    # Re-scale the distance vector for weight
+
+    disvec = [distance[i] for i in keys(distance)]
+    disvec= abs.(disvec)
+    (minimum(disvec) < 1.0) ? (normalizor=max(0.1e-6,minimum(disvec)/1)) : normalizor=1.0
+    weights = Dict()
+    for i in keys(distance)
+        isapprox(distance[i], 0.0; atol=1e-6) ? (weights[i]=(1/normalizor)*1+1e-8) : (weights[i]=(1/normalizor*distance[i]))
+    end
+    for i in keys(weights)
+        info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
+    end
+
+    # Set up minimum vertex cover problem
+    minvertex = Model(solver=m.mip_solver)
+    @variable(minvertex, x[nodes], Bin)
+    for arc in arcs
+        @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
+    end
+    @constraint(minvertex, sum(x) >= required_cnt)
+    @objective(minvertex, Min, sum(weights[i]*x[i] for i in nodes))
+    status = solve(minvertex, suppress_warnings=true)
+
+    xVal = getvalue(x)
+
+    # Getting required information
+    m.num_var_discretization_mip = Int(sum(xVal))
+    m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
+
     return
 end
