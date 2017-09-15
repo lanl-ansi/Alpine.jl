@@ -370,19 +370,11 @@ function update_discretization_var_set(m::PODNonlinearModel)
 
     @assert length(var_idxs) == length(var_diffs)
     distance = Dict(zip(var_idxs,var_diffs))
-    # ranked_pairs = sort(collect(distance), by=x->x[2], rev=true)
+
+    # This may not be necessary
 	required_cnt = max(m.discretization_var_minimum, Int(ceil(length(m.all_nonlinear_vars)*m.discretization_var_level)))
 
     weighted_min_vertex_cover(m, distance, required_cnt)
-
-    # info(" #$(var_cnt) cnt of variable is required to be selected", prefix=pf)
-    # m.var_discretization_mip = []
-    # cnt = 0
-    # for i in ranked_pairs
-    #     cnt += 1
-    #     push!(m.var_discretization_mip,i[1])
-    #     (cnt >= var_cnt) && break
-    # end
 
     info("UPDATE VAR SELECTION => $(m.var_discretization_mip)")
     return
@@ -441,17 +433,13 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict, require
 
     nodes, arcs = collect_var_graph(m)
 
-    # Re-scale the distance vector for weight
-
     disvec = [distance[i] for i in keys(distance)]
-    disvec= abs.(disvec)
-    (minimum(disvec) < 1.0) ? (normalizor=max(0.1e-6,minimum(disvec)/1)) : normalizor=1.0
+    disvec= abs.(disvec[disvec .> 0.0])
+    heavy = 1/minimum(disvec)
     weights = Dict()
     for i in keys(distance)
-        isapprox(distance[i], 0.0; atol=1e-6) ? (weights[i]=(1/normalizor)*1+1e-8) : (weights[i]=(1/normalizor*distance[i]))
-    end
-    for i in keys(weights)
-        info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
+        isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
+        # info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
     end
 
     # Set up minimum vertex cover problem
@@ -460,15 +448,20 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict, require
     for arc in arcs
         @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
     end
-    @constraint(minvertex, sum(x) >= required_cnt)
+    # @constraint(minvertex, sum(x) >= required_cnt)
     @objective(minvertex, Min, sum(weights[i]*x[i] for i in nodes))
+
+    # Solve the minimum vertex cover
+    print(minvertex)
     status = solve(minvertex, suppress_warnings=true)
 
     xVal = getvalue(x)
-
-    # Getting required information
     m.num_var_discretization_mip = Int(sum(xVal))
     m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
 
+    info("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip))", prefix="BETA: ")
+    for i in m.var_discretization_mip
+        info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
+    end
     return
 end
