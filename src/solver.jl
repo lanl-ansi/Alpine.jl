@@ -82,7 +82,7 @@ function PODSolver(;
     discretization_ratio = 4,
     discretization_uniform_rate = 2,
     discretization_add_partition_method = "adaptive",
-    discretization_abs_width_tol = 1,
+    discretization_abs_width_tol = 1e-4,
     discretization_rel_width_tol = 1e-6,
     discretization_consecutive_forbid = 0,
 
