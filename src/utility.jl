@@ -271,9 +271,9 @@ function pick_vars_discretization(m::PODNonlinearModel)
         elseif m.discretization_var_pick_algo == 1 || m.discretization_var_pick_algo == "min_vertex_cover"
             min_vertex_cover(m)
         elseif m.discretization_var_pick_algo == 2 || m.discretization_var_pick_algo == "selective"
-            (length(m.all_nonlinear_vars) > 25) ? min_vertex_cover(m) : max_cover(m)
+            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : max_cover(m)
         elseif m.discretization_var_pick_algo == "experimental"
-            (length(m.all_nonlinear_vars) > 25) ? min_vertex_cover(m) : max_cover(m)
+            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : max_cover(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
@@ -353,6 +353,8 @@ function update_discretization_var_set(m::PODNonlinearModel)
     pf = "BETA: "
     info("FUNTION TESTING", prefix=pf)
 
+    length(m.all_nonlinear_vars) <= 15 && return   # Separation
+
     # If no feasible solution found, do NOT update
     if m.status[:feasible_solution] != :Detected
         info("No feasible solution detected. No update disc var selection.", prefix=pf)
@@ -372,9 +374,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
     distance = Dict(zip(var_idxs,var_diffs))
 
     # This may not be necessary
-	required_cnt = max(m.discretization_var_minimum, Int(ceil(length(m.all_nonlinear_vars)*m.discretization_var_level)))
-
-    weighted_min_vertex_cover(m, distance, required_cnt)
+    weighted_min_vertex_cover(m, distance)
 
     info("UPDATE VAR SELECTION => $(m.var_discretization_mip)")
     return
@@ -429,17 +429,17 @@ function min_vertex_cover(m::PODNonlinearModel)
 end
 
 
-function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict, required_cnt::Int)
+function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     nodes, arcs = collect_var_graph(m)
 
     disvec = [distance[i] for i in keys(distance)]
-    disvec= abs.(disvec[disvec .> 0.0])
-    heavy = 1/minimum(disvec)
+    disvec = abs.(disvec[disvec .> 0.0])
+    isempty(disvec) ? heavy = 1.0 : heavy = 1/minimum(disvec)
     weights = Dict()
     for i in keys(distance)
         isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-        # info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
+        info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
     end
 
     # Set up minimum vertex cover problem
@@ -448,11 +448,9 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict, require
     for arc in arcs
         @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
     end
-    # @constraint(minvertex, sum(x) >= required_cnt)
     @objective(minvertex, Min, sum(weights[i]*x[i] for i in nodes))
 
     # Solve the minimum vertex cover
-    print(minvertex)
     status = solve(minvertex, suppress_warnings=true)
 
     xVal = getvalue(x)
