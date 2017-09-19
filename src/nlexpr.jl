@@ -255,6 +255,7 @@ end
 	By separating the structure with some dummy treatments
 """
 function expr_resolve_sign(expr, level=0; kwargs...)
+
 	resolver = Dict(:- => -1, :+ => 1)
 	for i in 2:length(expr.args)
 		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 								# Skip the coefficients
@@ -348,7 +349,7 @@ function expr_arrangeargs(args::Array; kwargs...)
 		return val
 	end
 
-	if args[1] in [:^]
+	if args[1] in [:^, :sin, :cos]
 		return args
 	elseif args[1] in [:/]
 		warn("Partially supported operator $(args[1]) in $(args). Trying to resolve the expression...")

@@ -58,7 +58,7 @@ function expr_parsing(m::PODNonlinearModel)
 		m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
 		m.structural_obj = :generic_linear
 	end
-	(m.log_level > 99) && println("$(m.structural_obj) | [OBJ] $(m.obj_expr_orig)")
+	(m.log_level > 99) && println("[OBJ] $(m.obj_expr_orig)")
 
 	for i in 1:m.num_constr_orig
 		is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
@@ -66,7 +66,7 @@ function expr_parsing(m::PODNonlinearModel)
 			m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], i, m)
 			m.structural_constr[i] = :generic_linear
 		end
-		(m.log_level > 99) && println("$(m.structural_constr[i]) | [CONSTR] $(m.constr_expr_orig[i])")
+		(m.log_level > 99) && println("[CONSTR] $(m.constr_expr_orig[i])")
 	end
 
 	return
@@ -114,12 +114,21 @@ end
 function expr_finalized(m::PODNonlinearModel)
 
 	for i in keys(m.nonlinear_terms)
-		for var in i
-			@assert isa(var.args[2], Int)
-			if !(var.args[2] in m.all_nonlinear_vars)
-				push!(m.all_nonlinear_vars, var.args[2])
-			end
-		end
+        if m.nonlinear_terms[i][:nonlinear_type] in [:monomial, :bilinear, :multilinear]
+    		for var in i
+    			@assert isa(var.args[2], Int)
+    			if !(var.args[2] in m.all_nonlinear_vars)
+    				push!(m.all_nonlinear_vars, var.args[2])
+    			end
+    		end
+        else m.nonlinear_terms[i][:nonlinear_type] in [:sin, :cos]
+            for var in i[:vars]
+                @assert isa(var, Int)
+                if !(var in m.all_nonlinear_vars)
+                    push!(m.all_nonlinear_vars, var)
+                end
+            end
+        end
 	end
 
 	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
@@ -190,8 +199,8 @@ function expr_resolve_term_pattern(expr, constr_id::Int, m::PODNonlinearModel; k
     skip, expr = resolve_multilinear_term(expr, constr_id, m)
     skip && return expr
 
-    # resolve_sin_term(expr, constr_id, m) && return expr
-    # resolve_cos_term(expr, constr_id, m) && return expr
+    skip, expr = resolve_sincos_term(expr, constr_id, m)
+    skip && return expr
 
     return expr # if no structure is detected, simply return the original tree
 end
@@ -204,6 +213,10 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
 
     @assert expr.head == :call
     coef_fetch = Dict(:+ => 1.0, :- => -1.0)
+
+    expr_resolve_const(expr)
+    expr_resolve_sign(expr)
+    expr_flatten(expr)
 
     function store_linear_term()
         y_idx = m.num_var_orig + length(keys(m.linear_terms)) + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
@@ -227,7 +240,7 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
     if expr.args[1] in [:+, :-]
         scalar = 0.0
         coef_var = Set()
-        for i in 2:length(expr.args)  # Consider recursive operation
+        for i in 2:length(expr.args)  # TODO: Consider recursive operation
             if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
                 (i == 2) ? scalar=expr.args[i] : scalar+=coef_fetch[expr.args[1]]*expr.args[i]
                 continue
@@ -238,8 +251,8 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 continue
             end
             if expr.args[i].head == :call && expr.args[i].args[1] == :* && length(expr.args[i].args) == 3
-                sub_coef = [i for i in expr.args[i].args if (isa(i, Int) || isa(i, Float64))]
-                sub_vars = [i.args[2] for i in expr.args[i].args if ((:head in fieldnames(i)) && i.head == :ref)]
+                sub_coef = [j for j in expr.args[i].args if (isa(j, Int) || isa(j, Float64))]
+                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(j)) && j.head == :ref)]
                 (isempty(sub_coef) || isempty(sub_vars)) && return false, expr
                 (length(sub_coef) != 1 || length(sub_vars) != 1) && return false, expr
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
@@ -248,6 +261,23 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 return false, expr
             end
         end
+        # By reaching here, it is already certain that we have found the term, always treat with :+
+        term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
+        if term_key in keys(m.linear_terms)
+            return true, lift_linear_term()
+        else
+            store_linear_term()
+            return true, lift_linear_term()
+        end
+    elseif expr.args[1] in [:*] && length(expr.args) == 3
+        scalar = 0.0
+        coef_var = Set()
+
+        sub_coef = [i for i in expr.args if (isa(i, Int) || isa(i, Float64))]
+        sub_vars = [i.args[2] for i in expr.args if ((:head in fieldnames(i)) && i.head == :ref)]
+        (isempty(sub_coef) || isempty(sub_vars)) && return false, expr
+        (length(sub_coef) != 1 || length(sub_vars) != 1) && return false, expr
+        push!(coef_var, (1.0*sub_coef[1], sub_vars[1]))
 
         # By reaching here, it is already certain that we have found the term, always treat with :+
         term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
@@ -532,56 +562,66 @@ end
 """
     TODO: doc
 """
-function resolve_sin_terme(expr, constr_id::Int, m::PODNonlinearModel)
+function resolve_sincos_term(expr, constr_id::Int, m::PODNonlinearModel)
 
-    function store_sin()
+    function store_sincos_term()
+        y_idx = m.num_var_orig + length(keys(m.linear_terms)) + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
+        lifted_var_ref = Expr(:ref, :x, y_idx)
+        lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, Expr(:call, :*, scalar, Expr(:ref, :x, var_idxs[1])))
+        m.nonlinear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
+                                            :id => length(keys(m.nonlinear_terms)) + 1,
+                                            :ref => term_key,
+                                            :orig_vars => [term_key[:vars][1]],
+                                            :orig_scalar => term_key[:scalar],
+                                            :evaluator => sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:orig_vars][1]]),
+                                            :lifted_constr_ref => lifted_constr_ref,
+                                            :constr_id => Set(),
+                                            :nonlinear_type => term_key[:operator],
+                                            :convexified => false)
+        (m.log_level > 99) && println("found sin term $expr = $(lifted_var_ref)")
     end
 
-    function lift_sin()
+    function lift_sincos_term()
+        # @show "LIFTING $(expr) with $(m.nonlinear_terms[term_key][:lifted_var_ref])"
+        push!(m.nonlinear_terms[term_key][:constr_id], constr_id)
+        if scalar == 1.0
+            return m.nonlinear_terms[term_key][:lifted_var_ref]
+        else
+            return Expr(:call, :*, m.nonlinear_terms[term_key][:lifted_var_ref], scalar)
+        end
     end
 
-    # @assert expr.head == :call
-    # if (expr.args[1] == :sin)
-    #     # Pattern: sin(a*x)
-    #     var_idxs = []
-    #     for i in 1:length(expr.args)
-    #         (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)) && continue
-    #         (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-    #         (expr.args[i].head == :call) && return false, expr
-    #     end
-    #     if length(var_idxs) == 1
-    #         println("found sin term $expr")
-    #         return true, expr
-    #     end
-    # end
-
-    return false, expr
-end
-
-"""
-    TODO: doc
-"""
-function resolve_cos_term(expr, constr_id::Int, m::PODNonlinearModel)
-
-    function store_sin()
+    @assert expr.head == :call
+    if expr.args[1] in [:sin, :cos]
+        # Pattern: sin(a*x) or cos(a*x)
+        operator = expr.args[1]
+        scalar = 1.0
+        var_idxs = []
+        for i in 1:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                scalar *= expr.args[i]
+                continue
+            end
+            isa(expr.args[i], Symbol) && continue
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+            if (expr.args[i].head == :call)
+                down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
+                !down_check && return false, expr
+                push!(var_idxs, linear_lift_var.args[2])
+                continue
+            end
+        end
+        if length(var_idxs) == 1
+            term_key = Dict(:operator=>operator, :scalar=>scalar, :vars=>var_idxs)
+            if term_key in keys(m.nonlinear_terms)
+                term_key in keys(m.nonlinear_terms)
+                return true, lift_sincos_term()
+            else
+                store_sincos_term()
+                return true, lift_sincos_term()
+            end
+        end
     end
-    function lift_sin()
-    end
-
-    # @assert expr.head == :call
-    # if (expr.args[1] == :cos)
-    #     # Pattern: sin(a*x)
-    #     var_idxs = []
-    #     for i in 1:length(expr.args)
-    #         (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)) && continue
-    #         (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-    #         (expr.args[i].head == :call) && return false, expr
-    #     end
-    #     if length(var_idxs) == 1
-    #         println("Found cos term $expr")
-    #         return true, expr
-    #     end
-    # end
 
     return false, expr
 end

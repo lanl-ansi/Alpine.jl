@@ -1363,7 +1363,6 @@
         @test m.internalModel.nonlinear_terms[nlk7][:orig_vars] == [1,2]
         @test m.internalModel.nonlinear_terms[nlk8][:orig_vars] == [16, 15]
         @test m.internalModel.nonlinear_terms[nlk9][:orig_vars] == [14]
-
     end
 
 end

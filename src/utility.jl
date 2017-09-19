@@ -424,11 +424,18 @@ A built-in method for selecting variables for discretization. It selects all var
 function max_cover(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
-    for pair in keys(m.nonlinear_terms)
+    for k in keys(m.nonlinear_terms)
         # Assumption Max cover is always safe
-        for i in pair
-            @assert isa(i.args[2], Int)
-            push!(nodes, i.args[2])
+        if m.nonlinear_terms[k][:nonlinear_type] in [:monomial, :bilinear, :multilinear]
+            for i in k
+                @assert isa(i.args[2], Int)
+                push!(nodes, i.args[2])
+            end
+        elseif m.nonlinear_terms[k][:nonlinear_type] in [:sin, :cos]
+            for i in k[:vars]
+                @assert isa(i, Int)
+                push!(nodes, i)
+            end
         end
     end
     nodes = collect(nodes)

@@ -231,6 +231,9 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     for i in m.var_discretization_mip
         point = point_vec[i]                # Original Variable
         #@show i, point, discretization[i]
+        if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin, :Int])  # DO not add partitions to discrete variables
+            continue
+        end
         if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
 			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
 			point = 0.5*(discretization[i][1]+discretization[i][end])
