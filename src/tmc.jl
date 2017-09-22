@@ -229,8 +229,6 @@ function mccormick_monomial(m,xy,x,xˡ,xᵘ)
     return
 end
 
-
-
 function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
     if lazy == 1
         function GetLazyCuts_quad(cb)

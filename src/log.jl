@@ -42,7 +42,7 @@ function logging_summary(m::PODNonlinearModel)
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
 
         println("maximum solution time = ", m.timeout)
-        println("maximum iterations =  ", m.maxiter)
+        println("maximum iterations =  ", m.max_iter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
         println("detected nonlinear terms = $(length(m.nonlinear_terms))")
         println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")

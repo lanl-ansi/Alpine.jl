@@ -77,7 +77,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
     # start of the solve
     keeptightening = true
-    while keeptightening && (m.logs[:time_left] > m.tol) && (m.logs[:bt_iter] < m.presolve_maxiter) # Stopping criteria
+    while keeptightening && (m.logs[:time_left] > m.tol) && (m.logs[:bt_iter] < m.presolve_max_iter) # Stopping criteria
 
         keeptightening = false
         m.logs[:bt_iter] += 1
