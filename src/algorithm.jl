@@ -60,7 +60,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     bound_basic_propagation::Bool                               # Conduct basic bound propagation
 
     # Embedding
-    embed_formulation::Any                                      # Embedding method
+    embedding::Bool                                               # Embedding method
+    embedding_encode::Any                                        # Encoding method used for embedding
 
     # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
@@ -183,6 +184,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_mip_relaxation,
                                 presolve_mip_timelimit,
                                 bound_basic_propagation,
+                                embedding,
+                                embedding_encode,
                                 user_parameters)
 
         m = new()
@@ -230,6 +233,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.presolve_mip_timelimit = presolve_mip_timelimit
 
         m.bound_basic_propagation = bound_basic_propagation
+
+        m.embedding = embedding
+        m.embedding_encode = embedding_encode
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver

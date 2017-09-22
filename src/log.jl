@@ -57,6 +57,8 @@ function logging_summary(m::PODNonlinearModel)
         (m.discretization_add_partition_method == "adpative") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
         (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
 
+        (m.embedding) && println("using embedding formulation")
+        (m.embedding) && println("encoding method = $(m.embedding_encode)")
     end
 
     # Additional warnings

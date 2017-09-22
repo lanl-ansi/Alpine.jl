@@ -53,6 +53,9 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     bound_basic_propagation::Bool
 
+    embedding::Bool
+    embedding_encode::Any
+
     user_parameters::Dict
 
     # other options to be added later on
@@ -106,7 +109,12 @@ function PODSolver(;
     presolve_mip_timelimit = Inf,
 
     bound_basic_propagation = false,
+
+    embedding = false,
+    embedding_encode = encode_gray,
+
     user_parameters = Dict(),
+
     kwargs...
     )
 
@@ -155,6 +163,8 @@ function PODSolver(;
         presolve_mip_relaxation,
         presolve_mip_timelimit,
         bound_basic_propagation,
+        embedding,
+        embedding_encode,
         user_parameters)
     end
 
@@ -213,6 +223,9 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     bound_basic_propagation = s.bound_basic_propagation
 
+    embedding = s.embedding
+    embedding_encode = s.embedding_encode
+
     user_parameters = s.user_parameters
 
     return PODNonlinearModel(dev_debug, dev_test, colorful_pod,
@@ -248,5 +261,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             presolve_mip_relaxation,
                             presolve_mip_timelimit,
                             bound_basic_propagation,
+                            embedding,
+                            embedding_encode,
                             user_parameters)
 end
