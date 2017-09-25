@@ -1,13 +1,13 @@
-function p2B_sos1(L::Int, coding=encode_binary)
+function ebd_sos1(L::Int, coding=ebd_binary)
 
 	map = Dict()
 	bCnt = Int(ceil(log(2,L)))
 	cCnt = Int(2 * bCnt)
-    for c in 1:cCnt
+	for c in 1:cCnt
 		map[c] = []
 	end
 
-    lseq = collect(0:(L-1))
+	lseq = collect(0:(L-1))
 	for l in 1:(L)	#Loop through all partitions in binary sense
 		binCode = coding(lseq[l], bCnt) # Convert to binary string
 		for b in 1:bCnt
@@ -19,59 +19,62 @@ function p2B_sos1(L::Int, coding=encode_binary)
 end
 
 # Make sure two things :: correct setup & compatible mapping function
-function p2B_sos2(λCnt::Int, coding=encoding_gray)
+function ebd_sos2(λCnt::Int, coding=ebd_gray)
 
 	# Initialization
-	logCnt = Int(ceil(log(2,λCnt-1)))
 	map = Dict()
-	code_seq = [coding(i) for i in 0:λCnt]
+	logCnt = Int(ceil(log(2, λCnt-1)))
+	@show logCnt
+	for i in 1:logCnt*2 map[i]=[] end
+	code_seq = [coding(i, logCnt) for i in 0:(λCnt-2)]
+
+	@show code_seq
 
 	# Compatible Checking
 	!is_compatible_encoding(code_seq) && error("Encodign method is not SOS-2 compatible...")
 
 	# Mapping SOS-2 :: λ + λ <= x  &&  λ + λ <=  1-x
 	# |x| = L : Flip  1 -> bCnt : bCnt + 1 -> bCnt + bCnt
-	for 1 in 1:logCnt
-		# Positve selection
-		# 0 selection
+	for l in 1:logCnt
+		for j in 0:(λCnt-1)
+			prod([(l in ebd_σ(code_seq[i])) for i in ebd_I(j, λCnt)]) && push!(map[l], j+1)
+			prod([!(l in ebd_σ(code_seq[i])) for i in ebd_I(j, λCnt)]) && push!(map[l+logCnt], j+1)
+		end
 	end
 
 	return map
 end
 
-# Output J vector for selection
-function ebd_J(l)
-	return
-end
-
-function ebd_B()
-	return
+function ebd_σ(b::String)
+	sv = ebd_support_vec(b)
+	return [i for i in 1:length(sv) if sv[i]]
 end
 
 function ebd_I(j, λCnt)
-	return [i for i in collect(1:(λCnt-1)) if j in [i-1, i]] #Page 52
+	return [i for i in collect(1:Int((λCnt-1))) if j in [i-1, i]] #Page 52
 end
 
 function is_compatible_encoding(code_seq::Vector)
-
 	for i in 1:(length(code_seq)-1)
-		sum(code_seq[i] .!= code_seq[i+1]) != 1 return false
+		sum(abs.(ebd_support_vec(code_seq[i])-ebd_support_vec(code_seq[i+1]))) != 1 && return false
 	end
-
 	return true
 end
 
-function encode_binary(n, bCnt)
+function ebd_support_vec(s::String)
+   v = Vector{Bool}(length(s))
+   for i in 1:length(s)
+       s[i] == '1' ? v[i]=true : v[i]=false
+   end
+   return v
+end
+
+function ebd_binary(n, bCnt)
     return bin(n, bCnt)
 end
 
 # Given encoding bin
-function encode_gray(n, bCnt)
+function ebd_gray(n, bCnt)
 	code_decimal = xor(n, n >> 1)
 	return bin(code_decimal, bCnt)
-end
-
-
-function p2B_convhull(L::Int)
-    return
 end

@@ -49,7 +49,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
-    presolve_max_iter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
+    presolve_max_iter::Int                                      # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
     presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
@@ -59,9 +59,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Domain Reduction
     bound_basic_propagation::Bool                               # Conduct basic bound propagation
 
-    # Embedding
-    embedding::Bool                                               # Embedding method
-    embedding_encode::Any                                        # Encoding method used for embedding
+    # embedding_sos1
+    embedding_sos1::Bool                                        # embedding_sos1 method
+    embedding_sos2::Bool                                        # embedding_sos2 method
+    embedding_encode::Any                                       # Encoding method used for embedding
 
     # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
@@ -184,7 +185,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_mip_relaxation,
                                 presolve_mip_timelimit,
                                 bound_basic_propagation,
-                                embedding,
+                                embedding_sos1,
+                                embedding_sos2,
                                 embedding_encode,
                                 user_parameters)
 
@@ -234,7 +236,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.bound_basic_propagation = bound_basic_propagation
 
-        m.embedding = embedding
+        m.embedding_sos1 = embedding_sos1
+        m.embedding_sos2 = embedding_sos2
         m.embedding_encode = embedding_encode
 
         m.nlp_local_solver = nlp_local_solver
