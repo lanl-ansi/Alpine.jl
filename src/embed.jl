@@ -24,11 +24,10 @@ function ebd_sos2(λCnt::Int, coding=ebd_gray)
 	# Initialization
 	map = Dict()
 	logCnt = Int(ceil(log(2, λCnt-1)))
-	@show logCnt
 	for i in 1:logCnt*2 map[i]=[] end
-	code_seq = [coding(i, logCnt) for i in 0:(λCnt-2)]
+	code_seq = [coding(i, logCnt) for i in 0:max(1,(2^logCnt-1))]
 
-	@show code_seq
+	# @show λCnt, logCnt, (logCnt^2-1), code_seq
 
 	# Compatible Checking
 	!is_compatible_encoding(code_seq) && error("Encodign method is not SOS-2 compatible...")
@@ -42,6 +41,7 @@ function ebd_sos2(λCnt::Int, coding=ebd_gray)
 		end
 	end
 
+	# @show map
 	return map
 end
 

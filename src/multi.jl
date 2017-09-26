@@ -184,9 +184,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
         if m.convhull_formulation_sos2aux
             @constraint(m.model_mip, Variable(m.model_mip, i) == dot(α[i], discretization[i]))
         else
-            partition_cnt = length(α[i])
             lambda_cnt = length(discretization[i])
-            @assert lambda_cnt == partition_cnt + 1
             sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt] # Add x = f(λ) for convex representation of x value
             @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
         end
@@ -269,10 +267,11 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
         # Encoding of λ -> α goes here
         if m.embedding_sos2
             ebd_map = ebd_sos2(lambda_cnt, m.embedding_encode)
-            YCnt = length(keys(ebd_map))/2
+            YCnt = Int(length(keys(ebd_map))/2)
+            @assert YCnt == length(α[var_ind])
             for i in 1:YCnt
-                p_sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, ebd_map[var_ind], dim)
-                n_sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, ebd_map[var_ind+YCnt], dim)
+                p_sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, ebd_map[i], dim)
+                n_sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, ebd_map[i+YCnt], dim)
                 @constraint(m.model_mip, sum(λ[ml_indices][:vars][p_sliced_indices]) <= α[var_ind][i])
                 @constraint(m.model_mip, sum(λ[ml_indices][:vars][n_sliced_indices]) <= 1-α[var_ind][i])
             end
