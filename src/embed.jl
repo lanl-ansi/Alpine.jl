@@ -30,8 +30,7 @@ function ebd_sos2(λCnt::Int, encoding=ebd_gray)
 	for i in 1:logCnt*2 map[i]=[] end
 	code_seq = [encoding(i, logCnt) for i in 0:max(1,(2^logCnt-1))]
 
-	@show λCnt, logCnt, (logCnt^2-1), code_seq
-
+	# @show λCnt, logCnt, (logCnt^2-1), code_seq
 
 	# Compatible Checking
 	!is_compatible_encoding(code_seq) && error("Encodign method is not SOS-2 compatible...")

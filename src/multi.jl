@@ -9,7 +9,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Variable holders
     λ = Dict()  # Extreme points and multipliers
     α = Dict()  # Partitioning Variables
-    Y = Dict()  # Additional variables
+    Y = Dict()  # Additional placeholder
 
     # Construct λ variable space
     for bi in keys(m.nonlinear_terms)
@@ -112,7 +112,7 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
 end
 
 """
-    Less memeory & time efficient, but a easier implementation
+    Less memeory & time efficiency, but a easier implementation
 """
 function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Any, λ::Dict, extreme_point_cnt::Int)
 
@@ -143,7 +143,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dic
             else
                 lambda_cnt = length(discretization[i])
                 partition_cnt = length(discretization[i]) - 1
-                if m.embedding_sos1
+                if m.embedding_sos1 && partition_cnt > 2
                     YCnt = Int(ceil(log(2,partition_cnt)))
                     α[i] = @variable(m.model_mip, [1:partition_cnt], lowerbound=0.0, upperbound=1.0, basename="A$(i)")
                     Y[i] = @variable(m.model_mip, [1:YCnt], Bin, basename=string("YL",i))
@@ -155,7 +155,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dic
                     @constraint(m.model_mip, sum(α[i]) == 1)
                     @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
                     @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
-                elseif m.embedding_sos2
+                elseif m.embedding_sos2 && partition_cnt > 2
                     αCnt = Int(ceil(log(2,partition_cnt)))
                     α[i] = @variable(m.model_mip, [1:αCnt], Bin, basename=string("YL",i))
                 else
@@ -204,8 +204,14 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >= Variable(m.model_mip, monomial_idx)^2)
 
     # Add SOS-2 Constraints with basic encoding
-    if m.embedding_sos2
-        error("Currently SOS-2 embedding doesn't support monomial terms")
+    if m.embedding_sos2 && partition_cnt > 2
+        ebd_map = ebd_sos2(lambda_cnt, m.embedding_encode)
+        YCnt = Int(length(keys(ebd_map))/2)
+        @assert YCnt == length(α[var_ind])
+        for i in 1:YCnt
+            @constraint(m.model_mip, sum(λ[ml_indices][:vars][ebd_map[i]]) <= α[var_ind][i])
+            @constraint(m.model_mip, sum(λ[ml_indices][:vars][ebd_map[i+YCnt]]) <= 1-α[var_ind][i])
+        end
     else
         for i in 1:lambda_cnt
             if i == 1
@@ -217,6 +223,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
             end
         end
     end
+
     # Equalivent SOS-2 : A different encoding (solwer performance)
     # for i in 1:partition_cnt
     #     @constraint(m.model_mip, α[monomial_idx][i] <= λ[monomial_idx][:vars][i] + λ[monomial_idx][:vars][i+1])
@@ -231,7 +238,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
 
-    (m.convhull_formulation_sos2aux) && warn("Not considering alternative SOS2-Formulation for monomial terms")
+    (m.convhull_formulation_sos2aux) && warn("Not considering SOS2-Formulation with generic methods for monomial terms")
 
     return
 end
@@ -239,8 +246,9 @@ end
 # Valid inequalities proposed when Jeff L. was here
 function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, Y::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
-    partition_cnt = length(α[var_ind])
+
     lambda_cnt = length(discretization[var_ind])
+    partition_cnt = lambda_cnt - 1
 
     if m.convhull_formulation_sos2aux
         for j in 1:lambda_cnt
@@ -250,24 +258,23 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
         return
     end
 
+    # Facet Formulation
     if m.convhull_formulation_facet
-        # Constraint cluster of α >= f(λ)
-        for j in 1:(partition_cnt-1) # Construct cuts by sweeping in both directions
+        for j in 1:(partition_cnt-1) # Constraint cluster of α >= f(λ)
             sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
             @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
         end
-
-        # Constriant cluster of α <= f(λ)
-        for j in 1:(partition_cnt-1)
+        for j in 1:(partition_cnt-1) # Constriant cluster of α <= f(λ)
             sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
             @constraint(m.model_mip, sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices]))
         end
         return
     end
 
+    # SOS-2 Formulation
+    @show partition_cnt
     if m.convhull_formulation_sos2
-        # Encoding of λ -> α goes here
-        if m.embedding_sos2
+        if m.embedding_sos2 && partition_cnt > 2
             ebd_map = ebd_sos2(lambda_cnt, m.embedding_encode)
             YCnt = Int(length(keys(ebd_map))/2)
             @assert YCnt == length(α[var_ind])
@@ -277,6 +284,15 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
                 @constraint(m.model_mip, sum(λ[ml_indices][:vars][p_sliced_indices]) <= α[var_ind][i])
                 @constraint(m.model_mip, sum(λ[ml_indices][:vars][n_sliced_indices]) <= 1-α[var_ind][i])
             end
+            @show collect_indices(λ[ml_indices][:indices], cnt, [1,2], dim)
+            @show discretization[var_ind]
+            # @constraint(m.model_mip, a,
+                # Variable(m.model_mip, var_ind) >= sum( sum(λ[ml_indices][:vars][collect_indices(λ[ml_indices][:indices], cnt, [j,j+1], dim)])*discretization[var_ind][j] for j in 1:lambda_cnt-1))
+            # @constraint(m.model_mip, b,
+            #     Variable(m.model_mip, var_ind) <= sum(sum(λ[ml_indices][:vars][collect_indices(λ[ml_indices][:indices], cnt, [j-1,j], dim)])*discretization[var_ind][j] for j in 2:lambda_cnt))
+            # @show a
+            # @show b
+            # error("STOP")
         else
             for j in 1:lambda_cnt
                 sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
@@ -292,18 +308,15 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
         return
     end
 
+    # Minimum Formulation with Boundary Cuts
     if m.convhull_formulation_minib
-
-        # Constraint cluster of α >= f(λ)
-    	for j in 1:min(partition_cnt, m.convexhull_sweep_limit) # Construct cuts by sweeping in both directions
+    	for j in 1:min(partition_cnt, m.convexhull_sweep_limit) # Constraint cluster of α >= f(λ)
         	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
         	@constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
         	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
         	@constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
     	end
-
-    	# Constriant cluster of α <= f(λ)
-    	for j in 1:partition_cnt
+    	for j in 1:partition_cnt   # Constriant cluster of α <= f(λ)
        		for i in 1:max(1, min(partition_cnt-j+1, m.convexhull_sweep_limit)) # At least one
             	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j:(j+i);], dim)
             	@constraint(m.model_mip, sum(α[var_ind][j:(j+i-1)]) <= sum(λ[ml_indices][:vars][sliced_indices]))
