@@ -113,7 +113,7 @@ function PODSolver(;
 
     embedding_sos1 = false,
     embedding_sos2 = false,
-    embedding_encode = ebd_gray,
+    embedding_encode = "default",
 
     user_parameters = Dict(),
 

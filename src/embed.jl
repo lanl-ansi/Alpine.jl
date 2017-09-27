@@ -1,4 +1,4 @@
-function ebd_sos1(L::Int, coding=ebd_binary)
+function ebd_sos1(L::Int, encoding=ebd_binary)
 
 	map = Dict()
 	bCnt = Int(ceil(log(2,L)))
@@ -7,9 +7,11 @@ function ebd_sos1(L::Int, coding=ebd_binary)
 		map[c] = []
 	end
 
+	encoding = resolve_encoding_key(encoding)
+
 	lseq = collect(0:(L-1))
 	for l in 1:(L)	#Loop through all partitions in binary sense
-		binCode = coding(lseq[l], bCnt) # Convert to binary string
+		binCode = encoding(lseq[l], bCnt) # Convert to binary string
 		for b in 1:bCnt
 			binCode[b] == '0' ? push!(map[b], lseq[l]+1) : push!(map[bCnt + b], lseq[l]+1)
 		end
@@ -19,15 +21,17 @@ function ebd_sos1(L::Int, coding=ebd_binary)
 end
 
 # Make sure two things :: correct setup & compatible mapping function
-function ebd_sos2(λCnt::Int, coding=ebd_gray)
+function ebd_sos2(λCnt::Int, encoding=ebd_gray)
 
 	# Initialization
+	encoding = resolve_encoding_key(encoding)
 	map = Dict()
 	logCnt = Int(ceil(log(2, λCnt-1)))
 	for i in 1:logCnt*2 map[i]=[] end
-	code_seq = [coding(i, logCnt) for i in 0:max(1,(2^logCnt-1))]
+	code_seq = [encoding(i, logCnt) for i in 0:max(1,(2^logCnt-1))]
 
-	# @show λCnt, logCnt, (logCnt^2-1), code_seq
+	@show λCnt, logCnt, (logCnt^2-1), code_seq
+
 
 	# Compatible Checking
 	!is_compatible_encoding(code_seq) && error("Encodign method is not SOS-2 compatible...")
@@ -44,6 +48,17 @@ function ebd_sos2(λCnt::Int, coding=ebd_gray)
 	# @show map
 	return map
 end
+
+function resolve_encoding_key(encoding::Any)
+
+	isa(encoding, Function) && return encoding
+
+	encoding == "default" && return ebd_gray
+	encoding == "gray" && return ebd_gray
+	encoding == "binary" && return ebd_binary
+
+end
+
 
 function ebd_σ(b::String)
 	sv = ebd_support_vec(b)

@@ -197,7 +197,6 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
 
     partition_cnt = length(α[monomial_idx])
     lambda_cnt = length(discretization[monomial_idx])
-    @assert lambda_cnt == partition_cnt + 1
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[monomial_idx][:vars]) == 1)
@@ -205,16 +204,19 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >= Variable(m.model_mip, monomial_idx)^2)
 
     # Add SOS-2 Constraints with basic encoding
-    for i in 1:lambda_cnt
-        if i == 1
-            @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i])
-        elseif i == lambda_cnt
-            @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1])
-        else
-            @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1] + α[monomial_idx][i])
+    if m.embedding_sos2
+        error("Currently SOS-2 embedding doesn't support monomial terms")
+    else
+        for i in 1:lambda_cnt
+            if i == 1
+                @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i])
+            elseif i == lambda_cnt
+                @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1])
+            else
+                @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1] + α[monomial_idx][i])
+            end
         end
     end
-
     # Equalivent SOS-2 : A different encoding (solwer performance)
     # for i in 1:partition_cnt
     #     @constraint(m.model_mip, α[monomial_idx][i] <= λ[monomial_idx][:vars][i] + λ[monomial_idx][:vars][i+1])
