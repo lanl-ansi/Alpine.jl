@@ -61,8 +61,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # embedding_sos1
     embedding_sos1::Bool                                        # embedding_sos1 method
+    embedding_sos1b::Bool                                        # Alternative embedding method without introducing additional variable
     embedding_sos2::Bool                                        # embedding_sos2 method
     embedding_encode::Any                                       # Encoding method used for embedding
+    embedding_ibs::Bool                                         # Enable independent branching scheme
 
     # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
@@ -186,8 +188,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_mip_timelimit,
                                 bound_basic_propagation,
                                 embedding_sos1,
+                                embedding_sos1b,
                                 embedding_sos2,
                                 embedding_encode,
+                                embedding_ibs,
                                 user_parameters)
 
         m = new()
@@ -237,8 +241,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.bound_basic_propagation = bound_basic_propagation
 
         m.embedding_sos1 = embedding_sos1
+        m.embedding_sos1b = embedding_sos1b
         m.embedding_sos2 = embedding_sos2
         m.embedding_encode = embedding_encode
+        m.embedding_ibs = embedding_ibs
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver

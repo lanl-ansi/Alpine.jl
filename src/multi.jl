@@ -77,7 +77,7 @@ end
 
 """
     TODO: docstring
-    method for monomial
+    Extreme values for monomial
 """
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, monomial_index::Int, λ::Dict)
     λ[monomial_index][:vals] = [discretization[monomial_index][i]^2 for i in 1:length(discretization[monomial_index])]
@@ -85,8 +85,7 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
 end
 
 """
-    TODO: docstring
-    method for general multilinear term
+    Extreme value for gneral multilinear terms Efficient implementation
 """
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, ml_indices::Any, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
 
@@ -130,6 +129,7 @@ function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Any
     return λ
 end
 
+# Process Binary Variables
 function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
     for i in ml_indices
@@ -147,7 +147,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dic
                     YCnt = Int(ceil(log(2,partition_cnt)))
                     α[i] = @variable(m.model_mip, [1:partition_cnt], lowerbound=0.0, upperbound=1.0, basename="A$(i)")
                     Y[i] = @variable(m.model_mip, [1:YCnt], Bin, basename=string("YL",i))
-                    αYmap = ebd_sos1(partition_cnt, m.embedding_encode)
+                    αYmap = embedding_sos1(partition_cnt, m.embedding_encode)
                     for j in 1:YCnt  # Setup the constraint to link α and Y
                         @constraint(m.model_mip, sum(α[i][k] for k=1:partition_cnt if k in αYmap[j]) <= Y[i][Int(j)])
                         @constraint(m.model_mip, sum(α[i][k] for k=1:partition_cnt if k in αYmap[YCnt+j]) <= 1 - Y[i][Int(j)])
@@ -155,6 +155,9 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dic
                     @constraint(m.model_mip, sum(α[i]) == 1)
                     @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
                     @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
+                elseif m.embedding_sos1b && partition_cnt > 2
+                    αCnt = Int(ceil(log(2,partition_cnt)))
+                    α[i] = @variable(m.model_mip, [1:αCnt], Bin, basename=string("YL",i))
                 elseif m.embedding_sos2 && partition_cnt > 2
                     αCnt = Int(ceil(log(2,partition_cnt)))
                     α[i] = @variable(m.model_mip, [1:αCnt], Bin, basename=string("YL",i))
@@ -171,6 +174,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dic
     return α, Y
 end
 
+# Regular multilinear treatment
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::Dict, ml_indices::Any, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
 
     # Adding λ constraints
@@ -180,7 +184,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     cnt = 0
     for i in ml_indices
         cnt += 1
-        valid_inequalities(m, discretization, λ, α, Y, ml_indices, dim, i, cnt)        # Add links between λ and α
+        amp_post_inequalities(m, discretization, λ, α, Y, ml_indices, dim, i, cnt)        # Add links between λ and α
         if m.convhull_formulation_sos2aux
             @constraint(m.model_mip, Variable(m.model_mip, i) == dot(α[i], discretization[i]))
         else
@@ -193,6 +197,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     return
 end
 
+# Monomial Term Treatment
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
 
     partition_cnt = length(α[monomial_idx])
@@ -205,7 +210,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
 
     # Add SOS-2 Constraints with basic encoding
     if m.embedding_sos2 && partition_cnt > 2
-        ebd_map = ebd_sos2(lambda_cnt, m.embedding_encode)
+        ebd_map = embedding_sos2(lambda_cnt, m.embedding_encode)
         YCnt = Int(length(keys(ebd_map))/2)
         @assert YCnt == length(α[var_ind])
         for i in 1:YCnt
@@ -243,8 +248,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     return
 end
 
-# Valid inequalities proposed when Jeff L. was here
-function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, Y::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
+function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, Y::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
 
     lambda_cnt = length(discretization[var_ind])
@@ -260,13 +264,23 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
 
     # Facet Formulation
     if m.convhull_formulation_facet
-        for j in 1:(partition_cnt-1) # Constraint cluster of α >= f(λ)
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
-            @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-        end
-        for j in 1:(partition_cnt-1) # Constriant cluster of α <= f(λ)
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
-            @constraint(m.model_mip, sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices]))
+        if m.embedding_sos2 && partition_cnt > 2
+            ebd_map = embedding_sos1b(lambda_cnt, m.embedding_encode)
+            for k in keys(ebd_map)
+                #=  STOPPED HERE
+                sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, ebd_map[k][:L], dim)
+                @constraint(m.model_mip, sum(λ[ml_indices][:vars][sliced_indices]) <= )
+                =#
+            end
+        else
+            for j in 1:(partition_cnt-1) # Constraint cluster of α >= f(λ)
+                sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+                @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
+            end
+            for j in 1:(partition_cnt-1) # Constriant cluster of α <= f(λ)
+                sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
+                @constraint(m.model_mip, sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices]))
+            end
         end
         return
     end
@@ -274,7 +288,7 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
     # SOS-2 Formulation
     if m.convhull_formulation_sos2
         if m.embedding_sos2 && partition_cnt > 2
-            ebd_map = ebd_sos2(lambda_cnt, m.embedding_encode)
+            ebd_map = embedding_sos2(lambda_cnt, m.embedding_encode)
             for k in keys(ebd_map)
                 @show k, ebd_map[k]
             end

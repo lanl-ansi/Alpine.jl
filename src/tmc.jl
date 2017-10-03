@@ -135,7 +135,7 @@ function amp_post_tmc_λ(m::JuMP.Model, λ::Dict, Y::Dict, lb::Dict, ub::Dict, d
         @constraint(m, sum(λ[idx]) == 1)
         @constraint(m, Variable(m, idx) >= dot(lb[idx], λ[idx]))
         @constraint(m, Variable(m, idx) <= dot(ub[idx], λ[idx]))
-        λYmap = ebd_sos1(dim, encode)
+        λYmap = embedding_sos1(dim, encode)
         for j in 1:YCnt  # Setup the constraint to link λ and Y
             info("MAPPING λ[$(j)] => Y[$(λYmap[j])] | λ[$(j)] => 1-Y[$(λYmap[j+YCnt])]", prefix="BETA :")
             (dim > 1) && @constraint(m, sum(λ[idx][k] for k=1:dim if k in λYmap[j]) <= Y[idx][Int(j)])
