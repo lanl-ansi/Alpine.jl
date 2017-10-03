@@ -272,10 +272,12 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
     end
 
     # SOS-2 Formulation
-    @show partition_cnt
     if m.convhull_formulation_sos2
         if m.embedding_sos2 && partition_cnt > 2
             ebd_map = ebd_sos2(lambda_cnt, m.embedding_encode)
+            for k in keys(ebd_map)
+                @show k, ebd_map[k]
+            end
             YCnt = Int(length(keys(ebd_map))/2)
             @assert YCnt == length(α[var_ind])
             for i in 1:YCnt
@@ -284,15 +286,6 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
                 @constraint(m.model_mip, sum(λ[ml_indices][:vars][p_sliced_indices]) <= α[var_ind][i])
                 @constraint(m.model_mip, sum(λ[ml_indices][:vars][n_sliced_indices]) <= 1-α[var_ind][i])
             end
-            @show collect_indices(λ[ml_indices][:indices], cnt, [1,2], dim)
-            @show discretization[var_ind]
-            # @constraint(m.model_mip, a,
-                # Variable(m.model_mip, var_ind) >= sum( sum(λ[ml_indices][:vars][collect_indices(λ[ml_indices][:indices], cnt, [j,j+1], dim)])*discretization[var_ind][j] for j in 1:lambda_cnt-1))
-            # @constraint(m.model_mip, b,
-            #     Variable(m.model_mip, var_ind) <= sum(sum(λ[ml_indices][:vars][collect_indices(λ[ml_indices][:indices], cnt, [j-1,j], dim)])*discretization[var_ind][j] for j in 2:lambda_cnt))
-            # @show a
-            # @show b
-            # error("STOP")
         else
             for j in 1:lambda_cnt
                 sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
@@ -310,19 +303,18 @@ function valid_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict
 
     # Minimum Formulation with Boundary Cuts
     if m.convhull_formulation_minib
-    	for j in 1:min(partition_cnt, m.convexhull_sweep_limit) # Constraint cluster of α >= f(λ)
+    	for j in 1:min(partition_cnt, 1) # Constraint cluster of α >= f(λ)
         	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
         	@constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
         	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
         	@constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
     	end
-    	for j in 1:partition_cnt   # Constriant cluster of α <= f(λ)
-       		for i in 1:max(1, min(partition_cnt-j+1, m.convexhull_sweep_limit)) # At least one
+    	for j in 1:partition_cnt         # Constriant cluster of α <= f(λ)
+       		for i in 1:max(1, min(partition_cnt-j+1, 1)) # At least one
             	sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j:(j+i);], dim)
             	@constraint(m.model_mip, sum(α[var_ind][j:(j+i-1)]) <= sum(λ[ml_indices][:vars][sliced_indices]))
         	end
     	end
-
         return
     end
 
