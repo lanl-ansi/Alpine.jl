@@ -14,7 +14,6 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
     λX = Dict()
     lb = Dict()
     ub = Dict()
-    m.embedding_sos1 && (Y=Dict())
 
     for bi in keys(m.nonlinear_terms)
         nl_type = m.nonlinear_terms[bi][:nonlinear_type]
@@ -48,11 +47,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
             else                                                    # Tighten McCormick
                 # if m.nonlinear_terms[bi][:monomial_satus]
                 if m.nonlinear_terms[bi][:nonlinear_type] == :monomial
-                    if m.embedding_sos1
-                        λ, Y = amp_post_tmc_λ(m.model_mip, λ, Y, lb, ub, part_cnt_a, idx_a, m.embedding_encode)
-                    else
-                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                    end
+                    λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                     λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                     amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
                     amp_post_tmc_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
@@ -60,11 +55,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                 elseif m.nonlinear_terms[bi][:nonlinear_type] == :bilinear
                     # Partitioning on left
                     if (idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
-                        if m.embedding_sos1
-                            λ, Y = amp_post_tmc_λ(m.model_mip, λ, Y, lb, ubm, part_cnt_a, idx_a, m.embedding_encode)
-                        else
-                            λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                        end
+                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                         λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
                         λλ = amp_post_tmc_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
@@ -74,11 +65,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
                     # Partitioning of right
                     if !(idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                        if m.embedding_sos1
-                            λ, Y = amp_post_tmc_λ(m.model_mip, λ, Y, lb, ub, part_cnt_b, idx_b, m.embedding_encode)
-                        else
-                            λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                        end
+                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                         λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
                         λλ = amp_post_tmc_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
@@ -88,13 +75,8 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
                     # Partitioning on both variables
                     if (idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
-                        if m.embedding_sos1
-                            λ, Y = amp_post_tmc_λ(m.model_mip, λ, Y, lb, ub, part_cnt_a, idx_a, m.embedding_encode)
-                            λ, Y = amp_post_tmc_λ(m.model_mip, λ, Y, lb, ub, part_cnt_b, idx_b, m.embedding_encode)
-                        else
-                            λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                            λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                        end
+                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                         λλ = amp_post_tmc_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
@@ -123,27 +105,6 @@ function amp_post_tmc_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, 
         @constraint(m, Variable(m, idx) <= dot(ub[idx], λ[idx]))
     end
     return λ
-end
-
-function amp_post_tmc_λ(m::JuMP.Model, λ::Dict, Y::Dict, lb::Dict, ub::Dict, dim::Int, idx::Int, encode::Any, relax=false)
-
-    if !haskey(λ, idx)
-        YCnt = Int(ceil(log(2,dim)))
-        info("VAR$(idx) => PARTITION $(dim)  | LOG-MAPPING COUNT $(YCnt)", prefix="BETA :")
-        λ[idx] = @variable(m, [1:dim], lowerbound=0, upperbound=1, basename=string("L",idx))
-        Y[idx] = @variable(m, [1:YCnt], Bin, basename=string("YL",idx))
-        @constraint(m, sum(λ[idx]) == 1)
-        @constraint(m, Variable(m, idx) >= dot(lb[idx], λ[idx]))
-        @constraint(m, Variable(m, idx) <= dot(ub[idx], λ[idx]))
-        λYmap = embedding_sos1(dim, encode)
-        for j in 1:YCnt  # Setup the constraint to link λ and Y
-            info("MAPPING λ[$(j)] => Y[$(λYmap[j])] | λ[$(j)] => 1-Y[$(λYmap[j+YCnt])]", prefix="BETA :")
-            (dim > 1) && @constraint(m, sum(λ[idx][k] for k=1:dim if k in λYmap[j]) <= Y[idx][Int(j)])
-            (dim > 1) && @constraint(m, sum(λ[idx][k] for k=1:dim if k in λYmap[YCnt+j]) <= 1 - Y[idx][Int(j)])
-        end
-    end
-
-    return λ, Y
 end
 
 function amp_post_tmc_monomial_mc(m::JuMP.Model, idx_aa::Int, λ::Dict, λX::Dict, LB::Dict, UB::Dict, dim::Int, idx_a::Int)

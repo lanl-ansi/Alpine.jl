@@ -59,10 +59,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Domain Reduction
     bound_basic_propagation::Bool                               # Conduct basic bound propagation
 
-    # embedding_sos1
-    embedding_sos1::Bool                                        # embedding_sos1 method
-    embedding_sos1b::Bool                                        # Alternative embedding method without introducing additional variable
-    embedding_sos2::Bool                                        # embedding_sos2 method
+    # embedding formulation
+    embedding::Bool
     embedding_encode::Any                                       # Encoding method used for embedding
     embedding_ibs::Bool                                         # Enable independent branching scheme
 
@@ -187,9 +185,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_mip_relaxation,
                                 presolve_mip_timelimit,
                                 bound_basic_propagation,
-                                embedding_sos1,
-                                embedding_sos1b,
-                                embedding_sos2,
+                                embedding,
                                 embedding_encode,
                                 embedding_ibs,
                                 user_parameters)
@@ -240,9 +236,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.bound_basic_propagation = bound_basic_propagation
 
-        m.embedding_sos1 = embedding_sos1
-        m.embedding_sos1b = embedding_sos1b
-        m.embedding_sos2 = embedding_sos2
+        m.embedding = embedding
         m.embedding_encode = embedding_encode
         m.embedding_ibs = embedding_ibs
 

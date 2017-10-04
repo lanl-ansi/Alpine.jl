@@ -53,9 +53,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     bound_basic_propagation::Bool
 
-    embedding_sos1::Bool
-    embedding_sos1b::Bool
-    embedding_sos2::Bool
+    embedding::Bool
     embedding_encode::Any
     embedding_ibs::Bool
 
@@ -113,9 +111,7 @@ function PODSolver(;
 
     bound_basic_propagation = false,
 
-    embedding_sos1 = false,
-    embedding_sos1b = false,
-    embedding_sos2 = false,
+    embedding=false,
     embedding_encode = "default",
     embedding_ibs = false,
 
@@ -126,10 +122,6 @@ function PODSolver(;
 
     unsupport_opts = Dict(kwargs)
     !isempty(keys(unsupport_opts)) && warn("Detected unsupported/experimental arguments = $(keys(unsupport_opts))")
-
-    if !embedding_sos1 && !embedding_sos1b
-        error("can only specify one embedding method for SOS1-type of constraint.")
-    end
 
     if nlp_local_solver == UnsetSolver()
         error("No NLP local solver specified (set nlp_local_solver)\n")
@@ -173,9 +165,7 @@ function PODSolver(;
         presolve_mip_relaxation,
         presolve_mip_timelimit,
         bound_basic_propagation,
-        embedding_sos1,
-        embedding_sos1b,
-        embedding_sos2,
+        embedding,
         embedding_encode,
         embedding_ibs,
         user_parameters)
@@ -236,9 +226,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     bound_basic_propagation = s.bound_basic_propagation
 
-    embedding_sos1 = s.embedding_sos1
-    embedding_sos1b = s.embedding_sos1b
-    embedding_sos2 = s.embedding_sos2
+    embedding = s.embedding
     embedding_encode = s.embedding_encode
     embedding_ibs = s.embedding_ibs
 
@@ -277,9 +265,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             presolve_mip_relaxation,
                             presolve_mip_timelimit,
                             bound_basic_propagation,
-                            embedding_sos1,
-                            embedding_sos1b,
-                            embedding_sos2,
+                            embedding,
                             embedding_encode,
                             embedding_ibs,
                             user_parameters)
