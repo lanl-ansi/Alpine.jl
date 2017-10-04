@@ -185,7 +185,7 @@ end
 # Monomial Term Treatment
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
 
-    partition_cnt = length(α[monomial_idx])
+    partition_cnt = length(discretization[monomial_idx])-1
     lambda_cnt = length(discretization[monomial_idx])
 
     # Adding λ constraints
@@ -195,12 +195,12 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
 
     # Add SOS-2 Constraints with basic encoding
     if m.embedding && partition_cnt > 2
-        ebd_map = embedding_map(lambda_cnt, m.embedding_encode)
+        ebd_map = embedding_map(lambda_cnt, m.embedding_encode, m.embedding_ibs)
         YCnt = Int(length(keys(ebd_map))/2)
-        @assert YCnt == length(α[var_ind])
+        @assert YCnt == length(α[monomial_idx])
         for i in 1:YCnt
-            @constraint(m.model_mip, sum(λ[ml_indices][:vars][ebd_map[i]]) <= α[var_ind][i])
-            @constraint(m.model_mip, sum(λ[ml_indices][:vars][ebd_map[i+YCnt]]) <= 1-α[var_ind][i])
+            @constraint(m.model_mip, sum(λ[monomial_idx][:vars][collect(ebd_map[i])]) <= α[monomial_idx][i])
+            @constraint(m.model_mip, sum(λ[monomial_idx][:vars][collect(ebd_map[i+YCnt])]) <= 1-α[monomial_idx][i])
         end
     else
         for i in 1:lambda_cnt
@@ -212,6 +212,9 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
                 @constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1] + α[monomial_idx][i])
             end
         end
+        # Add x = f(α) for regulating the domains
+        @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
+        @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
     end
 
     # Equalivent SOS-2 : A different encoding (solwer performance)
@@ -223,11 +226,6 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
 
     # Add x = f(λ) for convex representation
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
-
-    # Add x = f(α) for regulating the domains
-    @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
-    @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
-
     (m.convhull_formulation_sos2aux) && warn("Not considering SOS2-Formulation with generic methods for monomial terms")
 
     return
