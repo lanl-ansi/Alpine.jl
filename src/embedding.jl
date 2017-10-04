@@ -12,22 +12,28 @@ function embedding_map(λCnt::Int, encoding::Any=ebd_gray, ibs::Bool=false)
 
 	# Mapping SOS-2 :: Aλ <= x  &&  A'λ <=  1-x
 	# |x| = L : Flip  1 -> bCnt : bCnt + 1 -> bCnt + bCnt
+	J = Set(collect(1:(2^L+1)))
+	J_s = Set(collect(1:λCnt))
 	for l in 1:L
-		for j in 0:(λCnt-1)
-			prod([(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) && push!(map[l], j+1)
-			prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) && push!(map[l+L], j+1)
+		if ibs
+			L_constr = Set()
+			R_constr = Set()
+			for j in 0:2^L
+				prod([(l in ebd_σ(H[i])) for i in ebd_I(j, 2^L+1)]) && push!(L_constr, j+1)
+				prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, 2^L+1)]) && push!(R_constr, j+1)
+			end
+			L_branch = intersect(J_s, setdiff(J, L_constr))
+			R_branch = intersect(J_s, setdiff(J, R_constr))
+			map[l] = setdiff(J_s, L_branch)
+			map[l+L] = setdiff(J_s, R_branch)
+		else
+			for j in 0:(λCnt-1)
+				prod([(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) && push!(map[l], j+1)
+				prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) && push!(map[l+L], j+1)
+			end
 		end
+		# @show "Z$(l) => J+ $(map[l])  || J0 $(map[l+L])"
 	end
-
-	# Independent Branching Scheme for lighter formulation
-	# if ibs
-	# 	J = Set(collect(1:2^L))
-	# 	J_s = Set(collect(1:λCnt))
-	# 	for l in 1:L
-	# 		L_branch = intersect(J_s, setdiff(J, map[l]))
-	# 		R_branch = intersect(J_s, setdiff(J, map[l+L]))
-	# 	end
-	# end
 
 	return map
 end

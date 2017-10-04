@@ -248,7 +248,7 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
 
     # Embedding formulation
     if m.embedding && partition_cnt > 2
-        ebd_map = embedding_map(lambda_cnt, m.embedding_encode)
+        ebd_map = embedding_map(lambda_cnt, m.embedding_encode, m.embedding_ibs)
         YCnt = Int(length(keys(ebd_map))/2)
         @assert YCnt == length(α[var_ind])
         for i in 1:YCnt
