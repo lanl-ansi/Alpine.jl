@@ -7,6 +7,8 @@ function embedding_map(λCnt::Int, encoding::Any=ebd_gray, ibs::Bool=false)
 	L = Int(ceil(log(2, λCnt-1)))
 	for i in 1:L*2 map[i]=Set() end
 	H = [encoding(i, L) for i in 0:max(1,(2^L-1))]
+	map[:H] = [ebd_support_binary_vec(H[i]) for i in 1:length(H)] 		# Store the map
+	map[:L] = L
 
 	!is_compatible_encoding(H) && error("Encodign method is not SOS-2 compatible...")
 
@@ -32,7 +34,6 @@ function embedding_map(λCnt::Int, encoding::Any=ebd_gray, ibs::Bool=false)
 				prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) && push!(map[l+L], j+1)
 			end
 		end
-		# @show "Z$(l) => J+ $(map[l])  || J0 $(map[l+L])"
 	end
 
 	return map
@@ -72,6 +73,14 @@ function ebd_support_bool_vec(s::String)
    v = Vector{Bool}(length(s))
    for i in 1:length(s)
        s[i] == '1' ? v[i]=true : v[i]=false
+   end
+   return v
+end
+
+function ebd_support_binary_vec(s::String)
+   v = Vector{Int}(length(s))
+   for i in 1:length(s)
+       s[i] == '1' ? v[i]=1 : v[i]=0
    end
    return v
 end

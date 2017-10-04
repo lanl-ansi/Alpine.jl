@@ -426,6 +426,7 @@ function presolve(m::PODNonlinearModel)
             (m.log_level > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
             # TODO: Make sure the discretization dictionary is clean
             create_bounding_mip(m)       # Build the bounding ATMC model
+            print(m.model_mip)
             bounding_solve(m)            # Solve bounding model
             add_partition(m, use_solution=m.best_bound_sol)
         end

@@ -9,7 +9,6 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Variable holders
     λ = Dict()  # Extreme points and multipliers
     α = Dict()  # Partitioning Variables
-    Y = Dict()  # Additional placeholder
 
     # Construct λ variable space
     for bi in keys(m.nonlinear_terms)
@@ -19,15 +18,15 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
             λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
-            α = amp_convhull_α(m, ml_indices, α, Y, dim, discretization)
-            amp_post_convhull_constrs(m, λ, α, Y, ml_indices, dim, extreme_point_cnt, discretization)
+            α = amp_convhull_α(m, ml_indices, α, dim, discretization)
+            amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
         elseif (nl_type == :monomial) && (m.nonlinear_terms[bi][:convexified] == false)
             m.nonlinear_terms[bi][:convexified] = true
             monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi, monomial=true)
             λ = amp_convhull_λ(m, bi, monomial_index, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
-            α = amp_convhull_α(m, [monomial_index], α, Y, dim, discretization)
-            amp_post_convhull_constrs(m, λ, α, Y, monomial_index, dim, discretization)
+            α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
+            amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
         end
     end
 
@@ -130,7 +129,7 @@ function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Any
 end
 
 # Process Binary Variables
-function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dict, dim::Tuple, discretization::Dict; kwargs...)
+function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
     for i in ml_indices
         if !(i in keys(α))
@@ -160,7 +159,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, Y::Dic
 end
 
 # Regular multilinear treatment
-function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::Dict, ml_indices::Any, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
+function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[ml_indices][:vars]) == 1)
@@ -169,7 +168,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     cnt = 0
     for i in ml_indices
         cnt += 1
-        amp_post_inequalities(m, discretization, λ, α, Y, ml_indices, dim, i, cnt)        # Add links between λ and α
+        amp_post_inequalities(m, discretization, λ, α, ml_indices, dim, i, cnt)        # Add links between λ and α
         if m.convhull_formulation_sos2aux
             @constraint(m.model_mip, Variable(m.model_mip, i) == dot(α[i], discretization[i]))
         else
@@ -183,7 +182,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
 end
 
 # Monomial Term Treatment
-function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
+function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
 
     partition_cnt = length(discretization[monomial_idx])-1
     lambda_cnt = length(discretization[monomial_idx])
@@ -231,7 +230,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, Y::
     return
 end
 
-function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, Y::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
+function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
     lambda_cnt = length(discretization[var_ind])
     partition_cnt = lambda_cnt - 1
@@ -247,7 +246,7 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
     # Embedding formulation
     if m.embedding && partition_cnt > 2
         ebd_map = embedding_map(lambda_cnt, m.embedding_encode, m.embedding_ibs)
-        YCnt = Int(length(keys(ebd_map))/2)
+        YCnt = Int(ebd_map[:L])
         @assert YCnt == length(α[var_ind])
         for i in 1:YCnt
             p_sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, collect(ebd_map[i]), dim)
