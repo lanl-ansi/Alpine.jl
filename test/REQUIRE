@@ -1,6 +1,7 @@
 julia 0.5
 Ipopt
 JuMP
+Pajarito
 Gurobi
 Cbc
 AmplNLWriter

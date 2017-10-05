@@ -1,14 +1,14 @@
 using JuMP, MathProgBase, Gurobi, Ipopt, POD
 
-function nlp1(;verbose=false,solver=nothing, convhull=false)
+function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
-								   presolve_bound_tightening=true,
-								   presolve_bound_tightening_algo=2,
+								   presolve_bound_tightening=(presolve>0),
+								   presolve_bound_tightening_algo=presolve,
 								   presolve_bt_output_tol=1e-1,
 								   log_level=100))
 	else
@@ -26,15 +26,25 @@ function nlp1(;verbose=false,solver=nothing, convhull=false)
 	return m
 end
 
-function nlp2(verbose=false)
+function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
-	info("This model's expression is currently not suitable for expression operations...")
-	error("Quitting... so that ")
+	if solver == nothing
+		m = Model(solver=PODSolver(colorful_pod="warmer",
+								   nlp_local_solver=IpoptSolver(print_level=0),
+								   mip_solver=GurobiSolver(OutputFlag=0),
+								   bilinear_convexhull=convhull,
+								   monomial_convexhull=convhull,
+								   presolve_bound_tightening=(presolve>0),
+								   presolve_bound_tightening_algo=presolve,
+								   presolve_bt_output_tol=1e-1,
+								   log_level=100))
+	else
+		m = Model(solver=solver)
+	end
 
-	m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=CplexSolver()))
 	@variable(m, -500<=x[1:2]<=500)
 
-	@NLobjective(m, Min, sum((x[1]^2 - i)^2 for i in 1:2))
+	@NLobjective(m, Min, sum((x[i]^2 - i)^2 for i in 1:2))
 
 	if verbose
 		print(m)
@@ -45,7 +55,7 @@ end
 
 function max_cover_var_picker(m::POD.PODNonlinearModel)
 	nodes = Set()
-	for pair in keys(m.nonlinear_info)
+	for pair in keys(m.nonlinear_terms)
 		for i in pair
 			@assert isa(i.args[2], Int)
 			push!(nodes, i.args[2])
@@ -98,7 +108,7 @@ function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alt
 	setupperbound(x[7], 1000)
 	setupperbound(x[8], 1000)
 
-	@constraint(m, 0.0025*(x[4]+x[6]) <= 1)
+	@constraint(m, 0.0025*(x[4] + x[6]) <= 1)
 	@constraint(m, 0.0025*(x[5] - x[4] + x[7]) <= 1)
 	@constraint(m, 0.01(x[8]-x[5]) <= 1)
 	@NLconstraint(m, 100*x[1] - x[1]*x[6] + 833.33252*x[4] <= 83333.333)
