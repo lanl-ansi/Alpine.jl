@@ -11,17 +11,17 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     α = Dict()  # Partitioning Variables
 
     # Construct λ variable space
-    for bi in keys(m.nonlinear_info)
-        nl_type = m.nonlinear_info[bi][:nonlinear_type]
-        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_info[bi][:convexified] == false)
-            m.nonlinear_info[bi][:convexified] = true  # Bookeeping the examined terms
+    for bi in keys(m.nonlinear_terms)
+        nl_type = m.nonlinear_terms[bi][:nonlinear_type]
+        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_terms[bi][:convexified] == false)
+            m.nonlinear_terms[bi][:convexified] = true  # Bookeeping the examined terms
             ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
             λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
             α = amp_convhull_α(m, ml_indices, α, dim, discretization)
             amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
-        elseif (nl_type == :monomial) && (m.nonlinear_info[bi][:convexified] == false)
-            m.nonlinear_info[bi][:convexified] = true
+        elseif (nl_type == :monomial) && (m.nonlinear_terms[bi][:convexified] == false)
+            m.nonlinear_terms[bi][:convexified] = true
             monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi, monomial=true)
             λ = amp_convhull_λ(m, bi, monomial_index, λ, extreme_point_cnt, dim)
             λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
@@ -63,7 +63,7 @@ end
 
 function amp_convhull_λ(m::PODNonlinearModel, nonlinear_key::Any, ml_indices::Any, λ::Dict, extreme_point_cnt::Int, dim::Tuple; kwargs...)
 
-    lifted_var_idx = m.nonlinear_info[nonlinear_key][:lifted_var_ref].args[2]
+    lifted_var_idx = m.nonlinear_terms[nonlinear_key][:lifted_var_ref].args[2]
     @assert !(lifted_var_idx in keys(λ))
     λ[ml_indices] = Dict(:dim=>dim,
                          :lifted_var_idx=>lifted_var_idx,
@@ -318,14 +318,14 @@ end
 function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
 
     @assert length(sol_vec) == m.num_var_orig
-    sol_vec = [sol_vec; fill(NaN, m.num_var_lifted_mip)]
+    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
 
-    for i in 1:length(m.nonlinear_info)
-        for bi in keys(m.nonlinear_info)
-            if m.nonlinear_info[bi][:id] == i
+    for i in 1:length(m.nonlinear_terms)
+        for bi in keys(m.nonlinear_terms)
+            if m.nonlinear_terms[bi][:id] == i
                 lvar_idx = m.num_var_orig + i
-                if haskey(m.nonlinear_info[bi], :evaluator)
-                    sol_vec[lvar_idx] = m.nonlinear_info[bi][:evaluator](m.nonlinear_info[bi], sol_vec)
+                if haskey(m.nonlinear_terms[bi], :evaluator)
+                    sol_vec[lvar_idx] = m.nonlinear_terms[bi][:evaluator](m.nonlinear_terms[bi], sol_vec)
                 else
                     sol_vec[lvar_idx] = 0.5*m.discretization[lvar_idx][1] + 0.5*m.discretization[lvar_idx][end]
                 end

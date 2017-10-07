@@ -20,8 +20,16 @@ function update_opt_gap(m::PODNonlinearModel)
         m.best_rel_gap = Inf
         return
     else
+        p = round(abs(log(10,m.rel_gap)))
+        n = round(abs(m.best_obj-m.best_bound), Int(p))
+        dn = round(abs(1e-12+abs(m.best_obj)), Int(p))
+        if (n == 0.0) && (dn == 0.0)
+            m.best_rel_gap = 0.0
+            return
+        end
         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
     end
+
     # absoluate or anyother bound calculation shows here...
 
     return
@@ -55,7 +63,7 @@ function initialize_discretization(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
-    for var in 1:(m.num_var_orig+m.num_var_lifted_mip)
+    for var in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
         lb = m.l_var_tight[var]
         ub = m.u_var_tight[var]
         m.discretization[var] = [lb, ub]
@@ -84,14 +92,14 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
         var_discretization[var] = [lb, ub]
     end
 
-    if length(lbs) == (m.num_var_orig+m.num_var_lifted_mip)
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+    if length(lbs) == (m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
             lb = lbs[var]
             ub = ubs[var]
             var_discretization[var] = [lb, ub]
         end
     else
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_lifted_mip)
+        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
             lb = -Inf
             ub = Inf
             var_discretization[var] = [lb, ub]
@@ -136,6 +144,8 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.mip_solver.options, timelimit,:seconds, m.timeout)
     elseif m.mip_solver_identifier == "GLPK"
         insert_timeleft_symbol(m.mip_solver.opt)
+    elseif m.mip_solver_identifier == "Pajarito"
+        (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     else
         error("Needs support for this MIP solver")
     end
@@ -314,12 +324,12 @@ end
 function convexification_exam(m::PODNonlinearModel)
 
     # Other more advanced convexification check goes here
-    for term in keys(m.nonlinear_info)
-        if !m.nonlinear_info[term][:convexified]
-            error("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
+    for term in keys(m.nonlinear_terms)
+        if !m.nonlinear_terms[term][:convexified]
+            warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
             return
         else
-            m.nonlinear_info[term][:convexified] = false    # Reset status for next iteration
+            m.nonlinear_terms[term][:convexified] = false    # Reset status for next iteration
         end
     end
 
@@ -345,7 +355,7 @@ function pick_vars_discretization(m::PODNonlinearModel)
     if isa(m.discretization_var_pick_algo, Function)
         (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
         eval(m.discretization_var_pick_algo)(m)
-        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_info) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
         if m.discretization_var_pick_algo == 0 || m.discretization_var_pick_algo == "max_cover"
             max_cover(m)
@@ -373,7 +383,7 @@ function min_vertex_cover(m::PODNonlinearModel)
     # Collect the information for arcs and nodes
     nodes = Set()
     arcs = Set()
-    for pair in keys(m.nonlinear_info)
+    for pair in keys(m.nonlinear_terms)
         arc = []
         if length(pair) > 2
             warn("min_vertex_cover discretizing variable selection method only support bi-linear problems, enfocing thie method may produce mistakes...")
@@ -416,11 +426,18 @@ A built-in method for selecting variables for discretization. It selects all var
 function max_cover(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
-    for pair in keys(m.nonlinear_info)
+    for k in keys(m.nonlinear_terms)
         # Assumption Max cover is always safe
-        for i in pair
-            @assert isa(i.args[2], Int)
-            push!(nodes, i.args[2])
+        if m.nonlinear_terms[k][:nonlinear_type] in [:monomial, :bilinear, :multilinear]
+            for i in k
+                @assert isa(i.args[2], Int)
+                push!(nodes, i.args[2])
+            end
+        elseif m.nonlinear_terms[k][:nonlinear_type] in [:sin, :cos]
+            for i in k[:vars]
+                @assert isa(i, Int)
+                push!(nodes, i)
+            end
         end
     end
     nodes = collect(nodes)
@@ -440,6 +457,8 @@ function fetch_mip_solver_identifier(m::PODNonlinearModel)
         m.mip_solver_identifier = "Cbc"
     elseif string(m.mip_solver)[1:4] == "GLPK"
         m.mip_solver_identifier = "GLPK"
+    elseif string(m.mip_solver)[1:8] == "Pajarito"
+        m.mip_solver_identifier = "Pajarito"
     else
         error("Unsupported mip solver name. Using blank")
     end

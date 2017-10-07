@@ -57,7 +57,7 @@ end
 """
     amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
-warpper function to convexify the problem for a bounding model. This function talks to nonlinear_info and convexification methods
+warpper function to convexify the problem for a bounding model. This function talks to nonlinear_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
 function amp_post_convexification(m::PODNonlinearModel; kwargs...)
@@ -72,6 +72,8 @@ function amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
     amp_post_mccormick(m, use_discretization=discretization)    # handles all bi-linear and monomial convexificaitons
     amp_post_convhull(m, use_discretization=discretization)         # convex hull representation
+
+    # Exam to see if all non-linear terms have been convexificed
     convexification_exam(m)
 
     return
@@ -82,15 +84,15 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     if haskey(options, :use_discretization)
-        l_var = [options[:use_discretization][i][1]   for i in 1:(m.num_var_orig+m.num_var_lifted_mip)]
-        u_var = [options[:use_discretization][i][end] for i in 1:(m.num_var_orig+m.num_var_lifted_mip)]
+        l_var = [options[:use_discretization][i][1]   for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
+        u_var = [options[:use_discretization][i][end] for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
     else
         l_var = m.l_var_tight
         u_var = m.u_var_tight
     end
 
-    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_lifted_mip)])
-    for i in 1:(m.num_var_orig+m.num_var_lifted_mip)
+    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)])
+    for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
         (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
         (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
         (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
@@ -99,30 +101,80 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     return
 end
 
+
 function amp_post_lifted_constraints(m::PODNonlinearModel)
 
     for i in 1:m.num_constr_orig
-        if m.constr_type_orig[i] == :(>=)
-            @constraint(m.model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) >= m.lifted_constr_aff_mip[i][:rhs])
-        elseif m.constr_type_orig[i] == :(<=)
-            @constraint(m.model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) <= m.lifted_constr_aff_mip[i][:rhs])
-        elseif m.constr_type_orig[i] == :(==)
-            @constraint(m.model_mip,
-                sum(m.lifted_constr_aff_mip[i][:coefs][j]*Variable(m.model_mip, m.lifted_constr_aff_mip[i][:vars][j].args[2]) for j in 1:m.lifted_constr_aff_mip[i][:cnt]) == m.lifted_constr_aff_mip[i][:rhs])
+        if m.structural_constr[i] == :affine
+            amp_post_affine_constraint(m.model_mip, m.bounding_constr_mip[i])
+        elseif m.structural_constr[i] == :convex
+            amp_post_convex_constraint(m.model_mip, m.bounding_constr_mip[i])
+        else
+            error("Unknown structural_constr type $(m.structural_constr[i])")
         end
+    end
+
+    for i in keys(m.linear_terms)
+        amp_post_linear_lift_constraints(m.model_mip, m.linear_terms[i])
     end
 
     return
 end
 
+function amp_post_affine_constraint(model_mip::JuMP.Model, affine::Dict)
+
+    if affine[:sense] == :(>=)
+        @constraint(model_mip,
+            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) >= affine[:rhs])
+    elseif affine[:sense] == :(<=)
+        @constraint(model_mip,
+            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) <= affine[:rhs])
+    elseif affine[:sense] == :(==)
+        @constraint(model_mip,
+            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) == affine[:rhs])
+    end
+
+    return
+end
+
+function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
+
+    if convex[:sense] == :(>=)
+        @constraint(model_mip,
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
+    elseif convex[:sense] == :(<=)
+        @constraint(model_mip,
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) <= convex[:rhs])
+    elseif convex[:sense] == :(==)
+        @constraint(model_mip,
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) == convex[:rhs])
+    end
+
+    return
+end
+
+function amp_post_linear_lift_constraints(model_mip::JuMP.Model, l::Dict)
+
+    @assert l[:ref][:sign] == :+
+    @constraint(model_mip, Variable(model_mip, l[:y_idx]) == sum(i[1]*Variable(model_mip, i[2]) for i in l[:ref][:coef_var]) + l[:ref][:scalar])
+    return
+end
+
 function amp_post_lifted_objective(m::PODNonlinearModel)
-    @objective(m.model_mip, m.sense_orig, m.lifted_obj_aff_mip[:rhs] + sum(m.lifted_obj_aff_mip[:coefs][i]*Variable(m.model_mip, m.lifted_obj_aff_mip[:vars][i].args[2]) for i in 1:m.lifted_obj_aff_mip[:cnt]))
+
+    if m.structural_obj == :affine
+        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
+    elseif m.structural_obj == :convex
+        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
+    else
+        error("Unknown structural obj type $(m.structural_obj)")
+    end
+
     return
 end
 
 function add_partition(m::PODNonlinearModel; kwargs...)
+
     options = Dict(kwargs)
     haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
@@ -175,13 +227,17 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_ratio) ? ratio = options[:use_ratio] : ratio = m.discretization_ratio
     haskey(options, :branching) ? branching = options[:branching] : branching = false
 
-    (length(point_vec) < m.num_var_orig+m.num_var_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
+    (length(point_vec) < m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
 
     branching && (discretization = deepcopy(discretization))
 
     # ? Perform discretization base on type of nonlinear terms ? #
     for i in m.var_discretization_mip
         point = point_vec[i]                # Original Variable
+        #@show i, point, discretization[i]
+        if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin, :Int])  # DO not add partitions to discrete variables
+            continue
+        end
         if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
 			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
 			point = 0.5*(discretization[i][1]+discretization[i][end])
