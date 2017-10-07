@@ -1,31 +1,109 @@
-"""
-	This is wrapper generating an affine data structure from a lifted linear expression
-	The lifted expressions are stored in the POD model as lifted_obj_expr_mip and lifted_constr_expr_mip
-"""
-function populate_lifted_affine(m::PODNonlinearModel; kwargs...)
+function expr_strip_const(expr, subs=[], rhs=0.0)
 
-	# Populate the affine data structure for the objective
-	m.lifted_obj_aff_mip = expr_to_affine(m.lifted_obj_expr_mip)
-	# Populate the affine data structure for the constraints
-	for i in 1:m.num_constr_orig
-		push!(m.lifted_constr_aff_mip, expr_to_affine(m.lifted_constr_expr_mip[i]))
-		m.log_level > 199 && println("origin ::", m.constr_expr_orig[i])
-		m.log_level > 199 && println("lifted ::", m.lifted_constr_expr_mip[i])
-		m.log_level > 199 && println("coeffs ::", m.lifted_constr_aff_mip[i][:coefs])
-        m.log_level > 199 && println("vars ::", m.lifted_constr_aff_mip[i][:vars])
-        m.log_level > 199 && println("sense ::", m.lifted_constr_aff_mip[i][:sense])
-        m.log_level > 199 && println("rhs ::", m.lifted_constr_aff_mip[i][:rhs])
-		m.log_level > 199 && println("--------- =>")
-	end
+    exhaust_const = [!(expr.args[1] in [:+, :-]) || !(isa(expr.args[i], Float64) || isa(expr.args[i], Int)) for i in 2:length(expr.args)]
+    if prod(exhaust_const)
+        push!(subs, expr)
+        return subs, rhs
+    end
 
-	return
+    for i in 2:length(expr.args)
+        if (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol))
+            (expr.args[1] == :+) && (rhs -= expr.args[i])
+            (expr.args[1] == :-) && ((i == 2) ? rhs -= expr.args[i] : rhs += expr.args[i])
+        elseif expr.args[i].head == :ref
+            continue
+        elseif expr.args[i].head == :call
+            subs, rhs = expr_strip_const(expr.args[i], subs, rhs)
+        end
+    end
+    return subs, rhs
+end
+
+function preprocess_expression(expr)
+
+    for i in 1:length(expr.args)
+        expr.args[i] = expr_resolve_simple_tree(expr.args[i])
+        if (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol))
+            continue
+        elseif (expr.args[i].head == :ref)
+            continue
+        elseif (expr.args[i].head == :call)
+            preprocess_expression(expr.args[i])
+        end
+    end
+
+    return
+end
+
+"""
+    expr_constr_parsing(expr, m::PODNonlinearModel)
+
+Recognize structural constraints.
+"""
+function expr_constr_parsing(expr, m::PODNonlinearModel, idx::Int=0)
+
+    # First process user-defined structures in-cases of over-ride
+    for i in 1:length(m.constr_patterns)
+        is_strucural = eval(m.constr_patterns[i])(expr, m, idx)
+        return
+    end
+
+    # Recognize built-in special structural pattern
+    if m.recognize_convex
+        is_convex = resolve_convex_constr(expr, m, idx)
+        is_convex && return true
+    end
+
+    # More patterns goes here
+
+    return false
+end
+
+function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
+
+    # println("inner recursive input ", expr)
+    !(expr.args[1] in [:*,:^]) && return nothing, nothing, nothing         # Limited Area
+
+    if expr.args[1] == :*
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                scalar *= expr.args[i]
+            elseif (expr.args[i].head == :ref)
+                @assert isa(expr.args[i].args[2], Int)
+                push!(var_idxs, expr.args[i])
+                push!(power, 1)
+            elseif (expr.args[i].head == :call)
+                scalar, var_idxs, power = expr_is_axn(expr.args[i], scalar, var_idxs, power)
+            end
+        end
+    elseif expr.args[1] == :^
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                push!(power, expr.args[i])
+                continue
+            elseif (expr.args[i].head == :ref)
+                push!(var_idxs, expr.args[i])
+                continue
+            elseif (expr.args[i].head == :call)
+                return nothing, nothing, nothing
+            end
+        end
+    end
+
+    # If the user wants a specific N
+    !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
+    (var_idxs == nothing) && (scalar == nothing) && (power == nothing) && return nothing, nothing, nothing # Unrecognized sub-structure
+
+    # println("inner recursive ", scalar, " ", var_idxs)
+    @assert length(var_idxs) == length(power)
+    return scalar, var_idxs, power
 end
 
 """
 	This function takes a constraint/objective expression and converts it into a affine expression data structure
-	Use the function to traverse linear expressions traverse_expr_to_affine()
+	Use the function to traverse linear expressions traverse_expr_linear_to_affine()
 """
-function expr_to_affine(expr)
+function expr_linear_to_affine(expr)
 
 	# The input should follow :(<=, LHS, RHS)
 	affdict = Dict()
@@ -33,7 +111,7 @@ function expr_to_affine(expr)
 		@assert isa(expr.args[3], Float64) || isa(expr.args[3], Int)
 		@assert isa(expr.args[2], Expr)
 		# non are buffer spaces, not used anywhere
-		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr.args[2])
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_linear_to_affine(expr.args[2])
 		rhs = -rhs + expr.args[3]
 		affdict[:sense] = expr.args[1]
 	elseif expr.head == :ref  # For single variable objective expression
@@ -42,7 +120,7 @@ function expr_to_affine(expr)
 		rhs = 0
 		affdict[:sense] = nothing
 	else # For an objective expression
-		lhscoeff, lhsvars, rhs, non, non = traverse_expr_to_affine(expr)
+		lhscoeff, lhsvars, rhs, non, non = traverse_expr_linear_to_affine(expr)
 		affdict[:sense] = nothing
 	end
 
@@ -57,12 +135,12 @@ end
 
 """
 
-	traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
+	traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, level=0)
 
 This function traverse a left hand side tree to collect affine terms.
 Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled properly
 """
-function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
+function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
 
 	# @show expr, coef, bufferVal
 
@@ -110,7 +188,7 @@ function traverse_expr_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, buffer
 	end
 
 	for i in start_pos:length(expr.args)
-		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
+		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_linear_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
 			if bufferVal != 0.0 && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
 				push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)
@@ -177,6 +255,7 @@ end
 	By separating the structure with some dummy treatments
 """
 function expr_resolve_sign(expr, level=0; kwargs...)
+
 	resolver = Dict(:- => -1, :+ => 1)
 	for i in 2:length(expr.args)
 		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 								# Skip the coefficients
@@ -200,6 +279,20 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 	end
 
 	return
+end
+
+# This can be a cleaner version of the above function
+function expr_resolve_simple_tree(expr)
+    (isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return expr
+    (expr.head == :ref) && return expr
+
+    if ((expr.args[1] == :-) && (length(expr.args) == 2))
+        (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && return -expr.args[2]
+        if (expr.args[2].head in [:ref, :call])
+            return Expr(:call, :*, -1, expr.args[2])
+        end
+    end
+    return expr
 end
 
 """
@@ -256,7 +349,7 @@ function expr_arrangeargs(args::Array; kwargs...)
 		return val
 	end
 
-	if args[1] in [:^]
+	if args[1] in [:^, :sin, :cos]
 		return args
 	elseif args[1] in [:/]
 		warn("Partially supported operator $(args[1]) in $(args). Trying to resolve the expression...")
@@ -387,6 +480,9 @@ function expr_islinear(expr)
 	end
 end
 
+"""
+	Check if a sub-tree is pure constant or not
+"""
 function expr_resolve_const(expr)
 
 	for i in 1:length(expr.args)
@@ -403,27 +499,6 @@ function expr_resolve_const(expr)
 	end
 
 	return
-end
-
-"""
-	Check if a sub-tree(:call) is totally composed of constant values
-"""
-function expr_isconst(expr)
-
-	(isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return true
-
-	const_tree = true
-	for i in 1:length(expr.args)
-		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
-			continue
-		elseif expr.args[i].head == :call
-			const_tree *= expr_isconst(expr.args[i])
-		elseif expr.args[i].head == :ref
-			return false
-		end
-	end
-
-	return const_tree
 end
 
 """
@@ -447,4 +522,25 @@ function expr_resolve_divdenominator(args)
 	end
 
 	return args
+end
+
+"""
+	Check if a sub-tree(:call) is totally composed of constant values
+"""
+function expr_isconst(expr)
+
+	(isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return true
+
+	const_tree = true
+	for i in 1:length(expr.args)
+		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
+			continue
+		elseif expr.args[i].head == :call
+			const_tree *= expr_isconst(expr.args[i])
+		elseif expr.args[i].head == :ref
+			return false
+		end
+	end
+
+	return const_tree
 end

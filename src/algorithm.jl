@@ -5,7 +5,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # external developer parameters for testing and debugging
     dev_debug::Bool                                             # Turn on the debug mode
     dev_test::Bool                                              # Turn on for testing new code with
-    colorful_pod::Any                                          # Turn on for a color solver
+    colorful_pod::Any                                           # Turn on for a color solver
+    mip_license::Any                                            # Granted solver identifier
+
     # Temporary internal place-holder for testing differnt things
     dump::Any
 
@@ -18,13 +20,15 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     tol::Float64                                                # Numerical tol used in the algorithmic process
 
     # convexification method tuning
+    recognize_convex::Bool                                      # recognize convex expressions in parsing objective functions and constraints
     bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
     bilinear_convexhull::Bool                                   # convexify bilinear terms using convex hull representation
     monomial_convexhull::Bool                                   # convexify monomial terms using convex hull representation
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
-    expr_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize expressions
+    term_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize nonlinear terms in constraint expression
+    constr_patterns::Array{Function}                            # Array of functions that user wish to use to parse/recognize structural constraint from expression
 
     # parameters used in partitioning algorithm
     discretization_ratio::Any                                   # Discretization ratio parameter (use a fixed value for now, later switch to a function)
@@ -108,15 +112,21 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    nonlinear_info::Dict{Any,Any}                               # Dictionary containing details of lifted terms
-    all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
-    lifted_obj_expr_mip::Expr                                   # Lifted objective expression; if linear, same as obj_expr_orig
-    lifted_constr_expr_mip::Vector{Expr}                        # Lifted constraints; if linear, same as corresponding constr_expr_orig
-    num_var_lifted_mip::Int                                     # Number of lifted variables
-    lifted_obj_aff_mip::Dict{Any, Any}                          # Lifted objective expression in affine form
-    lifted_constr_aff_mip::Vector{Dict{Any, Any}}               # Lifted constraint expressions in affine form
-    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
+    num_var_linear_lifted_mip::Int                             # Number of linear lifting variables required.
+    num_var_nonlinear_lifted_mip::Int                                     # Number of lifted variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
+    num_constr_convex::Int                                      # Number of structural constraints
+    linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
+    nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
+    nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
+    all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
+    structural_obj::Symbol                                      # A symbolic indicator of the expression type of objective function
+    structural_constr::Vector{Symbol}                           # A vector indicate whether a constraint is with sepcial structure
+    bounding_obj_expr_mip::Expr                                 # Lifted objective expression; if linear, same as obj_expr_orig
+    bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
+    bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
+    bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
+    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
     var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
@@ -142,11 +152,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
+                                recognize_convex,
                                 bilinear_mccormick,
                                 bilinear_convexhull,
                                 monomial_convexhull,
                                 method_convexification,
-                                expr_patterns,
+                                term_patterns,
+                                constr_patterns,
                                 discretization_var_pick_algo,
                                 discretization_ratio,
                                 discretization_uniform_rate,
@@ -182,12 +194,14 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.rel_gap = rel_gap
         m.tol = tol
 
+        m.recognize_convex = recognize_convex
         m.bilinear_mccormick = bilinear_mccormick
         m.bilinear_convexhull = bilinear_convexhull
         m.monomial_convexhull = monomial_convexhull
 
         m.method_convexification = method_convexification
-        m.expr_patterns = expr_patterns
+        m.term_patterns = term_patterns
+        m.constr_patterns = constr_patterns
 
         m.discretization_var_pick_algo = discretization_var_pick_algo
         m.discretization_ratio = discretization_ratio
@@ -232,12 +246,19 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_nlconstr_updated = 0
         m.indexes_lconstr_updated = Int[]
 
-        m.nonlinear_info = Dict()
+        m.linear_terms = Dict()
+        m.nonlinear_terms = Dict()
+        m.nonlinear_constrs = Dict()
         m.all_nonlinear_vars = Int[]
-        m.lifted_constr_expr_mip = []
-        m.lifted_constr_aff_mip = []
+        m.bounding_constr_expr_mip = []
+        m.bounding_constr_mip = []
         m.var_discretization_mip = []
         m.discretization = Dict()
+        m.num_var_linear_lifted_mip = 0
+        m.num_var_nonlinear_lifted_mip = 0
+        m.num_var_discretization_mip = 0
+        m.num_constr_convex = 0
+        m.structural_constr = []
         m.bound_sol_history = []
 
         m.user_parameters = Dict()
@@ -293,20 +314,25 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
         end
     end
 
+    m.structural_obj = :none
+    m.structural_constr = [:none for i in 1:m.num_constr_orig]
+
     for i = 1:m.num_constr_orig
         if MathProgBase.isconstrlinear(m.d_orig, i)
             m.num_lconstr_orig += 1
+            m.structural_constr[i] = :generic_linear
+        else
+            m.structural_constr[i] = :generic_nonlinear
         end
     end
     m.num_nlconstr_orig = m.num_constr_orig - m.num_lconstr_orig
 
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
+    m.is_obj_linear_orig ? (m.structural_obj = :generic_linear) : (m.structural_obj = :generic_nonlinear)
 
     # populate data to create the bounding model
-    # if true # divert for testing new code
-    expr_batch_process(m)           # Expression handling
-    populate_lifted_affine(m)       # Construct affine function
+    process_expr(m)                 # Compact process of every expression
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
     m.bound_basic_propagation && bounds_propagation(m) # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
@@ -554,13 +580,13 @@ function bounding_solve(m::PODNonlinearModel; kwargs...)
     status_reroute = [:Infeasible]
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
-        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig+m.num_var_lifted_mip]
+        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip]
         (m.discretization_consecutive_forbid>0) && (m.bound_sol_history[mod(m.logs[:n_iter]-1, m.discretization_consecutive_forbid)+1] = copy(candidate_bound_sol)) # Requires proper offseting
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
             m.best_bound_sol = copy(candidate_bound_sol)
-            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig+m.num_var_lifted_mip] # can remove this
+            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
         end

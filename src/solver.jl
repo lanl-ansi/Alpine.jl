@@ -19,12 +19,14 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     minlp_local_solver::MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
+    recognize_convex::Bool
     bilinear_mccormick::Bool
     bilinear_convexhull::Bool
     monomial_convexhull::Bool
 
     method_convexification::Array{Function}
-    expr_patterns::Array{Function}
+    term_patterns::Array{Function}
+    constr_patterns::Array{Function}
 
     discretization_var_pick_algo::Any
     discretization_ratio::Any
@@ -71,12 +73,14 @@ function PODSolver(;
     minlp_local_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
-    bilinear_mccormick = false,      # by default, deal with bilinear terms using mccormick since the convhull is under tests
+    recognize_convex = true,
+    bilinear_mccormick = false,
     bilinear_convexhull = true,
     monomial_convexhull = true,
 
     method_convexification = Array{Function}(0),
-    expr_patterns = Array{Function}(0),
+    term_patterns = Array{Function}(0),
+    constr_patterns = Array{Function}(0),
 
     discretization_var_pick_algo = 0,           # By default pick all variables
     discretization_ratio = 4,
@@ -123,11 +127,13 @@ function PODSolver(;
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
         deepcopy(mip_solver),
+        recognize_convex,
         bilinear_mccormick,
         bilinear_convexhull,
         monomial_convexhull,
         method_convexification,
-        expr_patterns,
+        term_patterns,
+        constr_patterns,
         discretization_var_pick_algo,
         discretization_ratio,
         discretization_uniform_rate,
@@ -169,12 +175,14 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     rel_gap = s.rel_gap
     tol = s.tol
 
+    recognize_convex = s.recognize_convex
     bilinear_mccormick = s.bilinear_mccormick
     bilinear_convexhull = s.bilinear_convexhull
     monomial_convexhull = s.monomial_convexhull
 
     method_convexification = s.method_convexification
-    expr_patterns = s.expr_patterns
+    term_patterns = s.term_patterns
+    constr_patterns = s.constr_patterns
 
     nlp_local_solver = s.nlp_local_solver
     minlp_local_solver = s.minlp_local_solver
@@ -212,11 +220,13 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             nlp_local_solver,
                             minlp_local_solver,
                             mip_solver,
+                            recognize_convex,
                             bilinear_mccormick,
                             bilinear_convexhull,
                             monomial_convexhull,
                             method_convexification,
-                            expr_patterns,
+                            term_patterns,
+                            constr_patterns,
                             discretization_var_pick_algo,
                             discretization_ratio,
                             discretization_uniform_rate,
