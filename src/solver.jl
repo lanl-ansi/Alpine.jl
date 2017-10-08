@@ -56,6 +56,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     embedding::Bool
     embedding_encode::Any
     embedding_ibs::Bool
+    embedding_link::Int
 
     user_parameters::Dict
 
@@ -114,6 +115,7 @@ function PODSolver(;
     embedding=false,
     embedding_encode = "default",
     embedding_ibs = false,
+    embedding_link = 0,
 
     user_parameters = Dict(),
 
@@ -168,6 +170,7 @@ function PODSolver(;
         embedding,
         embedding_encode,
         embedding_ibs,
+        embedding_link,
         user_parameters)
     end
 
@@ -229,6 +232,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     embedding = s.embedding
     embedding_encode = s.embedding_encode
     embedding_ibs = s.embedding_ibs
+    embedding_link = s.embedding_link
 
     user_parameters = s.user_parameters
 
@@ -268,5 +272,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             embedding,
                             embedding_encode,
                             embedding_ibs,
+                            embedding_link,
                             user_parameters)
 end
