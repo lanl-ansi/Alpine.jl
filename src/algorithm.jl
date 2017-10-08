@@ -63,6 +63,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     embedding::Bool
     embedding_encode::Any                                       # Encoding method used for embedding
     embedding_ibs::Bool                                         # Enable independent branching scheme
+    embedding_link::Int                                         # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
 
     # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
@@ -188,6 +189,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 embedding,
                                 embedding_encode,
                                 embedding_ibs,
+                                embedding_link,
                                 user_parameters)
 
         m = new()
@@ -239,6 +241,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.embedding = embedding
         m.embedding_encode = embedding_encode
         m.embedding_ibs = embedding_ibs
+        m.embedding_link = embedding_link
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver

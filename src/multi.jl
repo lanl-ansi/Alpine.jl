@@ -254,6 +254,10 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
             @constraint(m.model_mip, sum(λ[ml_indices][:vars][p_sliced_indices]) <= α[var_ind][i])
             @constraint(m.model_mip, sum(λ[ml_indices][:vars][n_sliced_indices]) <= 1-α[var_ind][i])
         end
+        if m.embedding_link == 1
+            ebd_link_xα(m, α[var_ind], lambda_cnt, discretization[var_ind], ebd_map[var_ind], var_ind)
+        else
+            error("Unsuportted linking scheme indicated between x and α")
         return
     end
 

@@ -85,6 +85,45 @@ function ebd_support_binary_vec(s::String)
    return v
 end
 
+
+function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Int, code_seq::Vector, var_idx::Int)
+
+	L = Int(ceil(log(2, λCnt-1)))
+	P = length(disc_vec) - 1
+	α_C = @variable(m.model_mip, [1:L], lowerbound=0.0, upperbound=1.0, basename="αC$(var_idx)")
+	L > 2 && (α_S = @variable(m.model_mip, [2:L], lowerbound=0.0, upperbound=1.0, basename="αS$(var_idx)"))
+	α_L = @variable(m.model_mip, [1:(length(disc_vec)-1)], lowerbound=0.0, upperbound=1.0, basename="αL$(var_idxs)")
+
+	# Linking (1 - x) = y
+	@variable(m.model_mip, [for i in 1:L], α_C[i] == 1 - α[i])
+
+    #            S in 2:L
+	#            |
+	#        ____|
+	#        |   |
+	# Form ((x * x) * x) ... * x) * x  --- i in 1:length(code_seq)
+	#      |<-        L             |
+	# Regulated x with α_C
+
+	for i in 1:P
+		code_vec = ebd_support_bool_vec(code_seq[i])
+		if L == 2
+			mccormick_bin(m.model_mip, α_L[i], code_vec[1] ? α[1] : α_S[1], code_vec[1] ? α[2] : α_S[2])
+		else
+			mccormick_bin(m.model_mip, α_S[2], code_vec[1] ? α[1] : α_S[1], code_vec[2] ? α[2] : α_S[2])
+			for j in 3:L
+				mccormick_bin(m.model_mip, α_S[j], α_S[j-1], code_vec[j] ? α[j] : α_S[j])
+			end
+			mccormick_bin(m.model_mip, α_L[i], α_S[L-1], α_S[L])
+		end
+	end
+
+	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(α_L[j]*disc_vec[j] for j in 1:P)) # Add x = f(α) for regulating the domains
+	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(α_L[j-1]*diss_vec[j] for j in 2:(P+1)))
+
+	return
+end
+
 # ============================= #
 #   Built-in Encoding methods   #
 # ============================= #
