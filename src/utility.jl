@@ -274,14 +274,14 @@ function pick_vars_discretization(m::PODNonlinearModel)
         eval(m.discretization_var_pick_algo)(m)
         (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
-        if m.discretization_var_pick_algo == 0 || m.discretization_var_pick_algo == "max_cover"
-            max_cover(m)
-        elseif m.discretization_var_pick_algo == 1 || m.discretization_var_pick_algo == "min_vertex_cover"
+        if m.discretization_var_pick_algo == 0
+            select_all_nlvar(m)
+        elseif m.discretization_var_pick_algo == 1
             min_vertex_cover(m)
-        elseif m.discretization_var_pick_algo == 2 || m.discretization_var_pick_algo == "selective"
-            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : max_cover(m)
-        elseif m.discretization_var_pick_algo == "experimental"
-            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : max_cover(m)
+        elseif m.discretization_var_pick_algo == 2
+            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
+        elseif m.discretization_var_pick_algo == 3
+            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
@@ -294,12 +294,12 @@ end
 
 """
 
-    max_cover(m:PODNonlinearModel)
+    select_all_nlvar(m:PODNonlinearModel)
 
 A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
 
 """
-function max_cover(m::PODNonlinearModel; kwargs...)
+function select_all_nlvar(m::PODNonlinearModel; kwargs...)
 
     nodes = Set()
     for k in keys(m.nonlinear_terms)
@@ -322,9 +322,6 @@ function max_cover(m::PODNonlinearModel; kwargs...)
 
     return
 end
-
-
-
 
 function print_iis_gurobi(m::JuMP.Model)
 
@@ -366,33 +363,42 @@ end
 """
 function update_discretization_var_set(m::PODNonlinearModel)
 
-    pf = "BETA: "
-    info("FUNTION TESTING", prefix=pf)
-
     length(m.all_nonlinear_vars) <= 15 && return   # Separation
 
     # If no feasible solution found, do NOT update
     if m.status[:feasible_solution] != :Detected
-        info("No feasible solution detected. No update disc var selection.", prefix=pf)
+        println("no feasible solution detected. No update disc var selection.")
         return
     end
 
     println("")
 	var_idxs = copy(m.all_nonlinear_vars)
-    var_diffs = []
+    var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonlinear_terms)))
 
-    info("Not considering lifted VAR partitioning...", prefix=pf)
-    for i in m.all_nonlinear_vars
-        push!(var_diffs, abs(m.best_sol[i]-m.best_bound_sol[i]))
+    for i in 1:m.num_var_orig       # Original Variables
+        var_diffs[i] = abs(m.best_sol[i]-m.best_bound_sol[i])
     end
 
-    @assert length(var_idxs) == length(var_diffs)
-    distance = Dict(zip(var_idxs,var_diffs))
+    for i in 1:length(keys(m.linear_terms)
+        for j in keys(m.linear_terms)   # sequential evaluation to avoid dependency issue
+            if m.linear_terms[j][:id] == i
+                var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]] = m.linear_terms[j][:evaluator](m.linear_terms[j], var_diffs)
+            end
+        end
+    end
 
-    # This may not be necessary
+    for i in 1:length(keys(m.nonlinear_terms))
+        for j in keys(m.nonlinear_terms)    # sequential evaluation to avoid dependency issue
+            if m.nonlinear_terms[j][:id] == i
+                var_diffs[m.nonlinear_terms[j][:lifted_var_ref].args[2]] = m.nonlinear_terms[j][:evaluator](m.nonlinear_terms[j], var_diffs)
+            end
+        end
+    end
+
+    distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    info("UPDATE VAR SELECTION => $(m.var_discretization_mip)")
+    (m.log_level > 100) && println("updated partition var selection => $(m.var_discretization_mip)")
     return
 end
 
@@ -401,20 +407,30 @@ end
 """
 function collect_var_graph(m::PODNonlinearModel)
 
-    # Collect the information for arcs and nodes
+    # Collect the information of nonlinear terms in terms of arcs and nodes
     nodes = Set()
     arcs = Set()
-    for pair in keys(m.nonlinear_info)
-        arc = []
-        if length(pair) > 2
-            warn("min_vertex_cover discretizing variable selection method only support bi-linear problems, enfocing thie method may produce mistakes...")
+    for k in keys(m.nonlinear_terms)
+        if m.nonlinear_terms[k][:nonlinear_type] == :bilinear
+            arc = []
+            for i in k
+                @assert isa(i.args[2], Int)
+                push!(nodes, i.args[2])
+                push!(arc, i.args[2])
+            end
+            push!(arcs, sort(arc))
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :monomial
+            @assert isa(m.nonlinear_terms[k][:nonlinear_type][:orig_vars][1].args[2], Int)
+            push!(nodes, m.nonlinear_terms[k][:nonlinear_type][:orig_vars][1].args[2])
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :multilinear
+            for i in k
+                @assert isa(i.args[2], Int)
+                push!(nodes, i.args[2])
+                for j in k
+                    i.args[2] != j.args[2] && push!(arcs, sort([i.args[2], j.args[2]]))
+                end
+            end
         end
-        for i in pair
-            @assert isa(i.args[2], Int)
-            push!(nodes, i.args[2])
-            push!(arc, i.args[2])
-        end
-        push!(arcs, arc)
     end
     nodes = collect(nodes)
     arcs = collect(arcs)
@@ -447,15 +463,17 @@ end
 
 function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
+    # Collect the graph information
     nodes, arcs = collect_var_graph(m)
 
-    disvec = [distance[i] for i in keys(distance)]
+    # A little bit redundency before
+    disvec = [distance[i] for i in keys(distance) if i in m.all_nonlinear_vars]
     disvec = abs.(disvec[disvec .> 0.0])
     isempty(disvec) ? heavy = 1.0 : heavy = 1/minimum(disvec)
     weights = Dict()
-    for i in keys(distance)
+    for i in m.all_nonlinear_vars
         isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-        info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
+        (m.log_level > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
     end
 
     # Set up minimum vertex cover problem
@@ -473,9 +491,6 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     m.num_var_discretization_mip = Int(sum(xVal))
     m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
 
-    info("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip))", prefix="BETA: ")
-    for i in m.var_discretization_mip
-        info("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])", prefix="BETA: ")
-    end
+    (m.log_level >= 1) && println("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip))")
     return
 end
