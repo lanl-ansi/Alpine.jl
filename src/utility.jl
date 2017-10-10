@@ -377,12 +377,14 @@ function update_discretization_var_set(m::PODNonlinearModel)
 
     for i in 1:m.num_var_orig       # Original Variables
         var_diffs[i] = abs(m.best_sol[i]-m.best_bound_sol[i])
+        # println("var_diff[$(i)] = $(var_diffs[i])")
     end
 
-    for i in 1:length(keys(m.linear_terms)
+    for i in 1:length(keys(m.linear_terms))
         for j in keys(m.linear_terms)   # sequential evaluation to avoid dependency issue
             if m.linear_terms[j][:id] == i
                 var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]] = m.linear_terms[j][:evaluator](m.linear_terms[j], var_diffs)
+                # println("linear evaluated $(var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]]) from $(m.linear_terms[j][:lifted_constr_ref])")
             end
         end
     end
@@ -391,6 +393,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
         for j in keys(m.nonlinear_terms)    # sequential evaluation to avoid dependency issue
             if m.nonlinear_terms[j][:id] == i
                 var_diffs[m.nonlinear_terms[j][:lifted_var_ref].args[2]] = m.nonlinear_terms[j][:evaluator](m.nonlinear_terms[j], var_diffs)
+                # println("nonlinear evaluated $(var_diffs[m.nonlinear_terms[j][:lifted_var_ref].args[2]]) from $(m.nonlinear_terms[j][:lifted_constr_ref])")
             end
         end
     end
@@ -420,14 +423,15 @@ function collect_var_graph(m::PODNonlinearModel)
             end
             push!(arcs, sort(arc))
         elseif m.nonlinear_terms[k][:nonlinear_type] == :monomial
-            @assert isa(m.nonlinear_terms[k][:nonlinear_type][:orig_vars][1].args[2], Int)
-            push!(nodes, m.nonlinear_terms[k][:nonlinear_type][:orig_vars][1].args[2])
+            @assert isa(m.nonlinear_terms[k][:orig_vars][1], Int)
+            push!(nodes, m.nonlinear_terms[k][:orig_vars][1])
+            push!(arcs, [m.nonlinear_terms[k][:orig_vars][1], m.nonlinear_terms[k][:orig_vars][1]])
         elseif m.nonlinear_terms[k][:nonlinear_type] == :multilinear
-            for i in k
-                @assert isa(i.args[2], Int)
-                push!(nodes, i.args[2])
-                for j in k
-                    i.args[2] != j.args[2] && push!(arcs, sort([i.args[2], j.args[2]]))
+            for i in 1:length(k)
+                @assert isa(k[i].args[2], Int)
+                push!(nodes, k[i].args[2])
+                for j in 1:length(k)
+                    i != j && push!(arcs, sort([k[i].args[2], k[j].args[2]]))
                 end
             end
         end
@@ -489,8 +493,7 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     xVal = getvalue(x)
     m.num_var_discretization_mip = Int(sum(xVal))
-    m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
-
-    (m.log_level >= 1) && println("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip))")
+    m.var_discretization_mip = [i for i in nodes if xVal[i] > 0]
+    (m.log_level >= 1) && println("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip)) : $(m.var_discretization_mip)")
     return
 end
