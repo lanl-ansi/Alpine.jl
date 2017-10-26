@@ -86,6 +86,64 @@ function ebd_support_binary_vec(s::String)
    return v
 end
 
+# Version 1 implementation #
+# function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
+#
+# 	var_refs = Dict()
+# 	L = Int(ceil(log(2, λCnt-1)))
+# 	P = length(disc_vec) - 1
+# 	α_C = @variable(m.model_mip, [1:L], lowerbound=0.0, upperbound=1.0, basename="αC$(var_idx)")
+# 	if L > 2
+# 		α_S = Dict()
+# 		for i in 1:P
+# 			α_S[i] = @variable(m.model_mip, [2:L], lowerbound=0.0, upperbound=1.0, basename="αS$(var_idx)")
+# 		end
+# 	end
+# 	α_L = @variable(m.model_mip, [1:P], lowerbound=0.0, upperbound=1.0, basename="αL$(var_idx)")
+#
+# 	# Linking (1 - x) = y
+# 	@constraint(m.model_mip, [i in 1:L], α_C[i] == 1 - α[i])
+#
+#     #            S in 2:L
+# 	#            |
+# 	#        ____|
+# 	#        |   |
+# 	# Form ((x * x) * x) ... * x) * x  --- i in 1:length(code_seq)
+# 	#      |<-        L             |
+# 	# Regulated x with α_C
+# 	for i in 1:P
+# 		code_vec = ebd_support_bool_vec(code_seq[i])
+# 		if L == 2
+# 			mccormick_bin(m.model_mip, α_L[i], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
+# 		else
+# 			if !haskey(var_refs, (code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))
+# 				mccormick_bin(m.model_mip, α_S[i][2], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
+# 				var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)] = α_S[i][2]
+# 			else
+# 				@show "duplicating A, key =$((code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))"
+# 				α_S[i][2] = var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)]
+# 			end
+# 			for j in 3:L
+# 				if !haskey(var_refs, (α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))
+# 					mccormick_bin(m.model_mip, α_S[i][j], α_S[i][j-1], code_vec[j] ? α[j] : α_C[j])
+# 					var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)] = α_S[i][j]
+# 				else
+# 					@show "duplicating A, key =$((α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))"
+# 					α_S[i][j] = var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)]
+# 				end
+# 			end
+# 			if !haskey(var_refs, (α_S[i][L-1].col, α_S[i][L].col))
+# 				mccormick_bin(m.model_mip, α_L[i], α_S[i][L-1], α_S[i][L])
+# 				var_refs[(α_S[i][L-1].col, α_S[i][L].col)] = α_L[i]
+# 			else
+# 				α_L[i] = var_refs[(α_S[i][L-1].col, α_S[i][L].col)]
+# 			end
+# 		end
+# 	end
+# 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(α_L[j]*disc_vec[j] for j in 1:P)) # Add x = f(α) for regulating the domains
+# 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(α_L[j-1]*disc_vec[j] for j in 2:(P+1)))
+# 	return
+# end
 
 function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
 
@@ -93,55 +151,21 @@ function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Ve
 	L = Int(ceil(log(2, λCnt-1)))
 	P = length(disc_vec) - 1
 	α_C = @variable(m.model_mip, [1:L], lowerbound=0.0, upperbound=1.0, basename="αC$(var_idx)")
-	if L > 2
-		α_S = Dict()
-		for i in 1:P
-			α_S[i] = @variable(m.model_mip, [2:L], lowerbound=0.0, upperbound=1.0, basename="αS$(var_idx)")
-		end
-	end
 	α_L = @variable(m.model_mip, [1:P], lowerbound=0.0, upperbound=1.0, basename="αL$(var_idx)")
 
-	# Linking (1 - x) = y
+	# Construct the (1 - x) = y
 	@constraint(m.model_mip, [i in 1:L], α_C[i] == 1 - α[i])
 
-    #            S in 2:L
-	#            |
-	#        ____|
-	#        |   |
-	# Form ((x * x) * x) ... * x) * x  --- i in 1:length(code_seq)
-	#      |<-        L             |
 	# Regulated x with α_C
 	for i in 1:P
 		code_vec = ebd_support_bool_vec(code_seq[i])
-		if L == 2
-			mccormick_bin(m.model_mip, α_L[i], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
-		else
-			if !haskey(var_refs, (code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))
-				mccormick_bin(m.model_mip, α_S[i][2], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
-				var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)] = α_S[i][2]
-			else
-				@show "duplicating A, key =$((code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))"
-				α_S[i][2] = var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)]
-			end
-			for j in 3:L
-				if !haskey(var_refs, (α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))
-					mccormick_bin(m.model_mip, α_S[i][j], α_S[i][j-1], code_vec[j] ? α[j] : α_C[j])
-					var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)] = α_S[i][j]
-				else
-					@show "duplicating A, key =$((α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))"
-					α_S[i][j] = var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)]
-				end
-			end
-			if !haskey(var_refs, (α_S[i][L-1].col, α_S[i][L].col))
-				mccormick_bin(m.model_mip, α_L[i], α_S[i][L-1], α_S[i][L])
-				var_refs[(α_S[i][L-1].col, α_S[i][L].col)] = α_L[i]
-			else
-				α_L[i] = var_refs[(α_S[i][L-1].col, α_S[i][L].col)]
-			end
-		end
+		@show code_vec
+		binprod_relax(m.model_mip, α_L[i], [code_vec[j] ? α[j] : α_C[j] for j in 1:L])
 	end
 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(α_L[j]*disc_vec[j] for j in 1:P)) # Add x = f(α) for regulating the domains
 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(α_L[j-1]*disc_vec[j] for j in 2:(P+1)))
+	print(m.model_mip)
+	error("STOP")
 	return
 end
 

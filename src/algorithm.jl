@@ -14,7 +14,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # basic solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
-    max_iter::Int                                                # Target Maximum Iterations
+    max_iter::Int                                               # Target Maximum Iterations
     rel_gap::Float64                                            # Relative optimality gap termination condition
     abs_gap::Float64                                            # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
@@ -429,7 +429,6 @@ function presolve(m::PODNonlinearModel)
             (m.log_level > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
             # TODO: Make sure the discretization dictionary is clean
             create_bounding_mip(m)       # Build the bounding ATMC model
-            print(m.model_mip)
             bounding_solve(m)            # Solve bounding model
             add_partition(m, use_solution=m.best_bound_sol)
         end
