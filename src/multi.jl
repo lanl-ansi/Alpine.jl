@@ -256,7 +256,11 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
         end
         if m.embedding_link == 0
         elseif m.embedding_link == 1
-            ebd_link_xα(m, α[var_ind], lambda_cnt, discretization[var_ind], ebd_map[:H_orig], var_ind)
+            ebd_link_xα_v1(m, α[var_ind], lambda_cnt, discretization[var_ind], ebd_map[:H_orig], var_ind)
+        elseif m.embedding_link == 2
+            ebd_link_xα_v2(m, α[var_ind], lambda_cnt, discretization[var_ind], ebd_map[:H_orig], var_ind)
+        elseif m.embedding_link == 3
+            ebd_link_xα_v3(m, α[var_ind], lambda_cnt, discretization[var_ind], ebd_map[:H_orig], var_ind)
         else
             error("Unsuportted linking scheme indicated between x and α")
         end

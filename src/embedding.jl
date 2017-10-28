@@ -87,65 +87,67 @@ function ebd_support_binary_vec(s::String)
 end
 
 # Version 1 implementation #
-# function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
-#
-# 	var_refs = Dict()
-# 	L = Int(ceil(log(2, λCnt-1)))
-# 	P = length(disc_vec) - 1
-# 	α_C = @variable(m.model_mip, [1:L], lowerbound=0.0, upperbound=1.0, basename="αC$(var_idx)")
-# 	if L > 2
-# 		α_S = Dict()
-# 		for i in 1:P
-# 			α_S[i] = @variable(m.model_mip, [2:L], lowerbound=0.0, upperbound=1.0, basename="αS$(var_idx)")
-# 		end
-# 	end
-# 	α_L = @variable(m.model_mip, [1:P], lowerbound=0.0, upperbound=1.0, basename="αL$(var_idx)")
-#
-# 	# Linking (1 - x) = y
-# 	@constraint(m.model_mip, [i in 1:L], α_C[i] == 1 - α[i])
-#
-#     #            S in 2:L
-# 	#            |
-# 	#        ____|
-# 	#        |   |
-# 	# Form ((x * x) * x) ... * x) * x  --- i in 1:length(code_seq)
-# 	#      |<-        L             |
-# 	# Regulated x with α_C
-# 	for i in 1:P
-# 		code_vec = ebd_support_bool_vec(code_seq[i])
-# 		if L == 2
-# 			mccormick_bin(m.model_mip, α_L[i], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
-# 		else
-# 			if !haskey(var_refs, (code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))
-# 				mccormick_bin(m.model_mip, α_S[i][2], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
-# 				var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)] = α_S[i][2]
-# 			else
-# 				@show "duplicating A, key =$((code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))"
-# 				α_S[i][2] = var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)]
-# 			end
-# 			for j in 3:L
-# 				if !haskey(var_refs, (α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))
-# 					mccormick_bin(m.model_mip, α_S[i][j], α_S[i][j-1], code_vec[j] ? α[j] : α_C[j])
-# 					var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)] = α_S[i][j]
-# 				else
-# 					@show "duplicating A, key =$((α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))"
-# 					α_S[i][j] = var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)]
-# 				end
-# 			end
-# 			if !haskey(var_refs, (α_S[i][L-1].col, α_S[i][L].col))
-# 				mccormick_bin(m.model_mip, α_L[i], α_S[i][L-1], α_S[i][L])
-# 				var_refs[(α_S[i][L-1].col, α_S[i][L].col)] = α_L[i]
-# 			else
-# 				α_L[i] = var_refs[(α_S[i][L-1].col, α_S[i][L].col)]
-# 			end
-# 		end
-# 	end
-# 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(α_L[j]*disc_vec[j] for j in 1:P)) # Add x = f(α) for regulating the domains
-# 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(α_L[j-1]*disc_vec[j] for j in 2:(P+1)))
-# 	return
-# end
+function ebd_link_xα_v1(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
 
-function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
+	var_refs = Dict()
+	L = Int(ceil(log(2, λCnt-1)))
+	P = length(disc_vec) - 1
+	α_C = @variable(m.model_mip, [1:L], lowerbound=0.0, upperbound=1.0, basename="αC$(var_idx)")
+	if L > 2
+		α_S = Dict()
+		for i in 1:P
+			α_S[i] = @variable(m.model_mip, [2:L], lowerbound=0.0, upperbound=1.0, basename="αS$(var_idx)")
+		end
+	end
+	α_L = @variable(m.model_mip, [1:P], lowerbound=0.0, upperbound=1.0, basename="αL$(var_idx)")
+
+	# Linking (1 - x) = y
+	@constraint(m.model_mip, [i in 1:L], α_C[i] == 1 - α[i])
+
+    #            S in 2:L
+	#            |
+	#        ____|
+	#        |   |
+	# Form ((x * x) * x) ... * x) * x  --- i in 1:length(code_seq)
+	#      |<-        L             |
+	# Regulated x with α_C
+	for i in 1:P
+		code_vec = ebd_support_bool_vec(code_seq[i])
+		if L == 2
+			mccormick_bin(m.model_mip, α_L[i], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
+		else
+			if !haskey(var_refs, (code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))
+				mccormick_bin(m.model_mip, α_S[i][2], code_vec[1] ? α[1] : α_C[1], code_vec[2] ? α[2] : α_C[2])
+				var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)] = α_S[i][2]
+			else
+				@show "duplicating A, key =$((code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col))"
+				α_S[i][2] = var_refs[(code_vec[1] ? α[1].col : α_C[1].col, code_vec[2] ? α[2].col : α_C[2].col)]
+			end
+			for j in 3:L
+				if !haskey(var_refs, (α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))
+					mccormick_bin(m.model_mip, α_S[i][j], α_S[i][j-1], code_vec[j] ? α[j] : α_C[j])
+					var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)] = α_S[i][j]
+				else
+					@show "duplicating A, key =$((α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col))"
+					α_S[i][j] = var_refs[(α_S[i][j-1].col, code_vec[j] ? α[j].col : α_C[j].col)]
+				end
+			end
+			if !haskey(var_refs, (α_S[i][L-1].col, α_S[i][L].col))
+				mccormick_bin(m.model_mip, α_L[i], α_S[i][L-1], α_S[i][L])
+				var_refs[(α_S[i][L-1].col, α_S[i][L].col)] = α_L[i]
+			else
+				α_L[i] = var_refs[(α_S[i][L-1].col, α_S[i][L].col)]
+			end
+		end
+	end
+	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(α_L[j]*disc_vec[j] for j in 1:P)) # Add x = f(α) for regulating the domains
+	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(α_L[j-1]*disc_vec[j] for j in 2:(P+1)))
+	return
+end
+
+
+# Version 2
+function ebd_link_xα_v2(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
 
 	var_refs = Dict()
 	L = Int(ceil(log(2, λCnt-1)))
@@ -159,14 +161,84 @@ function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Ve
 	# Regulated x with α_C
 	for i in 1:P
 		code_vec = ebd_support_bool_vec(code_seq[i])
-		@show code_vec
 		binprod_relax(m.model_mip, α_L[i], [code_vec[j] ? α[j] : α_C[j] for j in 1:L])
 	end
+
 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(α_L[j]*disc_vec[j] for j in 1:P)) # Add x = f(α) for regulating the domains
 	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(α_L[j-1]*disc_vec[j] for j in 2:(P+1)))
-	print(m.model_mip)
-	error("STOP")
+
 	return
+end
+
+# Version 3
+function ebd_link_xα_v3(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
+
+	lifters = Dict()
+	exprs = Dict()
+	L = Int(ceil(log(2, λCnt-1)))
+	P = length(disc_vec) - 1
+
+	# Expression expansion
+	for i in 1:P
+		code_vec = ebd_support_bool_vec(code_seq[i])
+		lifters, exprs = ebd_link_expression(code_vec, lifters, exprs, i)
+	end
+
+	# Construct Variable Vector
+	α_A = @variable(m.model_mip, [1:length(keys(lifters))], lowerbound=0.0, upperbound=1.0, basename="αA$(var_idx)")
+	for i in keys(lifters) # Build first-level evaluation
+		binprod_relax(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
+	end
+
+	α_R = [α, α_A;] # Iintialize Rearrgange the variable sequence
+
+	for i in 1:P # Start populating sub-expressions
+		exprs[i][:expr] = @expression(m.model_mip, sum(exprs[i][:coefs][j]*α_R[exprs[i][:vars][j]] for j in 1:exprs[i][:length] if exprs[i][:vars][j] != 0) + exprs[i][:vals])
+	end
+
+	# Contructing final constraints
+	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(exprs[j][:expr]*disc_vec[j] for j in 1:P))
+	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(exprs[j-1][:expr]*disc_vec[j] for j in 2:(P+1)))
+
+	return
+end
+
+function ebd_link_expression(code::Vector, lift_dict::Dict, link_dict::Dict, p_idx::Int)
+
+    L =  length(code)
+
+    # Strickly mapping p_idx -> x
+    code[1] ? coefs = Any[1] : coefs = Any[1, -1]
+    code[1] ? vars = Any[1] : vars = Any[0, 1]
+    prod(.!code) ? vals = 1.0 : vals = 0.0  # Marks the eventual expression is going have 1 or not
+
+    for i in 2:L
+        if code[i]
+             for j in 1:length(coefs)
+                (vars[j] == 0) ? vars[j] = i : vars[j] = [vars[j], i;] # Update vars
+                @assert length(vars) == length(coefs)
+            end
+        else
+            for j in 1:length(coefs)
+                (vars[j] == 0) ? push!(vars, i) : push!(vars, [vars[j], i;]) # Update vars with variable multiplier (ADDING)
+                (vars[j] == 0) ? push!(coefs, -1) : push!(coefs, coefs[j] * -1) # Update the coeffs with -1 (ADDING)
+            end
+        end
+    end
+    @assert length(coefs) == length(vars)
+
+    # Maintaining the dictionary of lifted variables and swp
+    for i in 1:length(vars)
+        if isa(vars[i], Vector)
+            !haskey(lift_dict, vars[i]) && (lift_dict[vars[i]] = L + length(keys(lift_dict)) + 1)
+            vars[i] = lift_dict[vars[i]]
+        end
+    end
+
+    # Maintain the expression dictionary
+    link_dict[p_idx] = Dict(:p_idx=>p_idx, :coefs=>coefs, :vars=>vars, :vals=>vals, :length=>length(coefs))
+
+    return lift_dict, link_dict
 end
 
 # ============================= #
