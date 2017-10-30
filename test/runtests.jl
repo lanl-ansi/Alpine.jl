@@ -1,6 +1,6 @@
 using Base.Test
 using JuMP, MathProgBase
-using Pajarito, Ipopt, Cbc, Gurobi, AmplNLWriter
+using Ipopt, Cbc
 using POD
 
 # Expression Testing Instances
@@ -23,4 +23,4 @@ include("$(Pkg.dir())/POD/examples/linearlift.jl")
 # Performe Tests
 include("$(Pkg.dir())/POD/test/solver.jl")
 include("$(Pkg.dir())/POD/test/expression.jl")
-include("$(Pkg.dir())/POD/test/algorithm.jl")
+# include("$(Pkg.dir())/POD/test/algorithm.jl")

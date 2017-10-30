@@ -1,5 +1,8 @@
 # POD, a novel MINLP solver <span style="color:black">that is awesome</span>
 
+Dev: [![Build Status](https://travis-ci.org/lanl-ansi/POD.jl.svg?branch=travissetup)](https://travis-ci.org/lanl-ansi/POD.jl)
+<!-- [![codecov](https://codecov.io/gh/Wikunia/MINLPBnB/branch/master/graph/badge.svg)](https://codecov.io/gh/Wikunia/MINLPBnB) -->
+
 Polyhedral Outer-Approximation and dynamic Discretization  POD is based on a novel global algorithm that uses an adaptive convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programming problems (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [Library](http://www.gamsworld.org/minlp/minlplib2/html/) for problem instances). POD is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
 
 Unlike many other state-of-the-art MINLP solvers, POD is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
