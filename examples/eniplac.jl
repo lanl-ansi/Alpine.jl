@@ -1,5 +1,3 @@
-using POD, JuMP, CPLEX, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices
-
 function eniplac(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos2=true, presolve=0)
 
     if solver == nothing
