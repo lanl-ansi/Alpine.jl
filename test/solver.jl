@@ -4,16 +4,17 @@
 
     @testset "PODNonlinearModel loading tests" begin
         # Random Model 1
-        m = operator_c()
-        setsolver(m, PODSolver(nlp_local_solver=IpoptSolver(),
-    						   mip_solver=CbcSolver(OutputFlag=0),log_level=0))
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+    						   mip_solver=CbcSolver(OutputFlag=0),log_level=0)
+        m = operator_c(solver=test_solver)
+
         status = JuMP.build(m)
         @test isa(m.internalModel, POD.PODNonlinearModel)
 
         # Expression Model 1
-        m = exprstest()
-        setsolver(m, PODSolver(nlp_local_solver=IpoptSolver(),
-    						   mip_solver=CbcSolver(OutputFlag=0),log_level=0))
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+    						   mip_solver=CbcSolver(OutputFlag=0),log_level=0)
+        m = exprstest(solver=test_solver)
         status = JuMP.build(m)
         @test isa(m.internalModel, POD.PODNonlinearModel)
 

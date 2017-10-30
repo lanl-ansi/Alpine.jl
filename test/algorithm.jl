@@ -295,7 +295,7 @@
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
                            presolve_bound_tightening=false,
-                           log_level=1)
+                           log_level=0)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
