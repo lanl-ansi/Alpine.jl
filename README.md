@@ -41,4 +41,28 @@ As the development of POD continues, supports fo [Mosek](http://www.mosek.com/),
 
 # Citation
 
-If you find POD useful in your work, we kindly request your citation.
+If you find POD useful in your work, please cite the following:
+```
+@article{nagarajan2017adaptive,
+  title={An Adaptive, Multivariate Partitioning Algorithm for Global Optimization of Nonconvex Programs},
+  author={Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
+  journal={arXiv preprint arXiv:1707.02514},
+  year={2017}
+}
+
+@inproceedings{nagarajan2016tightening,
+  title={Tightening {McC}ormick relaxations for nonlinear programs via dynamic multivariate partitioning},
+  author={Nagarajan, Harsha and Lu, Mowen and Yamangil, Emre and Bent, Russell},
+  booktitle={International Conference on Principles and Practice of Constraint Programming},
+  pages={369--387},
+  year={2016},
+  organization={Springer}
+}
+
+@techreport{bent2017polyhedral,
+  title={A Polyhedral Outer-approximation, Dynamic-discretization optimization solver, 1. x},
+  author={Bent, Rusell and Nagarajan, Harsha and Sundar, Kaarthik and Wang, Site and Hijazi, Hassan},
+  year={2017},
+  institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
+}
+```
