@@ -20,13 +20,6 @@ addons:
     - libgmp-dev
     - libglpk-dev
 
-before_script:
-  # install dependencies
-  # ideally these should be installed from a REQUIRE file in the root of the repository
-  # - julia -e 'Pkg.add("JuMP")'
-  # - julia -e 'Pkg.add("Cbc")'
-  # - julia -e 'Pkg.add("Ipopt")'
-
 before_install:
     # don't keep an old version of the code in the cache
   - julia -e 'if "POD" in keys(Pkg.installed()) Pkg.rm("POD"); Pkg.rm("POD") end'
@@ -37,10 +30,9 @@ before_install:
 script:  # core code tests
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd())'
-  # - julia -e 'Pkg.test("POD", coverage=true)'
-  - julia -e 'Pkg.test("POD")'
+  - julia -e 'Pkg.test("POD", coverage=true)'
 
 after_success:  # post-processing, if the script passes with no errors
   - echo $TRAVIS_JULIA_VERSION  # just useful to know what version of Julia was used
-  # - julia -e  'using Coverage; cd(Pkg.dir("POD.jl")); LCOV.writefile("lcov.info", process_folder(".")); run(pipeline(`curl -s https://codecov.io/bash`, `bash`))'
+  - julia -e  'using Coverage; cd(Pkg.dir("POD.jl")); LCOV.writefile("lcov.info", process_folder(".")); run(pipeline(`curl -s https://codecov.io/bash`, `bash`))'
   - julia -e 'cd(Pkg.dir("POD")); include(joinpath("docs", "make.jl"))'
