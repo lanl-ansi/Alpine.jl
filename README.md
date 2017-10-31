@@ -60,6 +60,6 @@ If you find POD useful in your work, please cite the following:
   title={A Polyhedral Outer-approximation, Dynamic-discretization optimization solver, 1. x},
   author={Bent, Rusell and Nagarajan, Harsha and Sundar, Kaarthik and Wang, Site and Hijazi, Hassan},
   year={2017},
-  institution={Los Alamos National Lab.(LANL), Los Alamos, NM (United States)}
+  institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
 }
 ```
