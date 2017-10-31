@@ -1,6 +1,3 @@
-# Contains a basic model with various expressions for testing
-using POD, JuMP, Ipopt, Cbc, MathProgBase
-
 function basic_linear_lift(;verbose=false, solver=nothing)
 
 	if solver == nothing

@@ -1,5 +1,3 @@
-using JuMP, MathProgBase, Gurobi, Ipopt, POD
-
 function convex_test(;verbose=false, solver=nothing, recognize=true)
 
 	if solver == nothing

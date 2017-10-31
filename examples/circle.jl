@@ -1,5 +1,3 @@
-using JuMP, MathProgBase, Gurobi, Ipopt, POD
-
 function circle(;verbose=false, solver=nothing)
 
 	if solver == nothing
