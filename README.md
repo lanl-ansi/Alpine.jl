@@ -47,6 +47,15 @@ If you find POD useful in your work, please cite the following:
   year={2017}
 }
 
+@inproceedings{nagarajan2016tightening,
+  title={Tightening {McC}ormick relaxations for nonlinear programs via dynamic multivariate partitioning},
+  author={Nagarajan, Harsha and Lu, Mowen and Yamangil, Emre and Bent, Russell},
+  booktitle={International Conference on Principles and Practice of Constraint Programming},
+  pages={369--387},
+  year={2016},
+  organization={Springer}
+}
+
 @techreport{bent2017polyhedral,
   title={A Polyhedral Outer-approximation, Dynamic-discretization optimization solver, 1. x},
   author={Bent, Rusell and Nagarajan, Harsha and Sundar, Kaarthik and Wang, Site and Hijazi, Hassan},
