@@ -5,3 +5,4 @@ Ipopt
 Cbc
 Pajarito
 AmplNLWriter
+CoinOptServices
