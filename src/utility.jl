@@ -268,7 +268,6 @@ For more information, read more details at [Hacking Solver](@ref).
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
-    (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
     if isa(m.discretization_var_pick_algo, Function)
         eval(m.discretization_var_pick_algo)(m)
         (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
@@ -279,7 +278,7 @@ function pick_vars_discretization(m::PODNonlinearModel)
             min_vertex_cover(m)
         elseif m.discretization_var_pick_algo == 2
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
-        elseif m.discretization_var_pick_algo == 3
+        elseif m.discretization_var_pick_algo == 3 # Initial
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
@@ -322,36 +321,39 @@ function select_all_nlvar(m::PODNonlinearModel; kwargs...)
     return
 end
 
+"""
+    Special funtion for debugging bounding models
+"""
 function print_iis_gurobi(m::JuMP.Model)
 
-    grb = MathProgBase.getrawsolver(internalmodel(m))
-    Gurobi.computeIIS(grb)
-    numconstr = Gurobi.num_constrs(grb)
-    numvar = Gurobi.num_vars(grb)
-
-    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
-    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
-    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
-
-    info("Irreducible Inconsistent Subsystem (IIS)")
-    info("Variable bounds:")
-    for i in 1:numvar
-        v = Variable(m, i)
-        if iislb[i] != 0 && iisub[i] != 0
-            println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
-        elseif iislb[i] != 0
-            println(getname(v), " >= ", getlowerbound(v))
-        elseif iisub[i] != 0
-            println(getname(v), " <= ", getupperbound(v))
-        end
-    end
-
-    info("Constraints:")
-    for i in 1:numconstr
-        if iisconstr[i] != 0
-            println(m.linconstr[i])
-        end
-    end
+    # grb = MathProgBase.getrawsolver(internalmodel(m))
+    # Gurobi.computeIIS(grb)
+    # numconstr = Gurobi.num_constrs(grb)
+    # numvar = Gurobi.num_vars(grb)
+    #
+    # iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+    # iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+    # iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+    #
+    # info("Irreducible Inconsistent Subsystem (IIS)")
+    # info("Variable bounds:")
+    # for i in 1:numvar
+    #     v = Variable(m, i)
+    #     if iislb[i] != 0 && iisub[i] != 0
+    #         println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+    #     elseif iislb[i] != 0
+    #         println(getname(v), " >= ", getlowerbound(v))
+    #     elseif iisub[i] != 0
+    #         println(getname(v), " <= ", getupperbound(v))
+    #     end
+    # end
+    #
+    # info("Constraints:")
+    # for i in 1:numconstr
+    #     if iisconstr[i] != 0
+    #         println(m.linconstr[i])
+    #     end
+    # end
 
     return
 end
@@ -370,7 +372,6 @@ function update_discretization_var_set(m::PODNonlinearModel)
         return
     end
 
-    println("")
 	var_idxs = copy(m.all_nonlinear_vars)
     var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonlinear_terms)))
 
@@ -493,6 +494,6 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     xVal = getvalue(x)
     m.num_var_discretization_mip = Int(sum(xVal))
     m.var_discretization_mip = [i for i in nodes if xVal[i] > 0]
-    (m.log_level >= 1) && println("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip)) : $(m.var_discretization_mip)")
+    (m.log_level >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip)) : $(m.var_discretization_mip)")
     return
 end

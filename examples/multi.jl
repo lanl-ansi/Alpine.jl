@@ -77,7 +77,7 @@ function multi3(;verbose=false, solver=nothing, exprmode=1, convhull=false)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=1, Presolve=0),
-								   maxiter=1,
+								   max_iter=1,
 								   bilinear_convexhull=convhull,
 								   discretization_add_partition_method="uniform",
 								   discretization_uniform_rate=5,
@@ -144,7 +144,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 									   convhull_formulation_sos2=sos2,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
-									   maxiter=1,
+									   max_iter=1,
 									   log_level=100))
 		else
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
@@ -207,7 +207,7 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 									   mip_solver=GurobiSolver(OutputFlag=1),
 									   convhull_formulation_sos2=sos2,
 									   convhull_formulation_sos2aux=sos2_alter,
-									   maxiter=1,
+									   max_iter=1,
 									   bilinear_convexhull=convhull,
 									   discretization_add_partition_method="uniform",
 									   discretization_uniform_rate=uniform,
@@ -257,7 +257,7 @@ function multiKND(;verbose=false, solver=nothing, exprmode=1, convhull=false, un
 		if uniform > 0.0
 			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									   mip_solver=GurobiSolver(OutputFlag=1),
-									   maxiter=1,
+									   max_iter=1,
 									   bilinear_convexhull=convhull,
 									   convhull_formulation_sos2=sos2,
 									   convhull_formulation_facet=facet,

@@ -4,3 +4,4 @@ MathProgBase 0.6 0.7-
 Ipopt
 Cbc
 Pajarito
+AmplNLWriter

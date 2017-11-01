@@ -1,6 +1,6 @@
 using Base.Test
 using JuMP, MathProgBase
-using Ipopt, Cbc, Pajarito
+using Ipopt, Cbc, Pajarito, AmplNLWriter
 using POD
 
 # Expression Testing Instances

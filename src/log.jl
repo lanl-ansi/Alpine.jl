@@ -43,7 +43,7 @@ function logging_summary(m::PODNonlinearModel)
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
 
         println("maximum solution time = ", m.timeout)
-        println("maximum iterations =  ", m.maxiter)
+        println("maximum iterations =  ", m.max_iter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
         println("detected nonlinear terms = $(length(m.nonlinear_terms))")
         println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")
@@ -54,8 +54,9 @@ function logging_summary(m::PODNonlinearModel)
 
         m.convhull_formulation_facet && println("using convex hull : facet formulation")
         m.convhull_formulation_sos2 && println("using convex hull : sos2 formulation")
-        
-        @show m.discretization_add_partition_method
+
+        println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
+
         (m.discretization_add_partition_method == "adaptive") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
         (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
     end
