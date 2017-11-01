@@ -269,6 +269,8 @@ function fetch_mip_solver_identifier(m::PODNonlinearModel)
         m.mip_solver_identifier = "Cbc"
     elseif string(m.mip_solver)[1:4] == "GLPK"
         m.mip_solver_identifier = "GLPK"
+    elseif string(m.mip_solver)[1:8] == "Pajarito"
+        m.mip_solver_identifier = "Pajarito"
     else
         error("Unsupported mip solver name. Using blank")
     end
@@ -332,6 +334,8 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
     elseif m.mip_solver_identifier == "GLPK"
         insert_timeleft_symbol(m.mip_solver.opt)
+    elseif m.mip_solver_identifier == "Pajarito"
+        (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     else
         error("Needs support for this MIP solver")
     end
@@ -353,7 +357,7 @@ function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
     if m.nlp_local_solver_identifier == "Ipopt"
         insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
     elseif m.nlp_local_solver_identifier == "Pajarito"
-        (timeout < Inf) && (m.nlp_local_solver.timeout = timelimit)
+        (timelimit < Inf) && (m.nlp_local_solver.timeout = timelimit)
     elseif m.nlp_local_solver_identifier == "AmplNL"
         insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
     elseif m.nlp_local_solver_identifier == "Knitro"
@@ -379,7 +383,7 @@ function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
     if m.minlp_local_solver_identifier == "Pajarito"
-        (timeout < Inf) && (m.minlp_local_solver.timeout = timelimit)
+        (timelimit < Inf) && (m.minlp_local_solver.timeout = timelimit)
     elseif m.minlp_local_solver_identifier == "AmplNL"
         insert_timeleft_symbol(m.minlp_local_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
     elseif m.minlp_local_solver_identifier == "Knitro"
