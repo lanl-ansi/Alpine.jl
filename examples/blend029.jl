@@ -1,6 +1,4 @@
-using POD, JuMP, Gurobi, Ipopt, MathProgBase, AmplNLWriter, CoinOptServices, Pajarito
-
-function blend029(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos2=true, presolve=0, dynamic=false, level=0.8, minimum=1)
+function blend029(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos2=true, presolve=0)
 
     if solver == nothing
         m = Model(solver=PODSolver( #minlp_local_solver=PajaritoSolver(mip_solver=GurobiSolver(OutputFlag=0), cont_solver=IpoptSolver()),
