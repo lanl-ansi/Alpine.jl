@@ -108,8 +108,8 @@
         @test isapprox(m.objVal, 130.70555147302088; atol=1e-3)
         @test isapprox(m.objBound, 77.9999999999999; atol=1e-3)
 
-        @show length(m.internalModel.all_nonlinear_vars) == 10
-        @show length(m.internalModel.var_discretization_mip) == 10
+        @test length(m.internalModel.all_nonlinear_vars) == 10
+        @test length(m.internalModel.var_discretization_mip) == 10
         @test m.internalModel.discretization_var_pick_algo == 0
 
         # Select minimum vertex cover
@@ -126,8 +126,8 @@
         @test status == :UserLimits
         @test isapprox(m.objVal, 130.70555147302088; atol=1e-3)
         @test isapprox(m.objBound, 250055.0761; atol=1e-3)
-        @show length(m.internalModel.all_nonlinear_vars) == 10
-        @show length(m.internalModel.var_discretization_mip) == 4
+        @test length(m.internalModel.all_nonlinear_vars) == 10
+        @test length(m.internalModel.var_discretization_mip) == 4
         @test m.internalModel.discretization_var_pick_algo == 1
 
         # Criteria 15 static selection
@@ -228,8 +228,7 @@
 
         @test status == :UserLimits
         @test isapprox(m.objVal, 13.359400664712709; atol=1e-3)
-        @show m.objBound
-        # @test isapprox(m.objBound, 14.0064; atol=1e-3)
+        @test isapprox(m.objBound, 14.0064; atol=1e-3)
 
         @test length(m.internalModel.all_nonlinear_vars) == 26
         @test m.internalModel.all_nonlinear_vars == [26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60]

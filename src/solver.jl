@@ -306,8 +306,10 @@ function fetch_minlp_solver_identifier(m::PODNonlinearModel)
         m.minlp_local_solver_identifier = "Knitro"
     elseif string(m.minlp_local_solver)[1:8] == "Pajarito"
         m.minlp_local_solver_identifier = "Pajarito"
-    elseif string(m.nlp_local_solver)[1:5] == "NLopt"
-        m.nlp_local_solver_identifier = "NLopt"
+    elseif string(m.minlp_local_solver)[1:5] == "NLopt"
+        m.minlp_local_solver_identifier = "NLopt"
+    elseif string(m.minlp_local_solver)[1:35] == "CoinOptServices.OsilSolver(\"bonmin\""
+        m.minlp_local_solver_identifier = "Bonmin"
     else
         error("Unsupported nlp solver name. Using blank")
     end
