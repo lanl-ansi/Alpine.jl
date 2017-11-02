@@ -198,10 +198,6 @@
         m = blend029_gl(solver=test_solver)
         JuMP.build(m)
 
-        @test status == :UserLimits
-        @test isapprox(m.objVal, 13.359400664712709; atol=1e-3)
-        @test isapprox(m.objBound, 14.0064; atol=1e-3)
-
         @test length(m.internalModel.all_nonlinear_vars) == 26
         @test m.internalModel.all_nonlinear_vars == [26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60]
         @test length(m.internalModel.var_discretization_mip) == 10
