@@ -26,13 +26,12 @@ before_install:
   - julia -e 'Pkg.update()' #make sure we get the latest version of METADATA
   - julia -e 'if !("Coverage" in keys(Pkg.installed())) Pkg.add("Coverage") end'
   - julia -e 'if !("Documenter" in keys(Pkg.installed())) Pkg.add("Documenter") end'
-  - julia -e 'if !("CoinOptServices" in keys(Pkg.installed())) Pkg.add("CoinOptServices") end'
 
 script:  # core code tests
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd())'
-  - julia -e 'Pkg.add("AmplNLWriter")'
-  - julia -e 'Pkg.build("AmplNLWriter"); Pkg.add("Cbc"); Pkg.add("Ipopt"); Pkg.add("CoinOptServices");'
+  - julia -e 'Pkg.add("AmplNLWriter"); Pkg.add("Cbc"); Pkg.add("Ipopt"); Pkg.add("CoinOptServices");'
+  - julia -e 'Pkg.build("CoinOptServices")'
   - julia -e 'Pkg.test("POD", coverage=true)'
 
 after_success:  # post-processing, if the script passes with no errors
