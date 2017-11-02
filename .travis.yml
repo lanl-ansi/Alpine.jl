@@ -31,6 +31,7 @@ before_install:
 script:  # core code tests
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd())'
+  - julia -e 'Pkg.add("AmplNLWriter")'
   - julia -e 'Pkg.build("AmplNLWriter"); Pkg.add("Cbc"); Pkg.add("Ipopt"); Pkg.add("CoinOptServices");'
   - julia -e 'Pkg.test("POD", coverage=true)'
 
