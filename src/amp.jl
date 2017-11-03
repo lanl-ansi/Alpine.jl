@@ -322,13 +322,14 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
     pf = "BETA :"
     info("Funtion !", prefix=pf)
 
-    test_ratios = [4,8,16,32]
+    test_ratios = [4:2:32;]
     convertor = Dict(:Max=>:<, :Min=>:>)
 
     incumb_ratio = test_ratios[1]
     m.disc_ratio_branch_focus == "bound" && (incumb_res = -Inf)
     m.disc_ratio_branch_focus == "gap" && (incumb_res = Inf)
     for r in test_ratios
+        st = time()
         if presolve
             branch_disc = add_adaptive_partition(m, use_discretization=m.discretization, branching=true, use_ratio=r, use_solution=m.best_sol)
         else
@@ -348,7 +349,7 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
                 incumb_ratio = r
             end
         end
-        info("BRANCH RATIO = $(r), METRIC = $(res)  || INCUMB_RATIO = $(incumb_ratio)", prefix=pf)
+        info("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st) || INCUMB_RATIO = $(incumb_ratio)", prefix=pf)
     end
 
     return incumb_ratio
