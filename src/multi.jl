@@ -9,45 +9,130 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Variable holders
     λ = Dict()  # Extreme points and multipliers
     α = Dict()  # Partitioning Variables
+    β = Dict()  # Lifted variables for further
 
     # Construct λ variable space
-    for bi in keys(m.nonlinear_terms)
+    for k in keys(m.nonlinear_terms)
         nl_type = m.nonlinear_terms[bi][:nonlinear_type]
-        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_terms[bi][:convexified] == false)
-            m.nonlinear_terms[bi][:convexified] = true  # Bookeeping the examined terms
-            ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi)   # convert key to easy read mode
-            λ = amp_convhull_λ(m, bi, ml_indices, λ, extreme_point_cnt, dim)
-            λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
-            α = amp_convhull_α(m, ml_indices, α, dim, discretization)
-            amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
-        elseif (nl_type == :monomial) && (m.nonlinear_terms[bi][:convexified] == false)
-            m.nonlinear_terms[bi][:convexified] = true
-            monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(discretization, bi, monomial=true)
-            λ = amp_convhull_λ(m, bi, monomial_index, λ, extreme_point_cnt, dim)
-            λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
-            α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
-            amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
+        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_terms[k][:convexified] == false)
+            λ, α = amp_convexify_multilinear(m, k, λ, α, discretization)
+        elseif nl_type == :monomial && !m.nonlinear_terms[k][:convexified]
+            λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
+        elseif nl_type == :bpml && !m.nonlinear_terms[k][:convexified]
+            λ, α, β = amp_convexify_bmlp(m, k, λ, α, β, discretization)
+        elseif nl_type == :binprod
+            β = amp_convexify_binprod(m, k, β)
         end
     end
 
     return
 end
 
+function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+    ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
+    λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
+    α = amp_convhull_α(m, ml_indices, α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+    return λ, α
+end
+
+function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+    monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k, monomial=true)
+    λ = amp_convhull_λ(m, k, monomial_index, λ, extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
+    α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
+    return λ, α
+end
+
+
 """
     TODO: docstring
-    This function is very important.
+    This function redirect the bpml term to its right convexification
 """
-function amp_convhull_prepare(discretization::Dict, nonlinear_key::Any; monomial=false)
+function amp_convexify_bmlp(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
-    id = Set()                      # Coverting the nonlinear indices into a different space
-    for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
-        push!(id, var.args[2])
+    cont_vars_idx = [i for i in 1:length(k) if m.var_type_lifted[k[i].args[2]] == :Cont]
+    disc_vars_idx = [i for i in 1:length(k) if m.var_type_lifted[k[i].args[2]] == :Bin]
+    vars_type = [m.var_type_lifted[k[i].args[2]] for i in 1:length(k)]
+    vars_idx = [k[i].args[2] for i in 1:length(k)]
+    @assert :Bin in vars_types
+
+    # First handle the continous part
+    # Need to be careful with this one
+    if length(cont_vars_idx) == 1
+        # simple variable condition
+    elseif length(cont_vars_idx) > 1 && length(Set(cont_vars_idx)) == 1
+        λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
+    elseif length(Set(cont_vars_idx)) >= 2  # Multilinear condition
+        λ, α = amp_convexify_multilinear(m, k, λ, α, discretization)
     end
 
-    if length(id) < length(nonlinear_key) # Got repeating terms, now the sequence matters
+
+    return λ, α
+end
+
+
+"""
+    TODO: docstring
+    This function is very important
+"""
+function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
+
+    if haskey(β, m.nonlinear_terms[k][:var_idxs])
+        return β
+    else
+        β[m.nonlinear_terms[k][:var_idxs]] = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
+    end
+
+    z = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
+    x = [Variable(m.model_mip, i) for i in m.nonlinear_terms[k][:var_idxs]]
+    for i in x
+        @constraint(m.model_mip, z <= i)
+    end
+    @constraint(m.model_mip, z >= sum(x) - (length(x)-1))
+
+    return β
+end
+
+function amp_convexify_binprod(m::PODNonlinearModel, y::JuMP.Variable, x_idxs::Vector, β::Dict)
+
+    if haskey(β, x_idxs)
+        return β
+    else
+        β[x_idxs] = y
+    end
+
+    x = [Variable(m.model_mip, i) for i in x_idxs]
+    for i in x
+        @constraint(m.model_mip, z <= i)
+    end
+    @constraint(m.model_mip, z >= sum(x) - (length(x)-1))
+
+    return β
+end
+
+"""
+    TODO: docstring
+    This function is dedicated to monomial & multilinear nonlinear terms.
+"""
+function amp_convhull_prepare(m::PODNonlinearModel, discretization::Dict, nonlinear_key::Any; monomial=false)
+
+    counted_var = []
+    id = Set()                      # Coverting the nonlinear indices into a set
+    for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
+        m.var_type_lifted[var.args[2]] == :Cont && push!(id, var.args[2])
+        m.var_type_lifted[var.args[2]] == :Cont && push!(counted_var, var.args[2])
+    end
+
+    if length(id) < length(counted_var) # Got repeating terms, now the sequence matters
         id = []
         for var in nonlinear_key
-            push!(id, var.args[2])
+            m.var_type_lifted[var.args[2]] == :Cont && push!(id, var.args[2])
         end
     end
 

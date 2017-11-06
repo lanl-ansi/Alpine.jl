@@ -106,7 +106,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # local solution model extra data for each iteration
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
-    var_type::Vector{Symbol}                                    # Updated variable type for local solve
+    var_type::Vector{Symbol}                             # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
@@ -131,6 +131,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
     u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
+    var_type_lifted::Vector{Symbol}                             # Updated variable type for local solve
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -301,6 +302,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
+    m.var_type_lifted = copy(m.var_type_orig)
+
+    (:Int in m.var_type_orig) && error("POD currently don't support integer variables.")
 
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)

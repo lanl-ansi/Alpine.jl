@@ -53,6 +53,28 @@ function show_solution(m::JuMP.Model)
     return
 end
 
+
+"""
+    Tell what would be the variable type of a lifted term.
+    This function is with limited functionality
+    @docstring TODO
+"""
+function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
+
+    if operator == :+
+        detector = [i in [:Bin, :Int] ? true : false for i in var_types]
+        length(detector) == 1 && detector[1] == :Bin && return :Bin
+        prod(detector) && return :Int
+    elseif operator == :*
+        detector = [i == :Bin ? true : false for i in var_types]
+        prod(detector) && return :Bin
+        detector = [i in [:Bin, :Int] ? true : false for i in var_types]
+        prod(detector) && return :Int
+    end
+
+    return :Cont
+end
+
 """
     initialize_discretization(m::PODNonlinearModel)
 

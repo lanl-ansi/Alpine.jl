@@ -92,6 +92,8 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
                 end
             end
+        elseif nl_type == :binprod
+
         end
     end
     return
@@ -228,8 +230,6 @@ function mccormick_monomial(m,xy,x,xˡ,xᵘ)
     @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
     return
 end
-
-
 
 function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
     if lazy == 1
