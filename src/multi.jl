@@ -18,8 +18,8 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
             λ, α = amp_convexify_multilinear(m, k, λ, α, discretization)
         elseif nl_type == :monomial && !m.nonlinear_terms[k][:convexified]
             λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
-        elseif nl_type == :bpml && !m.nonlinear_terms[k][:convexified]
-            λ, α, β = amp_convexify_bmlp(m, k, λ, α, β, discretization)
+        elseif nl_type == :binlin && !m.nonlinear_terms[k][:convexified]
+            λ, α, β = amp_convexify_binlin(m, k, λ, α, β, discretization)
         elseif nl_type == :binprod
             β = amp_convexify_binprod(m, k, β)
         end
@@ -53,7 +53,7 @@ end
     TODO: docstring
     This function redirect the bpml term to its right convexification
 """
-function amp_convexify_bmlp(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+function amp_convexify_binlin(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     cont_vars_idx = [i for i in 1:length(k) if m.var_type_lifted[k[i].args[2]] == :Cont]
@@ -62,16 +62,9 @@ function amp_convexify_bmlp(m::PODNonlinearModel, k, λ::Dict, α::Dict, discret
     vars_idx = [k[i].args[2] for i in 1:length(k)]
     @assert :Bin in vars_types
 
-    # First handle the continous part
-    # Need to be careful with this one
-    if length(cont_vars_idx) == 1
-        # simple variable condition
-    elseif length(cont_vars_idx) > 1 && length(Set(cont_vars_idx)) == 1
-        λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
-    elseif length(Set(cont_vars_idx)) >= 2  # Multilinear condition
-        λ, α = amp_convexify_multilinear(m, k, λ, α, discretization)
-    end
-
+    # convexification method for binary variable x continous variable
+    # ? mccormick
+    # ? convexhull
 
     return λ, α
 end

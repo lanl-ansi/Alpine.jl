@@ -19,6 +19,27 @@ function expr_strip_const(expr, subs=[], rhs=0.0)
     return subs, rhs
 end
 
+"""
+    This utility function builds a constraint reference with by repating one
+    operator with a vector variable references.
+    For example,
+    input => y, x[1,2,3], :+
+    output => (y = x[1] + x[2] + x[3])::Expr
+"""
+function build_constr_block(y_idx::Int, var_idxs::Vector, operator::String)
+
+    constr_block = "x[$(y_idx)]=="
+    for j in 1:length(var_idxs)
+        constr_block = string(constr_block, "x[$(var_idxs[j])]")
+        if j < length(var_idxs)
+            constr_block=string(constr_block, operator)
+        end
+    end
+
+    return parse(constr_block)
+end
+
+
 function preprocess_expression(expr)
 
     for i in 1:length(expr.args)

@@ -1353,15 +1353,15 @@
         @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :bilinear
         @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :monomial
 
-        @test m.internalModel.nonlinear_terms[nlk1][:orig_vars] == [8,9,12]
-        @test m.internalModel.nonlinear_terms[nlk2][:orig_vars] == [2]
-        @test m.internalModel.nonlinear_terms[nlk3][:orig_vars] == [2,3]
-        @test m.internalModel.nonlinear_terms[nlk4][:orig_vars] == [8]
-        @test m.internalModel.nonlinear_terms[nlk5][:orig_vars] == [1,3]
-        @test m.internalModel.nonlinear_terms[nlk6][:orig_vars] == [8,9]
-        @test m.internalModel.nonlinear_terms[nlk7][:orig_vars] == [1,2]
-        @test m.internalModel.nonlinear_terms[nlk8][:orig_vars] == [16, 15]
-        @test m.internalModel.nonlinear_terms[nlk9][:orig_vars] == [14]
+        @test m.internalModel.nonlinear_terms[nlk1][:var_idxs] == [8,9,12]
+        @test m.internalModel.nonlinear_terms[nlk2][:var_idxs] == [2]
+        @test m.internalModel.nonlinear_terms[nlk3][:var_idxs] == [2,3]
+        @test m.internalModel.nonlinear_terms[nlk4][:var_idxs] == [8]
+        @test m.internalModel.nonlinear_terms[nlk5][:var_idxs] == [1,3]
+        @test m.internalModel.nonlinear_terms[nlk6][:var_idxs] == [8,9]
+        @test m.internalModel.nonlinear_terms[nlk7][:var_idxs] == [1,2]
+        @test m.internalModel.nonlinear_terms[nlk8][:var_idxs] == [16, 15]
+        @test m.internalModel.nonlinear_terms[nlk9][:var_idxs] == [14]
     end
 
 end
