@@ -122,7 +122,6 @@ function expr_finalized(m::PODNonlinearModel)
     			end
     		end
         elseif m.nonlinear_terms[i][:nonlinear_type] in [:sin, :cos]
-            @show i, m.nonlinear_terms[i][:nonlinear_type]
             for var in i[:var_idxs]
                 @assert isa(var, Int)
                 if !(var in m.all_nonlinear_vars)
@@ -239,6 +238,8 @@ function store_nl_term(m::PODNonlinearModel, nl_key, var_idxs, term_type, operat
                                     :nonlinear_type => term_type,
                                     :convexified => false)
 
+    push!(m.var_type_lifted, m.nonlinear_terms[nl_key][:y_type]) # Keep track of the lifted var type
+    (m.log_level) > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
@@ -248,7 +249,7 @@ end
 """
 function lift_nl_term(m::PODNonlinearModel, nl_key, constr_id, scalar = 1.0)
     push!(m.nonlinear_terms[nl_key][:constr_id], constr_id)
-    push!(m.var_type_lifted, m.nonlinear_terms[nl_key][:y_type]) # Keep track of the lifted var type
+
     if scalar == 1.0
         return m.nonlinear_terms[nl_key][:lifted_var_ref]
     else
@@ -350,6 +351,7 @@ end
 binprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
 bpml(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
+binlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
 sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
@@ -454,20 +456,22 @@ function resolve_bpml_term(expr, constr_id::Int, m)
                 continue
             end
         end
-        if length(var_idxs) > 2 && :Bin in var_types
+        if length(var_idxs) >= 2 && (:Bin in var_types) && (:Cont in var_types)
 
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
             cont_var_idxs = [idx for idx in var_idxs if m.var_type_lifted[idx] == :Cont]
             bin_var_idxs = [idx for idx in var_idxs if m.var_type_lifted[idx] == :Bin]
 
             if length(cont_var_idxs) == length(bin_var_idxs) == 1
+                @show "CONDITION 1 $(expr)"
                 if term_key in keys(m.nonlinear_terms)
                     return true, lift_nl_term(m, term_key, constr_id, scalar)
                 else
-                    store_nl_term(m, term_key, var_idxs, :binprod, :*, binlin)
+                    store_nl_term(m, term_key, var_idxs, :binlin, :*, binlin)
                     return true, lift_nl_term(m, term_key, constr_id, scalar)
                 end
-            elseif length(bin_var_idxs) > 1 && length(cont_var_idxx) == 1
+            elseif length(bin_var_idxs) > 1 && length(cont_var_idxs) == 1
+                @show "CONDITION 2 $(expr)"
                 # Partial binary product extracted
                 binprod_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
                 if binprod_term_key in keys(m.nonlinear_terms)
@@ -486,12 +490,13 @@ function resolve_bpml_term(expr, constr_id::Int, m)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 end
             elseif length(bin_var_idxs) == 1 && length(cont_var_idxs) > 1
+                @show "CONDITION 3 $(expr)"
                 # Partial multilinear construction
                 ml_term_key = [Expr(:ref, :x, idx) for idx in cont_var_idxs]
                 if ml_term_key in keys(m.nonlinear_terms)
                     partial_ml = lift_nl_term(m, ml_term_key, constr_id, scalar)
                 else
-                    store_nl_term(m, nl_term_key, cont_var_idxs, :multilinear, :*, multilinear)
+                    store_nl_term(m, ml_term_key, cont_var_idxs, :multilinear, :*, multilinear)
                     partial_ml = lift_nl_term(m, ml_term_key, constr_id, scalar)
                 end
                 # Reconstruct binlin term
@@ -504,12 +509,13 @@ function resolve_bpml_term(expr, constr_id::Int, m)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 end
             else
+                @show "CONDITION 4 $(expr)"
                 # Partial multilinear construction
                 ml_term_key = [Expr(:ref, :x, idx) for idx in cont_var_idxs]
                 if ml_term_key in keys(m.nonlinear_terms)
                     partial_ml = lift_nl_term(m, ml_term_key, constr_id, scalar)
                 else
-                    store_nl_term(m, nl_term_key, cont_var_idxs, :multilinear, :*, multilinear)
+                    store_nl_term(m, ml_term_key, cont_var_idxs, :multilinear, :*, multilinear)
                     partial_ml = lift_nl_term(m, ml_term_key, constr_id, scalar)
                 end
                 # Partial binary product extracted

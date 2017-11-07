@@ -1,22 +1,6 @@
-function castro2m2(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alter=false, presolve=0, delta=16)
+function castro2m2(;solver=nothing)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
-								   log_level=100,
-								   rel_gap=0.0001,
-								   bilinear_convexhull=convhull,
-								   convhull_formulation_sos2=sos2,
-								   convhull_formulation_sos2aux=sos2_alter,
-								   discretization_ratio=delta,
-								   presolve_bt_width_tol=1e-3,
-								   presolve_bt_output_tol=1e-1,
-								   presolve_bound_tightening=(presolve>0),
-	                               presolve_bound_tightening_algo=1,
-								   discretization_var_pick_algo=0))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	@variable(m, x[1:42])
 
@@ -151,10 +135,6 @@ function castro2m2(;verbose=false, solver=nothing, convhull=true, sos2=true, sos
     @constraint(m, e43, x[30]+x[31]+x[36]==1.0)
     @constraint(m, e44, x[32]+x[33]+x[37]==1.0)
     @constraint(m, e45, -10*x[13]+x[20]+x[21]+x[22]+x[23]<=0.0)
-
-    if verbose
-        print(m)
-    end
 
     return m
 end

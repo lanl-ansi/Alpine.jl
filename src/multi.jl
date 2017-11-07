@@ -20,7 +20,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
             λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
         elseif nl_type == :binlin && !m.nonlinear_terms[k][:convexified]
             λ, α, β = amp_convexify_binlin(m, k, λ, α, β, discretization)
-        elseif nl_type == :binprod
+        elseif nl_type == :binprod && !m.nonlinear_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
         end
     end
@@ -53,21 +53,23 @@ end
     TODO: docstring
     This function redirect the bpml term to its right convexification
 """
-function amp_convexify_binlin(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+function amp_convexify_binlin(m::PODNonlinearModel, k, λ::Dict, α::Dict, β::Dict, discretization::Dict)
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
-
-    cont_vars_idx = [i for i in 1:length(k) if m.var_type_lifted[k[i].args[2]] == :Cont]
-    disc_vars_idx = [i for i in 1:length(k) if m.var_type_lifted[k[i].args[2]] == :Bin]
-    vars_type = [m.var_type_lifted[k[i].args[2]] for i in 1:length(k)]
-    vars_idx = [k[i].args[2] for i in 1:length(k)]
-    @assert :Bin in vars_types
-
-    # convexification method for binary variable x continous variable
-    # ? mccormick
-    # ? convexhull
+    binlin_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k, binlin=true)
+    λ = amp_convhull_λ(m, k, binlin_index, λ), extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(m, discretization, binlin_index, λ)
+    α = amp_convhull_α(m, [binlin_index], α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, binlin_index, dim, discretization)
+    # =====
 
     return λ, α
 end
+
+"""
+    TODO: docstring
+    This function post the constraints to link the binary and continous variable
+"""
+function amp_post_binlin_constrs(m, λ, β, binlin_index)
 
 
 """
@@ -76,11 +78,7 @@ end
 """
 function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
 
-    if haskey(β, m.nonlinear_terms[k][:var_idxs])
-        return β
-    else
-        β[m.nonlinear_terms[k][:var_idxs]] = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
-    end
+    haskey(β, m.nonlinear_terms[k][:var_idxs]) ? return β : β[m.nonlinear_terms[k][:var_idxs]] = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
 
     z = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
     x = [Variable(m.model_mip, i) for i in m.nonlinear_terms[k][:var_idxs]]
