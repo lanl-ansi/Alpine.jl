@@ -30,21 +30,25 @@ end
 
 function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
     ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
     λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
     λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
     α = amp_convhull_α(m, ml_indices, α, dim, discretization)
     amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+
     return λ, α
 end
 
 function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
     monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k, monomial=true)
     λ = amp_convhull_λ(m, k, monomial_index, λ, extreme_point_cnt, dim)
     λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ)
     α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
     amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
+
     return λ, α
 end
 
@@ -53,24 +57,20 @@ end
     TODO: docstring
     This function redirect the bpml term to its right convexification
 """
-function amp_convexify_binlin(m::PODNonlinearModel, k, λ::Dict, α::Dict, β::Dict, discretization::Dict)
+function amp_convexify_binlin(m::PODNonlinearModel, k, discretization::Dict)
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
-    binlin_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k, binlin=true)
-    λ = amp_convhull_λ(m, k, binlin_index, λ), extreme_point_cnt, dim)
-    λ = populate_convhull_extreme_values(m, discretization, binlin_index, λ)
-    α = amp_convhull_α(m, [binlin_index], α, dim, discretization)
-    amp_post_convhull_constrs(m, λ, α, binlin_index, dim, discretization)
-    # =====
+
+    @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[m.nonlinear_terms[k][:var_idxs]] == :Bin]
+    cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[m.nonlinear_terms[k][:var_idxs]] == :Cont]
+
+    mccormick(m.model_mip, Variable(model_mip, lift_idx),
+        Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
+        0, 1, m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
 
     return λ, α
 end
-
-"""
-    TODO: docstring
-    This function post the constraints to link the binary and continous variable
-"""
-function amp_post_binlin_constrs(m, λ, β, binlin_index)
-
 
 """
     TODO: docstring
@@ -152,7 +152,7 @@ end
 
 """
     TODO: docstring
-    method for monomial
+    extreme value calculation method for monomial (simple)
 """
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, monomial_index::Int, λ::Dict)
     λ[monomial_index][:vals] = [discretization[monomial_index][i]^2 for i in 1:length(discretization[monomial_index])]
