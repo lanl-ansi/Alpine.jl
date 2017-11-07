@@ -26,7 +26,7 @@ end
     input => y, x[1,2,3], :+
     output => (y = x[1] + x[2] + x[3])::Expr
 """
-function build_constr_block(y_idx::Int, var_idxs::Vector, operator::String)
+function build_constr_block(y_idx::Int, var_idxs::Vector, operator::Symbol)
 
     constr_block = "x[$(y_idx)]=="
     for j in 1:length(var_idxs)

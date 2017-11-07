@@ -105,7 +105,7 @@ function PODSolver(;
     presolve_mip_relaxation = false,
     presolve_mip_timelimit = Inf,
 
-    bound_basic_propagation = false,
+    bound_basic_propagation = true,
     user_parameters = Dict(),
     kwargs...
     )
