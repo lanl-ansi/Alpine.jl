@@ -1,6 +1,3 @@
-# Contains a basic model with various expressions for testing
-using POD, JuMP, Ipopt, CPLEX, MathProgBase
-
 function exprstest(;verbose=false, solver=nothing)
 
 	if solver == nothing

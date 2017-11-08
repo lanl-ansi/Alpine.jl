@@ -1,5 +1,3 @@
-using POD, JuMP, Ipopt, Cbc, MathProgBase
-
 function specialopts(;verbose=false, solver=nothing)
 
 	if solver == nothing
@@ -22,7 +20,6 @@ function specialopts(;verbose=false, solver=nothing)
     @NLconstraint(m, cos(x[1]*x[2]/5) >= 0.5)
     @NLconstraint(m, sin(x[1]/5+x[2]/5) >= 0.5)
     #
-    
 
 	if verbose
 		print(m)
