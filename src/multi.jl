@@ -78,7 +78,11 @@ end
 """
 function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
 
-    haskey(β, m.nonlinear_terms[k][:var_idxs]) ? return β : β[m.nonlinear_terms[k][:var_idxs]] = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
+    if haskey(β, m.nonlinear_terms[k][:var_idxs])
+        return β
+    else
+        β[m.nonlinear_terms[k][:var_idxs]] = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
+    end
 
     z = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
     x = [Variable(m.model_mip, i) for i in m.nonlinear_terms[k][:var_idxs]]
