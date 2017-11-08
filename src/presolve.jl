@@ -68,7 +68,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         (m.log_level > 0) && warn("[BOUND TIGHTENING ALGO] TMC chosen by the user, but local solve infeasible; defaulting to doing bound-tightening without TMC.")
     end
     if use_bound == true && haskey(options, :use_tmc)
-        discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_discretization=discretization)
+        discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=discretization)
     end
     discretization = resolve_lifted_var_bounds(m.nonlinear_terms, m.linear_terms, discretization) # recomputation of bounds for lifted_variables
 
@@ -120,7 +120,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         end
 
         discretization = resolve_lifted_var_bounds(m.nonlinear_terms, m.linear_terms, discretization)
-        haskey(options, :use_tmc) ? discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_discretization=flatten_discretization(discretization)) : discretization = discretization
+        haskey(options, :use_tmc) ? discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization)) : discretization = discretization
     end
 
     (m.log_level > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
@@ -148,9 +148,9 @@ function create_bound_tightening_model(m::PODNonlinearModel, discretization, bou
 
     start_build = time()
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP model
-    amp_post_vars(m, use_discretization=discretization)
+    amp_post_vars(m, use_disc=discretization)
     amp_post_lifted_constraints(m)
-    amp_post_convexification(m, use_discretization=discretization)  # Convexify problem
+    amp_post_convexification(m, use_disc=discretization)  # Convexify problem
 
     if bound != Inf
         post_obj_bounds(m, bound)

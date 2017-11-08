@@ -4,7 +4,7 @@
 function amp_post_convhull(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
-    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+    haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
 
     # Variable holders
     λ = Dict()  # Extreme points and multipliers

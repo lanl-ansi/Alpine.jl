@@ -28,16 +28,14 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     term_patterns::Array{Function}
     constr_patterns::Array{Function}
 
-    discretization_var_pick_algo::Any
-    discretization_ratio::Any
-    discretization_uniform_rate::Int
-    discretization_add_partition_method::Any
-    discretization_abs_width_tol::Float64
-    discretization_rel_width_tol::Float64
-    discretization_consecutive_forbid::Int
+    disc_var_pick_algo::Any
+    disc_ratio::Any
+    disc_uniform_rate::Int
+    disc_add_partition_method::Any
+    disc_abs_width_tol::Float64
+    disc_rel_width_tol::Float64
+    disc_consecutive_forbid::Int
     disc_ratio_branch::Bool
-    disc_ratio_branch_timeout::Float64
-    disc_ratio_branch_focus::Any
 
     convexhull_sweep_limit::Int
     convhull_formulation_sos2::Bool
@@ -85,17 +83,14 @@ function PODSolver(;
     term_patterns = Array{Function}(0),
     constr_patterns = Array{Function}(0),
 
-    discretization_var_pick_algo = 0,           # By default pick all variables
-    discretization_ratio = 4,
-    discretization_uniform_rate = 2,
-    discretization_add_partition_method = "adaptive",
-    discretization_abs_width_tol = 1e-4,
-    discretization_rel_width_tol = 1e-6,
-    discretization_consecutive_forbid = 0,
-
+    disc_var_pick_algo = 0,           # By default pick all variables
+    disc_ratio = 4,
+    disc_uniform_rate = 2,
+    disc_add_partition_method = "adaptive",
+    disc_abs_width_tol = 1e-4,
+    disc_rel_width_tol = 1e-6,
+    disc_consecutive_forbid = 0,
     disc_ratio_branch=false,
-    disc_ratio_branch_timeout=1,
-    disc_ratio_branch_focus="gap",
 
     convexhull_sweep_limit = 1,
     convhull_formulation_sos2 = true,
@@ -141,16 +136,14 @@ function PODSolver(;
         method_convexification,
         term_patterns,
         constr_patterns,
-        discretization_var_pick_algo,
-        discretization_ratio,
-        discretization_uniform_rate,
-        discretization_add_partition_method,
-        discretization_abs_width_tol,
-        discretization_rel_width_tol,
-        discretization_consecutive_forbid,
+        disc_var_pick_algo,
+        disc_ratio,
+        disc_uniform_rate,
+        disc_add_partition_method,
+        disc_abs_width_tol,
+        disc_rel_width_tol,
+        disc_consecutive_forbid,
         disc_ratio_branch,
-        disc_ratio_branch_timeout,
-        disc_ratio_branch_focus,
         convexhull_sweep_limit,
         convhull_formulation_sos2,
         convhull_formulation_sos2aux,
@@ -198,17 +191,14 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
 
-    discretization_var_pick_algo = s.discretization_var_pick_algo
-    discretization_ratio = s.discretization_ratio
-    discretization_uniform_rate = s.discretization_uniform_rate
-    discretization_add_partition_method = s.discretization_add_partition_method
-    discretization_abs_width_tol = s.discretization_abs_width_tol
-    discretization_rel_width_tol = s.discretization_rel_width_tol
-    discretization_consecutive_forbid = s.discretization_consecutive_forbid
-
+    disc_var_pick_algo = s.disc_var_pick_algo
+    disc_ratio = s.disc_ratio
+    disc_uniform_rate = s.disc_uniform_rate
+    disc_add_partition_method = s.disc_add_partition_method
+    disc_abs_width_tol = s.disc_abs_width_tol
+    disc_rel_width_tol = s.disc_rel_width_tol
+    disc_consecutive_forbid = s.disc_consecutive_forbid
     disc_ratio_branch = s.disc_ratio_branch
-    disc_ratio_branch_timeout = s.disc_ratio_branch_timeout
-    disc_ratio_branch_focus = s.disc_ratio_branch_focus
 
     convexhull_sweep_limit = s.convexhull_sweep_limit
     convhull_formulation_sos2 = s.convhull_formulation_sos2
@@ -241,16 +231,14 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             method_convexification,
                             term_patterns,
                             constr_patterns,
-                            discretization_var_pick_algo,
-                            discretization_ratio,
-                            discretization_uniform_rate,
-                            discretization_add_partition_method,
-                            discretization_abs_width_tol,
-                            discretization_rel_width_tol,
-                            discretization_consecutive_forbid,
+                            disc_var_pick_algo,
+                            disc_ratio,
+                            disc_uniform_rate,
+                            disc_add_partition_method,
+                            disc_abs_width_tol,
+                            disc_rel_width_tol,
+                            disc_consecutive_forbid,
                             disc_ratio_branch,
-                            disc_ratio_branch_timeout,
-                            disc_ratio_branch_focus,
                             convexhull_sweep_limit,
                             convhull_formulation_sos2,
                             convhull_formulation_sos2aux,

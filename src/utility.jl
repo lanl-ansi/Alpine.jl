@@ -274,16 +274,16 @@ end
 """
     check_solution_history(m::PODNonlinearModel, ind::Int)
 
-Check if the solution is alwasy the same within the last discretization_consecutive_forbid iterations. Return true if suolution in invariant.
+Check if the solution is alwasy the same within the last disc_consecutive_forbid iterations. Return true if suolution in invariant.
 """
 function check_solution_history(m::PODNonlinearModel, ind::Int)
 
-    (m.logs[:n_iter] < m.discretization_consecutive_forbid) && return false
+    (m.logs[:n_iter] < m.disc_consecutive_forbid) && return false
 
-    sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, m.discretization_consecutive_forbid)+1][ind]
-    for i in 1:(m.discretization_consecutive_forbid-1)
-        search_pos = mod(m.logs[:n_iter]-1-i, m.discretization_consecutive_forbid)+1
-        !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=m.discretization_rel_width_tol) && return false
+    sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1][ind]
+    for i in 1:(m.disc_consecutive_forbid-1)
+        search_pos = mod(m.logs[:n_iter]-1-i, m.disc_consecutive_forbid)+1
+        !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=m.disc_rel_width_tol) && return false
     end
     return true
 end
@@ -345,29 +345,29 @@ This function helps pick the variables for discretization. The method chosen dep
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
 there exist two built-in method:
 
-    * `max-cover(m.discretization_var_pick_algo=0, default)`: pick all variables involved in the non-linear term for discretization
-    * `min-vertex-cover(m.discretization_var_pick_algo=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+    * `max-cover(m.disc_var_pick_algo=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover(m.disc_var_pick_algo=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
-For advance usage, `m.discretization_var_pick_algo` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
+For advance usage, `m.disc_var_pick_algo` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
 For more information, read more details at [Hacking Solver](@ref).
 
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
-    if isa(m.discretization_var_pick_algo, Function)
-        (m.log_level > 0) && println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
-        eval(m.discretization_var_pick_algo)(m)
+    if isa(m.disc_var_pick_algo, Function)
+        (m.log_level > 0) && println("using method $(m.disc_var_pick_algo) for picking discretization variable...")
+        eval(m.disc_var_pick_algo)(m)
         (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
-    elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
-        if m.discretization_var_pick_algo == 0 || m.discretization_var_pick_algo == "max_cover"
+    elseif isa(m.disc_var_pick_algo, Int) || isa(m.disc_var_pick_algo, String)
+        if m.disc_var_pick_algo == 0 || m.disc_var_pick_algo == "max_cover"
             max_cover(m)
-        elseif m.discretization_var_pick_algo == 1 || m.discretization_var_pick_algo == "min_vertex_cover"
+        elseif m.disc_var_pick_algo == 1 || m.disc_var_pick_algo == "min_vertex_cover"
             min_vertex_cover(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
     else
-        error("Input for parameter :discretization_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
+        error("Input for parameter :disc_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
     end
 
     return

@@ -7,7 +7,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     # detect whether to use specific discretization information
-    haskey(options, :use_discretization) ? discretization = options[:use_discretization] : discretization = m.discretization
+    haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
 
     λ = Dict()
     λλ = Dict()

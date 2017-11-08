@@ -54,8 +54,8 @@ function logging_summary(m::PODNonlinearModel)
         m.convhull_formulation_facet && println("using convex hull : facet formulation")
         m.convhull_formulation_sos2 && println("using convex hull : sos2 formulation")
 
-        (m.discretization_add_partition_method == "adpative") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
-        (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
+        (m.disc_add_partition_method == "adpative") && println("adaptively adding discretization ratio = $(m.disc_ratio)")
+        (m.disc_add_partition_method == "uniform") && println("uniform discretization rate = $(m.disc_uniform_rate)")
 
     end
 
