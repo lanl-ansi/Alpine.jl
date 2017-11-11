@@ -1,11 +1,9 @@
 language: julia
 os:
   - linux
-  - osx
 julia:
   # - 0.5
   - 0.6
-  # - nightly
 
 # this will save build time, once it is working
 cache:
