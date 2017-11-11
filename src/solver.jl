@@ -98,7 +98,7 @@ function PODSolver(;
     convhull_formulation_facet = false,
     convhull_formulation_minib = false,
 
-    presolve_track_time = false,
+    presolve_track_time = true,
     presolve_bound_tightening = false,
     presolve_maxiter = 9999,
     presolve_bt_width_tol = 1e-3,

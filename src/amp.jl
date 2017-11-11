@@ -319,9 +319,7 @@ end
 """
 function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
 
-    info("BETA Funtion !", prefix="POD: ")
-
-    ratio_pool = [4:2:32;]
+    ratio_pool = [3:1:32;]  # Built-in try range
     convertor = Dict(:Max=>:<, :Min=>:>)
 
     incumb_ratio = ratio_pool[1]
@@ -349,18 +347,18 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
         else
             strike += 1
         end
-        (strike > 2) && break
-        info("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)", prefix="POD: ")
+        (strike > 99) && break   # Strike twice then stoping trying
+        info("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
-    info("INCUMB_RATIO = $(incumb_ratio)", prefix="POD: ")
+    info("INCUMB_RATIO = $(incumb_ratio)")
     return incumb_ratio
 end
 
 function disc_branch_solve(m::PODNonlinearModel)
 
     # ================= Solve Start ================ #
-    update_mip_time_limit(m, timelimit=m.disc_ratio_branch_timeout)
+    update_mip_time_limit(m)
     start_bounding_solve = time()
     status = solve(m.model_mip, suppress_warnings=true)
     cputime_branch_bounding_solve = time() - start_bounding_solve
@@ -374,5 +372,9 @@ function disc_branch_solve(m::PODNonlinearModel)
         warn("Unexpected solving condition $(status) during disc branching.")
     end
 
-    (m.sense_orig == :Min) ? return -Inf : return Inf
+    if m.sense_orig == :Min
+        return -Inf
+    else
+        return Inf
+    end
 end
