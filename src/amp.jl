@@ -323,7 +323,7 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
     convertor = Dict(:Max=>:<, :Min=>:>)
 
     incumb_ratio = ratio_pool[1]
-    incumb_res = -Inf
+    m.sense_orig == :Min ? incumb_res = -Inf : incumb_res = Inf
 
     strike = 0
 
@@ -348,10 +348,10 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
             strike += 1
         end
         (strike > 99) && break   # Strike twice then stoping trying
-        info("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
+        println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
-    info("INCUMB_RATIO = $(incumb_ratio)")
+    println("INCUMB_RATIO = $(incumb_ratio)")
     return incumb_ratio
 end
 
