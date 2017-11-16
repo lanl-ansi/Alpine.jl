@@ -14,7 +14,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # basic solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
-    maxiter::Int                                                # Target Maximum Iterations
+    max_iter::Int                                                # Target Maximum Iterations
     rel_gap::Float64                                            # Relative optimality gap termination condition
     abs_gap::Float64                                            # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
@@ -49,7 +49,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
-    presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
+    presolve_max_iter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
     presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
@@ -149,7 +149,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # constructor
     function PODNonlinearModel(dev_debug, dev_test,colorful_pod,
-                                log_level, timeout, maxiter, rel_gap, tol,
+                                log_level, timeout, max_iter, rel_gap, tol,
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
@@ -174,7 +174,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 convhull_formulation_minib,
                                 presolve_track_time,
                                 presolve_bound_tightening,
-                                presolve_maxiter,
+                                presolve_max_iter,
                                 presolve_bt_width_tol,
                                 presolve_bt_output_tol,
                                 presolve_bound_tightening_algo,
@@ -191,7 +191,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.log_level = log_level
         m.timeout = timeout
-        m.maxiter = maxiter
+        m.max_iter = max_iter
         m.rel_gap = rel_gap
         m.tol = tol
 
@@ -220,7 +220,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bound_tightening = presolve_bound_tightening
-        m.presolve_maxiter = presolve_maxiter
+        m.presolve_max_iter = presolve_max_iter
         m.presolve_bt_width_tol = presolve_bt_width_tol
         m.presolve_bt_output_tol = presolve_bt_output_tol
         m.presolve_bound_tightening_algo = presolve_bound_tightening_algo
@@ -456,15 +456,16 @@ function global_solve(m::PODNonlinearModel)
 
     (m.log_level > 0) && logging_head(m)
     (!m.presolve_track_time) && reset_timer(m)
-    while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
+    while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.max_iter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)                                                  # Build the bounding ATMC model
         bounding_solve(m)                                                       # Solve bounding model
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)                                                          # Solve upper bounding model
-        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        add_partition(m)                                 # Add extra discretizations
+        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.max_iter) && break
+        (m.discretization_var_pick_algo == 3) && update_discretization_var_set(m)
+        add_partition(m)                                                        # Add extra discretizations
     end
 
     return
