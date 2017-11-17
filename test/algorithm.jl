@@ -7,6 +7,7 @@
                            bilinear_convexhull=false,
                            monomial_convexhull=false,
                            presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
                            presolve_bt_output_tol=1e-1,
                            log_level=100)
         m = nlp1(solver=test_solver)
@@ -55,6 +56,7 @@
         					   mip_solver=CbcSolver(logLevel=0),
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
+                               bound_basic_propagation=true,
         					   log_level=1,
                                max_iter=3,
         					   presolve_bt_width_tol=1e-3,
@@ -135,6 +137,7 @@
                                    monomial_convexhull=false,
     							   presolve_bound_tightening=true,
     							   presolve_bound_tightening_algo=2,
+                                   bound_basic_propagation=true,
                                    presolve_bt_output_tol=1e-1,
     							   log_level=0)
         m = nlp1(solver=test_solver)
@@ -173,6 +176,7 @@
     							   presolve_bt_output_tol=1e-1,
     							   presolve_bound_tightening=true,
                                    presolve_bound_tightening_algo=1,
+                                   bound_basic_propagation=true,
     							   presolve_max_iter=2,
     							   discretization_var_pick_algo=max_cover_var_picker)
         m = nlp3(solver=test_solver)
@@ -213,6 +217,7 @@
                                    presolve_bt_width_tol=1e-3,
                                    presolve_bt_output_tol=1e-1,
                                    presolve_bound_tightening_algo=2,
+                                   bound_basic_propagation=true,
                                    presolve_max_iter=2,
                                    discretization_var_pick_algo=max_cover_var_picker)
 
@@ -247,6 +252,7 @@
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
                            presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
                            log_level=0)
         m = nlp1(solver=test_solver)
         status = solve(m)
@@ -279,6 +285,7 @@
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
                            presolve_bound_tightening=true,
+                           bound_basic_propagation=true,
                            presolve_bound_tightening_algo=2,
                            log_level=0)
         m = nlp1(solver=test_solver)
@@ -295,6 +302,7 @@
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
                            presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
                            log_level=0)
         m = nlp3(solver=test_solver)
         status = solve(m)
@@ -345,6 +353,7 @@
                                discretization_ratio=8,
                                max_iter=6,
                                presolve_bound_tightening=false,
+                               bound_basic_propagation=true,
                                presolve_bound_tightening_algo=1,
                                presolve_bt_output_tol=1e-1,
                                log_level=0)

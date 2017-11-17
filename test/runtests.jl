@@ -24,4 +24,4 @@ include("$(Pkg.dir())/POD/examples/specialopts.jl")
 # Performe Tests
 include("$(Pkg.dir())/POD/test/solver.jl")
 include("$(Pkg.dir())/POD/test/expression.jl")
-# include("$(Pkg.dir())/POD/test/algorithm.jl")
+include("$(Pkg.dir())/POD/test/algorithm.jl")
