@@ -46,9 +46,9 @@ function bmpl_linearlifting(;solver=nothing)
 	@variable(m, x[1:5], Bin)
 	@variable(m, y[1:5]>=0)
 
-	@NLconstraint(m, 15*(x[1]+x[2])*(2*y[1]+y[2]) >= 10)
+	@NLconstraint(m, 15*x[1]*(2*y[1]+y[2]) >= 10)
 	@NLconstraint(m, 15*(x[1]+x[2]*y[1])*(y[1]+y[2]*x[1]*x[2]) + 10 >= 10)
-	@NLconstraint(m, 15*(x[1]+x[2])*(y[1]+y[2]*x[3]*y[5]*x[4]) + 50 >= 10)
+	@NLconstraint(m, 15*x[2]*(y[1]+y[2]*x[3]*y[5]*x[4]) + 50 >= 10)
 
 	@NLobjective(m, Min, x[1] * (y[1]*y[2]*y[3] + x[2]*x[3]))
 
@@ -77,6 +77,19 @@ function bpml_binl(solver=nothing)
 	@variable(m, 50<=Y[1:5]<=50+100*rand()*rand())
 	@constraint(m, sum(X) >= 3)
 	@NLobjective(m, Max, sum(X[i]*Y[i]*Y[i+1] for i in 1:4) - X[5]*Y[5]*Y[1])
+
+	return m
+end
+
+function bpml_monl(solver=nothing)
+
+	m = Model(solver=solver)
+
+	srand(10)
+	@variable(m, X[1:5], Bin)
+	@variable(m, 50<=Y[1:5]<=50+100*rand()*rand())
+	@constraint(m, sum(X) >= 3)
+	@NLobjective(m, Max, sum(X[i]*Y[i]*Y[i] for i in 1:5))
 
 	return m
 end

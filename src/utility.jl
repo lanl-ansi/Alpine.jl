@@ -63,7 +63,7 @@ function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
 
     if operator == :+
         detector = [i in [:Bin, :Int] ? true : false for i in var_types]
-        length(detector) == 1 && detector[1] == :Bin && return :Bin
+        length(detector) == 1 && detector[1] && return :Bin
         prod(detector) && return :Int
         # o/w continous variables
     elseif operator == :*
@@ -447,9 +447,9 @@ function collect_var_graph(m::PODNonlinearModel)
             end
             push!(arcs, sort(arc))
         elseif m.nonlinear_terms[k][:nonlinear_type] == :monomial
-            @assert isa(m.nonlinear_terms[k][:orig_vars][1], Int)
-            push!(nodes, m.nonlinear_terms[k][:orig_vars][1])
-            push!(arcs, [m.nonlinear_terms[k][:orig_vars][1], m.nonlinear_terms[k][:orig_vars][1]])
+            @assert isa(m.nonlinear_terms[k][:var_idxs][1], Int)
+            push!(nodes, m.nonlinear_terms[k][:var_idxs][1])
+            push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1]])
         elseif m.nonlinear_terms[k][:nonlinear_type] == :multilinear
             for i in 1:length(k)
                 @assert isa(k[i].args[2], Int)
