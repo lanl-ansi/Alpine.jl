@@ -87,7 +87,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Error condition
-                    #if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip) 
+                    #if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
                     #    error("Error case. At least one term should show up in discretization choices.")
                     #end
                 end
@@ -217,11 +217,9 @@ function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
 end
 
 function mccormick_bin(m,xy,x,y)
-
     @constraint(m, xy <= x)
     @constraint(m, xy <= y)
     @constraint(m, xy >= x+y-1)
-
     return
 end
 

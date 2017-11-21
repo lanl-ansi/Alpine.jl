@@ -19,7 +19,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         elseif nl_type == :monomial && !m.nonlinear_terms[k][:convexified]
             λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
         elseif nl_type == :binlin && !m.nonlinear_terms[k][:convexified]
-            λ, α, β = amp_convexify_binlin(m, k, λ, α, β, discretization)
+            amp_convexify_binlin(m, k, discretization)
         elseif nl_type == :binprod && !m.nonlinear_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
         end
@@ -57,19 +57,25 @@ end
     TODO: docstring
     This function redirect the bpml term to its right convexification
 """
-function amp_convexify_binlin(m::PODNonlinearModel, k, discretization::Dict)
+function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict)
+
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
     lift_idx = m.nonlinear_terms[k][:y_idx]
-    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[m.nonlinear_terms[k][:var_idxs]] == :Bin]
-    cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[m.nonlinear_terms[k][:var_idxs]] == :Cont]
+    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[i] == :Bin]
+    cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[i] == :Cont]
 
-    mccormick(m.model_mip, Variable(model_mip, lift_idx),
+    @assert length(bin_idx) == 1
+    @assert length(cont_idx) == 1
+    bin_idx = bin_idx[1]
+    cont_idx = cont_idx[1]
+
+    mccormick(m.model_mip, Variable(m.model_mip, lift_idx),
         Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
         0, 1, m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
 
-    return λ, α
+    return
 end
 
 """

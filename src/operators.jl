@@ -190,10 +190,10 @@ function expr_resolve_term_pattern(expr, constr_id::Int, m::PODNonlinearModel; k
     end
 
     # LEVEL 1 : : Recognize all built-in structural patterns
-    skip, expr = resolve_binprod_term(expr, constr_id, m)           #L1
+    skip, expr = resolve_binprod_term(expr, constr_id, m)           #L1 : binprod = binary products
     skip && return expr
 
-    skip, expr = resolve_bpml_term(expr, constr_id, m)              #L1 : bpml = binary product * multilinear
+    skip, expr = resolve_bpml_term(expr, constr_id, m)              #L1 : bpml = binary product & multilinear
     skip && return expr
 
     # LEVEL 2 : : Recognize all built-in structural patterns

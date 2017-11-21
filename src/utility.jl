@@ -65,11 +65,13 @@ function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
         detector = [i in [:Bin, :Int] ? true : false for i in var_types]
         length(detector) == 1 && detector[1] == :Bin && return :Bin
         prod(detector) && return :Int
+        # o/w continous variables
     elseif operator == :*
         detector = [i == :Bin ? true : false for i in var_types]
         prod(detector) && return :Bin
         detector = [i in [:Bin, :Int] ? true : false for i in var_types]
         prod(detector) && return :Int
+        # o/w continous variables
     end
 
     return :Cont
