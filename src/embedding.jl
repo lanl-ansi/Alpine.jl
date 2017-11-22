@@ -145,7 +145,6 @@ function ebd_link_xα_v1(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec:
 	return
 end
 
-
 # Version 2
 function ebd_link_xα_v2(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
 
