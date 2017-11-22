@@ -324,6 +324,7 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
 
     incumb_ratio = ratio_pool[1]
     m.sense_orig == :Min ? incumb_res = -Inf : incumb_res = Inf
+    collector = []
 
     strike = 0
 
@@ -341,13 +342,15 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
         end
         create_bounding_mip(m, use_disc=branch_disc)
         res = disc_branch_solve(m)
-        if eval(convertor[m.sense_orig])(res, incumb_res)
+        push!(collector, res)
+        if eval(convertor[m.sense_orig])(res, incumb_res) && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
             incumb_res = res
             incumb_ratio = r
         else
             strike += 1
         end
-        (strike > 99) && break   # Strike twice then stoping trying
+        (strike >= (32-3)) && break
+        m.disc_ratio_branch = false # Once settled, turn the funtionality off
         println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 

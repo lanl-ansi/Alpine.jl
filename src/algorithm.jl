@@ -463,7 +463,7 @@ function global_solve(m::PODNonlinearModel)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)                                   # Solve upper bounding model
         (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        # (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m))
+        (m.disc_ratio_branch) && (m.logs[:n_iter] <= 2) && (m.disc_ratio = disc_ratio_branch(m))    # Only perform for a maximum three times
         add_partition(m)                                 # Add extra discretizations
     end
 
