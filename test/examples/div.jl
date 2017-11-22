@@ -1,15 +1,6 @@
 function div(;verbose=false,solver=nothing)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
-								   presolve_bound_tightening=true,
-								   presolve_bound_tightening_algo=2,
-								   presolve_bt_output_tol=1e-1,
-								   log_level=1))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
     @variable(m, 1<=x[1:2]<=10)
 
@@ -26,10 +17,6 @@ function div(;verbose=false,solver=nothing)
 	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-0.5(x[1]*1*2*3*4*5*6*x[2]/0.01)>=0)
 	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-0.5(x[1]*2*3*x[2]/0.01+5*7/10*x[2])>=0)
 	@NLconstraint(m, (1*2*3*4/5/6*7)*x[2]-0.5*(x[1]-x[2]x[1])>=0)
-
-	if verbose
-		print(m)
-	end
 
 	return m
 end

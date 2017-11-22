@@ -71,7 +71,6 @@ function logging_summary(m::PODNonlinearModel)
 end
 
 function logging_head(m::PODNonlinearModel)
-	@show m.logs[:time_left]
 	if m.logs[:time_left] < Inf
 		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | TIME LEFT     | Iter   \n")
 	else

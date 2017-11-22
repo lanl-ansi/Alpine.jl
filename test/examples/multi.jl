@@ -21,20 +21,7 @@
 
 function multi4(;verbose=false,solver=nothing, exprmode=1)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
-								   rel_gap=0.0001,
-								   bilinear_convexhull=true,
-								   convexhull_sweep_limit=1,
-								#    discretization_var_pick_algo=pick_my_var,
-								   presolve_bound_tightening=false,
-								   presolve_track_time=true,
-								   presolve_bound_tightening_algo=1,
-								   log_level=100))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	srand(1)
     @variable(m, 0.1<=x[1:4]<=rand()*100)
@@ -72,20 +59,9 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 	return m
 end
 
-function multi3(;verbose=false, solver=nothing, exprmode=1, convhull=false)
+function multi3(;verbose=false, solver=nothing, exprmode=1)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=1, Presolve=0),
-								   max_iter=1,
-								   bilinear_convexhull=convhull,
-								   discretization_add_partition_method="uniform",
-								   discretization_uniform_rate=5,
-								   presolve_bound_tightening=false,
-								   log_level=1))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	srand(1)
 	ub = rand()
@@ -111,16 +87,7 @@ end
 
 function multi2(;verbose=false,solver=nothing)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
-								   bilinear_convexhull=true,
-								   discretization_add_partition_method="uniform",
-								   presolve_bound_tightening=false,
-								   log_level=100))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	srand(1)
     @variable(m, 0.1<=x[1:2]<=rand()*10)
@@ -134,31 +101,9 @@ function multi2(;verbose=false,solver=nothing)
 	return m
 end
 
-function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1, uniform=-1, randomub=true, sos2=true, delta=4, presolve=0)
+function multi4N(;verbose=false, solver=nothing, N=1, randomub=true)
 
-	if solver == nothing
-		if uniform >0
-			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=1),
-									   bilinear_convexhull=convhull,
-									   convhull_formulation_sos2=sos2,
-									   discretization_add_partition_method="uniform",
-									   discretization_uniform_rate=uniform,
-									   max_iter=1,
-									   log_level=100))
-		else
-			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=0),
-									   discretization_ratio=delta,
-									   convhull_formulation_sos2=sos2,
-									   bilinear_convexhull=convhull,
-									   presolve_bound_tightening=(presolve>0),
-									   presolve_bound_tightening_algo=presolve,
-									   log_level=100))
-		end
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	M = 1+3*N
 	srand(100)
@@ -199,35 +144,9 @@ function multi4N(;verbose=false, solver=nothing, N=1, convhull=false, exprmode=1
 	return m
 end
 
-function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, randomub=true, N=1, delta=4, sos2=true, sos2_alter=false, presolve=0)
+function multi3N(;verbose=false, solver=nothing, exprmode=1, N=1, delta=4)
 
-	if solver == nothing
-		if uniform > 0.0
-			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=1),
-									   convhull_formulation_sos2=sos2,
-									   convhull_formulation_sos2aux=sos2_alter,
-									   max_iter=1,
-									   bilinear_convexhull=convhull,
-									   discretization_add_partition_method="uniform",
-									   discretization_uniform_rate=uniform,
-									   presolve_bound_tightening=false,
-									   log_level=1))
-		else
-			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=0),
-									   convhull_formulation_sos2=sos2,
-									   convhull_formulation_sos2aux=sos2_alter,
-									   discretization_ratio=delta,
-									   bilinear_convexhull=convhull,
-									   presolve_bound_tightening=(presolve>0),
-									   presolve_bound_tightening_algo=presolve,
-									   discretization_var_pick_algo=0,
-									   log_level=1))
-		end
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	M = 1+2*N
 	srand(100)
@@ -251,34 +170,9 @@ function multi3N(;verbose=false, solver=nothing, exprmode=1, convhull=false, uni
 	return m
 end
 
-function multiKND(;verbose=false, solver=nothing, exprmode=1, convhull=false, uniform=-1, sos2=false, facet=false, randomub=true, N=1, K=2, D=1, delta=4, presolve=0)
+function multiKND(;verbose=false, solver=nothing, exprmode=1, randomub=true, N=1, K=2, D=1)
 
-	if solver == nothing
-		if uniform > 0.0
-			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=1),
-									   max_iter=1,
-									   bilinear_convexhull=convhull,
-									   convhull_formulation_sos2=sos2,
-									   convhull_formulation_facet=facet,
-									   discretization_add_partition_method="uniform",
-									   discretization_uniform_rate=uniform,
-									   presolve_bound_tightening=false,
-									   log_level=100))
-		else
-			m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									   mip_solver=GurobiSolver(OutputFlag=1),
-									   convhull_formulation_sos2=sos2,
-									   convhull_formulation_facet=facet,
-									   discretization_ratio=delta,
-									   bilinear_convexhull=convhull,
-									   presolve_bound_tightening=(presolve>0),
-									   presolve_bound_tightening=presolve,
-									   log_level=100))
-		end
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	M = K+(K-D)*(N-1)
 	srand(100)

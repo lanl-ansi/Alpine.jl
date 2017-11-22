@@ -1,10 +1,10 @@
-@testset "Expression Parser Test" begin
+@testset "Expression Parser Test :: Basic I" begin
 
     @testset "Expression Test || bilinear || Affine || exprs.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0)
+                                mip_solver=CbcSolver(OutputFlag=0),
+                                log_level=100)
 
         m=exprstest(solver=test_solver)
 
@@ -739,6 +739,9 @@
         @test aff_mip[11][:coefs] == Any[5.6, -0.5, 0.5]
         @test aff_mip[11][:cnt] == 3
     end
+end
+
+@testset "Expression Parser Test :: Basic II" begin
 
     @testset "Expression parsing || part1 " begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
@@ -996,6 +999,9 @@
         @test haskey(m.internalModel.nonlinear_terms, [:(x[7]),:(x[10]),:(x[13])]) #23
         @test haskey(m.internalModel.nonlinear_terms, [:(x[23]),:(x[20])]) #24
     end
+end
+
+@testset "Expression Parsing Test :: Convex" begin
 
     @testset "Convex Parsing" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
@@ -1240,6 +1246,9 @@
         @test m.internalModel.bounding_constr_mip[26][:powers] == [4, 4]
         @test m.internalModel.bounding_constr_mip[26][:cnt] == 2
     end
+end
+
+@testset "Expression Praser Test :: Linear Lifting" begin
 
     @testset "Linear Lifting : nlp2" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
@@ -1249,7 +1258,7 @@
 
         m = nlp2(solver=test_solver)
 
-        solve(m)#
+        JuMP.build(m)
 
         @test length(m.internalModel.linear_terms) == 2
         @test length(m.internalModel.nonlinear_terms) == 4
@@ -1277,8 +1286,6 @@
         @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[2])]][:lifted_var_ref].args[2] == 6
         @test m.internalModel.nonlinear_terms[[:(x[4]), :(x[4])]][:lifted_var_ref].args[2] == 5
         @test m.internalModel.nonlinear_terms[[:(x[7]), :(x[7])]][:lifted_var_ref].args[2] == 8
-
-        @test isapprox(m.objVal, 0.0; atol=1e-5)
     end
 
     @testset "Linear Lifting : general" begin
@@ -1354,15 +1361,200 @@
         @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :bilinear
         @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :monomial
 
-        @test m.internalModel.nonlinear_terms[nlk1][:orig_vars] == [8,9,12]
-        @test m.internalModel.nonlinear_terms[nlk2][:orig_vars] == [2]
-        @test m.internalModel.nonlinear_terms[nlk3][:orig_vars] == [2,3]
-        @test m.internalModel.nonlinear_terms[nlk4][:orig_vars] == [8]
-        @test m.internalModel.nonlinear_terms[nlk5][:orig_vars] == [1,3]
-        @test m.internalModel.nonlinear_terms[nlk6][:orig_vars] == [8,9]
-        @test m.internalModel.nonlinear_terms[nlk7][:orig_vars] == [1,2]
-        @test m.internalModel.nonlinear_terms[nlk8][:orig_vars] == [16, 15]
-        @test m.internalModel.nonlinear_terms[nlk9][:orig_vars] == [14]
+        @test m.internalModel.nonlinear_terms[nlk1][:var_idxs] == [8,9,12]
+        @test m.internalModel.nonlinear_terms[nlk2][:var_idxs] == [2,2]
+        @test m.internalModel.nonlinear_terms[nlk3][:var_idxs] == [2,3]
+        @test m.internalModel.nonlinear_terms[nlk4][:var_idxs] == [8]
+        @test m.internalModel.nonlinear_terms[nlk5][:var_idxs] == [1,3]
+        @test m.internalModel.nonlinear_terms[nlk6][:var_idxs] == [8,9]
+        @test m.internalModel.nonlinear_terms[nlk7][:var_idxs] == [1,2]
+        @test m.internalModel.nonlinear_terms[nlk8][:var_idxs] == [16, 15]
+        @test m.internalModel.nonlinear_terms[nlk9][:var_idxs] == [14]
+    end
+end
+
+@testset "Expression Parser Test :: BMPL -> BINLIN Opt" begin
+
+    @testset "Operator :: bmpl && linbin && binprod" begin
+
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
+                               mip_solver=CbcSolver(),
+                               log_level=100)
+
+        m = bpml(solver=test_solver)
+
+        JuMP.build(m) # Setup internal model
+
+        @test length(keys(m.internalModel.nonlinear_terms)) == 12
+
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:y_idx] == 11
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:y_idx] == 12
+        @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[6])]][:y_idx] == 13
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:y_idx] == 14
+        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[6])]][:y_idx] == 15
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:y_idx] == 16
+        @test m.internalModel.nonlinear_terms[Expr[:(x[16]), :(x[1])]][:y_idx] == 17
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[8])]][:y_idx] == 18
+        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[1])]][:y_idx] == 19
+        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[14])]][:y_idx] == 20
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:y_idx] == 21
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:y_idx] == 22
+
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[6])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[6])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[Expr[:(x[16]), :(x[1])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[8])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[1])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[14])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:nonlinear_type] == :multilinear
+
+        @test length(m.internalModel.var_type_lifted) == 22
+        @test m.internalModel.var_type_lifted[11] == :Cont
+        @test m.internalModel.var_type_lifted[12] == :Bin
+        @test m.internalModel.var_type_lifted[13] == :Cont
+        @test m.internalModel.var_type_lifted[14] == :Bin
+        @test m.internalModel.var_type_lifted[15] == :Cont
+        @test m.internalModel.var_type_lifted[16] == :Cont
+        @test m.internalModel.var_type_lifted[17] == :Cont
+        @test m.internalModel.var_type_lifted[18] == :Cont
+        @test m.internalModel.var_type_lifted[19] == :Cont
+        @test m.internalModel.var_type_lifted[20] == :Cont
+        @test m.internalModel.var_type_lifted[21] == :Bin
+        @test m.internalModel.var_type_lifted[22] == :Cont
     end
 
+    @testset "Operator :: bmpl && linbin && binprod with linear lifting and coefficients" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
+                               mip_solver=CbcSolver(),
+                               log_level=100)
+
+        m = bmpl_linearlifting(solver=test_solver)
+
+        JuMP.build(m)
+
+        lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
+                               Pair{Symbol,Any}(:scalar, 0.0),
+                               Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (1.0, 17)])))
+        lk2 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
+                               Pair{Symbol,Any}(:scalar, 0.0),
+                               Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 11), (1.0, 12)])))
+        lk3 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
+                               Pair{Symbol,Any}(:scalar, 0.0),
+                               Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 7), (2.0, 6)])))
+        lk4 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
+                               Pair{Symbol,Any}(:scalar, 0.0),
+                               Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6), (1.0, 19)])))
+        lk5 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
+                               Pair{Symbol,Any}(:scalar, 0.0),
+                               Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6),  (1.0, 25)])))
+
+        @test haskey(m.internalModel.linear_terms, lk1)
+        @test haskey(m.internalModel.linear_terms, lk2)
+        @test haskey(m.internalModel.linear_terms, lk3)
+        @test haskey(m.internalModel.linear_terms, lk4)
+        @test haskey(m.internalModel.linear_terms, lk5)
+
+        @test m.internalModel.linear_terms[lk1][:lifted_constr_ref] == :(x[20] == x[1] + x[17])
+        @test m.internalModel.linear_terms[lk2][:lifted_constr_ref] == :(x[13] == x[11] + x[12])
+        @test m.internalModel.linear_terms[lk3][:lifted_constr_ref] == :(x[15] == 2*x[6] + x[7])
+        @test m.internalModel.linear_terms[lk4][:lifted_constr_ref] == :(x[21] == x[6] + x[19])
+        @test m.internalModel.linear_terms[lk5][:lifted_constr_ref] == :(x[26] == x[6] + x[25])
+
+        @test m.internalModel.linear_terms[lk1][:y_idx] == 20
+        @test m.internalModel.linear_terms[lk2][:y_idx] == 13
+        @test m.internalModel.linear_terms[lk3][:y_idx] == 15
+        @test m.internalModel.linear_terms[lk4][:y_idx] == 21
+        @test m.internalModel.linear_terms[lk5][:y_idx] == 26
+
+        @test m.internalModel.linear_terms[lk1][:y_type] == :Cont
+        @test m.internalModel.linear_terms[lk2][:y_type] == :Cont
+        @test m.internalModel.linear_terms[lk3][:y_type] == :Cont
+        @test m.internalModel.linear_terms[lk4][:y_type] == :Cont
+        @test m.internalModel.linear_terms[lk5][:y_type] == :Cont
+
+        nlk1 = Expr[:(x[18]), :(x[7])]
+        nlk2 = Expr[:(x[6]), :(x[7]), :(x[8])]
+        nlk3 = Expr[:(x[7]), :(x[10])]
+        nlk4 = Expr[:(x[2]), :(x[26])]
+        nlk5 = Expr[:(x[1]), :(x[13])]
+        nlk6 = Expr[:(x[1]), :(x[15])]
+        nlk7 = Expr[:(x[2]), :(x[6])]
+        nlk8 = Expr[:(x[23]), :(x[24])]
+        nlk9 = Expr[:(x[1]), :(x[2])]
+        nlk10 = Expr[:(x[2]), :(x[3])]
+        nlk11 = Expr[:(x[20]), :(x[21])]
+        nlk12 = Expr[:(x[3]), :(x[4])]
+
+        @test haskey(m.internalModel.nonlinear_terms, nlk1)
+        @test haskey(m.internalModel.nonlinear_terms, nlk2)
+        @test haskey(m.internalModel.nonlinear_terms, nlk3)
+        @test haskey(m.internalModel.nonlinear_terms, nlk4)
+        @test haskey(m.internalModel.nonlinear_terms, nlk5)
+        @test haskey(m.internalModel.nonlinear_terms, nlk6)
+        @test haskey(m.internalModel.nonlinear_terms, nlk7)
+        @test haskey(m.internalModel.nonlinear_terms, nlk8)
+        @test haskey(m.internalModel.nonlinear_terms, nlk9)
+        @test haskey(m.internalModel.nonlinear_terms, nlk10)
+        @test haskey(m.internalModel.nonlinear_terms, nlk11)
+        @test haskey(m.internalModel.nonlinear_terms, nlk12)
+
+
+        @test m.internalModel.nonlinear_terms[nlk1][:id] == 7
+        @test m.internalModel.nonlinear_terms[nlk2][:id] == 1
+        @test m.internalModel.nonlinear_terms[nlk3][:id] == 9
+        @test m.internalModel.nonlinear_terms[nlk4][:id] == 12
+        @test m.internalModel.nonlinear_terms[nlk5][:id] == 3
+        @test m.internalModel.nonlinear_terms[nlk6][:id] == 4
+        @test m.internalModel.nonlinear_terms[nlk7][:id] == 5
+        @test m.internalModel.nonlinear_terms[nlk8][:id] == 11
+        @test m.internalModel.nonlinear_terms[nlk9][:id] == 6
+        @test m.internalModel.nonlinear_terms[nlk10][:id] == 2
+        @test m.internalModel.nonlinear_terms[nlk11][:id] == 8
+        @test m.internalModel.nonlinear_terms[nlk12][:id] == 10
+
+
+        @test m.internalModel.nonlinear_terms[nlk1][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk2][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk3][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk4][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk5][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk6][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk7][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk8][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk9][:y_type] == :Bin
+        @test m.internalModel.nonlinear_terms[nlk10][:y_type] == :Bin
+        @test m.internalModel.nonlinear_terms[nlk11][:y_type] == :Cont
+        @test m.internalModel.nonlinear_terms[nlk12][:y_type] == :Bin
+
+        @test m.internalModel.nonlinear_terms[nlk1][:y_idx] == 19
+        @test m.internalModel.nonlinear_terms[nlk2][:y_idx] == 11
+        @test m.internalModel.nonlinear_terms[nlk3][:y_idx] == 23
+        @test m.internalModel.nonlinear_terms[nlk4][:y_idx] == 27
+        @test m.internalModel.nonlinear_terms[nlk5][:y_idx] == 14
+        @test m.internalModel.nonlinear_terms[nlk6][:y_idx] == 16
+        @test m.internalModel.nonlinear_terms[nlk7][:y_idx] == 17
+        @test m.internalModel.nonlinear_terms[nlk8][:y_idx] == 25
+        @test m.internalModel.nonlinear_terms[nlk9][:y_idx] == 18
+        @test m.internalModel.nonlinear_terms[nlk10][:y_idx] == 12
+        @test m.internalModel.nonlinear_terms[nlk11][:y_idx] == 22
+        @test m.internalModel.nonlinear_terms[nlk12][:y_idx] == 24
+
+        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[nlk10][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[nlk11][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[nlk12][:nonlinear_type] == :binprod
+    end
 end

@@ -56,7 +56,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     embedding::Bool
     embedding_encode::Any
     embedding_ibs::Bool
-    embedding_link::Int
+    embedding_link::Bool
 
     user_parameters::Dict
 
@@ -110,12 +110,12 @@ function PODSolver(;
     presolve_mip_relaxation = false,
     presolve_mip_timelimit = Inf,
 
-    bound_basic_propagation = false,
+    bound_basic_propagation = true,
 
     embedding = false,
     embedding_encode = "default",
     embedding_ibs = false,
-    embedding_link = 0,
+    embedding_link = false,
 
     user_parameters = Dict(),
 
