@@ -12,7 +12,7 @@ There are some general paremters that controls the behavior of the AMP:
 
 * `timeout(default=Inf)`: total time regulated for the solver in seconds
 
-* `maxiter(default=999)`: total iteration allowed in the [`global_solve`](@ref)
+* `max_iter(default=999)`: total iteration allowed in the [`global_solve`](@ref)
 
 * `rel_gap(default=1e-4)`: relative gap considered for optimality during [`global_solve`](@ref). Bounds are evaluated using ``\frac{UB-LB}{UB} 100 \times \%``
 
@@ -32,7 +32,7 @@ There are some general paremters that controls the behavior of the AMP:
 
 * `presolve_bound_tightening(default=false)`: perform built-in bound tightening presolve procedure
 
-* `presolve_maxiter(default=9999)`: maximum iteration allowed using presolve process
+* `presolve_max_iter(default=9999)`: maximum iteration allowed using presolve process
 
 * `presolve_bt_width_tol(default=1e-3)`: independent numerical tol used in presolve for bound tightening procedure. Note that this procedure is more sensitive to the tol in here. Small tol is more likely to results in strange presolve behvaior.
 

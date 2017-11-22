@@ -8,7 +8,7 @@
                            monomial_convexhull=false,
                            presolve_bound_tightening=false,
                            presolve_bt_output_tol=1e-1,
-                           log_level=0)
+                           log_level=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -55,8 +55,8 @@
         					   mip_solver=CbcSolver(logLevel=0),
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
-        					   log_level=0,
-                               maxiter=3,
+        					   log_level=1,
+                               max_iter=3,
         					   presolve_bt_width_tol=1e-3,
         					   presolve_bound_tightening=false,
         					   discretization_var_pick_algo=0)
@@ -132,12 +132,12 @@
     							   mip_solver=CbcSolver(logLevel=0),
                                    bilinear_convexhull=false,
     							   log_level=0,
-                                   maxiter=3,
+                                   max_iter=3,
     							   presolve_bt_width_tol=1e-3,
     							   presolve_bt_output_tol=1e-1,
     							   presolve_bound_tightening=true,
                                    presolve_bound_tightening_algo=1,
-    							   presolve_maxiter=2,
+    							   presolve_max_iter=2,
     							   discretization_var_pick_algo=max_cover_var_picker)
         m = nlp3(solver=test_solver)
 
@@ -172,12 +172,12 @@
                                    mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=0),
                                    bilinear_convexhull=false,
                                    log_level=0,
-                                   maxiter=2,
+                                   max_iter=2,
                                    presolve_bound_tightening=true,
                                    presolve_bt_width_tol=1e-3,
                                    presolve_bt_output_tol=1e-1,
                                    presolve_bound_tightening_algo=2,
-                                   presolve_maxiter=2,
+                                   presolve_max_iter=2,
                                    discretization_var_pick_algo=max_cover_var_picker)
 
         m = nlp3(solver=test_solver)
