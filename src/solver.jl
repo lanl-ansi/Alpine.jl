@@ -112,7 +112,7 @@ function PODSolver(;
 
     bound_basic_propagation = false,
 
-    embedding = true,
+    embedding = false,
     embedding_encode = "default",
     embedding_ibs = false,
     embedding_link = 0,

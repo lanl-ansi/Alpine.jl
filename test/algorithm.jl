@@ -355,3 +355,7 @@
         @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
     end
 end
+
+@testset "Solving algorithm tests :: Embedding Formulation" begin
+
+end

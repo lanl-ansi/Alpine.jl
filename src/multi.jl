@@ -195,7 +195,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
     # Add SOS-2 Constraints with basic encoding
     if m.embedding && partition_cnt > 2
         ebd_map = embedding_map(lambda_cnt, m.embedding_encode, m.embedding_ibs)
-        YCnt = Int(length(keys(ebd_map))/2)
+        YCnt = Int(ebd_map[:L])
         @assert YCnt == length(α[monomial_idx])
         for i in 1:YCnt
             @constraint(m.model_mip, sum(λ[monomial_idx][:vars][collect(ebd_map[i])]) <= α[monomial_idx][i])
