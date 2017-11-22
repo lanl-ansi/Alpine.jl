@@ -66,15 +66,14 @@ function amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
 
-    for i in 1:length(m.method_convexification)             # Additional user-defined convexification method
+    for i in 1:length(m.method_convexification)                 # Additional user-defined convexification method
         eval(m.method_convexification[i])(m)
     end
 
     amp_post_mccormick(m, use_disc=discretization)    # handles all bi-linear and monomial convexificaitons
     amp_post_convhull(m, use_disc=discretization)         # convex hull representation
 
-    # Exam to see if all non-linear terms have been convexificed
-    convexification_exam(m)
+    convexification_exam(m) # Exam to see if all non-linear terms have been convexificed
 
     return
 end
@@ -92,10 +91,11 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     end
 
     @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)])
+
     for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
         (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
-        (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
-        (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))   # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+        (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
+        (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))     # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
     end
 
     return

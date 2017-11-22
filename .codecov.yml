@@ -4,5 +4,3 @@ status:
         enabled: yes         # must be yes|true to enable this status
         target: 50%
         threshold: 5%        # allowed to drop X% and still result in a "success" PR status
-      branches:
-        threshold: 5%        # allowed to drop X% and still result in a "success" commit status
