@@ -194,6 +194,8 @@ can help speed up the subsequent solve in subsequent iterations.
 """
 function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, discretization::Dict; kwargs...)
 
+    # TODO this sequence need to be changed
+
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity

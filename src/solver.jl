@@ -112,7 +112,7 @@ function PODSolver(;
 
     bound_basic_propagation = false,
 
-    embedding=false,
+    embedding = true,
     embedding_encode = "default",
     embedding_ibs = false,
     embedding_link = 0,
@@ -132,6 +132,12 @@ function PODSolver(;
     if mip_solver == UnsetSolver()
         error("NO MIP solver specififed (set mip_solver)\n")
     end
+
+    # Code Conversion
+    (discretization_var_pick_algo in ["select_all_nlvar", "all", "max"]) && (discretization_var_pick_algo = 0)
+    (discretization_var_pick_algo in ["min_vertex_cover","min"]) && (discretization_var_pick_algo = 1)
+    (discretization_var_pick_algo == "selective") && (discretization_var_pick_algo = 2)
+    (discretization_var_pick_algo == "dynamic") && (discretization_var_pick_algo = 3)
 
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(dev_debug, dev_test, colorful_pod,
@@ -274,4 +280,146 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             embedding_ibs,
                             embedding_link,
                             user_parameters)
+end
+
+# MathProgBase.LinearQuadraticModel(s::PODSolver) = MathProgBase.NonlinearModel(s::PODSolver)
+
+function fetch_mip_solver_identifier(m::PODNonlinearModel)
+
+    if string(m.mip_solver)[1:6] == "Gurobi"
+        m.mip_solver_identifier = "Gurobi"
+    elseif string(m.mip_solver)[1:5] == "CPLEX"
+        m.mip_solver_identifier = "CPLEX"
+    elseif string(m.mip_solver)[1:3] == "Cbc"
+        m.mip_solver_identifier = "Cbc"
+    elseif string(m.mip_solver)[1:4] == "GLPK"
+        m.mip_solver_identifier = "GLPK"
+    elseif string(m.mip_solver)[1:8] == "Pajarito"
+        m.mip_solver_identifier = "Pajarito"
+    else
+        error("Unsupported mip solver name. Using blank")
+    end
+
+    return
+end
+
+function fetch_nlp_solver_identifier(m::PODNonlinearModel)
+
+    if string(m.nlp_local_solver)[1:5] == "Ipopt"
+        m.nlp_local_solver_identifier = "Ipopt"
+    elseif string(m.nlp_local_solver)[1:6] == "AmplNL"
+        m.nlp_local_solver_identifier = "Bonmin"
+    elseif string(m.nlp_local_solver)[1:6] == "Knitro"
+        m.nlp_local_solver_identifier = "Knitro"
+    elseif string(m.nlp_local_solver)[1:8] == "Pajarito"
+        m.nlp_local_solver_identifier = "Pajarito"
+    elseif string(m.nlp_local_solver)[1:5] == "NLopt"
+        m.nlp_local_solver_identifier = "NLopt"
+    else
+        error("Unsupported nlp solver name. Using blank")
+    end
+
+    return
+end
+
+function fetch_minlp_solver_identifier(m::PODNonlinearModel)
+
+    (m.minlp_local_solver == UnsetSolver()) && return
+    if string(m.minlp_local_solver)[1:6] == "AmplNL"
+        m.minlp_local_solver_identifier = "Bonmin"
+    elseif string(m.minlp_local_solver)[1:6] == "Knitro"
+        m.minlp_local_solver_identifier = "Knitro"
+    elseif string(m.minlp_local_solver)[1:8] == "Pajarito"
+        m.minlp_local_solver_identifier = "Pajarito"
+    elseif string(m.minlp_local_solver)[1:5] == "NLopt"
+        m.minlp_local_solver_identifier = "NLopt"
+    elseif string(m.minlp_local_solver)[1:35] == "CoinOptServices.OsilSolver(\"bonmin\""
+        m.minlp_local_solver_identifier = "Bonmin"
+    else
+        error("Unsupported nlp solver name. Using blank")
+    end
+
+    return
+end
+
+"""
+
+    update_mip_time_limit(m::PODNonlinearModel)
+
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+"""
+function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.mip_solver_identifier == "CPLEX"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.mip_solver_identifier == "Gurobi"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
+    elseif m.mip_solver_identifier == "Cbc"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
+    elseif m.mip_solver_identifier == "GLPK"
+        insert_timeleft_symbol(m.mip_solver.opt)
+    elseif m.mip_solver_identifier == "Pajarito"
+        (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
+    else
+        error("Needs support for this MIP solver")
+    end
+
+    return
+end
+
+"""
+
+    update_mip_time_limit(m::PODNonlinearModel)
+
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+"""
+function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.nlp_local_solver_identifier == "Ipopt"
+        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.nlp_local_solver_identifier == "Pajarito"
+        (timelimit < Inf) && (m.nlp_local_solver.timeout = timelimit)
+    elseif m.nlp_local_solver_identifier == "AmplNL"
+        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
+    elseif m.nlp_local_solver_identifier == "Knitro"
+        error("You never tell me anything about knitro. Probably because they charge everything they own.")
+    elseif m.nlp_local_solver_identifier == "NLopt"
+        m.nlp_local_solver.maxtime = timelimit
+    else
+        error("Needs support for this MIP solver")
+    end
+
+    return
+end
+
+"""
+
+    update_mip_time_limit(m::PODNonlinearModel)
+
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+"""
+function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.minlp_local_solver_identifier == "Pajarito"
+        (timelimit < Inf) && (m.minlp_local_solver.timeout = timelimit)
+    elseif m.minlp_local_solver_identifier == "AmplNL"
+        insert_timeleft_symbol(m.minlp_local_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
+    elseif m.minlp_local_solver_identifier == "Knitro"
+        error("You never tell me anything about knitro. Probably because they charge everything they own.")
+    elseif m.minlp_local_solver_identifier == "NLopt"
+        m.minlp_local_solver.maxtime = timelimit
+    else
+        error("Needs support for this MIP solver")
+    end
+
+    return
 end

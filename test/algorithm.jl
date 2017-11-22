@@ -8,7 +8,7 @@
                            monomial_convexhull=false,
                            presolve_bound_tightening=false,
                            presolve_bt_output_tol=1e-1,
-                           log_level=0)
+                           log_level=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -55,7 +55,7 @@
         					   mip_solver=CbcSolver(logLevel=0),
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
-        					   log_level=0,
+        					   log_level=1,
                                max_iter=3,
         					   presolve_bt_width_tol=1e-3,
         					   presolve_bound_tightening=false,
@@ -343,10 +343,10 @@
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                discretization_abs_width_tol=1e-2,
                                discretization_ratio=8,
-                               maxiter=6,
-                               presolve_bound_tightening = false,
-                               presolve_bound_tightening_algo = 1,
-                               presolve_bt_output_tol = 1e-1,
+                               max_iter=6,
+                               presolve_bound_tightening=false,
+                               presolve_bound_tightening_algo=1,
+                               presolve_bt_output_tol=1e-1,
                                log_level=0)
 
         m = circle(solver=test_solver)
