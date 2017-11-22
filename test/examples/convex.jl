@@ -3,7 +3,7 @@ function convex_test(;verbose=false, solver=nothing, recognize=true)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=1),
-                                   discretization_ratio=4,
+                                   disc_ratio=4,
 								   recognize_convex=recognize,
 								   presolve_bound_tightening=false,
 								   log_level=200))

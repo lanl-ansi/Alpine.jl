@@ -34,7 +34,7 @@ function meyer4_expr(;verbose=false, solver=nothing)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"]),
 									mip_solver=GurobiSolver(OutputFlag=0),
-									discretization_ratio=32,
+									disc_ratio=32,
 									log_level=100,
 									rel_gap=0.001))
 	else

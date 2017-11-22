@@ -125,10 +125,10 @@ function PODSolver(;
     end
 
     # Code Conversion
-    (discretization_var_pick_algo in ["select_all_nlvar", "all", "max"]) && (discretization_var_pick_algo = 0)
-    (discretization_var_pick_algo in ["min_vertex_cover","min"]) && (discretization_var_pick_algo = 1)
-    (discretization_var_pick_algo == "selective") && (discretization_var_pick_algo = 2)
-    (discretization_var_pick_algo == "dynamic") && (discretization_var_pick_algo = 3)
+    (disc_var_pick_algo in ["select_all_nlvar", "all", "max"]) && (disc_var_pick_algo = 0)
+    (disc_var_pick_algo in ["min_vertex_cover","min"]) && (disc_var_pick_algo = 1)
+    (disc_var_pick_algo == "selective") && (disc_var_pick_algo = 2)
+    (disc_var_pick_algo == "dynamic") && (disc_var_pick_algo = 3)
 
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(dev_debug, dev_test, colorful_pod,

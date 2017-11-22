@@ -294,17 +294,17 @@ For more information, read more details at [Hacking Solver](@ref).
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
-    if isa(m.discretization_var_pick_algo, Function)
-        eval(m.discretization_var_pick_algo)(m)
+    if isa(m.disc_var_pick_algo, Function)
+        eval(m.disc_var_pick_algo)(m)
         (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
-    elseif isa(m.discretization_var_pick_algo, Int) || isa(m.discretization_var_pick_algo, String)
-        if m.discretization_var_pick_algo == 0
+    elseif isa(m.disc_var_pick_algo, Int) || isa(m.disc_var_pick_algo, String)
+        if m.disc_var_pick_algo == 0
             select_all_nlvar(m)
-        elseif m.discretization_var_pick_algo == 1
+        elseif m.disc_var_pick_algo == 1
             min_vertex_cover(m)
-        elseif m.discretization_var_pick_algo == 2
+        elseif m.disc_var_pick_algo == 2
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
-        elseif m.discretization_var_pick_algo == 3 # Initial
+        elseif m.disc_var_pick_algo == 3 # Initial
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         else
             error("Unsupported default indicator for picking variables for discretization")

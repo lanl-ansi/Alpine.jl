@@ -57,10 +57,10 @@ function logging_summary(m::PODNonlinearModel)
 
         (m.disc_add_partition_method == "adpative") && println("adaptively adding discretization ratio = $(m.disc_ratio)")
         (m.disc_add_partition_method == "uniform") && println("uniform discretization rate = $(m.disc_uniform_rate)")
-        println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
+        println("using method $(m.disc_var_pick_algo) for picking discretization variable...")
 
-        (m.discretization_add_partition_method == "adaptive") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
-        (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
+        (m.disc_add_partition_method == "adaptive") && println("adaptively adding discretization ratio = $(m.disc_ratio)")
+        (m.disc_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
     end
 
     # Additional warnings

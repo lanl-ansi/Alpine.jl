@@ -466,9 +466,9 @@ function global_solve(m::PODNonlinearModel)
         update_opt_gap(m)
         (m.log_level > 0) && logging_row_entry(m)
         local_solve(m)                                   # Solve upper bounding model
-        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.maxiter) && break
-        (m.discretization_var_pick_algo == 3) && update_discretization_var_set(m)
-        (m.disc_ratio_branch) && (m.logs[:n_iter] <= 2) && (m.disc_ratio = disc_ratio_branch(m))    # Only perform for a maximum three times
+        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.max_iter) && break
+        (m.disc_var_pick_algo == 3) && update_discretization_var_set(m)
+        (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m))    # Only perform for a maximum three times
         add_partition(m)                                 # Add extra discretizations
     end
 

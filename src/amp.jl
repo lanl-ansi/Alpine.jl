@@ -319,14 +319,14 @@ end
 """
 function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
 
-    ratio_pool = [3:1:32;]  # Built-in try range
+    m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
+
+    ratio_pool = [3:1:24;]  # Built-in try range
     convertor = Dict(:Max=>:<, :Min=>:>)
 
     incumb_ratio = ratio_pool[1]
     m.sense_orig == :Min ? incumb_res = -Inf : incumb_res = Inf
-    collector = []
-
-    strike = 0
+    res_collector = Float64[]
 
     for r in ratio_pool
         st = time()
@@ -342,16 +342,17 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
         end
         create_bounding_mip(m, use_disc=branch_disc)
         res = disc_branch_solve(m)
-        push!(collector, res)
-        if eval(convertor[m.sense_orig])(res, incumb_res) && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
+        push!(res_collector, res)
+        if eval(convertor[m.sense_orig])(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
             incumb_res = res
             incumb_ratio = r
-        else
-            strike += 1
         end
-        (strike >= (32-3)) && break
-        m.disc_ratio_branch = false # Once settled, turn the funtionality off
         println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
+    end
+
+    if std(res_collector) >= 1e-2    # Detect if all solution are similar to each other
+        println("RATIO BRANCHING OFF due to solution variance test passed.")
+        m.disc_ratio_branch = false # If a ratio is selected, then stop the branching scheme
     end
 
     println("INCUMB_RATIO = $(incumb_ratio)")
