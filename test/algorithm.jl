@@ -174,6 +174,22 @@
 
         @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
     end
+
+    @testset " Validation Test || AMP || basic solve || examples/circleN.jl" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio=8,
+                               presolve_bound_tightening = false,
+                               presolve_bound_tightening_algo = 1,
+                               presolve_bt_output_tol = 1e-1,
+                               log_level=1)
+
+        m = circleN(solver=test_solver, N=4)
+        solve(m)
+        @test isapprox(m.objVal, 2.0; atol=1e-3)
+    end
+
 end
 
 @testset "Solving Algorithm Test :: Featrue selecting delta" begin

@@ -1003,51 +1003,12 @@ end
 
 @testset "Expression Parsing Test :: Convex" begin
 
-    @testset "Convex Parsing" begin
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
-                           mip_solver=CbcSolver(OutputFlag=0),
-                           log_level=0))
+    @testset "Convex Parsing :: PART I" begin
 
-
-        @variable(m, 0<=x[1:5]<=2)
-
-        @constraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                             # 1: true
-        @constraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                         # 2: true
-        @constraint(m, 3(x[1]x[1]) + 4*x[2]*x[2] <= -5)                             # 3: false
-        @constraint(m, 3(x[1]x[1]) + 4*x[2]^2 <= 10)                                # 4: true
-        @constraint(m, 3x[1]^2 + 4x[2]^2 + 6x[3]^2 <= 10)                           # 5: true
-
-        @NLconstraint(m, 3x[1]^0.5 + 4x[2]^0.5 + 5x[5]^0.5 <= 100)					# 6: true | type-C
-        @NLconstraint(m, -3x[1]^0.5 -4x[2]^0.5 >= -100)								# 7: true | type-C
-        @NLconstraint(m, 3x[1]^3 + x[2]^3 + 5x[3]^3 <= 200)                         # 8: true | type-a
-        @NLconstraint(m, x[1]*x[1]*x[1] + x[2]*x[2]*x[2] + x[3]*x[3]*x[3] + 5*x[4]*20*x[4]*x[4] <= 200) # 9: true
-        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                           # 10: true
-
-        @NLconstraint(m, (3*x[1]*x[1] + 4*x[2]*x[2]) <= 25)                         # 11: true
-        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] - 25 <= 0)                       # 12: true
-        @NLconstraint(m, -3*x[1]*x[1] -4*x[2]*x[2] >= -25)                          # 13: true
-        @NLconstraint(m, 3*x[1]*x[1] + 5x[2]*x[2] <= 25)                            # 14: true
-        @NLconstraint(m, x[1]*3*x[1] + x[2]*x[2]*5 + x[4]^(3-1) <= 25)              # 15: true
-
-        @NLconstraint(m, 4*x[1]^2 + 5x[2]^2 <= 25)                                  # 16: true
-        @NLconstraint(m, 3*x[1]*x[1] - 25 + 4*x[2]*x[2] <= 0)                       # 17: false (unsupported when with @NLconstraint)
-        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[1] <= 25)                           # 18: false
-        @NLconstraint(m, 3*x[1]*x[1] + 16*x[2]^2 <= 40)                             # 19: true
-        @NLconstraint(m, 3*x[1]^2 + 16*x[2]^2 + 17 <= 16)                           # 20: false
-
-        @NLconstraint(m, 3*x[1]^3 + 16*x[2]^2 <= 20 - 20)                           # 21: false
-        @NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] + 5*x[3]*x[3] + 6x[4]x[4] <= 15) # 22: true
-        @NLconstraint(m, 3x[1]x[1] + 4x[2]x[2] + 5x[3]^2 <= -15)                    # 23: false
-        @NLconstraint(m, 3x[1]^2 + 4x[2]^2 >= 15)                                   # 24: false
-        @NLconstraint(m, sum(x[i]^2 for i in 1:5) <= 99999)                         # 25: true
-
-        @NLconstraint(m, 3x[1]^4 + 4x[2]^4 <= 200)                                  # 26: true
-        @NLconstraint(m, 3x[1]^4 + 4x[2]x[2]x[2]x[2] - 200 <= 0)                    # 27: true
-        @NLconstraint(m, 3x[1]^4 + 4x[2]^2*x[2]*x[2] <= 200)                        # 28: true
-        @NLconstraint(m, 3x[1]^4 + 4x[2]^3 <= 200)                                  # 29: false
-        @NLconstraint(m, 3x[1]^8 + 16*25*x[2]^8 - 30x[3]^8 <= 50)                   # 30: false
-
-        @objective(m, Max, x[1]^2+x[3]^2)                                           # true
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+                                mip_solver=CbcSolver(OutputFlag=0),
+                                log_level=0)
+        m = convex_test(test_solver)
 
         JuMP.build(m)
 
@@ -1254,7 +1215,7 @@ end
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(mip_solver=CbcSolver(),cont_solver=IpoptSolver(print_level=0), log_level=0),
                                disc_ratio=8,
-                               log_level=0)
+                               log_level=100)
 
         m = nlp2(solver=test_solver)
 
@@ -1262,18 +1223,29 @@ end
 
         @test length(m.internalModel.linear_terms) == 2
         @test length(m.internalModel.nonlinear_terms) == 4
-        l_key1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -1.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3)])))
-        l_key2 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -2.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6)])))
-        @test haskey(m.internalModel.linear_terms, l_key1)
-        @test haskey(m.internalModel.linear_terms, l_key2)
-        @test m.internalModel.linear_terms[l_key1][:id] == 1
-        @test m.internalModel.linear_terms[l_key2][:id] == 2
-        @test m.internalModel.linear_terms[l_key1][:lifted_constr_ref] == :(x[4] == x[3] - 1.0)
-        @test m.internalModel.linear_terms[l_key2][:lifted_constr_ref] == :(x[7] == x[6] - 2.0)
-        @test m.internalModel.linear_terms[l_key1][:lifted_var_ref].args[2] == 4
-        @test m.internalModel.linear_terms[l_key2][:lifted_var_ref].args[2] == 7
-        @test m.internalModel.linear_terms[l_key1][:y_idx] == 4
-        @test m.internalModel.linear_terms[l_key2][:y_idx] == 7
+
+        lk = Vector{Any}(2)
+        lk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -1.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3)])))
+        lk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -2.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6)])))
+
+        @test length(keys(m.internalModel.linear_terms)) == 2
+        yids = [4,7]
+        for i in 1:length(keys(m.internalModel.linear_terms))
+            for j in keys(m.internalModel.linear_terms)
+                if m.internalModel.linear_terms[j][:id] == i
+                    @test j == lk[i]
+                    @test j[:sign] == :+
+                    @test j[:scalar] == lk[i][:scalar]
+                    @test j[:coef_var] == lk[i][:coef_var]
+                    @test m.internalModel.linear_terms[j][:y_idx] == yids[i]
+                end
+            end
+        end
+
+        @test haskey(m.internalModel.linear_terms, lk[1])
+        @test haskey(m.internalModel.linear_terms, lk[2])
+
+
         @test haskey(m.internalModel.nonlinear_terms, [:(x[2]), :(x[2])])
         @test haskey(m.internalModel.nonlinear_terms, [:(x[4]), :(x[4])])
         @test haskey(m.internalModel.nonlinear_terms, [:(x[7]), :(x[7])])
@@ -1297,29 +1269,26 @@ end
 
         JuMP.build(m) # Setup internal model
 
-        lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 3.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1), (1.0, 3)])))
-        lk2 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(3.0, 2), (-1.0, 3)])))
-        lk3 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (-1.0, 2)])))
-        lk4 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (1.0, 3)])))
-        lk5 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1)])))
+        lk = Vector{Any}(5)
+        lk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (-1.0, 2)])))
+        lk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(3.0, 2), (-1.0, 3)])))
+        lk[3] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (1.0, 3)])))
+        lk[4] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1)])))
+        lk[5] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 3.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1), (1.0, 3)])))
 
-        @test m.internalModel.linear_terms[lk1][:y_idx] == 16
-        @test m.internalModel.linear_terms[lk2][:y_idx] == 9
-        @test m.internalModel.linear_terms[lk3][:y_idx] == 8
-        @test m.internalModel.linear_terms[lk4][:y_idx] == 12
-        @test m.internalModel.linear_terms[lk5][:y_idx] == 14
-
-        @test m.internalModel.linear_terms[lk1][:lifted_var_ref].args[2] == 16
-        @test m.internalModel.linear_terms[lk2][:lifted_var_ref].args[2] == 9
-        @test m.internalModel.linear_terms[lk3][:lifted_var_ref].args[2] == 8
-        @test m.internalModel.linear_terms[lk4][:lifted_var_ref].args[2] == 12
-        @test m.internalModel.linear_terms[lk5][:lifted_var_ref].args[2] == 14
-
-        @test m.internalModel.linear_terms[lk1][:id] == 5
-        @test m.internalModel.linear_terms[lk2][:id] == 2
-        @test m.internalModel.linear_terms[lk3][:id] == 1
-        @test m.internalModel.linear_terms[lk4][:id] == 3
-        @test m.internalModel.linear_terms[lk5][:id] == 4
+        @test length(keys(m.internalModel.linear_terms)) == 5
+        yids = [8,9,12,14,16]
+        for i in 1:length(keys(m.internalModel.linear_terms))
+            for j in keys(m.internalModel.linear_terms)
+                if m.internalModel.linear_terms[j][:id] == i
+                    @test j == lk[i]
+                    @test j[:sign] == :+
+                    @test j[:scalar] == lk[i][:scalar]
+                    @test j[:coef_var] == lk[i][:coef_var]
+                    @test m.internalModel.linear_terms[j][:y_idx] == yids[i]
+                end
+            end
+        end
 
         nlk1 = [:(x[8]), :(x[9]), :(x[12])]
         nlk2 = [:(x[2]), :(x[2])]
@@ -1370,6 +1339,94 @@ end
         @test m.internalModel.nonlinear_terms[nlk7][:var_idxs] == [1,2]
         @test m.internalModel.nonlinear_terms[nlk8][:var_idxs] == [16, 15]
         @test m.internalModel.nonlinear_terms[nlk9][:var_idxs] == [14]
+    end
+
+    @testset "Expression Test || complex || Affine || operator_b" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                                mip_solver=CbcSolver(OutputFlag=0),
+                                log_level=100)
+
+        m=operator_b(solver=test_solver)
+
+        JuMP.build(m)
+
+        nlk = Vector{Any}(31)
+        nlk[1] = [:(x[1]), :(x[2])]
+        nlk[2] = [:(x[2]), :(x[3])]
+        nlk[3] = [:(x[1]), :(x[10])]
+        nlk[4] = [:(x[2]), :(x[12])]
+        nlk[5] = [:(x[1]), :(x[1])]
+        nlk[6] = [:(x[2]), :(x[2])]
+        nlk[7] = [:(x[3]), :(x[3]), :(x[3])]
+        nlk[8] = [:(x[17]), :(x[17])]
+        nlk[9] = [:(x[1]), :(x[1]), :(x[1])]
+        nlk[10] = Expr[:(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3]), :(x[3])]
+        nlk[11] = [:(x[1]), :(x[2]), :(x[3])]
+        nlk[12] = [:(x[3]), :(x[8])]
+        nlk[13] = [:(x[1]), :(x[9])]
+        nlk[14] = [:(x[1]), :(x[2]), :(x[3]), :(x[4])]
+        nlk[15] = [:(x[3]), :(x[4])]
+        nlk[16] = [:(x[8]), :(x[25])]
+        nlk[17] = [:(x[1]), :(x[4]), :(x[9])]
+        nlk[18] = [:(x[3]), :(x[4]), :(x[8])]
+        nlk[19] = [:(x[4]), :(x[22])]
+        nlk[20] = [:(x[3]), :(x[3])]
+        nlk[21] = [:(x[4]), :(x[14]), :(x[15]), :(x[30])]
+        nlk[22] = [:(x[1]), :(x[1]), :(x[2]), :(x[2]), :(x[3]), :(x[3])]
+        nlk[23] = [:(x[33]), :(x[34]), :(x[35]), :(x[36])]
+        nlk[24] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[1]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))
+        nlk[25] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[2]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :cos))
+        nlk[26] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[40]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))
+        nlk[27] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[42]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :cos))
+        nlk[28] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[44]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))
+        nlk[29] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[46]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))
+        nlk[30] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[48]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :cos))
+        nlk[31] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[21]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))
+
+        @test length(keys(m.internalModel.nonlinear_terms)) == 31
+        ids = [1:31;]
+        yids = [8,9,11,13,14,15,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,37,38,39,41,43,45,47,49,50]
+        nltypes = [:bilinear, :bilinear, :bilinear, :bilinear, :monomial,
+                   :monomial, :multilinear, :monomial, :multilinear, :multilinear,
+                   :multilinear, :bilinear, :bilinear, :multilinear, :bilinear,
+                   :bilinear, :multilinear, :multilinear, :bilinear, :monomial,
+                   :multilinear, :multilinear, :multilinear, :sin, :cos,
+                   :sin, :cos, :sin, :sin, :cos, :sin]
+        for i in 1:31
+            @test m.internalModel.nonlinear_terms[nlk[i]][:id] == i
+            @test m.internalModel.nonlinear_terms[nlk[i]][:y_idx] == yids[i]
+            @test m.internalModel.nonlinear_terms[nlk[i]][:nonlinear_type] == nltypes[i]
+            @test m.internalModel.nonlinear_terms[nlk[i]][:y_type] == :Cont
+        end
+
+        lk = Vector{Any}(12)
+        lk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 4.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2)])))
+        lk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 3)])))
+        lk[3] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 5.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1)])))
+        lk[4] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1)])))
+        lk[5] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 2.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2)])))
+        lk[6] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 3.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3)])))
+        lk[7] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 4.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 4)])))
+        lk[8] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1)])))
+        lk[9] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (-1.0, 3)])))
+        lk[10] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 2), (1.0, 3)])))
+        lk[11] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(4.0, 8)])))
+        lk[12] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 9)])))
+
+        @test length(keys(m.internalModel.linear_terms)) == 12
+        yids = [10,12,17,33,34,35,36,40,42,44,46,48]
+        scas = [5.0,1.0,6.0,2.0,3.0,4.0,5.0,1.0,1.0,1.0,0.0,0.0]
+        for i in 1:length(keys(m.internalModel.linear_terms))
+            for j in keys(m.internalModel.linear_terms)
+                if m.internalModel.linear_terms[j][:id] == i
+                    @test j == lk[i]
+                    @test j[:sign] == :+
+                    @test j[:scalar] == lk[i][:scalar]
+                    @test j[:coef_var] == lk[i][:coef_var]
+                    @test m.internalModel.linear_terms[j][:y_idx] == yids[i]
+                end
+            end
+        end
     end
 end
 
