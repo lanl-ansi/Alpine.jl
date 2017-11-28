@@ -1,7 +1,3 @@
-# Hacking-Solver
-
-```@meta
-CurrentModule = POD
-```
+# Hacking POD
 
 This page give more detailed tutorial on how to hack this solver for different behaviors...
