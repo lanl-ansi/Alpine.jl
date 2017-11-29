@@ -7,7 +7,7 @@ Dev: [![Build Status](https://travis-ci.org/lanl-ansi/POD.jl.svg?branch=master)]
 
 Unlike many other state-of-the-art MINLP solvers, POD is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
 
-POD solves MINLP by:
+POD.jl solves MINLP by:
 
 * analyzing the problem expressions (objective & constraints) to obtain a convexifyable formulation
 
@@ -18,21 +18,21 @@ POD solves MINLP by:
 
 ## Installation
 
-Currently, POD is a private repository that is used by the LANL-ANSI group, the proposed publication is unknown given the upcoming changes in JuMP and MathProgBase that POD needs to adapt to. To install POD,
+Currently, POD.jl is a private repository that is used by the LANL-ANSI group, the proposed publication is unknown given the upcoming changes in JuMP and MathProgBase that POD needs to adapt to. To install POD,
 
 `Pkg.clone("https://github.com/lanl-ansi/POD.git")`
 
-For developers, it is highly recommended that any further development on POD is conducted on a new branch or a forked repo.
+For developers, it is highly recommended that any further development on POD.jl is conducted on a new branch or a forked repo.
 
 ## Usage
 For more details of the POD.jl usage instruction, please consult with [documentation](https://lanl-ansi.github.io/POD.jl/latest/)
 
 ## Important Note
-POD.jl is a developing software and a developing research project in Los Alamos National Lab. POD is not yet numerically robust and may require dedicated attention when encountering new instances. We embrace any issue and contribution to make this open-source solver better. If you are in need of help, please contact us or post an issue.
+POD.jl is a developing software and a developing research project in Los Alamos National Lab. It is not yet numerically robust and may require dedicated attention when encountering new instances. We embrace any issue and contribution to make this open-source solver better. If you are in need of help, please contact us or post an issue.
 
 ## Citation
 
-If you find POD useful in your work, please cite the following:
+If you find POD.jl useful in your work, please cite the following:
 ```
 @article{nagarajan2017adaptive,
   title={An Adaptive, Multivariate Partitioning Algorithm for Global Optimization of Nonconvex Programs},
