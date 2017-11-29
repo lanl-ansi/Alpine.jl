@@ -4,22 +4,21 @@ makedocs(
     format = :html,
     sitename = "POD",
     pages = [
-        "Introduction" => "intro.md",
-        "How to Use" => "installation.md",
-        "Choosing Sub-Solvers" => "choosingsolver.md",
-        "Algorithm" => "algorithm.md",
-        "Expression Guideline" => "expression.md",
-        "Parameters" => "parameters.md",
-        "Methods" => "functions.md",
-        "Hacking POD" => "hacking.md"
+        "Home" => "index.md",
+        "Getting Started" =>
+            [
+            "Installation" => "installation.md",
+            "Basic Usage" => "usage.md",
+            "Choosing Sub-Solvers" => "choosingsolver.md"
+            ],
+        "Parameters" => "parameters.md"
     ]
 )
 
 
 deploydocs(
-    repo = "github.com/lanl-ansi/POD.git",
+    repo = "github.com/lanl-ansi/POD.jl.git",
     target = "build",
-    branch = "monomial",
     osname = "linux",
     julia  = "0.6",
     deps   = nothing,
