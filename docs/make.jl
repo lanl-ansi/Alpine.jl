@@ -11,9 +11,7 @@ makedocs(
             "Basic Usage" => "usage.md",
             "Choosing Sub-Solvers" => "choosingsolver.md"
             ],
-        "Parameters" => "parameters.md",
-        "Expression Guideline" => "expression.md",
-        "Hacking POD" => "hacking.md"
+        "Parameters" => "parameters.md"
     ]
 )
 
