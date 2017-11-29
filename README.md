@@ -24,8 +24,11 @@ Currently, POD is a private repository that is used by the LANL-ANSI group, the 
 
 For developers, it is highly recommended that any further development on POD is conducted on a new branch or a forked repo.
 
+## Usage
+For more details of the POD.jl usage instruction, please consult with [documentation](https://lanl-ansi.github.io/POD.jl/latest/)
+
 ## Important Note
-POD is a developing software and a developing research project. POD is not yet numerically robust and may require dedicated attention when encountering new instances. We embrace any issues and problems to make this open-source solver better. If you are in need of help, please contact us or post an issue.
+POD.jl is a developing software and a developing research project in Los Alamos National Lab. POD is not yet numerically robust and may require dedicated attention when encountering new instances. We embrace any issue and contribution to make this open-source solver better. If you are in need of help, please contact us or post an issue.
 
 ## Citation
 
