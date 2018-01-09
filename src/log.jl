@@ -57,13 +57,15 @@ function logging_summary(m::PODNonlinearModel)
         m.convhull_formulation_minib && println("using piece-wise convex hull : minimum formulation with boundary cuts")
         m.convhull_formulation_sos2aux && println("using piece-wise convex hull : sos2 formulation with generic method addSOS2")
 
-        println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
-
+        (m.disc_add_partition_method == "adpative") && println("adaptively adding discretization ratio = $(m.disc_ratio)")
+        (m.disc_add_partition_method == "uniform") && println("uniform discretization rate = $(m.disc_uniform_rate)")
+        println("using method $(m.disc_var_pick_algo) for picking discretization variable...")
+        (m.disc_add_partition_method == "adaptive") && println("adaptively adding discretization ratio = $(m.disc_ratio)")
+        (m.disc_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
         (m.embedding) && println("using embedding formulation")
         (m.embedding) && println("encoding method = $(m.embedding_encode)")
         (m.embedding) && println("independent branching scheme = $(m.embedding_ibs)")
-        (m.discretization_add_partition_method == "adaptive") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
-        (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
+
     end
 
     # Additional warnings
