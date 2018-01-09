@@ -1,20 +1,6 @@
-function eniplac(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos2=true, presolve=0)
+function eniplac(;verbose=false, solver=nothing, exprmode=1)
 
-    if solver == nothing
-        m = Model(solver=PODSolver(nlp_local_solver=BonminNLSolver(["bonmin.iteration_limit=100"; "bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
-                                    mip_solver=CplexSolver(CPX_PARAM_SCRIND=1),
-                                    presolve_bound_tightening=(presolve>0),
-                                    presolve_bound_tightening_algo=presolve,
-                                    bilinear_convexhull=false,
-                                    monomial_convexhull=convhull,
-									convhull_formulation_sos2=sos2,
-                                    discretization_ratio=8,
-                                    # discretization_var_pick_algo="min_vertex_cover",
-                                    log_level=1,
-                                    rel_gap=0.0001))
-    else
-        m = Model(solver=solver)
-    end
+    m = Model(solver=solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
