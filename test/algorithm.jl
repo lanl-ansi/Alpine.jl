@@ -59,7 +59,6 @@
         @test status == :Optimal
         @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
         @test m.internalModel.logs[:n_iter] == 2
-
     end
 
     @testset " Validation Test || BT-AMP-TMC || basic solve || examples/nlp3.jl" begin
@@ -83,7 +82,6 @@
         @test status == :UserLimits
         @test m.internalModel.logs[:n_iter] == 3
         @test m.internalModel.logs[:bt_iter] == 2
-
     end
 
     @testset " Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl" begin
@@ -106,7 +104,6 @@
         @test status == :UserLimits
         @test m.internalModel.logs[:n_iter] == 2
         @test m.internalModel.logs[:bt_iter] == 2
-
     end
 
     @testset " Validation Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
@@ -297,6 +294,187 @@ end
         @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :binlin
         @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :monomial
         @test m.internalModel.nonlinear_terms[nlk10][:nonlinear_type] == :binlin
+    end
+end
 
+@testset "Solving algorithm tests ::EmbeddingFormulation" begin
+    @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
+                           embedding=true,
+                           log_level=1)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 7
+    end
+
+    @testset "Embedding Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=true,
+                           bound_basic_propagation=true,
+                           presolve_bound_tightening_algo=2,
+                           embedding=true,
+                           log_level=1)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 1
+    end
+
+    @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=CbcSolver(logLevel=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=false,
+                           embedding=true,
+                           log_level=1)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 9
+    end
+
+    @testset "Embedding Test || AMP || special problem || ... " begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                               discretization_abs_width_tol=1e-2,
+                               discretization_ratio=8,
+                               max_iter=6,
+                               presolve_bound_tightening=false,
+                               bound_basic_propagation=true,
+                               presolve_bound_tightening_algo=1,
+                               presolve_bt_output_tol=1e-1,
+                               embedding=true,
+                               log_level=0)
+
+        m = circle(solver=test_solver)
+        solve(m)
+        @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    end
+
+    @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
+                           embedding=true,
+                           embedding_ibs=true,
+                           log_level=1)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 7
+    end
+
+    @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=CbcSolver(logLevel=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=false,
+                           embedding=true,
+                           embedding_ibs=true,
+                           log_level=1)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 9
+    end
+
+    @testset "Embedding IBS Test || AMP || special problem || ... " begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                               discretization_abs_width_tol=1e-2,
+                               discretization_ratio=8,
+                               max_iter=6,
+                               presolve_bound_tightening=false,
+                               bound_basic_propagation=true,
+                               presolve_bound_tightening_algo=1,
+                               presolve_bt_output_tol=1e-1,
+                               embedding=true,
+                               embedding_ibs=true,
+                               log_level=0)
+
+        m = circle(solver=test_solver)
+        solve(m)
+        @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    end
+
+    @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
+                           embedding=true,
+                           embedding_link=true,
+                           log_level=1)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 7
+    end
+
+    @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=CbcSolver(logLevel=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=false,
+                           embedding=true,
+                           embedding_link=true,
+                           log_level=1)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 9
+    end
+
+    @testset "Embedding LINK Test || AMP || special problem || ... " begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                               discretization_abs_width_tol=1e-2,
+                               discretization_ratio=8,
+                               max_iter=6,
+                               presolve_bound_tightening=false,
+                               bound_basic_propagation=true,
+                               presolve_bound_tightening_algo=1,
+                               presolve_bt_output_tol=1e-1,
+                               embedding=true,
+                               embedding_link=true,
+                               log_level=0)
+
+        m = circle(solver=test_solver)
+        solve(m)
+        @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
     end
 end

@@ -15,10 +15,12 @@ include("operators.jl")
 # Main Algorithmic Process
 include("presolve.jl")
 include("amp.jl")
+include("embedding.jl")
 
 # Convexification method
 include("tmc.jl")
 include("multi.jl")
+include("bin.jl")
 
 # Model Manipulation and utilities
 include("bounds.jl")
