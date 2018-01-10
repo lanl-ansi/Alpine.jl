@@ -14,7 +14,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # basic solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
-    max_iter::Int                                                # Target Maximum Iterations
+    max_iter::Int                                               # Target Maximum Iterations
     rel_gap::Float64                                            # Relative optimality gap termination condition
     abs_gap::Float64                                            # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
@@ -50,7 +50,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
-    presolve_max_iter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
+    presolve_max_iter::Int                                      # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
     presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
@@ -59,6 +59,12 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Domain Reduction
     bound_basic_propagation::Bool                               # Conduct basic bound propagation
+
+    # embedding formulation
+    embedding::Bool
+    embedding_encode::Any                                       # Encoding method used for embedding
+    embedding_ibs::Bool                                         # Enable independent branching scheme
+    embedding_link::Bool                                         # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
 
     # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
@@ -183,6 +189,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_mip_relaxation,
                                 presolve_mip_timelimit,
                                 bound_basic_propagation,
+                                embedding,
+                                embedding_encode,
+                                embedding_ibs,
+                                embedding_link,
                                 user_parameters)
 
         m = new()
@@ -231,6 +241,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.presolve_mip_timelimit = presolve_mip_timelimit
 
         m.bound_basic_propagation = bound_basic_propagation
+
+        m.embedding = embedding
+        m.embedding_encode = embedding_encode
+        m.embedding_ibs = embedding_ibs
+        m.embedding_link = embedding_link
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver

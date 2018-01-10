@@ -30,8 +30,7 @@ function update_opt_gap(m::PODNonlinearModel)
         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
     end
 
-    # absoluate or anyother bound calculation shows here...
-
+    # absoluate or anyother bound calculation shows here..
     return
 end
 
