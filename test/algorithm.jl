@@ -29,7 +29,7 @@
                                max_iter=3,
         					   presolve_bt_width_tol=1e-3,
         					   presolve_bound_tightening=false,
-        					   discretization_var_pick_algo=0)
+        					   disc_var_pick_algo=0)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -74,7 +74,7 @@
                                    presolve_bound_tightening_algo=1,
                                    bound_basic_propagation=true,
     							   presolve_max_iter=2,
-    							   discretization_var_pick_algo=max_cover_var_picker)
+    							   disc_var_pick_algo=max_cover_var_picker)
         m = nlp3(solver=test_solver)
 
         status = solve(m)
@@ -97,7 +97,7 @@
                                    presolve_bound_tightening_algo=2,
                                    bound_basic_propagation=true,
                                    presolve_max_iter=2,
-                                   discretization_var_pick_algo=max_cover_var_picker)
+                                   disc_var_pick_algo=max_cover_var_picker)
 
         m = nlp3(solver=test_solver)
         status = solve(m)
@@ -155,22 +155,153 @@
         @test m.internalModel.logs[:n_iter] == 9
     end
 
-    @testset " Validation Test || AMP || special problem || ... " begin
+    @testset " Validation Test || AMP || basic solve || examples/circle.jl" begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
-                               discretization_abs_width_tol=1e-2,
-                               discretization_ratio=8,
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio=8,
                                max_iter=6,
-                               presolve_bound_tightening=false,
-                               bound_basic_propagation=true,
-                               presolve_bound_tightening_algo=1,
-                               presolve_bt_output_tol=1e-1,
+                               presolve_bound_tightening = false,
+                               presolve_bound_tightening_algo = 1,
+                               presolve_bt_output_tol = 1e-1,
                                log_level=0)
 
         m = circle(solver=test_solver)
         solve(m)
 
         @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    end
+end
+
+@testset "Solving Algorithm Test :: Featrue selecting delta" begin
+
+    @testset " Validation Test || AMP || DISC-RATIO || examples/nlp3.jl " begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=false,
+                               disc_ratio=18,
+                               max_iter=1,
+                               bound_basic_propagation=true,
+                               log_level=1)
+
+        m = nlp3(solver=test_solver)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 18
+    end
+
+    @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/nlp3.jl " begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=true,
+                               max_iter=1,
+                               bound_basic_propagation=true,
+                               log_level=1)
+
+        m = nlp3(solver=test_solver)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 14
+    end
+
+    @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/castro2m2.jl " begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=true,
+                               max_iter=1,
+                               bound_basic_propagation=true,
+                               log_level=1)
+
+        m = castro2m2(solver=test_solver)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 8
+    end
+
+    @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi3N.jl exprmode=2" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=true,
+                               max_iter=1,
+                               bound_basic_propagation=true,
+                               log_level=1)
+
+        m = multi3N(solver=test_solver, N=3, exprmode=1)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 17
+    end
+
+    @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi3N.jl exprmode=2" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=true,
+                               max_iter=1,
+                               bound_basic_propagation=false,
+                               log_level=1)
+
+        m = multi3N(solver=test_solver, N=3, exprmode=1)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 24
+    end
+
+    @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=1" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=true,
+                               max_iter=1,
+                               bound_basic_propagation=true,
+                               log_level=1)
+
+        m = multi4N(solver=test_solver, N=2, exprmode=1)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 13
+    end
+
+    @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=2" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=true,
+                               max_iter=1,
+                               bound_basic_propagation=false,
+                               log_level=1)
+
+        m = multi4N(solver=test_solver, N=2, exprmode=1)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 24
+    end
+
+    @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=2" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio_branch=true,
+                               max_iter=1,
+                               bound_basic_propagation=true,
+                               log_level=1)
+
+        m = multi4N(solver=test_solver, N=2, exprmode=2)
+        solve(m)
+
+        @test m.internalModel.logs[:n_iter] == 1
+        @test m.internalModel.disc_ratio == 24
     end
 end
 
@@ -242,7 +373,7 @@ end
                               mip_solver=PajaritoSolver(mip_solver=CbcSolver(),
                                                         cont_solver=IpoptSolver(),
                                                         log_level=0),
-                              discretization_var_pick_algo=1,
+                              disc_var_pick_algo=1,
                               log_level=100)
 
         m = bpml_monl(test_solver)

@@ -149,12 +149,12 @@ function castro6m2(;verbose=false, solver=nothing, convhull=true, sos2=true, sos
 								   bilinear_convexhull=convhull,
 								   convhull_formulation_sos2=sos2,
 								   convhull_formulation_sos2aux=sos2_alter,
-								   discretization_ratio=delta,
+								   disc_ratio=delta,
 								   presolve_bt_width_tol=1e-3,
 								   presolve_bt_output_tol=1e-1,
 								   presolve_bound_tightening=(presolve>0),
 	                               presolve_bound_tightening_algo=1,
-								   discretization_var_pick_algo=0))
+								   disc_var_pick_algo=0))
 	else
 		m = Model(solver=solver)
 	end

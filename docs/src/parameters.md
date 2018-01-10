@@ -20,11 +20,11 @@ There are some general paremters that controls the behavior of the AMP:
 
 ## Discretization-based parameters
 
-* `discretization_ratio(default=4)`: used during [`add_adpative_partition`](@ref) for measuring the radius of new partitioning relative to the active domain
+* `disc_ratio(default=4)`: used during [`add_adpative_partition`](@ref) for measuring the radius of new partitioning relative to the active domain
 
-* `discretization_var_pick_algo(default=0)`: controls algorithm/methods used for selecting variables for discretization, `0` is for max-cover, `1` is for minimum-vertex-cover. This parameter allows functional inputs.
+* `disc_var_pick_algo(default=0)`: controls algorithm/methods used for selecting variables for discretization, `0` is for max-cover, `1` is for minimum-vertex-cover. This parameter allows functional inputs.
 
-* `discretization_add_partition_method`: allows functional input on how new partitions should be constructed. This paremeter is not fully stable.
+* `disc_add_partition_method`: allows functional input on how new partitions should be constructed. This paremeter is not fully stable.
 
 ## Presolve Parameters
 
