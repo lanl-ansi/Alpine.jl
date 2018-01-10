@@ -8,7 +8,7 @@ function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   presolve_bound_tightening=(presolve>0),
 								   presolve_bound_tightening_algo=presolve,
 								   presolve_bt_output_tol=1e-1,
-								   log_level=100))
+								   log_level=10000))
 	else
 		m = Model(solver=solver)
 	end
@@ -35,7 +35,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   presolve_bound_tightening=(presolve>0),
 								   presolve_bound_tightening_algo=presolve,
 								   presolve_bt_output_tol=1e-1,
-								   log_level=100))
+								   log_level=10000))
 	else
 		m = Model(solver=solver)
 	end
@@ -71,7 +71,7 @@ function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alt
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
-								   log_level=1,
+								   log_level=100,
 								   rel_gap=0.0001,
 								   bilinear_convexhull=convhull,
 								   convhull_formulation_sos2=sos2,

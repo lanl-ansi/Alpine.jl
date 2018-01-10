@@ -3,7 +3,7 @@ function exprstest(;verbose=false, solver=nothing)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 									mip_solver=CplexSolver(),
-									log_level=0))
+									log_level=10000))
 	else
 		m = Model(solver=solver)
 	end
@@ -79,7 +79,7 @@ function operator_basic(;verbose=false, solver=nothing)
 	if solver == nothing
 		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
 								   mip_solver=CbcSolver(),
-								   log_level=1))
+								   log_level=100))
 	else
 		m = Model(solver=solver)
 	end

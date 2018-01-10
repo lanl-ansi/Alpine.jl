@@ -240,7 +240,7 @@ function blend029_gl(;verbose=false, solver=nothing, convhull=true, exprmode=1, 
 
     if solver == nothing
         m = Model(solver=PODSolver( #minlp_local_solver=PajaritoSolver(mip_solver=GurobiSolver(OutputFlag=0), cont_solver=IpoptSolver()),
-                                    minlp_local_solver=BonminNLSolver(["bonmin.algorithm=B-OA"; "bonmin.iteration_limit=100"; "bonmin.num_resolve_at_root=5"; "bonmin.num_resolve_at_node=5"; "bonmin.nlp_log_level=0"; "bonmin.bb_log_level=0"]),
+                                    minlp_local_solver=BonminNLSolver(["bonmin.algorithm=B-OA"; "bonmin.iteration_limit=100"; "bonmin.num_resolve_at_root=5"; "bonmin.num_resolve_at_node=5"; "bonmin.nlp_log_level=10000"; "bonmin.bb_log_level=10000"]),
                                     nlp_local_solver=IpoptSolver(print_level=0),
                                     mip_solver=GurobiSolver(OutputFlag=0),
                                     presolve_bound_tightening=(presolve>0),
@@ -252,7 +252,7 @@ function blend029_gl(;verbose=false, solver=nothing, convhull=true, exprmode=1, 
                                     discretization_var_minimum=minimum,
 									convhull_formulation_sos2=sos2,
                                     disc_ratio=8,
-                                    log_level=100,
+                                    log_level=10000,
                                     rel_gap=0.0001))
     else
         m = Model(solver=solver)

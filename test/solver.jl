@@ -7,7 +7,7 @@
     @testset "PODNonlinearModel loading tests" begin
         # Random Model 1
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
-    						   mip_solver=CbcSolver(logLevel=0),log_level=0)
+    						   mip_solver=CbcSolver(logLevel=0),log_level=10000)
         m = operator_c(solver=test_solver)
 
         status = JuMP.build(m)
@@ -15,7 +15,7 @@
 
         # Expression Model 1
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
-    						   mip_solver=CbcSolver(logLevel=0),log_level=0)
+    						   mip_solver=CbcSolver(logLevel=0),log_level=10000)
         m = exprstest(solver=test_solver)
         status = JuMP.build(m)
         @test isa(m.internalModel, POD.PODNonlinearModel)
@@ -30,7 +30,7 @@
                                 discretization_uniform_rate=10,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -48,7 +48,7 @@
                                 discretization_uniform_rate=10,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -66,7 +66,7 @@
                                 discretization_uniform_rate=10,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -83,7 +83,7 @@
                                 disc_var_pick_algo=3,
                                 bound_basic_propagation = false,
                                 max_iter=2,
-                                log_level=1)
+                                log_level=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -104,7 +104,7 @@
                                 discretization_uniform_rate=10,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
 
         m = castro2m2(solver=test_solver)
         status = solve(m)
@@ -124,7 +124,7 @@
                                 discretization_uniform_rate=10,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
 
         m = castro2m2(solver=test_solver)
         status = solve(m)
@@ -143,7 +143,7 @@
                                 discretization_uniform_rate=15,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
 
         m = castro2m2(solver=test_solver)
         status = solve(m)
@@ -160,13 +160,13 @@
     @testset "Partitioning variable selection tests :: blend029" begin
 
         # Select all NL variable
-        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=1),
+        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=100),
                                 nlp_local_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick_algo=0,
                                 discretization_uniform_rate=10,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
 
         m = blend029_gl(solver=test_solver)
         JuMP.build(m)
@@ -177,14 +177,14 @@
         @test m.internalModel.disc_var_pick_algo == 0
 
         # Minimum vertex cover
-        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=1),
+        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=100),
                                 nlp_local_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick_algo=1,
                                 discretization_uniform_rate=10,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
 
         m = blend029_gl(solver=test_solver)
         JuMP.build(m)
@@ -195,14 +195,14 @@
         @test m.internalModel.disc_var_pick_algo == 1
 
         # Adaptive Scheme vertex cover
-        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=1),
+        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=100),
                                 nlp_local_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick_algo=2,
                                 discretization_uniform_rate=10,
                                 bound_basic_propagation = false,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
 
         m = blend029_gl(solver=test_solver)
         JuMP.build(m)
@@ -221,7 +221,7 @@
                                 disc_var_pick_algo=3,
                                 bound_basic_propagation=true,
                                 max_iter=1,
-                                log_level=1)
+                                log_level=100)
 
         m = castro6m2(solver=test_solver)
         status = solve(m)
@@ -242,7 +242,7 @@
                                 disc_var_pick_algo=3,
                                 bound_basic_propagation=true,
                                 max_iter=2,
-                                log_level=100)
+                                log_level=10000)
 
         m = castro6m2(solver=test_solver)
         status = solve(m)
