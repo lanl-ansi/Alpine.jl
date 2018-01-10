@@ -122,7 +122,7 @@ function expr_finalized(m::PODNonlinearModel)
     			end
     		end
         elseif m.nonlinear_terms[i][:nonlinear_type] in [:sin, :cos]
-            for var in i[:var_idxs]
+            for var in m.nonlinear_terms[i][:var_idxs]
                 @assert isa(var, Int)
                 if !(var in m.all_nonlinear_vars)
                     push!(m.all_nonlinear_vars, var)
@@ -312,6 +312,13 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 (length(sub_coef) != 1 || length(sub_vars) != 1) && return false, expr
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
                 continue
+            end
+            if expr.args[i].head == :call && expr.args[i].args[1] in [:-,:+] && length(expr.args[i].args) == 2
+                expr.args[i].args[1] == :+ ? sub_coef = [1.0] : sub_coef = [-1.0]
+                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(j)) && j.head == :ref)]
+                isempty(sub_vars) && return false, expr
+                length(sub_vars) != 1 && return false, expr
+                (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
             else
                 return false, expr
             end
