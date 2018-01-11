@@ -47,7 +47,7 @@ function logging_summary(m::PODNonlinearModel)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
         println("detected nonlinear terms = $(length(m.nonlinear_terms))")
         println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")
-        println("number of selected variables to discretize = $(length(m.var_discretization_mip))")
+        println("number of selected variables to discretize = $(length(m.var_disc_mip))")
 
         m.bilinear_convexhull && println("bilinear treatment = convex hull formulation")
         m.monomial_convexhull && println("monomial treatment = convex hull formulation")

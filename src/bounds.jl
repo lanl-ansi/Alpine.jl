@@ -257,7 +257,7 @@ function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
 
     for var in m.all_nonlinear_vars
         if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
-            deleteat!(m.var_discretization_mip, findfirst(m.var_discretization_mip, var)) # Clean nonlinear_terms by deleting the info
+            deleteat!(m.var_disc_mip, findfirst(m.var_disc_mip, var)) # Clean nonlinear_terms by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end
     end

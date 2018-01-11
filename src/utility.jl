@@ -240,7 +240,7 @@ function fix_domains(m::PODNonlinearModel; kwargs...)
     l_var = copy(m.l_var_orig)
     u_var = copy(m.u_var_orig)
     for i in 1:m.num_var_orig
-        if i in m.var_discretization_mip
+        if i in m.var_disc_mip
             point = m.sol_incumb_lb[i]
             for j in 1:length(m.discretization[i])
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
@@ -295,7 +295,7 @@ function pick_vars_discretization(m::PODNonlinearModel)
 
     if isa(m.disc_var_pick_algo, Function)
         eval(m.disc_var_pick_algo)(m)
-        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+        (length(m.var_disc_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.disc_var_pick_algo, Int) || isa(m.disc_var_pick_algo, String)
         if m.disc_var_pick_algo == 0
             select_all_nlvar(m)
@@ -340,8 +340,8 @@ function select_all_nlvar(m::PODNonlinearModel; kwargs...)
         end
     end
     nodes = collect(nodes)
-    m.num_var_discretization_mip = length(nodes)
-    m.var_discretization_mip = nodes
+    m.num_var_disc_mip = length(nodes)
+    m.var_disc_mip = nodes
 
     return
 end
@@ -426,7 +426,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
     distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    (m.log_level > 100) && println("updated partition var selection => $(m.var_discretization_mip)")
+    (m.log_level > 100) && println("updated partition var selection => $(m.var_disc_mip)")
     return
 end
 
@@ -483,8 +483,8 @@ function min_vertex_cover(m::PODNonlinearModel)
     xVal = getvalue(x)
 
     # Getting required information
-    m.num_var_discretization_mip = Int(sum(xVal))
-    m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
+    m.num_var_disc_mip = Int(sum(xVal))
+    m.var_disc_mip = [i for i in nodes if xVal[i] > 1e-5]
 
     return
 end
@@ -517,8 +517,8 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     status = solve(minvertex, suppress_warnings=true)
 
     xVal = getvalue(x)
-    m.num_var_discretization_mip = Int(sum(xVal))
-    m.var_discretization_mip = [i for i in nodes if xVal[i] > 0]
-    (m.log_level >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip)) : $(m.var_discretization_mip)")
+    m.num_var_disc_mip = Int(sum(xVal))
+    m.var_disc_mip = [i for i in nodes if xVal[i] > 0]
+    (m.log_level >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_disc_mip)) : $(m.var_disc_mip)")
     return
 end

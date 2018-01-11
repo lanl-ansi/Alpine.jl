@@ -60,8 +60,8 @@ function max_cover_var_picker(m::POD.PODNonlinearModel)
 		end
 	end
 	nodes = collect(nodes)
-	m.num_var_discretization_mip = length(nodes)
-	m.var_discretization_mip = nodes
+	m.num_var_disc_mip = length(nodes)
+	m.var_disc_mip = nodes
 	return
 end
 

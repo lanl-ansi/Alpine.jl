@@ -500,8 +500,8 @@ end
     @testset "Embedding Test || AMP || special problem || ... " begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
-                               discretization_abs_width_tol=1e-2,
-                               discretization_ratio=8,
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio=8,
                                max_iter=6,
                                presolve_bound_tightening=false,
                                bound_basic_propagation=true,
@@ -554,8 +554,8 @@ end
     @testset "Embedding IBS Test || AMP || special problem || ... " begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
-                               discretization_abs_width_tol=1e-2,
-                               discretization_ratio=8,
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio=8,
                                max_iter=6,
                                presolve_bound_tightening=false,
                                bound_basic_propagation=true,
@@ -609,8 +609,8 @@ end
     @testset "Embedding LINK Test || AMP || special problem || ... " begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
-                               discretization_abs_width_tol=1e-2,
-                               discretization_ratio=8,
+                               disc_abs_width_tol=1e-2,
+                               disc_ratio=8,
                                max_iter=6,
                                presolve_bound_tightening=false,
                                bound_basic_propagation=true,

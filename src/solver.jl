@@ -37,7 +37,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     disc_consecutive_forbid::Int
     disc_ratio_branch::Bool
 
-    convexhull_sweep_limit::Int
+    convhull_sweep_limit::Int
     convhull_formulation_sos2::Bool
     convhull_formulation_sos2aux::Bool
     convhull_formulation_facet::Bool
@@ -97,7 +97,7 @@ function PODSolver(;
     disc_consecutive_forbid = 0,
     disc_ratio_branch=false,
 
-    convexhull_sweep_limit = 1,
+    convhull_sweep_limit = 1,
     convhull_formulation_sos2 = true,
     convhull_formulation_sos2aux = false,
     convhull_formulation_facet = false,
@@ -163,7 +163,7 @@ function PODSolver(;
         disc_rel_width_tol,
         disc_consecutive_forbid,
         disc_ratio_branch,
-        convexhull_sweep_limit,
+        convhull_sweep_limit,
         convhull_formulation_sos2,
         convhull_formulation_sos2aux,
         convhull_formulation_facet,
@@ -223,7 +223,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     disc_consecutive_forbid = s.disc_consecutive_forbid
     disc_ratio_branch = s.disc_ratio_branch
 
-    convexhull_sweep_limit = s.convexhull_sweep_limit
+    convhull_sweep_limit = s.convhull_sweep_limit
     convhull_formulation_sos2 = s.convhull_formulation_sos2
     convhull_formulation_sos2aux = s.convhull_formulation_sos2aux
     convhull_formulation_facet = s.convhull_formulation_facet
@@ -267,7 +267,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             disc_rel_width_tol,
                             disc_consecutive_forbid,
                             disc_ratio_branch,
-                            convexhull_sweep_limit,
+                            convhull_sweep_limit,
                             convhull_formulation_sos2,
                             convhull_formulation_sos2aux,
                             convhull_formulation_facet,

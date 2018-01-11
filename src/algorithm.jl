@@ -41,7 +41,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_ratio_branch::Bool
 
     # parameters used to control convhull formulation
-    convexhull_sweep_limit::Int                                 # Contoller for formulation density
+    convhull_sweep_limit::Int                                   # Contoller for formulation density
     convhull_formulation_sos2::Bool                             # Convex hull formulation with SOS-2 representation (numerically best so far)
     convhull_formulation_sos2aux::Bool                          # Speical SOS-2 formulation that utilized auxilary variables
     convhull_formulation_facet::Bool                            # Use the facets contraint generated from PORTA
@@ -64,7 +64,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     embedding::Bool
     embedding_encode::Any                                       # Encoding method used for embedding
     embedding_ibs::Bool                                         # Enable independent branching scheme
-    embedding_link::Bool                                         # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
+    embedding_link::Bool                                        # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
 
     # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
@@ -113,15 +113,15 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # local solution model extra data for each iteration
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
-    var_type::Vector{Symbol}                             # Updated variable type for local solve
+    var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    num_var_linear_lifted_mip::Int                             # Number of linear lifting variables required.
-    num_var_nonlinear_lifted_mip::Int                                     # Number of lifted variables
-    num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
+    num_var_linear_lifted_mip::Int                              # Number of linear lifting variables required.
+    num_var_nonlinear_lifted_mip::Int                           # Number of lifted variables
+    num_var_disc_mip::Int                                       # Number of variables on which discretization is performed
     num_constr_convex::Int                                      # Number of structural constraints
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
@@ -134,7 +134,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
     bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
     discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
-    var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
+    var_disc_mip::Vector{Any}                                   # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
     u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
@@ -175,7 +175,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 disc_rel_width_tol,
                                 disc_consecutive_forbid,
                                 disc_ratio_branch,
-                                convexhull_sweep_limit,
+                                convhull_sweep_limit,
                                 convhull_formulation_sos2,
                                 convhull_formulation_sos2aux,
                                 convhull_formulation_facet,
@@ -225,7 +225,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.disc_consecutive_forbid = disc_consecutive_forbid
         m.disc_ratio_branch = disc_ratio_branch
 
-        m.convexhull_sweep_limit = convexhull_sweep_limit
+        m.convhull_sweep_limit = convhull_sweep_limit
         m.convhull_formulation_sos2 = convhull_formulation_sos2
         m.convhull_formulation_sos2aux = convhull_formulation_sos2aux
         m.convhull_formulation_facet = convhull_formulation_facet
@@ -271,11 +271,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.all_nonlinear_vars = Int[]
         m.bounding_constr_expr_mip = []
         m.bounding_constr_mip = []
-        m.var_discretization_mip = []
+        m.var_disc_mip = []
         m.discretization = Dict()
         m.num_var_linear_lifted_mip = 0
         m.num_var_nonlinear_lifted_mip = 0
-        m.num_var_discretization_mip = 0
+        m.num_var_disc_mip = 0
         m.num_constr_convex = 0
         m.structural_constr = []
         m.bound_sol_history = []
