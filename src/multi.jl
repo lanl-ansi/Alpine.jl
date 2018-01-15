@@ -195,48 +195,21 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
     return λ
 end
 
-"""
-    Less memeory & time efficiency, but a easier implementation
-"""
-function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Any, λ::Dict, extreme_point_cnt::Int)
-
-    var_indices = collect(ml_indices)
-    for i in 1:extreme_point_cnt
-        sub = ind2sub(λ[ml_indices][:indices], i)
-        k = 0
-        for var in ml_indices
-            k += 1
-            @assert var == var_indices[k]
-            λ[ml_indices][:vals][CartesianIndex(sub)] *= discretization[var][sub[k]]
-        end
-    end
-
-    return λ
-end
-
 # Process Binary Variables
 function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
     for i in ml_indices
         if !(i in keys(α))
-            if m.convhull_formulation_sos2aux
-                lambda_cnt = length(discretization[i])
-                α[i] = @variable(m.model_mip, [1:intersect_cnt], lowerbound=0.0, upperbound=1.0, basename="A$(i)")
-                addSOS2(m.model_mip, α[i])
+            lambda_cnt = length(discretization[i])
+            partition_cnt = length(discretization[i]) - 1
+            if m.embedding && partition_cnt > 2
+                αCnt = Int(ceil(log(2,partition_cnt)))
+                α[i] = @variable(m.model_mip, [1:αCnt], Bin, basename=string("YL",i))
+            else
+                α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
+                @constraint(m.model_mip, sum(α[i]) == 1)
                 @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
                 @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
-            else
-                lambda_cnt = length(discretization[i])
-                partition_cnt = length(discretization[i]) - 1
-                if m.embedding && partition_cnt > 2
-                    αCnt = Int(ceil(log(2,partition_cnt)))
-                    α[i] = @variable(m.model_mip, [1:αCnt], Bin, basename=string("YL",i))
-                else
-                    α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
-                    @constraint(m.model_mip, sum(α[i]) == 1)
-                    @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
-                    @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
-                end
             end
         end
     end
@@ -255,13 +228,9 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     for i in ml_indices
         cnt += 1
         amp_post_inequalities(m, discretization, λ, α, ml_indices, dim, i, cnt)        # Add links between λ and α
-        if m.convhull_formulation_sos2aux
-            @constraint(m.model_mip, Variable(m.model_mip, i) == dot(α[i], discretization[i]))
-        else
-            lambda_cnt = length(discretization[i])
-            sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt] # Add x = f(λ) for convex representation of x value
-            @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
-        end
+        lambda_cnt = length(discretization[i])
+        sliced_indices = [collect_indices(λ[ml_indices][:indices], cnt, [k], dim) for k in 1:lambda_cnt] # Add x = f(λ) for convex representation of x value
+        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([discretization[i][k]],length(sliced_indices[k])), λ[ml_indices][:vars][sliced_indices[k]]) for k in 1:lambda_cnt))
     end
 
     return
@@ -311,7 +280,6 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
 
     # Add x = f(λ) for convex representation
     @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
-    (m.convhull_formulation_sos2aux) && warn("Not considering SOS2-Formulation with generic methods for monomial terms")
 
     return
 end
@@ -320,14 +288,6 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
 
     lambda_cnt = length(discretization[var_ind])
     partition_cnt = lambda_cnt - 1
-
-    if m.convhull_formulation_sos2aux
-        for j in 1:lambda_cnt
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
-            @constraint(m.model_mip, α[var_ind][j] == sum(λ[ml_indices][:vars][sliced_indices]))
-        end
-        return
-    end
 
     # Embedding formulation
     if m.embedding && partition_cnt > 2
@@ -389,7 +349,7 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
         return
     end
 
-    error("Must indicate a choice of convex hull formulation. ?(minib, sos2, sos2aux, facet)")
+    error("Must indicate a choice of convex hull formulation. ?(minib, sos2, facet)")
     return
 end
 

@@ -74,6 +74,7 @@
                                    presolve_bound_tightening_algo=1,
                                    bound_basic_propagation=true,
     							   presolve_max_iter=2,
+                                   presolve_track_time=True,
     							   disc_var_pick_algo=max_cover_var_picker)
         m = nlp3(solver=test_solver)
 
@@ -186,7 +187,6 @@
         solve(m)
         @test isapprox(m.objVal, 2.0; atol=1e-3)
     end
-
 end
 
 @testset "Solving Algorithm Test :: Featrue selecting delta" begin
@@ -444,7 +444,7 @@ end
     end
 end
 
-@testset "Solving algorithm tests ::EmbeddingFormulation" begin
+@testset "Solving algorithm tests :: Embedding Formulation" begin
     @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=10000),
@@ -623,5 +623,57 @@ end
         m = circle(solver=test_solver)
         solve(m)
         @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    end
+end
+
+@testset "Algorithm Logic Tests" begin
+    @testset "Logic: local solve reroute/infeasible" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               max_iter=1,
+                               colorful_pod="warmer",
+                               log_level=100)
+
+        m = castro4m2(solver=test_solver)
+        e = nothing
+        try
+            solve(m)
+        catch e
+            println("Expected error.")
+        end
+        @test e.msg == "[PRESOLVE] NLP solve failure Error."
+        @test m.internalModel.status[:local_solve] == :Error
+
+    end
+end
+
+@testset "Algorithm Special Test" begin
+    @testset "Convex Model Solve" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               max_iter=1,
+                               colorful_pod="solarized",
+                               log_level=100)
+        m = convex_solve(solver=test_solver)
+        e = nothing
+        try
+            solve(m)
+        catch e
+            @test e.msg == "Solver does not support quadratic objectives"
+        end
+    end
+
+    @testset "Uniform partitioning" begin
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_add_partition_method = "uniform",
+                               disc_uniform_rate = 10,
+                               max_iter=1,
+                               colorful_pod="random",
+                               timeout=100000,
+                               log_level=100)
+        m = nlp3(solver=test_solver)
+        solve(m)
+        @test isapprox(m.objBound, 6561.7156;atol=1e-3)
     end
 end

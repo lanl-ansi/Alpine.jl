@@ -139,15 +139,14 @@ end
 
 function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
 
-    if convex[:sense] == :(>=)
-        @constraint(model_mip,
-            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
-    elseif convex[:sense] == :(<=)
+    if convex[:sense] == :(<=)
         @constraint(model_mip,
             sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) <= convex[:rhs])
-    elseif convex[:sense] == :(==)
+    elseif convex[:sense] == :(>=)
         @constraint(model_mip,
-            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) == convex[:rhs])
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
+    else
+        error("No equality constraints should be recognized as supported convex constriants")
     end
 
     return

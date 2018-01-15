@@ -18,9 +18,6 @@ function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 	@NLconstraint(m, x[1]*x[2] >= 8)
 	@NLobjective(m, Min, 6*x[1]^2 + 4*x[2]^2 - 2.5*x[1]*x[2])
 
-	if verbose
-		print(m)
-	end
 	return m
 end
 
@@ -44,10 +41,6 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	@NLobjective(m, Min, sum((x[i]^2 - i)^2 for i in 1:2))
 
-	if verbose
-		print(m)
-	end
-
 	return m
 end
 
@@ -66,27 +59,9 @@ function max_cover_var_picker(m::POD.PODNonlinearModel)
 end
 
 
-function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alter=false, presolve=0, delta=16, dynamic="experimental", level=0.5, minimum=1)
+function nlp3(;solver=nothing)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-								   mip_solver=GurobiSolver(OutputFlag=0),
-								   log_level=100,
-								   rel_gap=0.0001,
-								   bilinear_convexhull=convhull,
-								   convhull_formulation_sos2=sos2,
-								   convhull_formulation_sos2aux=sos2_alter,
-								   disc_ratio=delta,
-								   disc_var_pick_algo=dynamic,
-								   discretization_var_level=level,
-								   discretization_var_minimum=minimum,
-								   presolve_bt_width_tol=1e-3,
-								   presolve_bt_output_tol=1e-1,
-								   presolve_bound_tightening=(presolve>0),
-	                               presolve_bound_tightening_algo=1))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	@variable(m, x[1:8])
 
@@ -116,10 +91,6 @@ function nlp3(;verbose=false, solver=nothing, convhull=true, sos2=true, sos2_alt
 	@NLconstraint(m, x[3]*x[5] - x[3]*x[8] - 2500*x[5] + 1250000 <= 0)
 
 	@objective(m, Min, x[1]+x[2]+x[3])
-
-	if verbose
-		print(m)
-	end
 
 	return m
 end

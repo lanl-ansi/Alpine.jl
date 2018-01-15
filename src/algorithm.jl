@@ -43,7 +43,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # parameters used to control convhull formulation
     convhull_sweep_limit::Int                                   # Contoller for formulation density
     convhull_formulation_sos2::Bool                             # Convex hull formulation with SOS-2 representation (numerically best so far)
-    convhull_formulation_sos2aux::Bool                          # Speical SOS-2 formulation that utilized auxilary variables
     convhull_formulation_facet::Bool                            # Use the facets contraint generated from PORTA
     convhull_formulation_minib::Bool                            # Use minimum formulation with boundary cuts
 
@@ -177,7 +176,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 disc_ratio_branch,
                                 convhull_sweep_limit,
                                 convhull_formulation_sos2,
-                                convhull_formulation_sos2aux,
                                 convhull_formulation_facet,
                                 convhull_formulation_minib,
                                 presolve_track_time,
@@ -227,7 +225,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.convhull_sweep_limit = convhull_sweep_limit
         m.convhull_formulation_sos2 = convhull_formulation_sos2
-        m.convhull_formulation_sos2aux = convhull_formulation_sos2aux
         m.convhull_formulation_facet = convhull_formulation_facet
         m.convhull_formulation_minib = convhull_formulation_minib
 
@@ -559,14 +556,14 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         m.status[:local_solve] = :Infeasible
         return
     elseif local_solve_nlp_status == :Unbounded
+        m.status[:local_solve] = :Unbounded
         (presolve == true) && warn("[PRESOLVE] NLP local solve is unbounded.")
         (presolve == false) && warn("[LOCAL SOLVE] NLP local solve is unbounded.")
-        m.status[:local_solve] = :Unbounded
         return
     else
+        m.status[:local_solve] = :Error
 		(presolve == true) && error("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).")
         (presolve == false) && warn("[LOCAL SOLVE] NLP local solve failure.")
-        m.status[:local_solve] = :Error
         return
     end
 

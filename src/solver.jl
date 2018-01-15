@@ -39,7 +39,6 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     convhull_sweep_limit::Int
     convhull_formulation_sos2::Bool
-    convhull_formulation_sos2aux::Bool
     convhull_formulation_facet::Bool
     convhull_formulation_minib::Bool
 
@@ -99,7 +98,6 @@ function PODSolver(;
 
     convhull_sweep_limit = 1,
     convhull_formulation_sos2 = true,
-    convhull_formulation_sos2aux = false,
     convhull_formulation_facet = false,
     convhull_formulation_minib = false,
 
@@ -165,7 +163,6 @@ function PODSolver(;
         disc_ratio_branch,
         convhull_sweep_limit,
         convhull_formulation_sos2,
-        convhull_formulation_sos2aux,
         convhull_formulation_facet,
         convhull_formulation_minib,
         presolve_track_time,
@@ -225,7 +222,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     convhull_sweep_limit = s.convhull_sweep_limit
     convhull_formulation_sos2 = s.convhull_formulation_sos2
-    convhull_formulation_sos2aux = s.convhull_formulation_sos2aux
     convhull_formulation_facet = s.convhull_formulation_facet
     convhull_formulation_minib = s.convhull_formulation_minib
 
@@ -269,7 +265,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             disc_ratio_branch,
                             convhull_sweep_limit,
                             convhull_formulation_sos2,
-                            convhull_formulation_sos2aux,
                             convhull_formulation_facet,
                             convhull_formulation_minib,
                             presolve_track_time,

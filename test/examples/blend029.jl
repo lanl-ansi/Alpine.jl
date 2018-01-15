@@ -1,4 +1,4 @@
-function blend029(;verbose=false, solver=nothing)
+function blend029(;solver=nothing)
 
     m = Model(solver=solver)
 
@@ -236,27 +236,9 @@ function blend029(;verbose=false, solver=nothing)
     return m
 end
 
-function blend029_gl(;verbose=false, solver=nothing, convhull=true, exprmode=1, sos2=true, presolve=0)
+function blend029_gl(;solver=nothing)
 
-    if solver == nothing
-        m = Model(solver=PODSolver( #minlp_local_solver=PajaritoSolver(mip_solver=GurobiSolver(OutputFlag=0), cont_solver=IpoptSolver()),
-                                    minlp_local_solver=BonminNLSolver(["bonmin.algorithm=B-OA"; "bonmin.iteration_limit=100"; "bonmin.num_resolve_at_root=5"; "bonmin.num_resolve_at_node=5"; "bonmin.nlp_log_level=10000"; "bonmin.bb_log_level=10000"]),
-                                    nlp_local_solver=IpoptSolver(print_level=0),
-                                    mip_solver=GurobiSolver(OutputFlag=0),
-                                    presolve_bound_tightening=(presolve>0),
-                                    presolve_bound_tightening_algo=presolve,
-                                    bilinear_convexhull=false,
-                                    monomial_convexhull=convhull,
-                                    disc_var_pick_algo=dynamic,
-                                    discretization_var_level=level,
-                                    discretization_var_minimum=minimum,
-									convhull_formulation_sos2=sos2,
-                                    disc_ratio=8,
-                                    log_level=10000,
-                                    rel_gap=0.0001))
-    else
-        m = Model(solver=solver)
-    end
+    m = Model(solver=solver)
 
     @variable(m, x[1:102])
     for i=67:102
@@ -506,10 +488,6 @@ function blend029_gl(;verbose=false, solver=nothing, convhull=true, exprmode=1, 
     @constraint(m, x[91]+x[100]<=1)  #= e212: =#
     @constraint(m, x[92]+x[101]<=1)  #= e213: =#
     @constraint(m, x[93]+x[102]<=1)  #= e214: =#
-
-    if verbose
-        print(m)
-    end
 
     return m
 end

@@ -8,7 +8,7 @@ include("$(Pkg.dir())/POD/test/examples/exprstest.jl")
 
 # NLP Testing Instances
 include("$(Pkg.dir())/POD/test/examples/nlp.jl")
-include("$(Pkg.dir())/POD/test/examples/castro2m2.jl")
+include("$(Pkg.dir())/POD/test/examples/castrom2.jl")
 
 # Multilinear Testing Instances
 include("$(Pkg.dir())/POD/test/examples/blend029.jl")
@@ -22,6 +22,7 @@ include("$(Pkg.dir())/POD/test/examples/linearlift.jl")
 include("$(Pkg.dir())/POD/test/examples/specialopts.jl")
 
 # Performe Tests
-include("$(Pkg.dir())/POD/test/solver.jl")
-include("$(Pkg.dir())/POD/test/expression.jl")
-include("$(Pkg.dir())/POD/test/algorithm.jl")
+# include("$(Pkg.dir())/POD/test/solver.jl")
+# include("$(Pkg.dir())/POD/test/expression.jl")
+# include("$(Pkg.dir())/POD/test/algorithm.jl")
+include("$(Pkg.dir())/POD/test/new.jl")
