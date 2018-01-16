@@ -74,7 +74,7 @@
                                    presolve_bound_tightening_algo=1,
                                    bound_basic_propagation=true,
     							   presolve_max_iter=2,
-                                   presolve_track_time=True,
+                                   presolve_track_time=true,
     							   disc_var_pick_algo=max_cover_var_picker)
         m = nlp3(solver=test_solver)
 
