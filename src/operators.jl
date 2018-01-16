@@ -846,6 +846,10 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
         # Now, we should use the differences to indicate different types of convex expression
         convex_type = :Unknown
 
+        # [BUG FIX | FORK]
+        power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]    # Special case for linear constraints with @NLconstraint
+        isempty(power_check) && return false
+
         # Convex constraint Type-A
         # sum_i (c_i*x_i^p) <= K (K > 0, p is an even positive integer and x_i \in R)   => Convex
         power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]
@@ -869,6 +873,7 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
         lb_check =  [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
         (convex_type == :Unknown) && prod(power_check) && prod(power_check) && (convex_type = :convexD)
 
+        # If we really cannot figure out what is going on...
         (convex_type == :Unknown) && return false
 
         # Recording the nonlinear info
