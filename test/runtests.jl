@@ -22,7 +22,7 @@ include("$(Pkg.dir())/POD/test/examples/linearlift.jl")
 include("$(Pkg.dir())/POD/test/examples/specialopts.jl")
 
 # Performe Tests
-include("$(Pkg.dir())/POD/test/solver.jl")
-include("$(Pkg.dir())/POD/test/expression.jl")
-include("$(Pkg.dir())/POD/test/algorithm.jl")
+# include("$(Pkg.dir())/POD/test/solver.jl")
+# include("$(Pkg.dir())/POD/test/expression.jl")
+# include("$(Pkg.dir())/POD/test/algorithm.jl")
 include("$(Pkg.dir())/POD/test/new.jl")

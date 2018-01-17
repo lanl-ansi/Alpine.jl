@@ -223,34 +223,35 @@ function mccormick_bin(m,xy,x,y)
     return
 end
 
-function mccormick_monomial(m,xy,x,xˡ,xᵘ)
-    @constraint(m, xy >= x^2)
-    @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
-    return
-end
-
-function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
-    if lazy == 1
-        function GetLazyCuts_quad(cb)
-            TOL1 = 1e-6
-            if (getvalue(x)^p > (getvalue(x_p) + TOL1))
-                a = p*getvalue(x)^(p-1)
-                b = (1-p)*getvalue(x)^p
-                @lazyconstraint(cb, a*x + b <= x_p)
-            end
-        end
-        addlazycallback(m, GetLazyCuts_quad)
-    elseif p == 2 && quad == 1
-        @constraint(m, x_p >= x^2)
-    else
-        x0_vec = sort(union(xˡ, xᵘ))
-        for x0 in x0_vec
-            @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
-        end
-    end
-
-    A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
-    @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
-
-    return
-end
+# [TODO] Unused functions but will be used for later
+# function mccormick_monomial(m,xy,x,xˡ,xᵘ)
+#     @constraint(m, xy >= x^2)
+#     @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
+#     return
+# end
+#
+# function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
+#     if lazy == 1
+#         function GetLazyCuts_quad(cb)
+#             TOL1 = 1e-6
+#             if (getvalue(x)^p > (getvalue(x_p) + TOL1))
+#                 a = p*getvalue(x)^(p-1)
+#                 b = (1-p)*getvalue(x)^p
+#                 @lazyconstraint(cb, a*x + b <= x_p)
+#             end
+#         end
+#         addlazycallback(m, GetLazyCuts_quad)
+#     elseif p == 2 && quad == 1
+#         @constraint(m, x_p >= x^2)
+#     else
+#         x0_vec = sort(union(xˡ, xᵘ))
+#         for x0 in x0_vec
+#             @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
+#         end
+#     end
+#
+#     A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
+#     @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
+#
+#     return
+# end

@@ -144,7 +144,7 @@ Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled
 """
 function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
 
-	@show expr, coef, bufferVal
+	# @show expr, coef, bufferVal
 
 	reversor = Dict(true => -1.0, false => 1.0)
 	function sign_convertor(subexpr, pos)
@@ -159,8 +159,9 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
 		(bufferVal > 0.0) ? bufferVal *= expr : bufferVal = expr * coef
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-	elseif expr in [:+, :-]
+	elseif expr in [:+, :-]    # TODO: what is this condition?
 		if bufferVal != 0.0 && bufferVar != nothing
+            @show "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 			push!(lhscoeffs, bufferVal)
 			push!(lhsvars, bufferVar)
 			bufferVal = 0.0
@@ -193,7 +194,6 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_linear_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
 			if bufferVal != 0.0 && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
-                @show "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 				push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)
 				push!(lhsvars, bufferVar)
 				bufferVal = 0.0
