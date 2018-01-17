@@ -39,6 +39,27 @@
         @test m.internalModel.logs[:n_iter] == 3
     end
 
+    @testset " Validation Test || AMP-TMC || minimum-vertex solving || examples/nlp3.jl (3 iterations)" begin
+
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               bilinear_convexhull=false,
+                               monomial_convexhull=false,
+                               bound_basic_propagation=true,
+                               disc_var_pick_algo=1,
+                               log_level=100,
+                               max_iter=3,
+                               presolve_bt_width_tol=1e-3,
+                               presolve_bound_tightening=false)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :UserLimits
+        @test isapprox(m.objVal, 7049.247897696512; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 3
+        @test isapprox(m.objBound, 3647.178; atol=1e-2)
+    end
+
     @testset " Validation Test || PBT-AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
