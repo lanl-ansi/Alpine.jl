@@ -4,3 +4,4 @@ MathProgBase
 Ipopt
 Cbc
 Pajarito
+GLPKMathProgInterface

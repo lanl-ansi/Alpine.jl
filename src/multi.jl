@@ -84,6 +84,9 @@ end
 """
 function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
 
+    # [BUG FIXED]  added marker
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
     if haskey(β, m.nonlinear_terms[k][:var_idxs])
         return β
     else
@@ -101,6 +104,9 @@ function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
 end
 
 function amp_convexify_binprod(m::PODNonlinearModel, y::JuMP.Variable, x_idxs::Vector, β::Dict)
+
+    # [BUG FIXED]  added marker
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     if haskey(β, x_idxs)
         return β

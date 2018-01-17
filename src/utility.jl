@@ -181,7 +181,6 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
-
     # # Calculation of the bound
     # if m.sense_orig == :Min
     #     stopbound = (1-m.rel_gap+m.tol) * m.best_obj

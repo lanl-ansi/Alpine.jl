@@ -361,7 +361,7 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
     elseif m.mip_solver_identifier == "Cbc"
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
     elseif m.mip_solver_identifier == "GLPK"
-        insert_timeleft_symbol(m.mip_solver.opt)
+        insert_timeleft_symbol(m.mip_solver.opts, timelimit,:tm_lim,m.timeout)
     elseif m.mip_solver_identifier == "Pajarito"
         (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     else
