@@ -833,10 +833,9 @@ end
         m = blend029_gl(solver=test_solver)
         status = solve(m)
 
-        @test status == :Infeasible
+        @test status == :UserLimits
         @test m.internalModel.logs[:n_iter] == 3
-        @test isapprox(getobjbound(m), 13.991277551020406; atol=1e-3)
-
+        @test getobjbound(m) <= 14.0074
     end
 end
 
