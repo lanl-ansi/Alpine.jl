@@ -12,7 +12,7 @@
     m = blend029_gl(solver=test_solver)
     status = solve(m)
 
-    @test status == :Infeasible
+    @test status == :UserLimits
     @test m.internalModel.logs[:n_iter] == 2
 
     POD.fetch_mip_solver_identifier(m.internalModel;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
