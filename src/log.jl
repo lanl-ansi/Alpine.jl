@@ -30,7 +30,7 @@ end
 
 function logging_summary(m::PODNonlinearModel)
 
-    if m.log_level > 0
+    if m.log > 0
         print_with_color(:light_yellow, "full problem loaded into POD\n")
         println("problen sense $(m.sense_orig)")
         @printf "number of constraints = %d\n" m.num_constr_orig
@@ -43,8 +43,8 @@ function logging_summary(m::PODNonlinearModel)
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
 
         println("maximum solution time = ", m.timeout)
-        println("maximum iterations =  ", m.max_iter)
-        @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.rel_gap (m.rel_gap*100)
+        println("maximum iterations =  ", m.maxiter)
+        @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
         println("detected nonlinear terms = $(length(m.nonlinear_terms))")
         println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")
         println("number of selected variables to discretize = $(length(m.var_disc_mip))")
@@ -52,15 +52,12 @@ function logging_summary(m::PODNonlinearModel)
         m.bilinear_convexhull && println("bilinear treatment = convex hull formulation")
         m.monomial_convexhull && println("monomial treatment = convex hull formulation")
 
-        m.convhull_formulation_facet && println("using piece-wise convex hull : facet formulation")
-        m.convhull_formulation_sos2 && println("using piece-wise convex hull : sos2 formulation")
-        m.convhull_formulation_minib && println("using piece-wise convex hull : minimum formulation with boundary cuts")
+        println("using piece-wise convex hull : $(m.convhull_formulation) formulation")
+        println("using method $(m.disc_var_pick) for picking discretization variable...")
 
-        println("using method $(m.disc_var_pick_algo) for picking discretization variable...")
-
-        (m.embedding) && println("using embedding formulation")
-        (m.embedding) && println("encoding method = $(m.embedding_encode)")
-        (m.embedding) && println("independent branching scheme = $(m.embedding_ibs)")
+        (m.convhull_ebd) && println("using convhull_ebd formulation")
+        (m.convhull_ebd) && println("encoding method = $(m.convhull_ebd_encode)")
+        (m.convhull_ebd) && println("independent branching scheme = $(m.convhull_ebd_ibs)")
 
     end
 
@@ -157,7 +154,7 @@ end
 function summary_status(m::PODNonlinearModel)
 
     if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
-        if m.best_rel_gap > m.rel_gap
+        if m.best_rel_gap > m.relgap
             m.pod_status = :UserLimits
         else
             m.pod_status = :Optimal

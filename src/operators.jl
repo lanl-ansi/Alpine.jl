@@ -58,7 +58,7 @@ function expr_parsing(m::PODNonlinearModel)
 		m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
 		m.structural_obj = :generic_linear
 	end
-	(m.log_level > 99) && println("[OBJ] $(m.obj_expr_orig)")
+	(m.log > 99) && println("[OBJ] $(m.obj_expr_orig)")
 
 	for i in 1:m.num_constr_orig
 		is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
@@ -66,7 +66,7 @@ function expr_parsing(m::PODNonlinearModel)
 			m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], i, m)
 			m.structural_constr[i] = :generic_linear
 		end
-		(m.log_level > 99) && println("[CONSTR] $(m.constr_expr_orig[i])")
+		(m.log > 99) && println("[CONSTR] $(m.constr_expr_orig[i])")
 	end
 
 	return
@@ -81,13 +81,13 @@ function expr_conversion(m::PODNonlinearModel)
 		m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
 		m.structural_obj = :affine
 	end
-	m.log_level > 99 && println("type :: ", m.structural_obj)
-	m.log_level > 99 && println("lifted ::", m.bounding_obj_expr_mip)
-	m.log_level > 99 && println("coeffs ::", m.bounding_obj_mip[:coefs])
-	m.log_level > 99 && println("vars ::", m.bounding_obj_mip[:vars])
-	m.log_level > 99 && println("sense ::", m.bounding_obj_mip[:sense])
-	m.log_level > 99 && println("rhs ::", m.bounding_obj_mip[:rhs])
-	m.log_level > 99 && println("----------------")
+	m.log > 99 && println("type :: ", m.structural_obj)
+	m.log > 99 && println("lifted ::", m.bounding_obj_expr_mip)
+	m.log > 99 && println("coeffs ::", m.bounding_obj_mip[:coefs])
+	m.log > 99 && println("vars ::", m.bounding_obj_mip[:vars])
+	m.log > 99 && println("sense ::", m.bounding_obj_mip[:sense])
+	m.log > 99 && println("rhs ::", m.bounding_obj_mip[:rhs])
+	m.log > 99 && println("----------------")
 
 
 	for i in 1:m.num_constr_orig
@@ -95,13 +95,13 @@ function expr_conversion(m::PODNonlinearModel)
 			m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
 			m.structural_constr[i] = :affine
 		end
-		m.log_level > 99 && println("type :: ", m.structural_constr[i])
-		m.log_level > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
-		m.log_level > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-		m.log_level > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
-		m.log_level > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
-		m.log_level > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-		m.log_level > 99 && println("----------------")
+		m.log > 99 && println("type :: ", m.structural_constr[i])
+		m.log > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
+		m.log > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+		m.log > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
+		m.log > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
+		m.log > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+		m.log > 99 && println("----------------")
 	end
 
 	return
@@ -239,7 +239,7 @@ function store_nl_term(m::PODNonlinearModel, nl_key, var_idxs, term_type, operat
                                     :convexified => false)
 
     push!(m.var_type_lifted, m.nonlinear_terms[nl_key][:y_type])    # Keep track of the lifted var type
-    (m.log_level) > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
+    (m.log) > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
@@ -284,7 +284,7 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                                         :lifted_constr_ref => lifted_constr_ref,
                                         :constr_id => Set())
         push!(m.var_type_lifted, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-        (m.log_level) > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
+        (m.log) > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
     end
 
     function lift_linear_term()

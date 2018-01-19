@@ -3,12 +3,12 @@
     test_solver=PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                           nlp_local_solver=IpoptSolver(print_level=0),
                           mip_solver=CbcSolver(logLevel=0),
-                          bound_basic_propagation=true,
-                          disc_var_pick_algo=1,
-                          log_level=100,
-                          max_iter=2,
+                          presolve_bp=true,
+                          disc_var_pick=1,
+                          log=100,
+                          maxiter=2,
                           presolve_bt_width_tol=1e-3,
-                          presolve_bound_tightening=false)
+                          presolve_bt=false)
     m = blend029_gl(solver=test_solver)
     status = solve(m)
 

@@ -3,13 +3,13 @@
     @testset " Validation Test || AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=false,
                            monomial_convexhull=false,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=true,
+                           presolve_bt=false,
+                           presolve_bp=true,
                            presolve_bt_output_tol=1e-1,
-                           log_level=10000)
+                           log=10000)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -24,12 +24,12 @@
         					   mip_solver=CbcSolver(logLevel=0),
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
-                               bound_basic_propagation=true,
-        					   log_level=100,
-                               max_iter=3,
+                               presolve_bp=true,
+        					   log=100,
+                               maxiter=3,
         					   presolve_bt_width_tol=1e-3,
-        					   presolve_bound_tightening=false,
-        					   disc_var_pick_algo=0)
+        					   presolve_bt=false,
+        					   disc_var_pick=0)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -45,12 +45,12 @@
                                mip_solver=CbcSolver(logLevel=0),
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
-                               bound_basic_propagation=true,
-                               disc_var_pick_algo=1,
-                               log_level=100,
-                               max_iter=3,
+                               presolve_bp=true,
+                               disc_var_pick=1,
+                               log=100,
+                               maxiter=3,
                                presolve_bt_width_tol=1e-3,
-                               presolve_bound_tightening=false)
+                               presolve_bt=false)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -63,14 +63,14 @@
     @testset " Validation Test || PBT-AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-    							   mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+    							   mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                    bilinear_convexhull=false,
                                    monomial_convexhull=false,
-    							   presolve_bound_tightening=true,
-    							   presolve_bound_tightening_algo=2,
-                                   bound_basic_propagation=true,
+    							   presolve_bt=true,
+    							   presolve_bt_algo=2,
+                                   presolve_bp=true,
                                    presolve_bt_output_tol=1e-1,
-    							   log_level=10000)
+    							   log=10000)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -87,16 +87,16 @@
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
     							   mip_solver=CbcSolver(logLevel=0),
                                    bilinear_convexhull=false,
-    							   log_level=10000,
-                                   max_iter=3,
+    							   log=10000,
+                                   maxiter=3,
     							   presolve_bt_width_tol=1e-3,
     							   presolve_bt_output_tol=1e-1,
-    							   presolve_bound_tightening=true,
-                                   presolve_bound_tightening_algo=1,
-                                   bound_basic_propagation=true,
-    							   presolve_max_iter=2,
+    							   presolve_bt=true,
+                                   presolve_bt_algo=1,
+                                   presolve_bp=true,
+    							   presolve_maxiter=2,
                                    presolve_track_time=true,
-    							   disc_var_pick_algo=max_cover_var_picker)
+    							   disc_var_pick=max_cover_var_picker)
         m = nlp3(solver=test_solver)
 
         status = solve(m)
@@ -109,17 +109,17 @@
     @testset " Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                                   mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=10000),
+                                   mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                    bilinear_convexhull=false,
-                                   log_level=10000,
-                                   max_iter=2,
-                                   presolve_bound_tightening=true,
+                                   log=10000,
+                                   maxiter=2,
+                                   presolve_bt=true,
                                    presolve_bt_width_tol=1e-3,
                                    presolve_bt_output_tol=1e-1,
-                                   presolve_bound_tightening_algo=2,
-                                   bound_basic_propagation=true,
-                                   presolve_max_iter=2,
-                                   disc_var_pick_algo=max_cover_var_picker)
+                                   presolve_bt_algo=2,
+                                   presolve_bp=true,
+                                   presolve_maxiter=2,
+                                   disc_var_pick=max_cover_var_picker)
 
         m = nlp3(solver=test_solver)
         status = solve(m)
@@ -130,12 +130,12 @@
 
     @testset " Validation Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=10000),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=true,
-                           log_level=10000)
+                           presolve_bt=false,
+                           presolve_bp=true,
+                           log=10000)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -146,13 +146,13 @@
 
     @testset " Validation Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=true,
-                           bound_basic_propagation=true,
-                           presolve_bound_tightening_algo=2,
-                           log_level=10000)
+                           presolve_bt=true,
+                           presolve_bp=true,
+                           presolve_bt_algo=2,
+                           log=10000)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -166,9 +166,9 @@
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=false,
-                           log_level=10000)
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           log=10000)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -179,14 +179,14 @@
 
     @testset " Validation Test || AMP || basic solve || examples/circle.jl" begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
-                               max_iter=6,
-                               presolve_bound_tightening = false,
-                               presolve_bound_tightening_algo = 1,
+                               maxiter=6,
+                               presolve_bt = false,
+                               presolve_bt_algo = 1,
                                presolve_bt_output_tol = 1e-1,
-                               log_level=10000)
+                               log=10000)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -196,13 +196,13 @@
 
     @testset " Validation Test || AMP || basic solve || examples/circleN.jl" begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
-                               presolve_bound_tightening = false,
-                               presolve_bound_tightening_algo = 1,
+                               presolve_bt = false,
+                               presolve_bt_algo = 1,
                                presolve_bt_output_tol = 1e-1,
-                               log_level=100)
+                               log=100)
 
         m = circleN(solver=test_solver, N=4)
         solve(m)
@@ -214,12 +214,10 @@
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=false,
-                           convhull_formulation_sos2=false,
-                           convhull_formulation_minib=false,
-                           convhull_formulation_facet=true,
-                           log_level=10000)
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           convhull_formulation="facet",
+                           log=10000)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -233,12 +231,10 @@
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=false,
-                           convhull_formulation_sos2=false,
-                           convhull_formulation_minib=true,
-                           convhull_formulation_facet=false,
-                           log_level=10000)
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           convhull_formulation="mini",
+                           log=10000)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -252,12 +248,10 @@
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=true,
-                           convhull_formulation_sos2=false,
-                           convhull_formulation_minib=false,
-                           convhull_formulation_facet=true,
-                           log_level=10000)
+                           presolve_bt=false,
+                           presolve_bp=true,
+                           convhull_formulation="facet",
+                           log=10000)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -271,12 +265,10 @@
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=true,
-                           convhull_formulation_sos2=false,
-                           convhull_formulation_minib=true,
-                           convhull_formulation_facet=false,
-                           log_level=10000)
+                           presolve_bt=false,
+                           presolve_bp=true,
+                           convhull_formulation="mini",
+                           log=10000)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -293,9 +285,9 @@
             test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                    mip_solver=CbcSolver(logLevel=0),
                                    disc_abs_width_tol=1e-2,
-                                   max_iter=4,
-                                   bound_basic_propagation=false,
-                                   log_level=1)
+                                   maxiter=4,
+                                   presolve_bp=false,
+                                   log=1)
 
             m = multi4N(solver=test_solver, N=2, exprmode=i)
             status = solve(m)
@@ -311,9 +303,9 @@
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
-                               max_iter=4,
-                               bound_basic_propagation=false,
-                               log_level=1)
+                               maxiter=4,
+                               presolve_bp=false,
+                               log=1)
 
         m = multi2(solver=test_solver)
         status = solve(m)
@@ -331,9 +323,9 @@
             test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                    mip_solver=CbcSolver(logLevel=0),
                                    disc_abs_width_tol=1e-2,
-                                   max_iter=4,
-                                   bound_basic_propagation=false,
-                                   log_level=1)
+                                   maxiter=4,
+                                   presolve_bp=false,
+                                   log=1)
 
             m = multi3N(solver=test_solver, N=2, exprmode=i)
             status = solve(m)
@@ -349,9 +341,9 @@
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
-                               max_iter=3,
-                               bound_basic_propagation=false,
-                               log_level=1)
+                               maxiter=3,
+                               presolve_bp=false,
+                               log=1)
 
         m = multiKND(solver=test_solver, randomub=50, K=3, N=3, D=0)
         status = solve(m)
@@ -370,9 +362,9 @@ end
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=false,
                                disc_ratio=18,
-                               max_iter=1,
-                               bound_basic_propagation=true,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=true,
+                               log=100)
 
         m = nlp3(solver=test_solver)
         solve(m)
@@ -386,9 +378,9 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
-                               max_iter=1,
-                               bound_basic_propagation=true,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=true,
+                               log=100)
 
         m = nlp3(solver=test_solver)
         solve(m)
@@ -402,9 +394,9 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
-                               max_iter=1,
-                               bound_basic_propagation=true,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=true,
+                               log=100)
 
         m = castro2m2(solver=test_solver)
         solve(m)
@@ -418,9 +410,9 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
-                               max_iter=1,
-                               bound_basic_propagation=true,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=true,
+                               log=100)
 
         m = multi3N(solver=test_solver, N=3, exprmode=1)
         solve(m)
@@ -434,9 +426,9 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
-                               max_iter=1,
-                               bound_basic_propagation=false,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=false,
+                               log=100)
 
         m = multi3N(solver=test_solver, N=3, exprmode=1)
         solve(m)
@@ -450,9 +442,9 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
-                               max_iter=1,
-                               bound_basic_propagation=true,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=true,
+                               log=100)
 
         m = multi4N(solver=test_solver, N=2, exprmode=1)
         solve(m)
@@ -466,9 +458,9 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
-                               max_iter=1,
-                               bound_basic_propagation=false,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=false,
+                               log=100)
 
         m = multi4N(solver=test_solver, N=2, exprmode=1)
         solve(m)
@@ -482,9 +474,9 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
-                               max_iter=1,
-                               bound_basic_propagation=true,
-                               log_level=100)
+                               maxiter=1,
+                               presolve_bp=true,
+                               log=100)
 
         m = multi4N(solver=test_solver, N=2, exprmode=2)
         solve(m)
@@ -496,12 +488,12 @@ end
 
 @testset "Solving algorithm tests :: Bin-Lin Solves" begin
     @testset "Operator :: bmpl && linbin && binprod solve test I" begin
-        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(),
+        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
-                                                              log_level=10000),
+                                                              log_level=0),
                               nlp_local_solver=IpoptSolver(),
-                              mip_solver=CbcSolver(),
-                              log_level=10000)
+                              mip_solver=CbcSolver(logLevel=0),
+                              log=10000)
 
         m = bpml_lnl(test_solver)
         solve(m)
@@ -520,12 +512,12 @@ end
     end
 
     @testset "Operator :: bmpl && linbin && binprod solve test II" begin
-        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(),
+        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
-                                                              log_level=10000),
+                                                              log_level=0),
                               nlp_local_solver=IpoptSolver(),
-                              mip_solver=CbcSolver(),
-                              log_level=10000)
+                              mip_solver=CbcSolver(logLevel=0),
+                              log=10000)
 
         m = bpml_binl(test_solver)
         solve(m)
@@ -555,15 +547,15 @@ end
     end
 
     @testset "Operator :: bmpl && linbin && binprod solve test II" begin
-        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(),
+        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
-                                                              log_level=10000),
+                                                              log_level=0),
                               nlp_local_solver=IpoptSolver(),
-                              mip_solver=PajaritoSolver(mip_solver=CbcSolver(),
+                              mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                         cont_solver=IpoptSolver(),
-                                                        log_level=10000),
-                              disc_var_pick_algo=1,
-                              log_level=10000)
+                                                        log_level=0),
+                              disc_var_pick=1,
+                              log=10000)
 
         m = bpml_monl(test_solver)
         solve(m)
@@ -620,13 +612,13 @@ end
 @testset "Solving algorithm tests :: Embedding Formulation" begin
     @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=10000),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=true,
-                           embedding=true,
-                           log_level=100)
+                           presolve_bt=false,
+                           presolve_bp=true,
+                           convhull_ebd=true,
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -637,14 +629,14 @@ end
 
     @testset "Embedding Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=true,
-                           bound_basic_propagation=true,
-                           presolve_bound_tightening_algo=2,
-                           embedding=true,
-                           log_level=100)
+                           presolve_bt=true,
+                           presolve_bp=true,
+                           presolve_bt_algo=2,
+                           convhull_ebd=true,
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -658,10 +650,10 @@ end
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=false,
-                           embedding=true,
-                           log_level=100)
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           convhull_ebd=true,
+                           log=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -672,16 +664,16 @@ end
 
     @testset "Embedding Test || AMP || special problem || ... " begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
-                               max_iter=6,
-                               presolve_bound_tightening=false,
-                               bound_basic_propagation=true,
-                               presolve_bound_tightening_algo=1,
+                               maxiter=6,
+                               presolve_bt=false,
+                               presolve_bp=true,
+                               presolve_bt_algo=1,
                                presolve_bt_output_tol=1e-1,
-                               embedding=true,
-                               log_level=10000)
+                               convhull_ebd=true,
+                               log=10000)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -690,14 +682,14 @@ end
 
     @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=10000),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=true,
-                           embedding=true,
-                           embedding_ibs=true,
-                           log_level=100)
+                           presolve_bt=false,
+                           presolve_bp=true,
+                           convhull_ebd=true,
+                           convhull_ebd_ibs=true,
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -711,11 +703,11 @@ end
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=false,
-                           embedding=true,
-                           embedding_ibs=true,
-                           log_level=100)
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           convhull_ebd=true,
+                           convhull_ebd_ibs=true,
+                           log=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -726,17 +718,17 @@ end
 
     @testset "Embedding IBS Test || AMP || special problem || ... " begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
-                               max_iter=6,
-                               presolve_bound_tightening=false,
-                               bound_basic_propagation=true,
-                               presolve_bound_tightening_algo=1,
+                               maxiter=6,
+                               presolve_bt=false,
+                               presolve_bp=true,
+                               presolve_bt_algo=1,
                                presolve_bt_output_tol=1e-1,
-                               embedding=true,
-                               embedding_ibs=true,
-                               log_level=10000)
+                               convhull_ebd=true,
+                               convhull_ebd_ibs=true,
+                               log=10000)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -745,14 +737,14 @@ end
 
     @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=10000),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=true,
-                           embedding=true,
-                           embedding_link=true,
-                           log_level=100)
+                           presolve_bt=false,
+                           presolve_bp=true,
+                           convhull_ebd=true,
+                           convhull_ebd_link=true,
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -766,11 +758,11 @@ end
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
-                           presolve_bound_tightening=false,
-                           bound_basic_propagation=false,
-                           embedding=true,
-                           embedding_link=true,
-                           log_level=100)
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           convhull_ebd=true,
+                           convhull_ebd_link=true,
+                           log=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -781,17 +773,17 @@ end
 
     @testset "Embedding LINK Test || AMP || special problem || ... " begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=10000),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
-                               max_iter=6,
-                               presolve_bound_tightening=false,
-                               bound_basic_propagation=true,
-                               presolve_bound_tightening_algo=1,
+                               maxiter=6,
+                               presolve_bt=false,
+                               presolve_bp=true,
+                               presolve_bt_algo=1,
                                presolve_bt_output_tol=1e-1,
-                               embedding=true,
-                               embedding_link=true,
-                               log_level=10000)
+                               convhull_ebd=true,
+                               convhull_ebd_link=true,
+                               log=10000)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -803,9 +795,9 @@ end
     @testset "Algorithm Logic Test || castro4m2 || 1 iteration || Error case" begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
-                               max_iter=1,
+                               maxiter=1,
                                colorful_pod="warmer",
-                               log_level=100)
+                               log=100)
 
         m = castro4m2(solver=test_solver)
         e = nothing
@@ -824,12 +816,12 @@ end
         test_solver=PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                               nlp_local_solver=IpoptSolver(print_level=0),
                               mip_solver=CbcSolver(logLevel=0),
-                              bound_basic_propagation=true,
-                              disc_var_pick_algo=1,
-                              log_level=100,
-                              max_iter=3,
+                              presolve_bp=true,
+                              disc_var_pick=1,
+                              log=100,
+                              maxiter=3,
                               presolve_bt_width_tol=1e-3,
-                              presolve_bound_tightening=false)
+                              presolve_bt=false)
         m = blend029_gl(solver=test_solver)
         status = solve(m)
 
@@ -843,9 +835,9 @@ end
     @testset "Convex Model Solve" begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
-                               max_iter=1,
+                               maxiter=1,
                                colorful_pod="solarized",
-                               log_level=100)
+                               log=100)
         m = convex_solve(solver=test_solver)
         e = nothing
         try
@@ -860,10 +852,10 @@ end
                                mip_solver=CbcSolver(logLevel=0),
                                disc_add_partition_method = "uniform",
                                disc_uniform_rate = 10,
-                               max_iter=1,
+                               maxiter=1,
                                colorful_pod="random",
                                timeout=100000,
-                               log_level=100)
+                               log=100)
         m = nlp3(solver=test_solver)
         solve(m)
         @test isapprox(m.objBound, 6561.7156;atol=1e-3)
@@ -871,13 +863,13 @@ end
 end
 
 @testset "Algorithm Test with binprod terms" begin
-    test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(), log_level=0),
+    test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                             nlp_local_solver=IpoptSolver(print_level=0),
                             mip_solver=GLPKSolverMIP(msg_lev=0),
                             bilinear_convexhull=true,
                             monomial_convexhull=true,
-                            bound_basic_propagation=true,
-                            log_level=100)
+                            presolve_bp=true,
+                            log=100)
     m = binprod_nlp3(solver=test_solver)
     status = solve(m)
 

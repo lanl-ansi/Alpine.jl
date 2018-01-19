@@ -43,7 +43,7 @@ end
 function resolve_encoding_key(encoding::Any)
 	isa(encoding, Function) && return encoding
 	encoding == "default" && return ebd_gray
-	error("Must specify a encoding method when using embedding formulation")
+	error("Must specify a encoding method when using convhull_ebd formulation")
 end
 
 

@@ -20,7 +20,7 @@ function update_opt_gap(m::PODNonlinearModel)
         m.best_rel_gap = Inf
         return
     else
-        p = round(abs(log(10,m.rel_gap)))
+        p = round(abs(log(10,m.relgap)))
         n = round(abs(m.best_obj-m.best_bound), Int(p))
         dn = round(abs(1e-12+abs(m.best_obj)), Int(p))
         if (n == 0.0) && (dn == 0.0)
@@ -187,9 +187,9 @@ function update_boundstop_options(m::PODNonlinearModel)
         push!(m.mip_solver.options, (:BestBdStop, stopbound))
         # Calculation of the bound
         if m.sense_orig == :Min
-            stopbound = (1-m.rel_gap+m.tol) * m.best_obj
+            stopbound = (1-m.relgap+m.tol) * m.best_obj
         elseif m.sense_orig == :Max
-            stopbound = (1+m.rel_gap-m.tol) * m.best_obj
+            stopbound = (1+m.relgap-m.tol) * m.best_obj
         end
 
         for i in 1:length(m.mip_solver.options)
@@ -284,32 +284,32 @@ This function helps pick the variables for discretization. The method chosen dep
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
 there exist two built-in method:
 
-    * `max-cover(m.disc_var_pick_algo=0, default)`: pick all variables involved in the non-linear term for discretization
-    * `min-vertex-cover(m.disc_var_pick_algo=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+    * `max-cover(m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover(m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
-For advance usage, `m.disc_var_pick_algo` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
+For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
 For more information, read more details at [Hacking Solver](@ref).
 
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
-    if isa(m.disc_var_pick_algo, Function)
-        eval(m.disc_var_pick_algo)(m)
+    if isa(m.disc_var_pick, Function)
+        eval(m.disc_var_pick)(m)
         (length(m.var_disc_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
-    elseif isa(m.disc_var_pick_algo, Int) || isa(m.disc_var_pick_algo, String)
-        if m.disc_var_pick_algo == 0
+    elseif isa(m.disc_var_pick, Int) || isa(m.disc_var_pick, String)
+        if m.disc_var_pick == 0
             select_all_nlvar(m)
-        elseif m.disc_var_pick_algo == 1
+        elseif m.disc_var_pick == 1
             min_vertex_cover(m)
-        elseif m.disc_var_pick_algo == 2
+        elseif m.disc_var_pick == 2
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
-        elseif m.disc_var_pick_algo == 3 # Initial
+        elseif m.disc_var_pick == 3 # Initial
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
     else
-        error("Input for parameter :disc_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
+        error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
     end
 
     return
@@ -426,7 +426,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
     distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    (m.log_level > 100) && println("updated partition var selection => $(m.var_disc_mip)")
+    (m.log > 100) && println("updated partition var selection => $(m.var_disc_mip)")
     return
 end
 
@@ -502,7 +502,7 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     weights = Dict()
     for i in m.all_nonlinear_vars
         isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-        (m.log_level > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
+        (m.log > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
     end
 
     # Set up minimum vertex cover problem
@@ -519,6 +519,6 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     xVal = getvalue(x)
     m.num_var_disc_mip = Int(sum(xVal))
     m.var_disc_mip = [i for i in nodes if xVal[i] > 0]
-    (m.log_level >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_disc_mip)) : $(m.var_disc_mip)")
+    (m.log >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_disc_mip)) : $(m.var_disc_mip)")
     return
 end

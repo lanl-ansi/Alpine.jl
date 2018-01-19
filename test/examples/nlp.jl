@@ -5,10 +5,10 @@ function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
-								   presolve_bound_tightening=(presolve>0),
-								   presolve_bound_tightening_algo=presolve,
+								   presolve_bt=(presolve>0),
+								   presolve_bt_algo=presolve,
 								   presolve_bt_output_tol=1e-1,
-								   log_level=10000))
+								   log=10000))
 	else
 		m = Model(solver=solver)
 	end
@@ -29,10 +29,10 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
-								   presolve_bound_tightening=(presolve>0),
-								   presolve_bound_tightening_algo=presolve,
+								   presolve_bt=(presolve>0),
+								   presolve_bt_algo=presolve,
 								   presolve_bt_output_tol=1e-1,
-								   log_level=10000))
+								   log=10000))
 	else
 		m = Model(solver=solver)
 	end

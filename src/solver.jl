@@ -5,14 +5,12 @@ type UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 type PODSolver <: MathProgBase.AbstractMathProgSolver
-    dev_debug::Bool
-    dev_test::Bool
     colorful_pod::Any
 
-    log_level::Int
+    log::Int
     timeout::Float64
-    max_iter::Int
-    rel_gap::Float64
+    maxiter::Int
+    relgap::Float64
     tol::Float64
 
     nlp_local_solver::MathProgBase.AbstractMathProgSolver
@@ -28,7 +26,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     term_patterns::Array{Function}
     constr_patterns::Array{Function}
 
-    disc_var_pick_algo::Any
+    disc_var_pick::Any
     disc_ratio::Any
     disc_uniform_rate::Int
     disc_add_partition_method::Any
@@ -37,26 +35,22 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     disc_consecutive_forbid::Int
     disc_ratio_branch::Bool
 
-    convhull_sweep_limit::Int
-    convhull_formulation_sos2::Bool
-    convhull_formulation_facet::Bool
-    convhull_formulation_minib::Bool
+    convhull_formulation::String
+    convhull_ebd::Bool
+    convhull_ebd_encode::Any
+    convhull_ebd_ibs::Bool
+    convhull_ebd_link::Bool
 
     presolve_track_time::Bool
-    presolve_bound_tightening::Bool
-    presolve_max_iter::Int
+    presolve_bt::Bool
+    presolve_maxiter::Int
     presolve_bt_width_tol::Float64
     presolve_bt_output_tol::Float64
-    presolve_bound_tightening_algo::Any
-    presolve_mip_relaxation::Bool
-    presolve_mip_timelimit::Float64
+    presolve_bt_algo::Any
+    presolve_bt_relax::Bool
+    presolve_bt_mip_timeout::Float64
 
-    bound_basic_propagation::Bool
-
-    embedding::Bool
-    embedding_encode::Any
-    embedding_ibs::Bool
-    embedding_link::Bool
+    presolve_bp::Bool
 
     user_parameters::Dict
 
@@ -64,14 +58,12 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 function PODSolver(;
-    dev_debug = false,
-    dev_test = false,
     colorful_pod = false,
 
-    log_level = 1,
+    log = 1,
     timeout = Inf,
-    max_iter = 99,
-    rel_gap = 1e-4,
+    maxiter = 99,
+    relgap = 1e-4,
     tol = 1e-6,
 
     nlp_local_solver = UnsetSolver(),
@@ -87,7 +79,7 @@ function PODSolver(;
     term_patterns = Array{Function}(0),
     constr_patterns = Array{Function}(0),
 
-    disc_var_pick_algo = 0,           # By default pick all variables
+    disc_var_pick = 2,                     # By default use the 15-variable selective rule
     disc_ratio = 4,
     disc_uniform_rate = 2,
     disc_add_partition_method = "adaptive",
@@ -96,26 +88,22 @@ function PODSolver(;
     disc_consecutive_forbid = 0,
     disc_ratio_branch=false,
 
-    convhull_sweep_limit = 1,
-    convhull_formulation_sos2 = true,
-    convhull_formulation_facet = false,
-    convhull_formulation_minib = false,
+    convhull_formulation = "sos2",
+    convhull_ebd = false,
+    convhull_ebd_encode = "default",
+    convhull_ebd_ibs = false,
+    convhull_ebd_link = false,
 
     presolve_track_time = true,
-    presolve_bound_tightening = false,
-    presolve_max_iter = 9999,
+    presolve_maxiter = 9999,
+    presolve_bt = false,
     presolve_bt_width_tol = 1e-3,
     presolve_bt_output_tol = 1e-5,
-    presolve_bound_tightening_algo = 1,
-    presolve_mip_relaxation = false,
-    presolve_mip_timelimit = Inf,
+    presolve_bt_algo = 1,
+    presolve_bt_relax = false,
+    presolve_bt_mip_timeout = Inf,
 
-    bound_basic_propagation = true,
-
-    embedding = false,
-    embedding_encode = "default",
-    embedding_ibs = false,
-    embedding_link = false,
+    presolve_bp = true,
 
     user_parameters = Dict(),
 
@@ -135,14 +123,14 @@ function PODSolver(;
     end
 
     # Code Conversion
-    (disc_var_pick_algo in ["select_all_nlvar", "all", "max"]) && (disc_var_pick_algo = 0)
-    (disc_var_pick_algo in ["min_vertex_cover","min"]) && (disc_var_pick_algo = 1)
-    (disc_var_pick_algo == "selective") && (disc_var_pick_algo = 2)
-    (disc_var_pick_algo == "dynamic") && (disc_var_pick_algo = 3)
+    (disc_var_pick in ["select_all_nlvar", "all", "max"]) && (disc_var_pick = 0)
+    (disc_var_pick in ["min_vertex_cover","min"]) && (disc_var_pick = 1)
+    (disc_var_pick == "selective") && (disc_var_pick = 2)
+    (disc_var_pick == "dynamic") && (disc_var_pick = 3)
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(dev_debug, dev_test, colorful_pod,
-        log_level, timeout, max_iter, rel_gap, tol,
+    PODSolver(colorful_pod,
+        log, timeout, maxiter, relgap, tol,
         deepcopy(nlp_local_solver),
         deepcopy(minlp_local_solver),
         deepcopy(mip_solver),
@@ -153,7 +141,7 @@ function PODSolver(;
         method_convexification,
         term_patterns,
         constr_patterns,
-        disc_var_pick_algo,
+        disc_var_pick,
         disc_ratio,
         disc_uniform_rate,
         disc_add_partition_method,
@@ -161,23 +149,20 @@ function PODSolver(;
         disc_rel_width_tol,
         disc_consecutive_forbid,
         disc_ratio_branch,
-        convhull_sweep_limit,
-        convhull_formulation_sos2,
-        convhull_formulation_facet,
-        convhull_formulation_minib,
+        convhull_formulation,
+        convhull_ebd,
+        convhull_ebd_encode,
+        convhull_ebd_ibs,
+        convhull_ebd_link,
         presolve_track_time,
-        presolve_bound_tightening,
-        presolve_max_iter,
+        presolve_bt,
+        presolve_maxiter,
         presolve_bt_width_tol,
         presolve_bt_output_tol,
-        presolve_bound_tightening_algo,
-        presolve_mip_relaxation,
-        presolve_mip_timelimit,
-        bound_basic_propagation,
-        embedding,
-        embedding_encode,
-        embedding_ibs,
-        embedding_link,
+        presolve_bt_algo,
+        presolve_bt_relax,
+        presolve_bt_mip_timeout,
+        presolve_bp,
         user_parameters)
     end
 
@@ -188,14 +173,12 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     end
 
     # Translate options into old nonlinearmodel.jl fields
-    dev_test = s.dev_test
-    dev_debug = s.dev_debug
     colorful_pod = s.colorful_pod
 
-    log_level = s.log_level
+    log = s.log
     timeout = s.timeout
-    max_iter = s.max_iter
-    rel_gap = s.rel_gap
+    maxiter = s.maxiter
+    relgap = s.relgap
     tol = s.tol
 
     recognize_convex = s.recognize_convex
@@ -211,7 +194,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     minlp_local_solver = s.minlp_local_solver
     mip_solver = s.mip_solver
 
-    disc_var_pick_algo = s.disc_var_pick_algo
+    disc_var_pick = s.disc_var_pick
     disc_ratio = s.disc_ratio
     disc_uniform_rate = s.disc_uniform_rate
     disc_add_partition_method = s.disc_add_partition_method
@@ -220,31 +203,27 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     disc_consecutive_forbid = s.disc_consecutive_forbid
     disc_ratio_branch = s.disc_ratio_branch
 
-    convhull_sweep_limit = s.convhull_sweep_limit
-    convhull_formulation_sos2 = s.convhull_formulation_sos2
-    convhull_formulation_facet = s.convhull_formulation_facet
-    convhull_formulation_minib = s.convhull_formulation_minib
+    convhull_formulation = s.convhull_formulation
+    convhull_ebd = s.convhull_ebd
+    convhull_ebd_encode = s.convhull_ebd_encode
+    convhull_ebd_ibs = s.convhull_ebd_ibs
+    convhull_ebd_link = s.convhull_ebd_link
 
     presolve_track_time = s.presolve_track_time
-    presolve_bound_tightening = s.presolve_bound_tightening
-    presolve_max_iter = s.presolve_max_iter
+    presolve_bt = s.presolve_bt
+    presolve_maxiter = s.presolve_maxiter
     presolve_bt_width_tol = s.presolve_bt_width_tol
     presolve_bt_output_tol = s.presolve_bt_output_tol
-    presolve_bound_tightening_algo = s.presolve_bound_tightening_algo
-    presolve_mip_relaxation = s.presolve_mip_relaxation
-    presolve_mip_timelimit = s.presolve_mip_timelimit
+    presolve_bt_algo = s.presolve_bt_algo
+    presolve_bt_relax = s.presolve_bt_relax
+    presolve_bt_mip_timeout = s.presolve_bt_mip_timeout
 
-    bound_basic_propagation = s.bound_basic_propagation
-
-    embedding = s.embedding
-    embedding_encode = s.embedding_encode
-    embedding_ibs = s.embedding_ibs
-    embedding_link = s.embedding_link
+    presolve_bp = s.presolve_bp
 
     user_parameters = s.user_parameters
 
-    return PODNonlinearModel(dev_debug, dev_test, colorful_pod,
-                            log_level, timeout, max_iter, rel_gap, tol,
+    return PODNonlinearModel(colorful_pod,
+                            log, timeout, maxiter, relgap, tol,
                             nlp_local_solver,
                             minlp_local_solver,
                             mip_solver,
@@ -255,7 +234,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             method_convexification,
                             term_patterns,
                             constr_patterns,
-                            disc_var_pick_algo,
+                            disc_var_pick,
                             disc_ratio,
                             disc_uniform_rate,
                             disc_add_partition_method,
@@ -263,23 +242,20 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             disc_rel_width_tol,
                             disc_consecutive_forbid,
                             disc_ratio_branch,
-                            convhull_sweep_limit,
-                            convhull_formulation_sos2,
-                            convhull_formulation_facet,
-                            convhull_formulation_minib,
+                            convhull_formulation,
+                            convhull_ebd,
+                            convhull_ebd_encode,
+                            convhull_ebd_ibs,
+                            convhull_ebd_link,
                             presolve_track_time,
-                            presolve_bound_tightening,
-                            presolve_max_iter,
+                            presolve_bt,
+                            presolve_maxiter,
                             presolve_bt_width_tol,
                             presolve_bt_output_tol,
-                            presolve_bound_tightening_algo,
-                            presolve_mip_relaxation,
-                            presolve_mip_timelimit,
-                            bound_basic_propagation,
-                            embedding,
-                            embedding_encode,
-                            embedding_ibs,
-                            embedding_link,
+                            presolve_bt_algo,
+                            presolve_bt_relax,
+                            presolve_bt_mip_timeout,
+                            presolve_bp,
                             user_parameters)
 end
 
