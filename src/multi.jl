@@ -103,26 +103,6 @@ function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
     return β
 end
 
-function amp_convexify_binprod(m::PODNonlinearModel, y::JuMP.Variable, x_idxs::Vector, β::Dict)
-
-    # [BUG FIXED]  added marker
-    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
-
-    if haskey(β, x_idxs)
-        return β
-    else
-        β[x_idxs] = y
-    end
-
-    x = [Variable(m.model_mip, i) for i in x_idxs]
-    for i in x
-        @constraint(m.model_mip, z <= i)
-    end
-    @constraint(m.model_mip, z >= sum(x) - (length(x)-1))
-
-    return β
-end
-
 """
     TODO: docstring
     This function is dedicated to monomial & multilinear nonlinear terms.

@@ -115,14 +115,16 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
         var_discretization[var] = [lb, ub]
     end
 
-    if length(lbs) == (m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+    total_var_cnt = m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip
+    orig_var_cnt = m.num_var_orig
+    if length(lbs) == total_var_cnt
+        for var in (1+orig_var_cnt):total_var_cnt
             lb = lbs[var]
             ub = ubs[var]
             var_discretization[var] = [lb, ub]
         end
     else
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+        for var in (1+orig_var_cnt):total_var_cnt
             lb = -Inf
             ub = Inf
             var_discretization[var] = [lb, ub]
@@ -181,29 +183,28 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
-    # # Calculation of the bound
-    # if m.sense_orig == :Min
-    #     stopbound = (1-m.rel_gap+m.tol) * m.best_obj
-    # elseif m.sense_orig == :Max
-    #     stopbound = (1+m.rel_gap-m.tol) * m.best_obj
-    # end
-    #
-    # for i in 1:length(m.mip_solver.options)
-    #     if m.mip_solver.options[i][1] == :BestBdStop
-    #         deleteat!(m.mip_solver.options, i)
-    #         if string(m.mip_solver)[1:6] == "Gurobi"
-    #             push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    #         else
-    #             return
-    #         end
-    #     end
-    # end
-    #
-    # if string(m.mip_solver)[1:6] == "Gurobi"
-    #     push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    # else
-    #     return
-    # end
+    if string(m.mip_solver)[1:6] == "Gurobi"
+        push!(m.mip_solver.options, (:BestBdStop, stopbound))
+        # Calculation of the bound
+        if m.sense_orig == :Min
+            stopbound = (1-m.rel_gap+m.tol) * m.best_obj
+        elseif m.sense_orig == :Max
+            stopbound = (1+m.rel_gap-m.tol) * m.best_obj
+        end
+
+        for i in 1:length(m.mip_solver.options)
+            if m.mip_solver.options[i][1] == :BestBdStop
+                deleteat!(m.mip_solver.options, i)
+                if string(m.mip_solver)[1:6] == "Gurobi"
+                    push!(m.mip_solver.options, (:BestBdStop, stopbound))
+                else
+                    return
+                end
+            end
+        end
+    else
+        return
+    end
 
     return
 end

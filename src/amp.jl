@@ -375,6 +375,7 @@ function disc_branch_solve(m::PODNonlinearModel)
         warn("Unexpected solving condition $(status) during disc branching.")
     end
 
+    # Safety scheme
     if m.sense_orig == :Min
         return -Inf
     else

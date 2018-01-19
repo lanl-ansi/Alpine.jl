@@ -4,26 +4,29 @@ using Ipopt, Cbc, Pajarito
 using GLPKMathProgInterface
 using POD
 
+poddir = Pkg.dir("POD")
+
 # Expression Testing Instances
-include("$(Pkg.dir())/POD/test/examples/exprstest.jl")
+include("$(poddir)/test/examples/exprstest.jl")
 
 # NLP Testing Instances
-include("$(Pkg.dir())/POD/test/examples/nlp.jl")
-include("$(Pkg.dir())/POD/test/examples/castrom2.jl")
+include("$(poddir)/test/examples/nlp.jl")
+include("$(poddir)/test/examples/castrom2.jl")
 
 # Multilinear Testing Instances
-include("$(Pkg.dir())/POD/test/examples/blend029.jl")
-include("$(Pkg.dir())/POD/test/examples/multi.jl")
+include("$(poddir)/test/examples/blend029.jl")
+include("$(poddir)/test/examples/multi.jl")
 
 # Special operators
-include("$(Pkg.dir())/POD/test/examples/binprod.jl")
-include("$(Pkg.dir())/POD/test/examples/div.jl")
-include("$(Pkg.dir())/POD/test/examples/circle.jl")
-include("$(Pkg.dir())/POD/test/examples/convex.jl")
-include("$(Pkg.dir())/POD/test/examples/linearlift.jl")
-include("$(Pkg.dir())/POD/test/examples/specialopts.jl")
+include("$(poddir)/test/examples/binprod.jl")
+include("$(poddir)/test/examples/div.jl")
+include("$(poddir)/test/examples/circle.jl")
+include("$(poddir)/test/examples/convex.jl")
+include("$(poddir)/test/examples/linearlift.jl")
+include("$(poddir)/test/examples/specialopts.jl")
 
 # Performe Tests
-include("$(Pkg.dir())/POD/test/solver.jl")
-include("$(Pkg.dir())/POD/test/expression.jl")
-include("$(Pkg.dir())/POD/test/algorithm.jl")
+include("$(poddir)/POD/test/solver.jl")
+include("$(poddir)/POD/test/expression.jl")
+include("$(poddir)/POD/test/algorithm.jl")
+include("$(poddir)/POD/test/utility.jl")

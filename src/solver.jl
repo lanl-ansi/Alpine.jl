@@ -285,18 +285,25 @@ end
 
 # MathProgBase.LinearQuadraticModel(s::PODSolver) = MathProgBase.NonlinearModel(s::PODSolver)
 
-function fetch_mip_solver_identifier(m::PODNonlinearModel)
+function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
 
-    if string(m.mip_solver)[1:6] == "Gurobi"
-        m.mip_solver_identifier = "Gurobi"
-    elseif string(m.mip_solver)[1:5] == "CPLEX"
-        m.mip_solver_identifier = "CPLEX"
-    elseif string(m.mip_solver)[1:3] == "Cbc"
-        m.mip_solver_identifier = "Cbc"
-    elseif string(m.mip_solver)[1:4] == "GLPK"
-        m.mip_solver_identifier = "GLPK"
-    elseif string(m.mip_solver)[1:8] == "Pajarito"
+    isempty(override) ? solverstring = string(m.mip_solver) : solverstring=override
+
+    # Higher-level solvers: that can use sub-solvers
+    if contains(solverstring,"Pajarito")
         m.mip_solver_identifier = "Pajarito"
+        return
+    end
+
+    # Lower level solvers
+    if contains(solverstring,"Gurobi")
+        m.mip_solver_identifier = "Gurobi"
+    elseif contains(solverstring,"CPLEX")
+        m.mip_solver_identifier = "CPLEX"
+    elseif contains(solverstring,"Cbc")
+        m.mip_solver_identifier = "Cbc"
+    elseif contains(solverstring,"GLPK")
+        m.mip_solver_identifier = "GLPK"
     else
         error("Unsupported mip solver name. Using blank")
     end
@@ -304,17 +311,24 @@ function fetch_mip_solver_identifier(m::PODNonlinearModel)
     return
 end
 
-function fetch_nlp_solver_identifier(m::PODNonlinearModel)
+function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
 
-    if string(m.nlp_local_solver)[1:5] == "Ipopt"
-        m.nlp_local_solver_identifier = "Ipopt"
-    elseif string(m.nlp_local_solver)[1:6] == "AmplNL"
-        m.nlp_local_solver_identifier = "Bonmin"
-    elseif string(m.nlp_local_solver)[1:6] == "Knitro"
-        m.nlp_local_solver_identifier = "Knitro"
-    elseif string(m.nlp_local_solver)[1:8] == "Pajarito"
+    isempty(override) ? solverstring = string(m.nlp_local_solver) : solverstring=override
+
+    # Higher-level solver
+    if contains(solverstring, "Pajarito")
         m.nlp_local_solver_identifier = "Pajarito"
-    elseif string(m.nlp_local_solver)[1:5] == "NLopt"
+        return
+    end
+
+    # Lower-level solver
+    if contains(solverstring, "Ipopt")
+        m.nlp_local_solver_identifier = "Ipopt"
+    elseif contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+        m.nlp_local_solver_identifier = "Bonmin"
+    elseif contains(solverstring, "KNITRO")
+        m.nlp_local_solver_identifier = "Knitro"
+    elseif contains(solverstring, "NLopt")
         m.nlp_local_solver_identifier = "NLopt"
     else
         error("Unsupported nlp solver name. Using blank")
@@ -323,18 +337,26 @@ function fetch_nlp_solver_identifier(m::PODNonlinearModel)
     return
 end
 
-function fetch_minlp_solver_identifier(m::PODNonlinearModel)
+function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
 
     (m.minlp_local_solver == UnsetSolver()) && return
-    if string(m.minlp_local_solver)[1:6] == "AmplNL"
-        m.minlp_local_solver_identifier = "Bonmin"
-    elseif string(m.minlp_local_solver)[1:6] == "Knitro"
-        m.minlp_local_solver_identifier = "Knitro"
-    elseif string(m.minlp_local_solver)[1:8] == "Pajarito"
+
+    isempty(override) ? solverstring = string(m.minlp_local_solver) : solverstring=override
+
+    # Higher-level solver
+    if contains(solverstring, "Pajarito")
         m.minlp_local_solver_identifier = "Pajarito"
-    elseif string(m.minlp_local_solver)[1:5] == "NLopt"
+        return
+    end
+
+    # Lower-level Solver
+    if contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+        m.minlp_local_solver_identifier = "Bonmin"
+    elseif contains(solverstring, "KNITRO")
+        m.minlp_local_solver_identifier = "Knitro"
+    elseif contains(solverstring, "NLopt")
         m.minlp_local_solver_identifier = "NLopt"
-    elseif string(m.minlp_local_solver)[1:35] == "CoinOptServices.OsilSolver(\"bonmin\""
+    elseif contains(solverstring, "CoinOptServices.OsilSolver(\"bonmin\"")
         m.minlp_local_solver_identifier = "Bonmin"
     else
         error("Unsupported nlp solver name. Using blank")
@@ -389,7 +411,7 @@ function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
     elseif m.nlp_local_solver_identifier == "AmplNL"
         insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
     elseif m.nlp_local_solver_identifier == "Knitro"
-        error("You never tell me anything about knitro. Probably because they charge everything they own.")
+        error("You never tell me anything about knitro. Probably because they have a very short trail length.")
     elseif m.nlp_local_solver_identifier == "NLopt"
         m.nlp_local_solver.maxtime = timelimit
     else

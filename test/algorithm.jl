@@ -208,6 +208,158 @@
         solve(m)
         @test isapprox(m.objVal, 2.0; atol=1e-3)
     end
+
+    @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=CbcSolver(logLevel=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=false,
+                           convhull_formulation_sos2=false,
+                           convhull_formulation_minib=false,
+                           convhull_formulation_facet=true,
+                           log_level=10000)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 9
+    end
+
+    @testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp3.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=CbcSolver(logLevel=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=false,
+                           convhull_formulation_sos2=false,
+                           convhull_formulation_minib=true,
+                           convhull_formulation_facet=false,
+                           log_level=10000)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 9
+    end
+
+    @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
+                           convhull_formulation_sos2=false,
+                           convhull_formulation_minib=false,
+                           convhull_formulation_facet=true,
+                           log_level=10000)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 7
+    end
+
+    @testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp1.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bound_tightening=false,
+                           bound_basic_propagation=true,
+                           convhull_formulation_sos2=false,
+                           convhull_formulation_minib=true,
+                           convhull_formulation_facet=false,
+                           log_level=10000)
+        m = nlp1(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Optimal
+        @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+        @test m.internalModel.logs[:n_iter] == 7
+    end
+
+    @testset " Validation Test || AMP || multi4N || N = 2 || exprmode=1:11" begin
+
+        objBoundVec = Any[4.68059, 12.0917, 8.94604, 10.0278, 8.10006, 6.6384, 12.5674, 7.39747, 6.02928, 7.91467, 7.88307]
+        objValVec = Any[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+        for i in 1:11
+            test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                                   mip_solver=CbcSolver(logLevel=0),
+                                   disc_abs_width_tol=1e-2,
+                                   max_iter=4,
+                                   bound_basic_propagation=false,
+                                   log_level=1)
+
+            m = multi4N(solver=test_solver, N=2, exprmode=i)
+            status = solve(m)
+
+            @test status == :UserLimits
+            @test isapprox(getobjectivevalue(m), objValVec[i];atol=1e-3)
+            @test isapprox(getobjectivebound(m), objBoundVec[i];atol=1e-3)
+        end
+    end
+
+    @testset " Validation Test || AMP || multi2 || exprmode=1:11" begin
+
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               max_iter=4,
+                               bound_basic_propagation=false,
+                               log_level=1)
+
+        m = multi2(solver=test_solver)
+        status = solve(m)
+
+        @test status == :UserLimits
+        @test isapprox(getobjectivevalue(m), 1.00000;atol=1e-3)
+        @test isapprox(getobjectivebound(m), 1.0074;atol=1e-3)
+    end
+
+    @testset " Validation Test || AMP || multi3N || N = 2 || exprmode=1:11" begin
+
+        objBoundVec = Any[2.97186, 3.85492, 4.23375]
+        objValVec = Any[2.0, 2.0, 2.0]
+        for i in 1:3
+            test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                                   mip_solver=CbcSolver(logLevel=0),
+                                   disc_abs_width_tol=1e-2,
+                                   max_iter=4,
+                                   bound_basic_propagation=false,
+                                   log_level=1)
+
+            m = multi3N(solver=test_solver, N=2, exprmode=i)
+            status = solve(m)
+
+            @test status == :UserLimits
+            @test isapprox(getobjectivevalue(m), objValVec[i];atol=1e-3)
+            @test isapprox(getobjectivebound(m), objBoundVec[i];atol=1e-3)
+        end
+    end
+
+    @testset " Validation Test || AMP || multiKND || K = 3, N = 3, D = 0 " begin
+
+        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                               mip_solver=CbcSolver(logLevel=0),
+                               disc_abs_width_tol=1e-2,
+                               max_iter=3,
+                               bound_basic_propagation=false,
+                               log_level=1)
+
+        m = multiKND(solver=test_solver, randomub=50, K=3, N=3, D=0)
+        status = solve(m)
+
+        @test status == :UserLimits
+        @test isapprox(getobjectivevalue(m),3.0000000824779454;atol=1e-3)
+        @test isapprox(getobjectivebound(m),12.054604248046875;atol=1e-3)
+    end
 end
 
 @testset "Solving Algorithm Test :: Featrue selecting delta" begin
@@ -648,7 +800,7 @@ end
 end
 
 @testset "Algorithm Logic Tests" begin
-    @testset "Logic: local solve reroute/infeasible" begin
+    @testset "Algorithm Logic Test || castro4m2 || 1 iteration || Error case" begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                max_iter=1,
@@ -662,8 +814,28 @@ end
         catch e
             println("Expected error.")
         end
-        @test e.msg == "[PRESOLVE] NLP solve failure Error."
+        @test e.msg == "NLP local solve is Error - quitting solve."
         @test m.internalModel.status[:local_solve] == :Error
+
+    end
+
+    @testset " Algorithm Logic Test || blend029_gl || 3 iterations || Infeasible Case" begin
+
+        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                              nlp_local_solver=IpoptSolver(print_level=0),
+                              mip_solver=CbcSolver(logLevel=0),
+                              bound_basic_propagation=true,
+                              disc_var_pick_algo=1,
+                              log_level=100,
+                              max_iter=3,
+                              presolve_bt_width_tol=1e-3,
+                              presolve_bound_tightening=false)
+        m = blend029_gl(solver=test_solver)
+        status = solve(m)
+
+        @test status == :Infeasible
+        @test m.internalModel.logs[:n_iter] == 3
+        @test isapprox(getobjbound(m), 13.991277551020406; atol=1e-3)
 
     end
 end
