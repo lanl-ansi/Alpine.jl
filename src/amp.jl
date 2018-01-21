@@ -139,15 +139,14 @@ end
 
 function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
 
-    if convex[:sense] == :(>=)
-        @constraint(model_mip,
-            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
-    elseif convex[:sense] == :(<=)
+    if convex[:sense] == :(<=)
         @constraint(model_mip,
             sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) <= convex[:rhs])
-    elseif convex[:sense] == :(==)
+    elseif convex[:sense] == :(>=)
         @constraint(model_mip,
-            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) == convex[:rhs])
+            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
+    else
+        error("No equality constraints should be recognized as supported convex constriants")
     end
 
     return
@@ -232,7 +231,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     branching && (discretization = deepcopy(discretization))
 
     # ? Perform discretization base on type of nonlinear terms ? #
-    for i in m.var_discretization_mip
+    for i in m.var_disc_mip
         point = point_vec[i]                # Original Variable
         #@show i, point, discretization[i]
         if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin, :Int])  # DO not add partitions to discrete variables
@@ -283,9 +282,9 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     end
                     chunk = (ub_local - lb_local)/2
                     insert!(discretization[i], pos, lb_local + chunk)
-                    (m.log_level > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
+                    (m.log > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
                 else
-                    (m.log_level > 99) && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    (m.log > 99) && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                 end
                 break
             end
@@ -300,14 +299,14 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
 
-    for i in m.var_discretization_mip  # Only construct when discretized
+    for i in m.var_disc_mip  # Only construct when discretized
         lb_local = discretization[i][1]
         ub_local = discretization[i][end]
         distance = ub_local - lb_local
         chunk = distance / ((m.logs[:n_iter]+1)*m.disc_uniform_rate)
         discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.disc_uniform_rate]
         push!(discretization[i], ub_local)   # Safety Scheme
-        (m.log_level > 99) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
+        (m.log > 99) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
     end
 
     return discretization
@@ -376,6 +375,7 @@ function disc_branch_solve(m::PODNonlinearModel)
         warn("Unexpected solving condition $(status) during disc branching.")
     end
 
+    # Safety scheme
     if m.sense_orig == :Min
         return -Inf
     else

@@ -37,23 +37,6 @@ function build_constr_block(y_idx::Int, var_idxs::Vector, operator::Symbol)
     return expr_l_block
 end
 
-
-function preprocess_expression(expr)
-
-    for i in 1:length(expr.args)
-        expr.args[i] = expr_resolve_simple_tree(expr.args[i])
-        if (isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol))
-            continue
-        elseif (expr.args[i].head == :ref)
-            continue
-        elseif (expr.args[i].head == :call)
-            preprocess_expression(expr.args[i])
-        end
-    end
-
-    return
-end
-
 """
     expr_constr_parsing(expr, m::PODNonlinearModel)
 
@@ -176,8 +159,9 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
 		(bufferVal > 0.0) ? bufferVal *= expr : bufferVal = expr * coef
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
-	elseif expr in [:+, :-]
+	elseif expr in [:+, :-]    # TODO: what is this condition?
 		if bufferVal != 0.0 && bufferVar != nothing
+            @show "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 			push!(lhscoeffs, bufferVal)
 			push!(lhsvars, bufferVar)
 			bufferVal = 0.0
@@ -246,25 +230,6 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 end
 
-"""
-	Recursive dereferencing of variables in expression graph to overcome JuMP.addNLconstraints() difficulties
-"""
-function expr_dereferencing(expr, m)
-
-	for i in 2:length(expr.args)
-		if isa(expr.args[i], Union{Float64,Int64})
-			k = 0
-		elseif expr.args[i].head == :ref
-			@assert isa(expr.args[i].args[2], Int)
-			expr.args[i] = Variable(m, expr.args[i].args[2])
-		elseif expr.args[i].head == :call
-			expr_dereferencing(expr.args[i], m)
-		else
-			error("expr_dereferencing :: Unexpected term in expression tree.")
-		end
-	end
-end
-
 
 """
 	This function is trates the sign in expressions trees by cleaning the following structure:
@@ -298,20 +263,6 @@ function expr_resolve_sign(expr, level=0; kwargs...)
 	end
 
 	return
-end
-
-# This can be a cleaner version of the above function
-function expr_resolve_simple_tree(expr)
-    (isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return expr
-    (expr.head == :ref) && return expr
-
-    if ((expr.args[1] == :-) && (length(expr.args) == 2))
-        (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) && return -expr.args[2]
-        if (expr.args[2].head in [:ref, :call])
-            return Expr(:call, :*, -1, expr.args[2])
-        end
-    end
-    return expr
 end
 
 """
@@ -431,72 +382,6 @@ function expr_arrangeargs(args::Array; kwargs...)
 	end
 
 	return
-end
-
-
-"""
-	Mark expression with "dimensions" of the variable. Augment the tree.
-"""
-function expr_mark(expr; kwargs...)
-
-	p = 0
-	for i in 2:length(expr.args)
-		if isa(expr.args[i], Expr) && expr.args[i].head == :ref
-			if expr.args[1] in [:+, :-]
-				p = max(p, 1)
-				expr.args[i].typ = 1
-			elseif expr.args[1] in [:*]
-				p = +(p, 1)
-				expr.args[i].typ = 1
-			elseif expr.args[1] in [:^] # Consider leaf when encounter :^
-				p = expr_dim_enquiry(expr)
-			elseif expr.args[1] in [:/]
-				error("Does not support :/ and :^ yet.")
-			end
-		elseif isa(expr.args[i], Expr) && expr.args[i].head == :call
-			if expr.args[1] in [:+,:-]
-				innerp = expr_mark(expr.args[i])
-				p = max(p, innerp)
-				expr.args[i].typ = innerp
-			elseif expr.args[1] in [:*]
-				innerp = expr_mark(expr.args[i])
-				p = +(p, innerp)
-				expr.args[i].typ = innerp
-			elseif expr.args[1] in [:/, :^]
-				error("Does not support :/ and :^ yet.")
-			end
-		elseif isa(expr.args[i],Float64) || isa(expr.args[i],Int)
-			p = p
-		else
-			error("Unexpected expression node encouter $(expr.args[i])")
-		end
-	end
-
-	return p
-end
-
-"""
-	A special check when encouter :^. Cleaner function
-"""
-function expr_dim_enquiry(expr)
-	@assert expr.args[1] == :^
-	@assert length(expr.args) == 3 # Don't take cray :call with :^
-	if isa(expr.args[2], Float64)
-		return expr.args[2]
-	else
-		return expr.args[3]
-	end
-end
-
-"""
-	Check if a sub-tree is linear or not
-"""
-function expr_islinear(expr)
-	if expr_mark(expr) > 1
-		return False
-	else
-		return True
-	end
 end
 
 """

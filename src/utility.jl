@@ -20,7 +20,7 @@ function update_opt_gap(m::PODNonlinearModel)
         m.best_rel_gap = Inf
         return
     else
-        p = round(abs(log(10,m.rel_gap)))
+        p = round(abs(log(10,m.relgap)))
         n = round(abs(m.best_obj-m.best_bound), Int(p))
         dn = round(abs(1e-12+abs(m.best_obj)), Int(p))
         if (n == 0.0) && (dn == 0.0)
@@ -115,14 +115,16 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
         var_discretization[var] = [lb, ub]
     end
 
-    if length(lbs) == (m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+    total_var_cnt = m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip
+    orig_var_cnt = m.num_var_orig
+    if length(lbs) == total_var_cnt
+        for var in (1+orig_var_cnt):total_var_cnt
             lb = lbs[var]
             ub = ubs[var]
             var_discretization[var] = [lb, ub]
         end
     else
-        for var in (1+m.num_var_orig):(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+        for var in (1+orig_var_cnt):total_var_cnt
             lb = -Inf
             ub = Inf
             var_discretization[var] = [lb, ub]
@@ -181,30 +183,28 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
+    if string(m.mip_solver)[1:6] == "Gurobi"
+        push!(m.mip_solver.options, (:BestBdStop, stopbound))
+        # Calculation of the bound
+        if m.sense_orig == :Min
+            stopbound = (1-m.relgap+m.tol) * m.best_obj
+        elseif m.sense_orig == :Max
+            stopbound = (1+m.relgap-m.tol) * m.best_obj
+        end
 
-    # # Calculation of the bound
-    # if m.sense_orig == :Min
-    #     stopbound = (1-m.rel_gap+m.tol) * m.best_obj
-    # elseif m.sense_orig == :Max
-    #     stopbound = (1+m.rel_gap-m.tol) * m.best_obj
-    # end
-    #
-    # for i in 1:length(m.mip_solver.options)
-    #     if m.mip_solver.options[i][1] == :BestBdStop
-    #         deleteat!(m.mip_solver.options, i)
-    #         if string(m.mip_solver)[1:6] == "Gurobi"
-    #             push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    #         else
-    #             return
-    #         end
-    #     end
-    # end
-    #
-    # if string(m.mip_solver)[1:6] == "Gurobi"
-    #     push!(m.mip_solver.options, (:BestBdStop, stopbound))
-    # else
-    #     return
-    # end
+        for i in 1:length(m.mip_solver.options)
+            if m.mip_solver.options[i][1] == :BestBdStop
+                deleteat!(m.mip_solver.options, i)
+                if string(m.mip_solver)[1:6] == "Gurobi"
+                    push!(m.mip_solver.options, (:BestBdStop, stopbound))
+                else
+                    return
+                end
+            end
+        end
+    else
+        return
+    end
 
     return
 end
@@ -240,7 +240,7 @@ function fix_domains(m::PODNonlinearModel; kwargs...)
     l_var = copy(m.l_var_orig)
     u_var = copy(m.u_var_orig)
     for i in 1:m.num_var_orig
-        if i in m.var_discretization_mip
+        if i in m.var_disc_mip
             point = m.sol_incumb_lb[i]
             for j in 1:length(m.discretization[i])
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
@@ -284,32 +284,32 @@ This function helps pick the variables for discretization. The method chosen dep
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
 there exist two built-in method:
 
-    * `max-cover(m.disc_var_pick_algo=0, default)`: pick all variables involved in the non-linear term for discretization
-    * `min-vertex-cover(m.disc_var_pick_algo=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+    * `max-cover(m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover(m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
-For advance usage, `m.disc_var_pick_algo` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
+For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
 For more information, read more details at [Hacking Solver](@ref).
 
 """
 function pick_vars_discretization(m::PODNonlinearModel)
 
-    if isa(m.disc_var_pick_algo, Function)
-        eval(m.disc_var_pick_algo)(m)
-        (length(m.var_discretization_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
-    elseif isa(m.disc_var_pick_algo, Int) || isa(m.disc_var_pick_algo, String)
-        if m.disc_var_pick_algo == 0
+    if isa(m.disc_var_pick, Function)
+        eval(m.disc_var_pick)(m)
+        (length(m.var_disc_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+    elseif isa(m.disc_var_pick, Int) || isa(m.disc_var_pick, String)
+        if m.disc_var_pick == 0
             select_all_nlvar(m)
-        elseif m.disc_var_pick_algo == 1
+        elseif m.disc_var_pick == 1
             min_vertex_cover(m)
-        elseif m.disc_var_pick_algo == 2
+        elseif m.disc_var_pick == 2
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
-        elseif m.disc_var_pick_algo == 3 # Initial
+        elseif m.disc_var_pick == 3 # Initial
             (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
     else
-        error("Input for parameter :disc_var_pick_algo is illegal. Should be either a Int for default methods indexes or functional inputs.")
+        error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
     end
 
     return
@@ -340,8 +340,8 @@ function select_all_nlvar(m::PODNonlinearModel; kwargs...)
         end
     end
     nodes = collect(nodes)
-    m.num_var_discretization_mip = length(nodes)
-    m.var_discretization_mip = nodes
+    m.num_var_disc_mip = length(nodes)
+    m.var_disc_mip = nodes
 
     return
 end
@@ -426,7 +426,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
     distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    (m.log_level > 100) && println("updated partition var selection => $(m.var_discretization_mip)")
+    (m.log > 100) && println("updated partition var selection => $(m.var_disc_mip)")
     return
 end
 
@@ -483,8 +483,8 @@ function min_vertex_cover(m::PODNonlinearModel)
     xVal = getvalue(x)
 
     # Getting required information
-    m.num_var_discretization_mip = Int(sum(xVal))
-    m.var_discretization_mip = [i for i in nodes if xVal[i] > 1e-5]
+    m.num_var_disc_mip = Int(sum(xVal))
+    m.var_disc_mip = [i for i in nodes if xVal[i] > 1e-5]
 
     return
 end
@@ -502,7 +502,7 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     weights = Dict()
     for i in m.all_nonlinear_vars
         isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-        (m.log_level > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
+        (m.log > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
     end
 
     # Set up minimum vertex cover problem
@@ -517,8 +517,8 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     status = solve(minvertex, suppress_warnings=true)
 
     xVal = getvalue(x)
-    m.num_var_discretization_mip = Int(sum(xVal))
-    m.var_discretization_mip = [i for i in nodes if xVal[i] > 0]
-    (m.log_level >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_discretization_mip)) : $(m.var_discretization_mip)")
+    m.num_var_disc_mip = Int(sum(xVal))
+    m.var_disc_mip = [i for i in nodes if xVal[i] > 0]
+    (m.log >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_disc_mip)) : $(m.var_disc_mip)")
     return
 end

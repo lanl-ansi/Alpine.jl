@@ -54,7 +54,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                 # else
                 elseif m.nonlinear_terms[bi][:nonlinear_type] == :bilinear
                     # Partitioning on left
-                    if (idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip) && (part_cnt_b == 1)
+                    if (idx_a in m.var_disc_mip) && !(idx_b in m.var_disc_mip) && (part_cnt_b == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                         λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
@@ -64,7 +64,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Partitioning of right
-                    if !(idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip) && (part_cnt_a == 1)
+                    if !(idx_a in m.var_disc_mip) && (idx_b in m.var_disc_mip) && (part_cnt_a == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                         λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
@@ -74,7 +74,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Partitioning on both variables
-                    if (idx_a in m.var_discretization_mip) && (idx_b in m.var_discretization_mip)
+                    if (idx_a in m.var_disc_mip) && (idx_b in m.var_disc_mip)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
@@ -87,7 +87,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Error condition
-                    #if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
+                    #if !(idx_a in m.var_disc_mip) && !(idx_b in m.var_disc_mip)
                     #    error("Error case. At least one term should show up in discretization choices.")
                     #end
                 end
@@ -223,34 +223,35 @@ function mccormick_bin(m,xy,x,y)
     return
 end
 
-function mccormick_monomial(m,xy,x,xˡ,xᵘ)
-    @constraint(m, xy >= x^2)
-    @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
-    return
-end
-
-function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
-    if lazy == 1
-        function GetLazyCuts_quad(cb)
-            TOL1 = 1e-6
-            if (getvalue(x)^p > (getvalue(x_p) + TOL1))
-                a = p*getvalue(x)^(p-1)
-                b = (1-p)*getvalue(x)^p
-                @lazyconstraint(cb, a*x + b <= x_p)
-            end
-        end
-        addlazycallback(m, GetLazyCuts_quad)
-    elseif p == 2 && quad == 1
-        @constraint(m, x_p >= x^2)
-    else
-        x0_vec = sort(union(xˡ, xᵘ))
-        for x0 in x0_vec
-            @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
-        end
-    end
-
-    A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
-    @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
-
-    return
-end
+# [TODO] Unused functions but will be used for later
+# function mccormick_monomial(m,xy,x,xˡ,xᵘ)
+#     @constraint(m, xy >= x^2)
+#     @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
+#     return
+# end
+#
+# function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
+#     if lazy == 1
+#         function GetLazyCuts_quad(cb)
+#             TOL1 = 1e-6
+#             if (getvalue(x)^p > (getvalue(x_p) + TOL1))
+#                 a = p*getvalue(x)^(p-1)
+#                 b = (1-p)*getvalue(x)^p
+#                 @lazyconstraint(cb, a*x + b <= x_p)
+#             end
+#         end
+#         addlazycallback(m, GetLazyCuts_quad)
+#     elseif p == 2 && quad == 1
+#         @constraint(m, x_p >= x^2)
+#     else
+#         x0_vec = sort(union(xˡ, xᵘ))
+#         for x0 in x0_vec
+#             @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
+#         end
+#     end
+#
+#     A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
+#     @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
+#
+#     return
+# end

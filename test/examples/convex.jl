@@ -44,3 +44,20 @@ function convex_test(solver=nothing)
 
 	return m
 end
+
+function convex_solve(;solver=nothing)
+
+	m = Model(solver=solver)
+
+    @variable(m, 0<=x[1:5]<=100)
+
+	@NLconstraint(m, 3*x[1]*x[1] + 4*x[2]*x[2] <= 25)                             # 1: true
+	@NLconstraint(m, 3(x[1]x[1]) + 4*x[2]^2 <= 10)                                # 4: true
+	@NLconstraint(m, 3x[1]^2 + 4x[2]^2 + 6x[3]^2 <= 10)                           # 5: true
+	@NLconstraint(m, (x[1]+x[2])^2 <= 100)
+	@NLconstraint(m, -3*x[1]*x[1] -4*x[2]*x[2] >= -25)                            # 13: true
+
+	@objective(m, Max, x[1]^2+x[3]^2)                                             # true
+
+	return m
+end

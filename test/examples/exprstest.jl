@@ -1,12 +1,6 @@
-function exprstest(;verbose=false, solver=nothing)
+function exprstest(;solver=nothing)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-									mip_solver=CplexSolver(),
-									log_level=0))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	@variable(m, px[i=1:6]>=1) # At some point if an initial value is given, keep them
 
@@ -21,10 +15,6 @@ function exprstest(;verbose=false, solver=nothing)
 	@NLconstraint(m, 13*px[1] - px[2] + 5*px[3]*6 + px[4] >= 77)
 
 	@NLobjective(m, Min, 7*px[1]*6*px[4]*2+5+17+px[1]+px[2]+px[3]+8+3*5*px[1]^2*4)
-
-	if verbose
-		print(m)
-	end
 
 	return m
 end
@@ -74,15 +64,9 @@ function operator_b(;solver=nothing)
 	return m
 end
 
-function operator_basic(;verbose=false, solver=nothing)
+function operator_basic(;solver=nothing)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
-								   mip_solver=CbcSolver(),
-								   log_level=1))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	@variable(m, x[1:4]>=0)
 
@@ -180,21 +164,12 @@ function operator_basic(;verbose=false, solver=nothing)
 	@NLconstraint(m, (x[1]*x[2])*x[3]^2*x[4]^2 >= 1)
 	@NLconstraint(m, (x[1]^2*x[2]^2)*x[3]^2*x[4]^2 >= 1)
 
-	if verbose
-		print(m)
-	end
-
 	return m
 end
 
-function operator_c(;verbose=false, solver=nothing)
+function operator_c(;solver=nothing)
 
-	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
-							   	   mip_solver=CplexSolver()))
-	else
-		m = Model(solver=solver)
-	end
+	m = Model(solver=solver)
 
 	@variable(m, px[i=1:6]>=1) # At some point if an initial value is given, keep them
 
@@ -205,9 +180,6 @@ function operator_c(;verbose=false, solver=nothing)
 	@NLconstraint(m, 13*px[1] - px[2] + 5*px[3]*6 + px[4] >= 77)
 
 	@NLobjective(m, Min, 7*px[1]*6*px[4]*2+5+17+px[1]+px[2]+px[3]+8+3*5*px[1]^2*4)
-	if verbose
-		print(m)
-	end
 
 	return m
 end
