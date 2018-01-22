@@ -26,7 +26,7 @@ include("$(poddir)/test/examples/linearlift.jl")
 include("$(poddir)/test/examples/specialopts.jl")
 
 # Performe Tests
-# include("$(poddir)/test/solver.jl")
-# include("$(poddir)/test/expression.jl")
+include("$(poddir)/test/solver.jl")
+include("$(poddir)/test/expression.jl")
 include("$(poddir)/test/algorithm.jl")
-# include("$(poddir)/test/utility.jl")
+include("$(poddir)/test/utility.jl")
