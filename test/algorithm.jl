@@ -209,40 +209,6 @@
         @test isapprox(m.objVal, 2.0; atol=1e-3)
     end
 
-    @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=CbcSolver(logLevel=0),
-                           bilinear_convexhull=true,
-                           monomial_convexhull=true,
-                           presolve_bt=false,
-                           presolve_bp=false,
-                           convhull_formulation="facet",
-                           log=10000)
-        m = nlp3(solver=test_solver)
-        status = solve(m)
-
-        @test status == :Optimal
-        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
-        @test m.internalModel.logs[:n_iter] == 9
-    end
-
-    @testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                           mip_solver=CbcSolver(logLevel=0),
-                           bilinear_convexhull=true,
-                           monomial_convexhull=true,
-                           presolve_bt=false,
-                           presolve_bp=false,
-                           convhull_formulation="mini",
-                           log=10000)
-        m = nlp3(solver=test_solver)
-        status = solve(m)
-
-        @test status == :Optimal
-        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
-        @test m.internalModel.logs[:n_iter] == 9
-    end
-
     @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
@@ -351,6 +317,46 @@
         @test status == :UserLimits
         @test isapprox(getobjectivevalue(m),3.0000000824779454;atol=1e-3)
         @test isapprox(getobjectivebound(m),12.054604248046875;atol=1e-3)
+    end
+
+    @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=GLPKSolverMIP(msg_lev=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           maxiter=5,
+                           convhull_formulation="facet",
+                           log=10000)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :UserLimits
+        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+        @test m.objBound >= 6901.00
+        @test m.objBound <= 6902.00
+        @test m.internalModel.logs[:n_iter] == 5
+    end
+
+    @testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp3.jl" begin
+        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+                           mip_solver=GLPKSolverMIP(msg_lev=0),
+                           bilinear_convexhull=true,
+                           monomial_convexhull=true,
+                           presolve_bt=false,
+                           presolve_bp=false,
+                           maxiter=5,
+                           convhull_formulation="mini",
+                           log=10000)
+        m = nlp3(solver=test_solver)
+        status = solve(m)
+
+        @test status == :UserLimits
+        @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+        @test m.objBound >= 6901.00
+        @test m.objBound <= 6902.00
+        @test m.internalModel.logs[:n_iter] == 5
     end
 end
 
