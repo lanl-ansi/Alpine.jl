@@ -238,6 +238,8 @@ function store_nl_term(m::PODNonlinearModel, nl_key, var_idxs, term_type, operat
                                     :nonlinear_type => term_type,
                                     :convexified => false)
 
+    m.term_seq[nl_cnt + l_cnt  + 1] = nl_key                              # Assistive information
+
     push!(m.var_type_lifted, m.nonlinear_terms[nl_key][:y_type])    # Keep track of the lifted var type
     (m.log) > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
@@ -283,6 +285,7 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                                         :evaluator => linear,
                                         :lifted_constr_ref => lifted_constr_ref,
                                         :constr_id => Set())
+        m.term_seq[nl_cnt + l_cnt + 1] = term_key
         push!(m.var_type_lifted, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
         (m.log) > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
     end

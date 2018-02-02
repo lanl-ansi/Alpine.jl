@@ -1,7 +1,7 @@
 function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+		m = Model(solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
@@ -25,7 +25,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
 		m = Model(solver=PODSolver(colorful_pod="warmer",
-								   nlp_local_solver=IpoptSolver(print_level=0),
+								   nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,

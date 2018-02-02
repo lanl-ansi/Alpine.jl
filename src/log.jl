@@ -38,8 +38,8 @@ function logging_summary(m::PODNonlinearModel)
         @printf "number of linear constraints = %d\n" m.num_lconstr_orig
         @printf "number of variables = %d\n" m.num_var_orig
 
-        m.minlp_local_solver != UnsetSolver() && println("MINLP local solver = ", split(string(m.minlp_local_solver),".")[1])
-        println("NLP local solver = ", split(string(m.nlp_local_solver),".")[1])
+        m.minlp_solver != UnsetSolver() && println("MINLP local solver = ", split(string(m.minlp_solver),".")[1])
+        println("NLP local solver = ", split(string(m.nlp_solver),".")[1])
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
 
         println("maximum solution time = ", m.timeout)
@@ -62,7 +62,7 @@ function logging_summary(m::PODNonlinearModel)
     end
 
     # Additional warnings
-    m.mip_solver_identifier == "Gurobi" && warn("POD support Gurobi solver 7.0+ ...")
+    m.mip_solver_id == "Gurobi" && warn("POD support Gurobi solver 7.0+ ...")
 end
 
 function logging_head(m::PODNonlinearModel)

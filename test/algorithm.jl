@@ -2,7 +2,7 @@
 
     @testset " Validation Test || AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=false,
                            monomial_convexhull=false,
@@ -20,7 +20,7 @@
 
     @testset " Validation Test || AMP-TMC || basic solve || examples/nlp3.jl (3 iterations)" begin
 
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
         					   mip_solver=CbcSolver(logLevel=0),
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
@@ -41,7 +41,7 @@
 
     @testset " Validation Test || AMP-TMC || minimum-vertex solving || examples/nlp3.jl (3 iterations)" begin
 
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
@@ -62,7 +62,7 @@
 
     @testset " Validation Test || PBT-AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
     							   mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                    bilinear_convexhull=false,
                                    monomial_convexhull=false,
@@ -84,7 +84,7 @@
 
     @testset " Validation Test || BT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
     							   mip_solver=CbcSolver(logLevel=0),
                                    bilinear_convexhull=false,
     							   log=10000,
@@ -108,7 +108,7 @@
 
     @testset " Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                    mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                    bilinear_convexhull=false,
                                    log=10000,
@@ -129,7 +129,7 @@
     end
 
     @testset " Validation Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -145,7 +145,7 @@
     end
 
     @testset " Validation Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -162,7 +162,7 @@
     end
 
     @testset " Validation Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -178,7 +178,7 @@
     end
 
     @testset " Validation Test || AMP || basic solve || examples/circle.jl" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
@@ -195,7 +195,7 @@
     end
 
     @testset " Validation Test || AMP || basic solve || examples/circleN.jl" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
@@ -210,7 +210,7 @@
     end
 
     @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -227,7 +227,7 @@
     end
 
     @testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -248,7 +248,7 @@
         objBoundVec = Any[4.68059, 12.0917, 8.94604, 10.0278, 8.10006, 6.6384, 12.5674, 7.39747, 6.02928, 7.91467, 7.88307]
         objValVec = Any[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
         for i in 1:11
-            test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+            test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                    mip_solver=CbcSolver(logLevel=0),
                                    disc_abs_width_tol=1e-2,
                                    maxiter=4,
@@ -266,7 +266,7 @@
 
     @testset " Validation Test || AMP || multi2 || exprmode=1:11" begin
 
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                maxiter=4,
@@ -286,7 +286,7 @@
         objBoundVec = Any[2.97186, 3.85492, 4.23375]
         objValVec = Any[2.0, 2.0, 2.0]
         for i in 1:3
-            test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+            test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                    mip_solver=CbcSolver(logLevel=0),
                                    disc_abs_width_tol=1e-2,
                                    maxiter=4,
@@ -304,7 +304,7 @@
 
     @testset " Validation Test || AMP || multiKND || K = 3, N = 3, D = 0 " begin
 
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                maxiter=3,
@@ -320,7 +320,7 @@
     end
 
     @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=GLPKSolverMIP(msg_lev=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -340,7 +340,7 @@
     end
 
     @testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=GLPKSolverMIP(msg_lev=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -363,7 +363,7 @@ end
 @testset "Solving Algorithm Test :: Featrue selecting delta" begin
 
     @testset " Validation Test || AMP || DISC-RATIO || examples/nlp3.jl " begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=false,
@@ -380,7 +380,7 @@ end
     end
 
     @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/nlp3.jl " begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
@@ -396,7 +396,7 @@ end
     end
 
     @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/castro2m2.jl " begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
@@ -412,7 +412,7 @@ end
     end
 
     @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi3N.jl exprmode=2" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
@@ -428,7 +428,7 @@ end
     end
 
     @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi3N.jl exprmode=2" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
@@ -444,7 +444,7 @@ end
     end
 
     @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=1" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
@@ -460,7 +460,7 @@ end
     end
 
     @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=2" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
@@ -476,7 +476,7 @@ end
     end
 
     @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=2" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio_branch=true,
@@ -494,10 +494,10 @@ end
 
 @testset "Solving algorithm tests :: Bin-Lin Solves" begin
     @testset "Operator :: bmpl && linbin && binprod solve test I" begin
-        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
+        test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
                                                               log_level=0),
-                              nlp_local_solver=IpoptSolver(),
+                              nlp_solver=IpoptSolver(),
                               mip_solver=CbcSolver(logLevel=0),
                               log=10000)
 
@@ -518,10 +518,10 @@ end
     end
 
     @testset "Operator :: bmpl && linbin && binprod solve test II" begin
-        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
+        test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
                                                               log_level=0),
-                              nlp_local_solver=IpoptSolver(),
+                              nlp_solver=IpoptSolver(),
                               mip_solver=CbcSolver(logLevel=0),
                               log=10000)
 
@@ -553,10 +553,10 @@ end
     end
 
     @testset "Operator :: bmpl && linbin && binprod solve test II" begin
-        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
+        test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
                                                               log_level=0),
-                              nlp_local_solver=IpoptSolver(),
+                              nlp_solver=IpoptSolver(),
                               mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                         cont_solver=IpoptSolver(),
                                                         log_level=0),
@@ -617,7 +617,7 @@ end
 
 @testset "Solving algorithm tests :: Embedding Formulation" begin
     @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -634,7 +634,7 @@ end
     end
 
     @testset "Embedding Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -652,7 +652,7 @@ end
     end
 
     @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -669,7 +669,7 @@ end
     end
 
     @testset "Embedding Test || AMP || special problem || ... " begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
@@ -687,7 +687,7 @@ end
     end
 
     @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -705,7 +705,7 @@ end
     end
 
     @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -723,7 +723,7 @@ end
     end
 
     @testset "Embedding IBS Test || AMP || special problem || ... " begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
@@ -742,7 +742,7 @@ end
     end
 
     @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -760,7 +760,7 @@ end
     end
 
     @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=true,
                            monomial_convexhull=true,
@@ -778,7 +778,7 @@ end
     end
 
     @testset "Embedding LINK Test || AMP || special problem || ... " begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                disc_abs_width_tol=1e-2,
                                disc_ratio=8,
@@ -799,7 +799,7 @@ end
 
 @testset "Algorithm Logic Tests" begin
     @testset "Algorithm Logic Test || castro4m2 || 1 iteration || Error case" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                maxiter=1,
                                colorful_pod="warmer",
@@ -819,8 +819,8 @@ end
 
     @testset " Algorithm Logic Test || blend029_gl || 3 iterations || Infeasible Case" begin
 
-        test_solver=PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
-                              nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                              nlp_solver=IpoptSolver(print_level=0),
                               mip_solver=CbcSolver(logLevel=0),
                               presolve_bp=true,
                               disc_var_pick=1,
@@ -839,7 +839,7 @@ end
 
 @testset "Algorithm Special Test" begin
     @testset "Convex Model Solve" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                maxiter=1,
                                colorful_pod="solarized",
@@ -854,7 +854,7 @@ end
     end
 
     @testset "Uniform partitioning" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(logLevel=0),
                                disc_add_partition_method = "uniform",
                                disc_uniform_rate = 10,
@@ -869,8 +869,8 @@ end
 end
 
 @testset "Algorithm Test with binprod terms" begin
-    test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
-                            nlp_local_solver=IpoptSolver(print_level=0),
+    test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                            nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=GLPKSolverMIP(msg_lev=0),
                             bilinear_convexhull=true,
                             monomial_convexhull=true,

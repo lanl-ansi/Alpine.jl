@@ -53,19 +53,17 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
-
-    # [TODO] futuer direction contain all things above
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
     # add all the solver options
-    nlp_local_solver::MathProgBase.AbstractMathProgSolver       # Local continuous NLP solver for solving NLPs at each iteration
-    minlp_local_solver::MathProgBase.AbstractMathProgSolver     # Local MINLP solver for solving MINLPs at each iteration
+    nlp_solver::MathProgBase.AbstractMathProgSolver             # Local continuous NLP solver for solving NLPs at each iteration
+    minlp_solver::MathProgBase.AbstractMathProgSolver           # Local MINLP solver for solving MINLPs at each iteration
     mip_solver::MathProgBase.AbstractMathProgSolver             # MILP solver for successive lower bound solves
 
     # Sub-solver identifier for cusomized solver option
-    nlp_local_solver_identifier::AbstractString                 # NLP Solver identifier string
-    minlp_local_solver_identifier::AbstractString               # MINLP local solver identifier string
-    mip_solver_identifier::AbstractString                       # MIP solver identifier string
+    nlp_solver_id::AbstractString                               # NLP Solver identifier string
+    minlp_solver_id::AbstractString                             # MINLP local solver identifier string
+    mip_solver_id::AbstractString                               # MIP solver identifier string
 
     # initial data provided by user
     num_var_orig::Int                                           # Initial number of variables
@@ -113,6 +111,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     num_constr_convex::Int                                      # Number of structural constraints
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
+    term_seq::Dict{Int, Any}                                 # Vector-Dictionary for nl terms detection
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
     structural_obj::Symbol                                      # A symbolic indicator of the expression type of objective function
@@ -135,7 +134,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     best_bound_sol::Vector{Float64}                             # Best bound solution
     best_rel_gap::Float64                                       # Relative optimality gap = |best_bound - best_obj|/|best_obj|
     bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by parameter disc_consecutive_forbid
-    final_soln::Vector{Float64}                                 # Final solution
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
@@ -145,8 +143,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # constructor
     function PODNonlinearModel(colorful_pod,
                                 log, timeout, maxiter, relgap, tol,
-                                nlp_local_solver,
-                                minlp_local_solver,
+                                nlp_solver,
+                                minlp_solver,
                                 mip_solver,
                                 recognize_convex,
                                 bilinear_mccormick,
@@ -224,8 +222,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.presolve_bp = presolve_bp
 
-        m.nlp_local_solver = nlp_local_solver
-        m.minlp_local_solver = minlp_local_solver
+        m.nlp_solver = nlp_solver
+        m.minlp_solver = minlp_solver
         m.mip_solver = mip_solver
 
         m.num_var_orig = 0
@@ -244,6 +242,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.linear_terms = Dict()
         m.nonlinear_terms = Dict()
+        m.term_seq = Dict()
         m.nonlinear_constrs = Dict()
         m.all_nonlinear_vars = Int[]
         m.bounding_constr_expr_mip = []
@@ -482,20 +481,20 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
 
     if presolve
-        if !isempty(var_type_screener) && m.minlp_local_solver != UnsetSolver()
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_local_solver)
-        elseif !isempty(var_type_screener) && m.minlp_local_solver == UnsetSolver()
-            warn("Discrete variable detected with no minlp_local_solver indicated. Error can be caused with nlp_local_solver not handling discrete variables.")
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+        if !isempty(var_type_screener) && m.minlp_solver != UnsetSolver()
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_solver)
+        elseif !isempty(var_type_screener) && m.minlp_solver == UnsetSolver()
+            warn("Discrete variable detected with no minlp_solver indicated. Error can be caused with nlp_solver not handling discrete variables.")
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_solver)
         else
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_solver)
         end
     else
-        if m.nlp_local_solver != UnsetSolver()
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_local_solver)
+        if m.nlp_solver != UnsetSolver()
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_solver)
         else
             warn("Handling NLP problem with minlp solver, could result in error due to MINLP solver.")
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_local_solver)
+            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_solver)
         end
     end
 

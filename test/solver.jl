@@ -2,7 +2,7 @@
 
     @testset "PODNonlinearModel loading tests" begin
         # Random Model 1
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(),
     						   mip_solver=CbcSolver(logLevel=0),log=10000)
         m = operator_c(solver=test_solver)
 
@@ -10,7 +10,7 @@
         @test isa(m.internalModel, POD.PODNonlinearModel)
 
         # Expression Model 1
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(),
     						   mip_solver=CbcSolver(logLevel=0),log=10000)
         m = exprstest(solver=test_solver)
         status = JuMP.build(m)
@@ -20,7 +20,7 @@
     @testset "Partitioning variable selection tests :: nlp3" begin
 
         # Select all NL variable
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=0,
                                 disc_uniform_rate=10,
@@ -38,7 +38,7 @@
         @test m.internalModel.disc_var_pick == 0
 
         # Select all NL variable
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=2,
                                 disc_uniform_rate=10,
@@ -56,7 +56,7 @@
         @test m.internalModel.disc_var_pick == 2
 
         # Minimum vertex cover algorithm
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=1,
                                 disc_uniform_rate=10,
@@ -74,7 +74,7 @@
         @test m.internalModel.disc_var_pick == 1
 
         # Adaptive variable selection scheme :: disc_var_pick = 3
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=3,
                                 presolve_bp = false,
@@ -94,7 +94,7 @@
     @testset "Partitioning variable selection tests :: castro2m2" begin
 
         # Select all NL variable
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=0,
                                 disc_uniform_rate=10,
@@ -114,7 +114,7 @@
         @test m.internalModel.disc_var_pick == 0
 
         # Select minimum vertex cover
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=1,
                                 disc_uniform_rate=10,
@@ -133,7 +133,7 @@
         @test m.internalModel.disc_var_pick == 1
 
         # Criteria 15 static selection
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=2,
                                 disc_uniform_rate=15,
@@ -156,8 +156,8 @@
     @testset "Partitioning variable selection tests :: blend029" begin
 
         # Select all NL variable
-        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
-                                nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                                nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=0,
                                 disc_uniform_rate=10,
@@ -173,8 +173,8 @@
         @test m.internalModel.disc_var_pick == 0
 
         # Minimum vertex cover
-        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
-                                nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                                nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=1,
                                 disc_uniform_rate=10,
@@ -191,8 +191,8 @@
         @test m.internalModel.disc_var_pick == 1
 
         # Adaptive Scheme vertex cover
-        test_solver = PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
-                                nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                                nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=2,
                                 disc_uniform_rate=10,
@@ -212,7 +212,7 @@
     @testset "Partitioning variable selection tests :: castro5m2" begin
 
         # Dynamic Scheme step 2
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=3,
                                 presolve_bp=true,
@@ -233,7 +233,7 @@
         @test m.internalModel.disc_var_pick == 3
 
         # Dynamic Scheme step 2
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=3,
                                 presolve_bp=true,
@@ -255,7 +255,7 @@
     end
 
     @testset "Test getsolvetime for time trackikng" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
                                 disc_var_pick=0,
                                 disc_uniform_rate=10,

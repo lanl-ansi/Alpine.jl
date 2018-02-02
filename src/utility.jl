@@ -434,6 +434,7 @@ end
     Dedicated for bilinear info
 """
 function collect_var_graph(m::PODNonlinearModel)
+    @show "started collecting var graph"
 
     # Collect the information of nonlinear terms in terms of arcs and nodes
     nodes = Set()
@@ -464,6 +465,7 @@ function collect_var_graph(m::PODNonlinearModel)
     nodes = collect(nodes)
     arcs = collect(arcs)
 
+    @show "finished"
     return nodes, arcs
 end
 
@@ -478,8 +480,8 @@ function min_vertex_cover(m::PODNonlinearModel)
         @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
     end
     @objective(minvertex, Min, sum(x))
+    print(minvertex)
     status = solve(minvertex, suppress_warnings=true)
-
     xVal = getvalue(x)
 
     # Getting required information

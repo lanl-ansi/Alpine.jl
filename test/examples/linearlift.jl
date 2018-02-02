@@ -1,7 +1,7 @@
 function basic_linear_lift(;verbose=false, solver=nothing)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+		m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
 									mip_solver=CbcSolver(logLevel=0),
 									log=10000))
 	else

@@ -13,8 +13,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     relgap::Float64
     tol::Float64
 
-    nlp_local_solver::MathProgBase.AbstractMathProgSolver
-    minlp_local_solver::MathProgBase.AbstractMathProgSolver
+    nlp_solver::MathProgBase.AbstractMathProgSolver
+    minlp_solver::MathProgBase.AbstractMathProgSolver
     mip_solver::MathProgBase.AbstractMathProgSolver
 
     recognize_convex::Bool
@@ -66,8 +66,8 @@ function PODSolver(;
     relgap = 1e-4,
     tol = 1e-6,
 
-    nlp_local_solver = UnsetSolver(),
-    minlp_local_solver = UnsetSolver(),
+    nlp_solver = UnsetSolver(),
+    minlp_solver = UnsetSolver(),
     mip_solver = UnsetSolver(),
 
     recognize_convex = true,
@@ -114,8 +114,8 @@ function PODSolver(;
     unsupport_opts = Dict(kwargs)
     !isempty(keys(unsupport_opts)) && warn("Detected unsupported/experimental arguments = $(keys(unsupport_opts))")
 
-    if nlp_local_solver == UnsetSolver()
-        error("No NLP local solver specified (set nlp_local_solver)\n")
+    if nlp_solver == UnsetSolver()
+        error("No NLP local solver specified (set nlp_solver)\n")
     end
 
     if mip_solver == UnsetSolver()
@@ -131,8 +131,8 @@ function PODSolver(;
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(colorful_pod,
         log, timeout, maxiter, relgap, tol,
-        deepcopy(nlp_local_solver),
-        deepcopy(minlp_local_solver),
+        deepcopy(nlp_solver),
+        deepcopy(minlp_solver),
         deepcopy(mip_solver),
         recognize_convex,
         bilinear_mccormick,
@@ -168,8 +168,8 @@ function PODSolver(;
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
 function MathProgBase.NonlinearModel(s::PODSolver)
-    if !applicable(MathProgBase.NonlinearModel, s.nlp_local_solver)
-        error("NLP local solver $(s.nlp_local_solver) specified is not a NLP solver recognized by POD\n")
+    if !applicable(MathProgBase.NonlinearModel, s.nlp_solver)
+        error("NLP local solver $(s.nlp_solver) specified is not a NLP solver recognized by POD\n")
     end
 
     # Translate options into old nonlinearmodel.jl fields
@@ -190,8 +190,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     term_patterns = s.term_patterns
     constr_patterns = s.constr_patterns
 
-    nlp_local_solver = s.nlp_local_solver
-    minlp_local_solver = s.minlp_local_solver
+    nlp_solver = s.nlp_solver
+    minlp_solver = s.minlp_solver
     mip_solver = s.mip_solver
 
     disc_var_pick = s.disc_var_pick
@@ -224,8 +224,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     return PODNonlinearModel(colorful_pod,
                             log, timeout, maxiter, relgap, tol,
-                            nlp_local_solver,
-                            minlp_local_solver,
+                            nlp_solver,
+                            minlp_solver,
                             mip_solver,
                             recognize_convex,
                             bilinear_mccormick,
@@ -267,19 +267,19 @@ function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
 
     # Higher-level solvers: that can use sub-solvers
     if contains(solverstring,"Pajarito")
-        m.mip_solver_identifier = "Pajarito"
+        m.mip_solver_id = "Pajarito"
         return
     end
 
     # Lower level solvers
     if contains(solverstring,"Gurobi")
-        m.mip_solver_identifier = "Gurobi"
+        m.mip_solver_id = "Gurobi"
     elseif contains(solverstring,"CPLEX")
-        m.mip_solver_identifier = "CPLEX"
+        m.mip_solver_id = "CPLEX"
     elseif contains(solverstring,"Cbc")
-        m.mip_solver_identifier = "Cbc"
+        m.mip_solver_id = "Cbc"
     elseif contains(solverstring,"GLPK")
-        m.mip_solver_identifier = "GLPK"
+        m.mip_solver_id = "GLPK"
     else
         error("Unsupported mip solver name. Using blank")
     end
@@ -289,23 +289,23 @@ end
 
 function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
 
-    isempty(override) ? solverstring = string(m.nlp_local_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.nlp_solver) : solverstring=override
 
     # Higher-level solver
     if contains(solverstring, "Pajarito")
-        m.nlp_local_solver_identifier = "Pajarito"
+        m.nlp_solver_id = "Pajarito"
         return
     end
 
     # Lower-level solver
     if contains(solverstring, "Ipopt")
-        m.nlp_local_solver_identifier = "Ipopt"
+        m.nlp_solver_id = "Ipopt"
     elseif contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
-        m.nlp_local_solver_identifier = "Bonmin"
+        m.nlp_solver_id = "Bonmin"
     elseif contains(solverstring, "KNITRO")
-        m.nlp_local_solver_identifier = "Knitro"
+        m.nlp_solver_id = "Knitro"
     elseif contains(solverstring, "NLopt")
-        m.nlp_local_solver_identifier = "NLopt"
+        m.nlp_solver_id = "NLopt"
     else
         error("Unsupported nlp solver name. Using blank")
     end
@@ -315,25 +315,25 @@ end
 
 function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
 
-    (m.minlp_local_solver == UnsetSolver()) && return
+    (m.minlp_solver == UnsetSolver()) && return
 
-    isempty(override) ? solverstring = string(m.minlp_local_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.minlp_solver) : solverstring=override
 
     # Higher-level solver
     if contains(solverstring, "Pajarito")
-        m.minlp_local_solver_identifier = "Pajarito"
+        m.minlp_solver_id = "Pajarito"
         return
     end
 
     # Lower-level Solver
     if contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
-        m.minlp_local_solver_identifier = "Bonmin"
+        m.minlp_solver_id = "Bonmin"
     elseif contains(solverstring, "KNITRO")
-        m.minlp_local_solver_identifier = "Knitro"
+        m.minlp_solver_id = "Knitro"
     elseif contains(solverstring, "NLopt")
-        m.minlp_local_solver_identifier = "NLopt"
+        m.minlp_solver_id = "NLopt"
     elseif contains(solverstring, "CoinOptServices.OsilSolver(\"bonmin\"")
-        m.minlp_local_solver_identifier = "Bonmin"
+        m.minlp_solver_id = "Bonmin"
     else
         error("Unsupported nlp solver name. Using blank")
     end
@@ -352,15 +352,15 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
-    if m.mip_solver_identifier == "CPLEX"
+    if m.mip_solver_id == "CPLEX"
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
-    elseif m.mip_solver_identifier == "Gurobi"
+    elseif m.mip_solver_id == "Gurobi"
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
-    elseif m.mip_solver_identifier == "Cbc"
+    elseif m.mip_solver_id == "Cbc"
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
-    elseif m.mip_solver_identifier == "GLPK"
+    elseif m.mip_solver_id == "GLPK"
         insert_timeleft_symbol(m.mip_solver.opts, timelimit,:tm_lim,m.timeout)
-    elseif m.mip_solver_identifier == "Pajarito"
+    elseif m.mip_solver_id == "Pajarito"
         (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     else
         error("Needs support for this MIP solver")
@@ -380,16 +380,16 @@ function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
-    if m.nlp_local_solver_identifier == "Ipopt"
-        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
-    elseif m.nlp_local_solver_identifier == "Pajarito"
-        (timelimit < Inf) && (m.nlp_local_solver.timeout = timelimit)
-    elseif m.nlp_local_solver_identifier == "AmplNL"
-        insert_timeleft_symbol(m.nlp_local_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
-    elseif m.nlp_local_solver_identifier == "Knitro"
+    if m.nlp_solver_id == "Ipopt"
+        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.nlp_solver_id == "Pajarito"
+        (timelimit < Inf) && (m.nlp_solver.timeout = timelimit)
+    elseif m.nlp_solver_id == "AmplNL"
+        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
+    elseif m.nlp_solver_id == "Knitro"
         error("You never tell me anything about knitro. Probably because they have a very short trail length.")
-    elseif m.nlp_local_solver_identifier == "NLopt"
-        m.nlp_local_solver.maxtime = timelimit
+    elseif m.nlp_solver_id == "NLopt"
+        m.nlp_solver.maxtime = timelimit
     else
         error("Needs support for this MIP solver")
     end
@@ -408,14 +408,14 @@ function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
-    if m.minlp_local_solver_identifier == "Pajarito"
-        (timelimit < Inf) && (m.minlp_local_solver.timeout = timelimit)
-    elseif m.minlp_local_solver_identifier == "AmplNL"
-        insert_timeleft_symbol(m.minlp_local_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
-    elseif m.minlp_local_solver_identifier == "Knitro"
+    if m.minlp_solver_id == "Pajarito"
+        (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
+    elseif m.minlp_solver_id == "AmplNL"
+        insert_timeleft_symbol(m.minlp_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
+    elseif m.minlp_solver_id == "Knitro"
         error("You never tell me anything about knitro. Probably because they charge everything they own.")
-    elseif m.minlp_local_solver_identifier == "NLopt"
-        m.minlp_local_solver.maxtime = timelimit
+    elseif m.minlp_solver_id == "NLopt"
+        m.minlp_solver.maxtime = timelimit
     else
         error("Needs support for this MIP solver")
     end
