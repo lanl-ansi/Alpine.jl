@@ -139,65 +139,115 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
 
-    # TODO: need to consider negative values
-
     for i in 1:length(m.term_seq)
         k = m.term_seq[i]
         if haskey(m.nonlinear_terms, k)
-            nlk = k
-            if !(m.nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear, :binprod, :sin, :cos])
-                error("Unexpected nonlinear term encountered during resolve variable bounds")
-            end
-            if m.nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear]
-                lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
-                cnt = 0
-                bound = []
-                for var in nlk
-                    cnt += 1
-                    var_idx = var.args[2]
-                    var_bounds = [m.l_var_tight[var_idx], m.u_var_tight[var_idx]]
-                    if cnt == 1
-                        bound = copy(var_bounds)
-                    elseif cnt == 2
-                        bound = bound * var_bounds'
-                    else
-                        bound = diag(bound) * var_bounds'
-                    end
-                end
-                if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
-                    m.l_var_tight[lifted_idx] = minimum(bound)
-                end
-                if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
-                    m.u_var_tight[lifted_idx] = maximum(bound)
-                end
-                break
-            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:binprod]
-                lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
-                m.l_var_tight[lifted_idx] = 0
-                m.u_var_tight[lifted_idx] = 1
-                break
-            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:sin, :cos]
-                lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
-                m.l_var_tight[lifted_idx] = -1  # TODO can be improved
-                m.u_var_tight[lifted_idx] = 1
-                break
+            if m.nonlinear_terms[k][:nonlinear_type] in [:bilinear, :monomial, :multilinear]
+                basic_monomial_bounds(m, k)
+            elseif m.nonlinear_terms[k][:nonlinear_type] in [:binprod]
+                basic_binprod_bounds(m, k)
+            elseif m.nonlinear_terms[k][:nonlinear_type] in [:sin, :cos]
+                basic_sincos_bounds(m, k)
+            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:linbin]
+                basic_linbin_bounds(m, k)
+            else
+                error("Unexpected nonlinear term $(k) encountered during resolve variable bounds")
             end
         elseif haskey(m.linear_terms, k)
-            lk = k
-            lifted_idx = m.linear_terms[lk][:y_idx]
-            ub = 0.0
-            lb = 0.0
-            for j in m.linear_terms[lk][:ref][:coef_var]
-                (j[1] > 0.0) ? ub += abs(j[1])*m.u_var_tight[j[2]] : ub -= abs(j[1])*m.l_var_tight[j[2]]
-                (j[1] > 0.0) ? lb += abs(j[1])*m.l_var_tight[j[2]] : lb -= abs(j[1])*m.u_var_tight[j[2]]
-            end
-            lb += m.linear_terms[lk][:ref][:scalar]
-            ub += m.linear_terms[lk][:ref][:scalar]
-            (lb > m.l_var_tight[lifted_idx] + m.tol) && (m.l_var_tight[lifted_idx] = lb)
-            (ub < m.u_var_tight[lifted_idx] - m.tol) && (m.u_var_tight[lifted_idx] = ub)
+            basic_linear_bounds(m, k)
         else
             error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
+    end
+
+    return
+end
+
+function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
+
+    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
+    cnt = 0
+    bound = []
+    for var in k
+        cnt += 1
+        var_idx = var.args[2]
+        var_bounds = [m.l_var_tight[var_idx], m.u_var_tight[var_idx]]
+        if cnt == 1
+            bound = copy(var_bounds)
+        elseif cnt == 2
+            bound = bound * var_bounds'
+        else
+            bound = diag(bound) * var_bounds'
+        end
+    end
+    if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
+        m.l_var_tight[lifted_idx] = minimum(bound)
+    end
+    if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
+        m.u_var_tight[lifted_idx] = maximum(bound)
+    end
+
+    return
+end
+
+function basic_binprod_bounds(m::PODNonlinearModel, k::Any)
+
+    lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
+    m.l_var_tight[lifted_idx] = 0
+    m.u_var_tight[lifted_idx] = 1
+
+    return
+end
+
+function basic_sincos_bounds(m::PODNonlinearModel, k::Any)
+
+    lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
+    m.l_var_tight[lifted_idx] = -1  # TODO can be improved
+    m.u_var_tight[lifted_idx] = 1
+
+    return
+end
+
+function basic_linbin_bounds(m::PODNonlinearModel, k::Any)
+
+    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
+
+    prod_idxs = [i for i in m.nonlinear_terms[k][:var_idx] if m.var_type_lifted[i] == :Cont]
+    @assert length(prod_idxs) == 1
+    lin_idx = prod_idxs[1]
+
+    if m.l_var_tight > 0.0
+        m.l_var_tight[lifted_idx] = 0.0
+        m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
+    elseif m.u_var_tight < 0.0
+        m.u_var_tight[lifted_idx] = 0.0
+        m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
+    else
+        m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
+        m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
+    end
+
+    return
+end
+
+function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms::Dict=nothing)
+
+    linear_terms == nothing ? linear_terms = m.linear_terms : linear_term = linear_terms
+
+    lifted_idx = linear_terms[k][:y_idx]
+    ub = 0.0
+    lb = 0.0
+    for j in linear_terms[k][:ref][:coef_var]
+        (j[1] > 0.0) ? ub += abs(j[1])*m.u_var_tight[j[2]] : ub -= abs(j[1])*m.l_var_tight[j[2]]
+        (j[1] > 0.0) ? lb += abs(j[1])*m.l_var_tight[j[2]] : lb -= abs(j[1])*m.u_var_tight[j[2]]
+    end
+    lb += linear_terms[k][:ref][:scalar]
+    ub += linear_terms[k][:ref][:scalar]
+    if lb > m.l_var_tight[lifted_idx] + m.tol
+        m.l_var_tight[lifted_idx] = lb
+    end
+    if ub < m.u_var_tight[lifted_idx] - m.tol
+        m.u_var_tight[lifted_idx] = ub
     end
 
     return
@@ -221,7 +271,7 @@ function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, di
         k = m.term_seq[i]
         if haskey(m.nonlinear_terms, k)
             nlk = k
-            if !(m.nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear, :binprod])
+            if !(m.nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear, :binprod, :linbin])
                 error("Unexpected nonlinear term encountered during resolve variable bounds")
             end
             if nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear]
@@ -246,30 +296,15 @@ function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, di
                 if maximum(bound) < discretization[lifted_idx][end]
                     discretization[lifted_idx][end] = maximum(bound)
                 end
-            elseif m.nonlinear_terms[nlk][:id] == i && m.nonlinear_terms[nlk][:nonlinear_type] in [:binprod]
-                lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
-                m.l_var_tight[lifted_idx] = 0
-                m.u_var_tight[lifted_idx] = 1
-                break
-            elseif m.nonlinear_terms[nlk][:id] == i && m.nonlinear_terms[nlk][:nonlinear_type] in [:sin, :cos]
-                lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
-                m.l_var_tight[lifted_idx] = -1  # TOOD can be improved
-                m.u_var_tight[lifted_idx] = 1
-                break
+            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:binprod]
+                basic_binprod_bounds(m, k)
+            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:sin, :cos]
+                basic_sincos_bounds(m, k)
+            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:linbin]
+                basic_linbin_bounds(m, k)
             end
         elseif haskey(m.linear_terms, k)
-            lk = k
-            lifted_idx = linear_terms[lk][:y_idx]
-            ub = 0.0
-            lb = 0.0
-            for j in linear_terms[lk][:ref][:coef_var]
-                (j[1] > 0.0) ? ub += abs(j[1])*discretization[j[2]][end] : ub -= abs(j[1])*discretization[j[2]][1]
-                (j[1] > 0.0) ? lb += abs(j[1])*discretization[j[2]][1] : lb -= abs(j[1])*discretization[j[2]][end]
-            end
-            lb += linear_terms[lk][:ref][:scalar]
-            ub += linear_terms[lk][:ref][:scalar]
-            (lb > discretization[lifted_idx][1] + m.tol) && (discretization[lifted_idx][1] = lb)
-            (ub < discretization[lifted_idx][end] - m.tol) && (discretization[lifted_idx][end] = ub)
+            basic_linear_bounds(m, k, linear_terms)
         else
             error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
