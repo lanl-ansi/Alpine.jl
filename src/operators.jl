@@ -285,7 +285,7 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                                         :evaluator => linear,
                                         :lifted_constr_ref => lifted_constr_ref,
                                         :constr_id => Set())
-        m.term_seq[nl_cnt + l_cnt + 1] = term_key
+        m.term_seq[length(keys(m.linear_terms)) + length(keys(m.nonlinear_terms)) + 1] = term_key
         push!(m.var_type_lifted, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
         (m.log) > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
     end
