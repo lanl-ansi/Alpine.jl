@@ -493,7 +493,7 @@ end
 end
 
 @testset "Solving algorithm tests :: Bin-Lin Solves" begin
-    @testset "Operator :: bmpl && linbin && binprod solve test I" begin
+    @testset "Operator :: bmpl && binlin && binprod solve test I" begin
         test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
                                                               log_level=0),
@@ -517,7 +517,7 @@ end
         @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:nonlinear_type] == :binlin
     end
 
-    @testset "Operator :: bmpl && linbin && binprod solve test II" begin
+    @testset "Operator :: bmpl && binlin && binprod solve test II" begin
         test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
                                                               log_level=0),
@@ -552,7 +552,7 @@ end
         @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[5])]][:nonlinear_type] == :binlin
     end
 
-    @testset "Operator :: bmpl && linbin && binprod solve test II" begin
+    @testset "Operator :: bmpl && binlin && binprod solve test II" begin
         test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
                                                               log_level=0),

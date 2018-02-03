@@ -138,7 +138,6 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
-
     for i in 1:length(m.term_seq)
         k = m.term_seq[i]
         if haskey(m.nonlinear_terms, k)
@@ -148,9 +147,10 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
                 basic_binprod_bounds(m, k)
             elseif m.nonlinear_terms[k][:nonlinear_type] in [:sin, :cos]
                 basic_sincos_bounds(m, k)
-            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:linbin]
-                basic_linbin_bounds(m, k)
+            elseif m.nonlinear_terms[k][:nonlinear_type] in [:binlin]
+                basic_binlin_bounds(m, k)
             else
+                @show m.nonlinear_terms[k]
                 error("Unexpected nonlinear term $(k) encountered during resolve variable bounds")
             end
         elseif haskey(m.linear_terms, k)
@@ -192,7 +192,7 @@ end
 
 function basic_binprod_bounds(m::PODNonlinearModel, k::Any)
 
-    lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
+    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
     m.l_var_tight[lifted_idx] = 0
     m.u_var_tight[lifted_idx] = 1
 
@@ -201,25 +201,25 @@ end
 
 function basic_sincos_bounds(m::PODNonlinearModel, k::Any)
 
-    lifted_idx = m.nonlinear_terms[nlk][:lifted_var_ref].args[2]
+    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
     m.l_var_tight[lifted_idx] = -1  # TODO can be improved
     m.u_var_tight[lifted_idx] = 1
 
     return
 end
 
-function basic_linbin_bounds(m::PODNonlinearModel, k::Any)
+function basic_binlin_bounds(m::PODNonlinearModel, k::Any)
 
     lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
 
-    prod_idxs = [i for i in m.nonlinear_terms[k][:var_idx] if m.var_type_lifted[i] == :Cont]
+    prod_idxs = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[i] == :Cont]
     @assert length(prod_idxs) == 1
     lin_idx = prod_idxs[1]
 
-    if m.l_var_tight > 0.0
+    if m.l_var_tight[lin_idx] > 0.0
         m.l_var_tight[lifted_idx] = 0.0
         m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
-    elseif m.u_var_tight < 0.0
+    elseif m.u_var_tight[lin_idx] < 0.0
         m.u_var_tight[lifted_idx] = 0.0
         m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
     else
@@ -230,7 +230,7 @@ function basic_linbin_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms::Dict=nothing)
+function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms=nothing)
 
     linear_terms == nothing ? linear_terms = m.linear_terms : linear_term = linear_terms
 
@@ -271,7 +271,7 @@ function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, di
         k = m.term_seq[i]
         if haskey(m.nonlinear_terms, k)
             nlk = k
-            if !(m.nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear, :binprod, :linbin])
+            if !(m.nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear, :binprod, :binlin])
                 error("Unexpected nonlinear term encountered during resolve variable bounds")
             end
             if nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear]
@@ -300,8 +300,8 @@ function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, di
                 basic_binprod_bounds(m, k)
             elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:sin, :cos]
                 basic_sincos_bounds(m, k)
-            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:linbin]
-                basic_linbin_bounds(m, k)
+            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:binlin]
+                basic_binlin_bounds(m, k)
             end
         elseif haskey(m.linear_terms, k)
             basic_linear_bounds(m, k, linear_terms)

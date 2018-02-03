@@ -1432,7 +1432,7 @@ end
 
 @testset "Expression Parser Test :: BMPL -> BINLIN Opt" begin
 
-    @testset "Operator :: bmpl && linbin && binprod" begin
+    @testset "Operator :: bmpl && binlin && binprod" begin
 
         test_solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(logLevel=0),
@@ -1485,7 +1485,7 @@ end
         @test m.internalModel.var_type_lifted[22] == :Cont
     end
 
-    @testset "Operator :: bmpl && linbin && binprod with linear lifting and coefficients" begin
+    @testset "Operator :: bmpl && binlin && binprod with linear lifting and coefficients" begin
         test_solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(logLevel=0),
                                log=10000)

@@ -237,19 +237,42 @@ function store_nl_term(m::PODNonlinearModel, nl_key, var_idxs, term_type, operat
                                     :constr_id => Set(),
                                     :nonlinear_type => term_type,
                                     :convexified => false)
-
-    m.term_seq[nl_cnt + l_cnt  + 1] = nl_key                              # Assistive information
+    @show nl_cnt+l_cnt+1, nl_cnt, l_cnt, nl_key
+    m.term_seq[nl_cnt+l_cnt+1] = nl_key                              # Assistive information
 
     push!(m.var_type_lifted, m.nonlinear_terms[nl_key][:y_type])    # Keep track of the lifted var type
     (m.log) > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
-"""
-    Lift based on the term info and return the lifted term
-    TODO: docstring
-"""
-function lift_nl_term(m::PODNonlinearModel, nl_key, constr_id, scalar = 1.0)
+function store_linear_term(m::PODNonlinearModel, term_key, expr)
+
+    l_cnt = length(keys(m.linear_terms))
+    nl_cnt = length(keys(m.nonlinear_terms))
+
+    y_idx = m.num_var_orig + nl_cnt + l_cnt + 1
+
+    lifted_var_ref = Expr(:ref, :x, y_idx)
+    lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, expr)
+
+    m.linear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
+                                    :id => length(keys(m.linear_terms)) + 1,
+                                    :ref => term_key,
+                                    :y_idx => y_idx,
+                                    :y_type => resolve_lifted_var_type([m.var_type_lifted[k[2]] for k in term_key[:coef_var]], :+),
+                                    :evaluator => linear,
+                                    :lifted_constr_ref => lifted_constr_ref,
+                                    :constr_id => Set())
+
+    @show l_cnt + nl_cnt + 1, nl_cnt, l_cnt, term_key
+    m.term_seq[l_cnt+nl_cnt + 1] = term_key
+    push!(m.var_type_lifted, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
+    m.log > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
+
+    return y_idx
+end
+
+function lift_nl_term(m::PODNonlinearModel, nl_key, constr_id::Int, scalar = 1.0)
     push!(m.nonlinear_terms[nl_key][:constr_id], constr_id)
 
     if scalar == 1.0
@@ -259,10 +282,14 @@ function lift_nl_term(m::PODNonlinearModel, nl_key, constr_id, scalar = 1.0)
     end
 end
 
-"""
-    Recognize simple linear terms
-    TODO: docstring
-"""
+function lift_linear_term(m::PODNonlinearModel, term_key, constr_id::Int)
+
+    push!(m.linear_terms[term_key][:constr_id], constr_id)
+    return m.linear_terms[term_key][:lifted_var_ref]
+
+    return
+end
+
 function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
 
     @assert expr.head == :call
@@ -272,28 +299,6 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
     expr_resolve_const(expr)
     expr_resolve_sign(expr)
     expr_flatten(expr)
-
-    function store_linear_term()
-        y_idx = m.num_var_orig + length(keys(m.linear_terms)) + length(keys(m.nonlinear_terms)) + 1   # y is lifted var
-        lifted_var_ref = Expr(:ref, :x, y_idx)
-        lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, expr)
-        m.linear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                        :id => length(keys(m.linear_terms)) + 1,
-                                        :ref => term_key,
-                                        :y_idx => y_idx,
-                                        :y_type => resolve_lifted_var_type([m.var_type_lifted[k[2]] for k in term_key[:coef_var]], :+),
-                                        :evaluator => linear,
-                                        :lifted_constr_ref => lifted_constr_ref,
-                                        :constr_id => Set())
-        m.term_seq[length(keys(m.linear_terms)) + length(keys(m.nonlinear_terms)) + 1] = term_key
-        push!(m.var_type_lifted, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-        (m.log) > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
-    end
-
-    function lift_linear_term()
-        push!(m.linear_terms[term_key][:constr_id], constr_id)
-        return m.linear_terms[term_key][:lifted_var_ref]
-    end
 
     if expr.args[1] in [:+, :-]
         scalar = 0.0
@@ -329,10 +334,10 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
         # By reaching here, it is already certain that we have found the term, always treat with :+
         term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
         if term_key in keys(m.linear_terms)
-            return true, lift_linear_term()
+            return true, lift_linear_term(m, term_key, constr_id)
         else
-            store_linear_term()
-            return true, lift_linear_term()
+            store_linear_term(m, term_key, expr)
+            return true, lift_linear_term(m, term_key, constr_id)
         end
     elseif expr.args[1] in [:*] && length(expr.args) == 3
         # For terms like (3*x)*y
@@ -348,10 +353,10 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
         # By reaching here, it is already certain that we have found the term, always treat with :+
         term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
         if term_key in keys(m.linear_terms)
-            return true, lift_linear_term()
+            return true, lift_linear_term(m, term_key, constr_id)
         else
-            store_linear_term()
-            return true, lift_linear_term()
+            store_linear_term(m, term_key, expr)
+            return true, lift_linear_term(m, term_key, constr_id)
         end
     end
 
