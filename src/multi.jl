@@ -14,13 +14,13 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Construct λ variable space
     for k in keys(m.nonlinear_terms)
         nl_type = m.nonlinear_terms[k][:nonlinear_type]
-        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_terms[k][:convexified] == false)
+        if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) && (m.nonlinear_terms[k][:convexified] == false)
             λ, α = amp_convexify_multilinear(m, k, λ, α, discretization)
-        elseif nl_type == :monomial && !m.nonlinear_terms[k][:convexified]
+        elseif nl_type == :MONOMIAL && !m.nonlinear_terms[k][:convexified]
             λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
-        elseif nl_type == :binlin && !m.nonlinear_terms[k][:convexified]
+        elseif nl_type == :BINLIN && !m.nonlinear_terms[k][:convexified]
             amp_convexify_binlin(m, k, discretization)
-        elseif nl_type == :binprod && !m.nonlinear_terms[k][:convexified]
+        elseif nl_type == :BINPROD && !m.nonlinear_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
         end
     end

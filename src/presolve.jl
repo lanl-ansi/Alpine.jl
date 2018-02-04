@@ -70,7 +70,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     if use_bound == true && haskey(options, :use_tmc)
         discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=discretization)
     end
-    discretization = resolve_lifted_var_bounds(m.nonlinear_terms, m.linear_terms, discretization) # recomputation of bounds for lifted_variables
+    discretization = resolve_var_bounds(m.nonlinear_terms, m.linear_terms, m.term_seq, discretization) # recomputation of bounds for lifted_variables
 
     (m.log > 0) && println("starting the bound-tightening algorithm ...")
     (m.log > 99) && [println("[DEBUG] VAR $(var_idx) Original Bound [$(round(m.l_var_tight[var_idx],4)) < - > $(round(m.u_var_tight[var_idx],4))]") for var_idx in m.all_nonlinear_vars]
@@ -81,7 +81,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         keeptightening = false
         m.logs[:bt_iter] += 1
-        (m.log > 99) && println("[DEBUG] Iteration - $(m.logs[:bt_iter])")
+        m.log > 99 && println("[DEBUG] Iteration - $(m.logs[:bt_iter])")
         temp_bounds = Dict()
 
         # Perform Bound Contraction
@@ -119,7 +119,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
             end
         end
 
-        discretization = resolve_lifted_var_bounds(m.nonlinear_terms, m.linear_terms, discretization)
+        discretization = resolve_var_bounds(m.nonlinear_terms, m.linear_terms, m.term_seq, discretization)
         haskey(options, :use_tmc) ? discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization)) : discretization = discretization
     end
 

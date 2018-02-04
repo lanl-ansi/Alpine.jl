@@ -113,15 +113,16 @@ end
 """
 function expr_finalized(m::PODNonlinearModel)
 
+	# TODO: update
 	for i in keys(m.nonlinear_terms)
-        if m.nonlinear_terms[i][:nonlinear_type] in [:monomial, :bilinear, :multilinear]
+        if m.nonlinear_terms[i][:nonlinear_type] in POD_C_MONOMIAL
     		for var in i
     			@assert isa(var.args[2], Int)
     			if !(var.args[2] in m.all_nonlinear_vars)
     				push!(m.all_nonlinear_vars, var.args[2])
     			end
     		end
-        elseif m.nonlinear_terms[i][:nonlinear_type] in [:sin, :cos]
+        elseif m.nonlinear_terms[i][:nonlinear_type] in POD_C_TRIGONOMETRIC
             for var in m.nonlinear_terms[i][:var_idxs]
                 @assert isa(var, Int)
                 if !(var in m.all_nonlinear_vars)
@@ -170,14 +171,6 @@ This function recognizes, stores, and replaces a sub-tree `expr` with available
 user-defined/built-in structures patterns. The procedure is creates the required number
 of lifted variables based on the patterns that it it trying to recognize.
 Then, go through all built-in structures and perform operatins to convexify the problem.
-
-Available structures patterns are:
-    * bilinear
-    * monomial
-    * multi-linears
-    * sin
-    * cos
-    * user-defined
 
 Specific structure pattern information will be described formally.
 """
@@ -237,7 +230,7 @@ function store_nl_term(m::PODNonlinearModel, nl_key, var_idxs, term_type, operat
                                     :constr_id => Set(),
                                     :nonlinear_type => term_type,
                                     :convexified => false)
-    @show nl_cnt+l_cnt+1, nl_cnt, l_cnt, nl_key
+
     m.term_seq[nl_cnt+l_cnt+1] = nl_key                              # Assistive information
 
     push!(m.var_type_lifted, m.nonlinear_terms[nl_key][:y_type])    # Keep track of the lifted var type
@@ -264,7 +257,6 @@ function store_linear_term(m::PODNonlinearModel, term_key, expr)
                                     :lifted_constr_ref => lifted_constr_ref,
                                     :constr_id => Set())
 
-    @show l_cnt + nl_cnt + 1, nl_cnt, l_cnt, term_key
     m.term_seq[l_cnt+nl_cnt + 1] = term_key
     push!(m.var_type_lifted, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
     m.log > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
@@ -403,7 +395,7 @@ function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             if term_key in keys(m.nonlinear_terms)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             else
-                store_nl_term(m, term_key, var_idxs, :binprod, :*, binprod)
+                store_nl_term(m, term_key, var_idxs, :BINPROD, :*, binprod)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             end
         end
@@ -433,7 +425,7 @@ function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             if term_key in keys(m.nonlinear_terms)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             else
-                store_nl_term(m, term_key, var_idxs, :binprod, :*, binprod)
+                store_nl_term(m, term_key, var_idxs, :BINPROD, :*, binprod)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             end
         end
@@ -485,7 +477,7 @@ function resolve_bpml_term(expr, constr_id::Int, m)
                 if term_key in keys(m.nonlinear_terms)
                     return true, lift_nl_term(m, term_key, constr_id, scalar)
                 else
-                    store_nl_term(m, term_key, var_idxs, :binlin, :*, binlin)
+                    store_nl_term(m, term_key, var_idxs, :BINLIN, :*, binlin)
                     return true, lift_nl_term(m, term_key, constr_id, scalar)
                 end
             elseif length(bin_var_idxs) > 1 && length(cont_var_idxs) == 1
@@ -503,7 +495,7 @@ function resolve_bpml_term(expr, constr_id::Int, m)
                 if binlin_term_key in keys(m.nonlinear_terms)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 else
-                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :binlin, :*, binlin)
+                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :BINLIN, :*, binlin)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 end
 
@@ -519,7 +511,7 @@ function resolve_bpml_term(expr, constr_id::Int, m)
                 if binlin_term_key in keys(m.nonlinear_terms)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 else
-                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :binlin, :*, binlin)
+                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :BINLIN, :*, binlin)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 end
             else
@@ -540,7 +532,7 @@ function resolve_bpml_term(expr, constr_id::Int, m)
                 if binlin_term_key in keys(m.nonlinear_terms)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 else
-                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :binlin, :*, binlin)
+                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :BINLIN, :*, binlin)
                     return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
                 end
             end
@@ -586,7 +578,7 @@ function resolve_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 term_key in keys(m.nonlinear_terms) ? term_key = term_key : term_key = reverse(term_key)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             else
-                store_nl_term(m, term_key, var_idxs, :bilinear, :*, bilinear)
+                store_nl_term(m, term_key, var_idxs, :BILINEAR, :*, bilinear)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             end
         end
@@ -627,7 +619,7 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             else
 
-                store_nl_term(m, term_key, var_idxs, :multilinear, :*, multilinear)
+                store_nl_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             end
         end
@@ -656,7 +648,7 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
             if term_key in keys(m.nonlinear_terms)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             else
-                store_nl_term(m, term_key, var_idxs, :multilinear, :*, multilinear)
+                store_nl_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             end
         end
@@ -697,7 +689,7 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             if term_key in keys(m.nonlinear_terms)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             else
-                store_nl_term(m, term_key, var_idxs, :monomial, :*, monomial)
+                store_nl_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             end
         end
@@ -726,7 +718,7 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             if term_key in keys(m.nonlinear_terms)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             else
-                store_nl_term(m, term_key, var_idxs, :monomial, :*, monomial)
+                store_nl_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial)
                 return true, lift_nl_term(m, term_key, constr_id, scalar)
             end
         end

@@ -28,7 +28,7 @@ bound_tightening
 minmax_bound_tightening
 create_bound_tightening_model
 solve_bound_tightening_model
-resolve_lifted_var_bounds
+resolve_var_bounds
 ```
 
 ## Utility Methods

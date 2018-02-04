@@ -327,7 +327,7 @@ function select_all_nlvar(m::PODNonlinearModel; kwargs...)
     nodes = Set()
     for k in keys(m.nonlinear_terms)
         # Assumption Max cover is always safe
-        if m.nonlinear_terms[k][:nonlinear_type] in [:monomial, :bilinear, :multilinear]
+        if m.nonlinear_terms[k][:nonlinear_type] in [:MONOMIAL, :BILINEAR, :MULTILINEAR]
             for i in k
                 @assert isa(i.args[2], Int)
                 push!(nodes, i.args[2])
@@ -434,13 +434,12 @@ end
     Dedicated for bilinear info
 """
 function collect_var_graph(m::PODNonlinearModel)
-    @show "started collecting var graph"
 
     # Collect the information of nonlinear terms in terms of arcs and nodes
     nodes = Set()
     arcs = Set()
     for k in keys(m.nonlinear_terms)
-        if m.nonlinear_terms[k][:nonlinear_type] == :bilinear
+        if m.nonlinear_terms[k][:nonlinear_type] == :BILINEAR
             arc = []
             for i in k
                 @assert isa(i.args[2], Int)
@@ -448,11 +447,11 @@ function collect_var_graph(m::PODNonlinearModel)
                 push!(arc, i.args[2])
             end
             push!(arcs, sort(arc))
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :monomial
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :MONOMIAL
             @assert isa(m.nonlinear_terms[k][:var_idxs][1], Int)
             push!(nodes, m.nonlinear_terms[k][:var_idxs][1])
             push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1]])
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :multilinear
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :MULTILINEAR
             for i in 1:length(k)
                 @assert isa(k[i].args[2], Int)
                 push!(nodes, k[i].args[2])
@@ -465,7 +464,6 @@ function collect_var_graph(m::PODNonlinearModel)
     nodes = collect(nodes)
     arcs = collect(arcs)
 
-    @show "finished"
     return nodes, arcs
 end
 
@@ -480,7 +478,7 @@ function min_vertex_cover(m::PODNonlinearModel)
         @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
     end
     @objective(minvertex, Min, sum(x))
-    print(minvertex)
+
     status = solve(minvertex, suppress_warnings=true)
     xVal = getvalue(x)
 

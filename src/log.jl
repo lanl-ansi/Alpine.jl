@@ -49,6 +49,11 @@ function logging_summary(m::PODNonlinearModel)
         println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")
         println("number of selected variables to discretize = $(length(m.var_disc_mip))")
 
+        for i in POD_C_NLTERMS
+            cnt = length([1 for j in keys(m.nonlinear_terms) if m.nonlinear_terms[j][:nonlinear_type] == i])
+            cnt > 0 && println("Term $(i) Count = $(cnt) ")
+        end
+
         m.bilinear_convexhull && println("bilinear treatment = convex hull formulation")
         m.monomial_convexhull && println("monomial treatment = convex hull formulation")
 
@@ -58,7 +63,6 @@ function logging_summary(m::PODNonlinearModel)
         (m.convhull_ebd) && println("using convhull_ebd formulation")
         (m.convhull_ebd) && println("encoding method = $(m.convhull_ebd_encode)")
         (m.convhull_ebd) && println("independent branching scheme = $(m.convhull_ebd_ibs)")
-
     end
 
     # Additional warnings

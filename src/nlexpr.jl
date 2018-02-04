@@ -161,7 +161,6 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	elseif expr in [:+, :-]    # TODO: what is this condition?
 		if bufferVal != 0.0 && bufferVar != nothing
-            @show "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 			push!(lhscoeffs, bufferVal)
 			push!(lhsvars, bufferVar)
 			bufferVal = 0.0

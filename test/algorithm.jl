@@ -9,7 +9,7 @@
                            presolve_bt=false,
                            presolve_bp=true,
                            presolve_bt_output_tol=1e-1,
-                           log=10000)
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -70,7 +70,7 @@
     							   presolve_bt_algo=2,
                                    presolve_bp=true,
                                    presolve_bt_output_tol=1e-1,
-    							   log=10000)
+    							   log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -87,7 +87,7 @@
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
     							   mip_solver=CbcSolver(logLevel=0),
                                    bilinear_convexhull=false,
-    							   log=10000,
+    							   log=100,
                                    maxiter=3,
     							   presolve_bt_width_tol=1e-3,
     							   presolve_bt_output_tol=1e-1,
@@ -111,7 +111,7 @@
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                    mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                    bilinear_convexhull=false,
-                                   log=10000,
+                                   log=100,
                                    maxiter=2,
                                    presolve_bt=true,
                                    presolve_bt_width_tol=1e-3,
@@ -135,7 +135,7 @@
                            monomial_convexhull=true,
                            presolve_bt=false,
                            presolve_bp=true,
-                           log=10000)
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -152,7 +152,7 @@
                            presolve_bt=true,
                            presolve_bp=true,
                            presolve_bt_algo=2,
-                           log=10000)
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -168,7 +168,7 @@
                            monomial_convexhull=true,
                            presolve_bt=false,
                            presolve_bp=false,
-                           log=10000)
+                           log=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
@@ -186,7 +186,7 @@
                                presolve_bt = false,
                                presolve_bt_algo = 1,
                                presolve_bt_output_tol = 1e-1,
-                               log=10000)
+                               log=100)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -217,7 +217,7 @@
                            presolve_bt=false,
                            presolve_bp=true,
                            convhull_formulation="facet",
-                           log=10000)
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -234,7 +234,7 @@
                            presolve_bt=false,
                            presolve_bp=true,
                            convhull_formulation="mini",
-                           log=10000)
+                           log=100)
         m = nlp1(solver=test_solver)
         status = solve(m)
 
@@ -326,17 +326,17 @@
                            monomial_convexhull=true,
                            presolve_bt=false,
                            presolve_bp=false,
-                           maxiter=5,
+                           maxiter=4,
                            convhull_formulation="facet",
-                           log=10000)
+                           log=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
         @test status == :UserLimits
         @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
-        @test m.objBound >= 6901.00
-        @test m.objBound <= 6902.00
-        @test m.internalModel.logs[:n_iter] == 5
+        @test m.objBound >= 6717.00
+        @test m.objBound <= 6718.00
+        @test m.internalModel.logs[:n_iter] == 4
     end
 
     @testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp3.jl" begin
@@ -346,17 +346,17 @@
                            monomial_convexhull=true,
                            presolve_bt=false,
                            presolve_bp=false,
-                           maxiter=5,
+                           maxiter=4,
                            convhull_formulation="mini",
-                           log=10000)
+                           log=100)
         m = nlp3(solver=test_solver)
         status = solve(m)
 
         @test status == :UserLimits
         @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
-        @test m.objBound >= 6901.00
-        @test m.objBound <= 6902.00
-        @test m.internalModel.logs[:n_iter] == 5
+        @test m.objBound >= 6717.00
+        @test m.objBound <= 6718.00
+        @test m.internalModel.logs[:n_iter] == 4
     end
 end
 
@@ -499,7 +499,7 @@ end
                                                               log_level=0),
                               nlp_solver=IpoptSolver(),
                               mip_solver=CbcSolver(logLevel=0),
-                              log=10000)
+                              log=100)
 
         m = bpml_lnl(test_solver)
         solve(m)
@@ -510,11 +510,11 @@ end
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[4]), :(x[9])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[5]), :(x[10])])
 
-        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:nonlinear_type] == :BINLIN
     end
 
     @testset "Operator :: bmpl && binlin && binprod solve test II" begin
@@ -523,7 +523,7 @@ end
                                                               log_level=0),
                               nlp_solver=IpoptSolver(),
                               mip_solver=CbcSolver(logLevel=0),
-                              log=10000)
+                              log=100)
 
         m = bpml_binl(test_solver)
         solve(m)
@@ -540,16 +540,16 @@ end
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[17]), :(x[4])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[19]), :(x[5])])
 
-        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[6])]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[1])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[2])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[3])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[4])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[5])]][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[6])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[1])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[2])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[3])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[4])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[5])]][:nonlinear_type] == :BINLIN
     end
 
     @testset "Operator :: bmpl && binlin && binprod solve test II" begin
@@ -561,7 +561,7 @@ end
                                                         cont_solver=IpoptSolver(),
                                                         log_level=0),
                               disc_var_pick=1,
-                              log=10000)
+                              log=100)
 
         m = bpml_monl(test_solver)
         solve(m)
@@ -602,16 +602,16 @@ end
         @test m.internalModel.nonlinear_terms[nlk9][:y_idx] == 13
         @test m.internalModel.nonlinear_terms[nlk10][:y_idx] == 12
 
-        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :monomial
-        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :monomial
-        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :monomial
-        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :monomial
-        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :monomial
-        @test m.internalModel.nonlinear_terms[nlk10][:nonlinear_type] == :binlin
+        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :MONOMIAL
+        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :MONOMIAL
+        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :MONOMIAL
+        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :MONOMIAL
+        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :MONOMIAL
+        @test m.internalModel.nonlinear_terms[nlk10][:nonlinear_type] == :BINLIN
     end
 end
 
@@ -679,7 +679,7 @@ end
                                presolve_bt_algo=1,
                                presolve_bt_output_tol=1e-1,
                                convhull_ebd=true,
-                               log=10000)
+                               log=100)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -734,7 +734,7 @@ end
                                presolve_bt_output_tol=1e-1,
                                convhull_ebd=true,
                                convhull_ebd_ibs=true,
-                               log=10000)
+                               log=100)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -789,7 +789,7 @@ end
                                presolve_bt_output_tol=1e-1,
                                convhull_ebd=true,
                                convhull_ebd_link=true,
-                               log=10000)
+                               log=100)
 
         m = circle(solver=test_solver)
         solve(m)
@@ -869,9 +869,10 @@ end
 end
 
 @testset "Algorithm Test with binprod terms" begin
+
     test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                             nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=GLPKSolverMIP(msg_lev=0),
+                            mip_solver=CbcSolver(logLevel=0),
                             bilinear_convexhull=true,
                             monomial_convexhull=true,
                             presolve_bp=true,
@@ -886,83 +887,83 @@ end
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4])]][:y_idx] == 19
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4])]][:id] == 6
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4])]][:lifted_constr_ref] == :(x[19] == x[2] * x[4])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:y_idx] == 25
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:id] == 12
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:lifted_constr_ref] == :(x[25] == x[3] * x[8])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5])]][:y_idx] == 22
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5])]][:id] == 9
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5])]][:lifted_constr_ref] == :(x[22] == x[3] * x[5])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[12])]][:y_idx] == 20
     @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[12])]][:id] == 7
     @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[12])]][:lifted_constr_ref] == :(x[20] == x[19] * x[12])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[12])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[12])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:y_idx] == 14
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:id] == 1
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:lifted_constr_ref] == :(x[14] == x[4] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:y_idx] == 17
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:id] == 4
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:lifted_constr_ref] == :(x[17] == x[1] * x[6])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:y_idx] == 16
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:id] == 3
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:lifted_constr_ref] == :(x[16] == x[5] * x[11])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[11])]][:y_idx] == 30
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[11])]][:id] == 17
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[11])]][:lifted_constr_ref] == :(x[30] == x[10] * x[11])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[11])]][:nonlinear_type] == :binprod
+    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[11])]][:nonlinear_type] == :BINPROD
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[11])]][:y_idx] == 29
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[11])]][:id] == 16
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[11])]][:lifted_constr_ref] == :(x[29] == x[9] * x[10] * x[11])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[11])]][:nonlinear_type] == :binprod
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[11])]][:nonlinear_type] == :BINPROD
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:y_idx] == 21
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:id] == 8
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:lifted_constr_ref] == :(x[21] == x[2] * x[7])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[13])]][:y_idx] == 32
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[13])]][:id] == 19
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[13])]][:lifted_constr_ref] == :(x[32] == x[9] * x[13])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[13])]][:nonlinear_type] == :binprod
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[13])]][:nonlinear_type] == :BINPROD
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:y_idx] == 15
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:id] == 2
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:lifted_constr_ref] == :(x[15] == x[6] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[12])]][:y_idx] == 33
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[12])]][:id] == 20
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[12])]][:lifted_constr_ref] == :(x[33] == x[10] * x[12])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[12])]][:nonlinear_type] == :binprod
+    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[12])]][:nonlinear_type] == :BINPROD
     @test m.internalModel.nonlinear_terms[Expr[:(x[27]), :(x[5])]][:y_idx] == 28
     @test m.internalModel.nonlinear_terms[Expr[:(x[27]), :(x[5])]][:id] == 15
     @test m.internalModel.nonlinear_terms[Expr[:(x[27]), :(x[5])]][:lifted_constr_ref] == :(x[28] == x[27] * x[5])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[27]), :(x[5])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[27]), :(x[5])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.nonlinear_terms[Expr[:(x[25]), :(x[13])]][:y_idx] == 26
     @test m.internalModel.nonlinear_terms[Expr[:(x[25]), :(x[13])]][:id] == 13
     @test m.internalModel.nonlinear_terms[Expr[:(x[25]), :(x[13])]][:lifted_constr_ref] == :(x[26] == x[25] * x[13])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[25]), :(x[13])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[25]), :(x[13])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[12])]][:y_idx] == 27
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[12])]][:id] == 14
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[12])]][:lifted_constr_ref] == :(x[27] == x[9] * x[12])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[12])]][:nonlinear_type] == :binprod
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[12])]][:nonlinear_type] == :BINPROD
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[13])]][:y_idx] == 23
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[13])]][:id] == 10
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[13])]][:lifted_constr_ref] == :(x[23] == x[10] * x[13])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[13])]][:nonlinear_type] == :binprod
+    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[13])]][:nonlinear_type] == :BINPROD
     @test m.internalModel.nonlinear_terms[Expr[:(x[22]), :(x[23])]][:y_idx] == 24
     @test m.internalModel.nonlinear_terms[Expr[:(x[22]), :(x[23])]][:id] == 11
     @test m.internalModel.nonlinear_terms[Expr[:(x[22]), :(x[23])]][:lifted_constr_ref] == :(x[24] == x[22] * x[23])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[22]), :(x[23])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[22]), :(x[23])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:y_idx] == 31
     @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:id] == 18
     @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:lifted_constr_ref] == :(x[31] == x[12] * x[13])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:nonlinear_type] == :binprod
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:nonlinear_type] == :BINPROD
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[9])]][:y_idx] == 18
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[9])]][:id] == 5
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[9])]][:lifted_constr_ref] == :(x[18] == x[17] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[9])]][:nonlinear_type] == :binlin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[9])]][:nonlinear_type] == :BINLIN
     @test m.internalModel.bounding_constr_mip[1][:rhs] == 1.0
     @test m.internalModel.bounding_constr_mip[1][:vars] == Any[:(x[14]), :(x[15])]
     @test m.internalModel.bounding_constr_mip[1][:coefs] == Any[0.0025, 0.0025]

@@ -17,7 +17,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
     for bi in keys(m.nonlinear_terms)
         nl_type = m.nonlinear_terms[bi][:nonlinear_type]
-        if ((!m.monomial_convexhull)*(nl_type == :monomial) || (!m.bilinear_convexhull)*(nl_type == :bilinear)) && (m.nonlinear_terms[bi][:convexified] == false)
+        if ((!m.monomial_convexhull)*(nl_type == :MONOMIAL) || (!m.bilinear_convexhull)*(nl_type == :BILINEAR)) && (m.nonlinear_terms[bi][:convexified] == false)
             @assert length(bi) == 2
             m.nonlinear_terms[bi][:convexified] = true  # Bookeeping the examined terms
             idx_a = bi[1].args[2]
@@ -38,21 +38,21 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
             (ub[idx_b][end] == +Inf) && error("Infinite upper bound detected on VAR$idx_b, resolve it please")
 
             if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
-                if m.nonlinear_terms[bi][:nonlinear_type] == :monomial
+                if m.nonlinear_terms[bi][:nonlinear_type] == :MONOMIAL
                     mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
-                elseif m.nonlinear_terms[bi][:nonlinear_type] == :bilinear
+                elseif m.nonlinear_terms[bi][:nonlinear_type] == :BILINEAR
                     mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
                         lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
                 end
             else                                                    # Tighten McCormick
-                # if m.nonlinear_terms[bi][:monomial_satus]
-                if m.nonlinear_terms[bi][:nonlinear_type] == :monomial
+                # if m.nonlinear_terms[bi][:MONOMIAL_satus]
+                if m.nonlinear_terms[bi][:nonlinear_type] == :MONOMIAL
                     λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                     λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                     amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
                     amp_post_tmc_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
                 # else
-                elseif m.nonlinear_terms[bi][:nonlinear_type] == :bilinear
+                elseif m.nonlinear_terms[bi][:nonlinear_type] == :BILINEAR
                     # Partitioning on left
                     if (idx_a in m.var_disc_mip) && !(idx_b in m.var_disc_mip) && (part_cnt_b == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
@@ -92,7 +92,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     #end
                 end
             end
-        elseif nl_type == :binprod
+        elseif nl_type == :BINPROD
 
         end
     end

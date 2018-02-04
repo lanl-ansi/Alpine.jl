@@ -4,6 +4,8 @@ using JuMP
 using MathProgBase
 using Compat
 
+include("const.jl")
+
 # Engine for High-level Algorithmic Control and User-interface
 include("algorithm.jl")
 include("solver.jl")

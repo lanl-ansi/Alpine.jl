@@ -128,12 +128,15 @@ end
 
 
 """
-    resolve_lifted_var_bounds(m::PODNonlinearModel)
+    resolve_var_bounds(m::PODNonlinearModel)
 
 Resolve the bounds of the lifted variable using the information in l_var_tight and u_var_tight. This method only takes
 in known or trivial bounds information to reason lifted variable bound to avoid the cases of infinity bounds.
 """
-function resolve_lifted_var_bounds(m::PODNonlinearModel)
+function resolve_var_bounds(m::PODNonlinearModel)
+
+    # Basic Bound propagation
+    m.presolve_bp && bounds_propagation(m) # Fetch bounds from constraints
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
@@ -141,16 +144,15 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
     for i in 1:length(m.term_seq)
         k = m.term_seq[i]
         if haskey(m.nonlinear_terms, k)
-            if m.nonlinear_terms[k][:nonlinear_type] in [:bilinear, :monomial, :multilinear]
+            if m.nonlinear_terms[k][:nonlinear_type] in POD_C_MONOMIAL
                 basic_monomial_bounds(m, k)
-            elseif m.nonlinear_terms[k][:nonlinear_type] in [:binprod]
+            elseif m.nonlinear_terms[k][:nonlinear_type] in [:BINPROD]
                 basic_binprod_bounds(m, k)
-            elseif m.nonlinear_terms[k][:nonlinear_type] in [:sin, :cos]
+            elseif m.nonlinear_terms[k][:nonlinear_type] in POD_C_TRIGONOMETRIC
                 basic_sincos_bounds(m, k)
-            elseif m.nonlinear_terms[k][:nonlinear_type] in [:binlin]
+            elseif m.nonlinear_terms[k][:nonlinear_type] in [:BINLIN]
                 basic_binlin_bounds(m, k)
             else
-                @show m.nonlinear_terms[k]
                 error("Unexpected nonlinear term $(k) encountered during resolve variable bounds")
             end
         elseif haskey(m.linear_terms, k)
@@ -159,6 +161,14 @@ function resolve_lifted_var_bounds(m::PODNonlinearModel)
             error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
     end
+
+    # Resolve still infinite bound
+    resolve_inf_bounds(m)
+
+    return
+end
+
+function resolve_inf_bounds(m::PODNonlinearModel)
 
     return
 end
@@ -254,27 +264,24 @@ function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms=nothing)
 end
 
 """
-    resolve_lifted_var_bounds(nonlinear_terms::Dict, discretization::Dict)
+    resolve_var_bounds(nonlinear_terms::Dict, discretization::Dict)
 
 For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
 The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
 can help speed up the subsequent solve in subsequent iterations.
 """
-function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, discretization::Dict; kwargs...)
+function resolve_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, term_seq::Dict, discretization::Dict; kwargs...)
 
     # TODO this sequence need to be changed
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
-    for i in 1:length(m.term_seq)
-        k = m.term_seq[i]
-        if haskey(m.nonlinear_terms, k)
+    for i in 1:length(term_seq)
+        k = term_seq[i]
+        if haskey(nonlinear_terms, k)
             nlk = k
-            if !(m.nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear, :binprod, :binlin])
-                error("Unexpected nonlinear term encountered during resolve variable bounds")
-            end
-            if nonlinear_terms[nlk][:nonlinear_type] in [:bilinear, :monomial, :multilinear]
+            if nonlinear_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
                 lifted_idx = nonlinear_terms[nlk][:lifted_var_ref].args[2]
                 cnt = 0
                 bound = []
@@ -296,14 +303,14 @@ function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, di
                 if maximum(bound) < discretization[lifted_idx][end]
                     discretization[lifted_idx][end] = maximum(bound)
                 end
-            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:binprod]
+            elseif nonlinear_terms[nlk][:nonlinear_type] in [:BINPROD]
                 basic_binprod_bounds(m, k)
-            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:sin, :cos]
+            elseif nonlinear_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
                 basic_sincos_bounds(m, k)
-            elseif m.nonlinear_terms[nlk][:nonlinear_type] in [:binlin]
+            elseif nonlinear_terms[nlk][:nonlinear_type] in [:BINLIN]
                 basic_binlin_bounds(m, k)
             end
-        elseif haskey(m.linear_terms, k)
+        elseif haskey(slinear_terms, k)
             basic_linear_bounds(m, k, linear_terms)
         else
             error("[RARE] Found homeless term key $(k) during bound resolution.")

@@ -3,7 +3,7 @@
     @testset "PODNonlinearModel loading tests" begin
         # Random Model 1
         test_solver = PODSolver(nlp_solver=IpoptSolver(),
-    						   mip_solver=CbcSolver(logLevel=0),log=10000)
+    						   mip_solver=CbcSolver(logLevel=0),log=100)
         m = operator_c(solver=test_solver)
 
         status = JuMP.build(m)
@@ -11,7 +11,7 @@
 
         # Expression Model 1
         test_solver = PODSolver(nlp_solver=IpoptSolver(),
-    						   mip_solver=CbcSolver(logLevel=0),log=10000)
+    						   mip_solver=CbcSolver(logLevel=0),log=100)
         m = exprstest(solver=test_solver)
         status = JuMP.build(m)
         @test isa(m.internalModel, POD.PODNonlinearModel)
@@ -238,7 +238,7 @@
                                 disc_var_pick=3,
                                 presolve_bp=true,
                                 maxiter=2,
-                                log=10000)
+                                log=100)
 
         m = castro6m2(solver=test_solver)
         status = solve(m)

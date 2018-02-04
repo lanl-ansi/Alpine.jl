@@ -1,16 +1,14 @@
-using JuMP
-
 type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
     colorful_pod::Any                                           # Turn on for a color solver
 
     # basic solver parameters
-    log::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
+    log::Int                                                    # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
-    maxiter::Int                                               # Target Maximum Iterations
-    relgap::Float64                                            # Relative optimality gap termination condition
-    absgap::Float64                                            # Absolute optimality gap termination condition
+    maxiter::Int                                                # Target Maximum Iterations
+    relgap::Float64                                             # Relative optimality gap termination condition
+    absgap::Float64                                             # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
 
     # convexification method tuning
@@ -296,8 +294,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
     m.var_type_lifted = copy(m.var_type_orig)
 
-    (:Int in m.var_type_orig) && error("POD currently don't support integer variables.")
-
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
     for i in 1:m.num_constr_orig
@@ -330,8 +326,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # populate data to create the bounding model
     process_expr(m)                 # Compact process of every expression
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    m.presolve_bp && bounds_propagation(m) # Fetch bounds from constraints
-    resolve_lifted_var_bounds(m)    # resolve lifted var bounds
+    resolve_var_bounds(m)           # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
 
@@ -346,6 +341,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     fetch_minlp_solver_identifier(m)
 
     logging_summary(m)
+
+    ## TODO area presented in warning
+    :Int in m.var_type_orig && warn("POD currently don't not fully support integer variables.")
 
     return
 end
