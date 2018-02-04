@@ -74,9 +74,6 @@
         m = nlp1(solver=test_solver)
         status = solve(m)
 
-        # @show m.internalModel.l_var_tight
-        # @show m.internalModel.u_var_tight
-
         @test status == :Optimal
         @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
         @test m.internalModel.logs[:n_iter] == 2
@@ -493,6 +490,7 @@ end
 end
 
 @testset "Solving algorithm tests :: Bin-Lin Solves" begin
+
     @testset "Operator :: bmpl && binlin && binprod solve test I" begin
         test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
                                                               cont_solver=IpoptSolver(),
@@ -612,6 +610,57 @@ end
         @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :MONOMIAL
         @test m.internalModel.nonlinear_terms[nlk10][:nonlinear_type] == :BINLIN
+    end
+
+    @testset "Operator :: bmpl && binlin && binprod solve test III with negative bounds" begin
+        test_solver=PODSolver(minlp_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
+                                                              cont_solver=IpoptSolver(print_level=0),
+                                                              log_level=0),
+                              nlp_solver=IpoptSolver(print_level=0),
+                              mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),
+                                                        cont_solver=IpoptSolver(print_level=0),
+                                                        log_level=0),
+                              disc_var_pick=1,
+                              log=100)
+
+        m = bpml_negative(test_solver)
+        solve(m)
+
+        @test m.objVal <= 13307.63749
+        @test m.objBound >= 13307.63690
+
+        nlk1 = Expr[:(x[9]), :(x[9])]
+        nlk2 = Expr[:(x[10]), :(x[10])]
+        nlk3 = Expr[:(x[8]), :(x[8])]
+        nlk4 = Expr[:(x[15]), :(x[3])]
+        nlk5 = Expr[:(x[6]), :(x[6])]
+        nlk6 = Expr[:(x[13]), :(x[2])]
+        nlk7 = Expr[:(x[17]), :(x[4])]
+        nlk8 = Expr[:(x[19]), :(x[5])]
+        nlk9 = Expr[:(x[7]), :(x[7])]
+        nlk10 = Expr[:(x[11]), :(x[1])]
+
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[6]), :(x[7])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[7]), :(x[8])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[8]), :(x[9])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[9]), :(x[10])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[10]), :(x[6])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[11]), :(x[1])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[13]), :(x[2])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[15]), :(x[3])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[17]), :(x[4])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[19]), :(x[5])])
+
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[6])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[1])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[2])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[3])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[4])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[5])]][:nonlinear_type] == :BINLIN
     end
 end
 

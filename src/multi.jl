@@ -68,12 +68,13 @@ function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict
 
     @assert length(bin_idx) == 1
     @assert length(cont_idx) == 1
+
     bin_idx = bin_idx[1]
     cont_idx = cont_idx[1]
 
-    mccormick(m.model_mip, Variable(m.model_mip, lift_idx),
+    mccormick_binlin(m.model_mip, Variable(m.model_mip, lift_idx),
         Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
-        0, 1, m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
+        m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
 
     return
 end
@@ -84,7 +85,6 @@ end
 """
 function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
 
-    # [BUG FIXED]  added marker
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     if haskey(β, m.nonlinear_terms[k][:var_idxs])

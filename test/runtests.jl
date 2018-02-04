@@ -30,3 +30,30 @@ include("$(poddir)/test/solver.jl")
 include("$(poddir)/test/expression.jl")
 include("$(poddir)/test/algorithm.jl")
 include("$(poddir)/test/utility.jl")
+
+
+# Test Generation Code commented
+# for k in keys(m.internalModel.nonlinear_terms)
+#     println("@test m.internalModel.nonlinear_terms[$(k)][:y_idx] == $(m.internalModel.nonlinear_terms[k][:y_idx])")
+#     println("@test m.internalModel.nonlinear_terms[$(k)][:id] == $(m.internalModel.nonlinear_terms[k][:id])")
+#     println("@test m.internalModel.nonlinear_terms[$(k)][:lifted_constr_ref] == :($(m.internalModel.nonlinear_terms[k][:lifted_constr_ref]))")
+#     println("@test m.internalModel.nonlinear_terms[$(k)][:nonlinear_type] == :$(m.internalModel.nonlinear_terms[k][:nonlinear_type])")
+# end
+
+# for i in 1:m.internalModel.num_constr_orig
+#     if m.internalModel.structural_constr[i] == :affine
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:rhs] == $(m.internalModel.bounding_constr_mip[i][:rhs])")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:vars] == $(m.internalModel.bounding_constr_mip[i][:vars])")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:coefs] == $(m.internalModel.bounding_constr_mip[i][:coefs])")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:sense] == :($(m.internalModel.bounding_constr_mip[i][:sense]))")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:cnt] == $(m.internalModel.bounding_constr_mip[i][:cnt])")
+#     elseif m.internalModel.structural_constr[i] == :convex
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:rhs] == $(m.internalModel.bounding_constr_mip[i][:rhs])")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:vars] == $(m.internalModel.bounding_constr_mip[i][:vars])")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:coefs] == $(m.internalModel.bounding_constr_mip[i][:coefs])")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:sense] == :($(m.internalModel.bounding_constr_mip[i][:sense]))")
+#         println("@test m.internalModel.bounding_constr_mip[$(i)][:cnt] == $(m.internalModel.bounding_constr_mip[i][:cnt])")
+#     else
+#         error("Unknown structural_constr type $(m.structural_constr[i])")
+#     end
+# end

@@ -45,7 +45,7 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
     amp_post_vars(m)                                                # Post original and lifted variables
     amp_post_lifted_constraints(m)                                  # Post lifted constraints
     amp_post_lifted_objective(m)                                    # Post objective
-    amp_post_convexification(m, use_disc=discretization)  # Convexify problem
+    amp_post_convexification(m, use_disc=discretization)            # Convexify problem
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
@@ -233,7 +233,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     # ? Perform discretization base on type of nonlinear terms ? #
     for i in m.var_disc_mip
         point = point_vec[i]                # Original Variable
-        #@show i, point, discretization[i]
+        # @show i, point, discretization[i]
         if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin, :Int])  # DO not add partitions to discrete variables
             continue
         end

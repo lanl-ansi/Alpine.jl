@@ -327,12 +327,12 @@ function select_all_nlvar(m::PODNonlinearModel; kwargs...)
     nodes = Set()
     for k in keys(m.nonlinear_terms)
         # Assumption Max cover is always safe
-        if m.nonlinear_terms[k][:nonlinear_type] in [:MONOMIAL, :BILINEAR, :MULTILINEAR]
+        if m.nonlinear_terms[k][:nonlinear_type] in POD_C_MONOMIAL
             for i in k
                 @assert isa(i.args[2], Int)
                 push!(nodes, i.args[2])
             end
-        elseif m.nonlinear_terms[k][:nonlinear_type] in [:sin, :cos]
+        elseif m.nonlinear_terms[k][:nonlinear_type] in POD_C_TRIGONOMETRIC
             for i in k[:vars]
                 @assert isa(i, Int)
                 push!(nodes, i)

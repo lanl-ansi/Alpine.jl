@@ -92,8 +92,6 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     #end
                 end
             end
-        elseif nl_type == :BINPROD
-
         end
     end
     return
@@ -208,15 +206,36 @@ end
 
 Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
 """
-function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
+function mccormick(m::JuMP.Model,xy::JuMP.Variable,x::JuMP.Variable,y::JuMP.Variable,xˡ,xᵘ,yˡ,yᵘ)
+
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
     @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
     @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
     @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
+
     return
 end
 
-function mccormick_bin(m,xy,x,y)
+function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable,lin::JuMP.Variable,lb,ub)
+
+    if lb >= 0
+        @constraint(m, binlin <= ub*bin)
+        @constraint(m, binlin <= lin)
+        @constraint(m, binlin <= lin - (1-bin)*ub)
+        @constraint(m, binlin >= 0)
+    else
+        @constraint(m, binlin <= ub)
+        @constraint(m, binlin >= lb)
+        @constraint(m, binlin <= bin*ub)
+        @constraint(m, binlin >= bin*lb)
+        @constraint(m, binlin <= lin - (1-bin)*lb)
+        @constraint(m, binlin >= lin - (1-bin)*ub)
+    end
+
+    return
+end
+
+function mccormick_bin(m::JuMP.Model,xy::JuMP.Variable,x::JuMP.Variable,y::JuMP.Variable)
     @constraint(m, xy <= x)
     @constraint(m, xy <= y)
     @constraint(m, xy >= x+y-1)
