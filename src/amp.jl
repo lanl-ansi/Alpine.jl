@@ -60,7 +60,7 @@ to finish the last step required during the construction of bounding model.
 """
 function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)
 
-    use_disc == nothing ? discretization = m.discretization : discretization = options[:use_disc]
+    use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
     for i in 1:length(m.method_convexification)             # Additional user-defined convexification method
         eval(m.method_convexification[i])(m)
