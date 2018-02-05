@@ -221,8 +221,7 @@ function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable
     if lb >= 0
         @constraint(m, binlin <= ub*bin)
         @constraint(m, binlin <= lin)
-        @constraint(m, binlin <= lin - (1-bin)*ub)
-        @constraint(m, binlin >= 0)
+        @constraint(m, binlin >= lin - (1-bin)*ub)
     else
         @constraint(m, binlin <= ub)
         @constraint(m, binlin >= lb)

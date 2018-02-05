@@ -183,7 +183,7 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
-    if string(m.mip_solver)[1:6] == "Gurobi"
+    if m.mip_solver_id == "Gurobi"
         push!(m.mip_solver.options, (:BestBdStop, stopbound))
         # Calculation of the bound
         if m.sense_orig == :Min
@@ -195,15 +195,13 @@ function update_boundstop_options(m::PODNonlinearModel)
         for i in 1:length(m.mip_solver.options)
             if m.mip_solver.options[i][1] == :BestBdStop
                 deleteat!(m.mip_solver.options, i)
-                if string(m.mip_solver)[1:6] == "Gurobi"
+                if m.mip_solver_id == "Gurobi"
                     push!(m.mip_solver.options, (:BestBdStop, stopbound))
                 else
                     return
                 end
             end
         end
-    else
-        return
     end
 
     return

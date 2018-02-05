@@ -921,7 +921,8 @@ end
 
     test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                             nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
+                            # mip_solver=CbcSolver(logLevel=0),
+                            mip_solver=GurobiSolver(),
                             bilinear_convexhull=true,
                             monomial_convexhull=true,
                             presolve_bp=true,

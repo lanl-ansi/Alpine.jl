@@ -76,6 +76,10 @@ function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict
         Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
         m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
 
+    # mccormick(m.model_mip, Variable(m.model_mip, lift_idx),
+    #     Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
+    #     0, 1, m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
+
     return
 end
 
