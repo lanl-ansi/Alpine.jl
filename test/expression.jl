@@ -4,7 +4,7 @@
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=100)
+                                loglevel=100)
 
         m=exprstest(solver=test_solver)
 
@@ -119,7 +119,7 @@
     @testset "Expression Test || bilinear || Affine || nlp1.jl" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100)
+                               loglevel=100)
         m=nlp1(solver=test_solver)
 
         JuMP.build(m)
@@ -140,7 +140,7 @@
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=CbcSolver(OutputFlag=0),
-								   log=100)
+								   loglevel=100)
 
         m=nlp3(solver=test_solver)
 
@@ -217,7 +217,7 @@
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100)
+                               loglevel=100)
 
         m = operator_c(solver=test_solver)
 
@@ -238,7 +238,7 @@
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100)
+                               loglevel=100)
 
         m = blend029(solver=test_solver)
 
@@ -352,7 +352,7 @@
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100)
+                               loglevel=100)
 
         m = multi3(solver=test_solver, exprmode=1)
 
@@ -652,7 +652,7 @@
     @testset "Expression Test || bilinear || Complex-div || div.jl" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100)
+                               loglevel=100)
 
         m = div(solver=test_solver)
 
@@ -746,7 +746,7 @@ end
     @testset "Expression parsing || part1 " begin
         m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
 								   mip_solver=CbcSolver(OutputFlag=0),
-								   log=100))
+								   loglevel=100))
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, x[1]^2 >= 1)  					# Basic monomial x[5]=x[1]^2
         @NLconstraint(m, x[1]*x[2] <= 1)				# x[6] <= 1 : x[6] = x[1]*x[2]
@@ -785,7 +785,7 @@ end
     @testset "Expression parsing || part2" begin
         m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100))
+                               loglevel=100))
 
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, (x[1]*x[2]) * x[3] >= 1)
@@ -841,7 +841,7 @@ end
     @testset "Expression parsing || part3" begin
         m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100))
+                               loglevel=100))
 
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, ((x[1]*x[2])*x[3])*x[4] >= 1)
@@ -904,7 +904,7 @@ end
     @testset "Expression parsing || part7" begin
         m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100))
+                               loglevel=100))
         @variable(m, x[1:4]>=0)
 
         @NLconstraint(m, x[1]*x[2]*x[3]*x[4] >= 1)
@@ -953,7 +953,7 @@ end
     @testset "Expression parsing || part8" begin
         m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100))
+                               loglevel=100))
         @variable(m, x[1:4]>=0)
 
         @NLconstraint(m, (x[1]*x[2]*x[3])*x[4] >= 1)
@@ -1007,7 +1007,7 @@ end
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=100)
+                                loglevel=100)
         m = convex_test(test_solver)
 
         JuMP.build(m)
@@ -1015,7 +1015,7 @@ end
         @test m.internalModel.num_constr_convex == 21
 
         # 0 : OBJ
-        @test m.internalModel.structural_obj == :convex
+        @test m.internalModel.obj_structure == :convex
         @test m.internalModel.nonlinear_constrs[0][:expr_orig] == :objective
         @test m.internalModel.nonlinear_constrs[0][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[0][:convexified] == false
@@ -1028,7 +1028,7 @@ end
         @test m.internalModel.bounding_obj_mip[:cnt] == 2
 
         # 1
-        @test m.internalModel.structural_constr[1] == :convex
+        @test m.internalModel.constr_structure[1] == :convex
         @test m.internalModel.nonlinear_constrs[1][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[1][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[1][:convexified] == false
@@ -1040,7 +1040,7 @@ end
         @test m.internalModel.bounding_constr_mip[1][:cnt] == 2
 
         # 2
-        @test m.internalModel.structural_constr[2] == :convex
+        @test m.internalModel.constr_structure[2] == :convex
         @test m.internalModel.nonlinear_constrs[2][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[2][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[2][:convexified] == false
@@ -1052,7 +1052,7 @@ end
         @test m.internalModel.bounding_constr_mip[2][:cnt] == 2
 
         # 4
-        @test m.internalModel.structural_constr[4] == :convex
+        @test m.internalModel.constr_structure[4] == :convex
         @test m.internalModel.nonlinear_constrs[4][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[4][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[4][:convexified] == false
@@ -1064,7 +1064,7 @@ end
         @test m.internalModel.bounding_constr_mip[4][:cnt] == 2
 
         # 5
-        @test m.internalModel.structural_constr[5] == :convex
+        @test m.internalModel.constr_structure[5] == :convex
         @test m.internalModel.nonlinear_constrs[5][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[5][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[5][:convexified] == :false
@@ -1076,7 +1076,7 @@ end
         @test m.internalModel.bounding_constr_mip[5][:cnt] == 3
 
         # 6
-        @test m.internalModel.structural_constr[6] == :convex
+        @test m.internalModel.constr_structure[6] == :convex
         @test m.internalModel.nonlinear_constrs[6][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[6][:convex_type] == :convexC
         @test m.internalModel.nonlinear_constrs[6][:convexified] == :false
@@ -1088,7 +1088,7 @@ end
         @test m.internalModel.bounding_constr_mip[6][:cnt] == 3
 
         # 7
-        @test m.internalModel.structural_constr[7] == :convex
+        @test m.internalModel.constr_structure[7] == :convex
         @test m.internalModel.nonlinear_constrs[7][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[7][:convex_type] == :convexC
         @test m.internalModel.nonlinear_constrs[7][:convexified] == :false
@@ -1100,7 +1100,7 @@ end
         @test m.internalModel.bounding_constr_mip[7][:cnt] == 2
 
         # 8
-        @test m.internalModel.structural_constr[8] == :convex
+        @test m.internalModel.constr_structure[8] == :convex
         @test m.internalModel.nonlinear_constrs[8][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[8][:convex_type] == :convexB
         @test m.internalModel.nonlinear_constrs[8][:convexified] == :false
@@ -1112,7 +1112,7 @@ end
         @test m.internalModel.bounding_constr_mip[8][:cnt] == 3
 
         # 9
-        @test m.internalModel.structural_constr[9] == :convex
+        @test m.internalModel.constr_structure[9] == :convex
         @test m.internalModel.nonlinear_constrs[9][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[9][:convex_type] == :convexB
         @test m.internalModel.nonlinear_constrs[9][:convexified] == :false
@@ -1124,7 +1124,7 @@ end
         @test m.internalModel.bounding_constr_mip[9][:cnt] == 4
 
         # 11
-        @test m.internalModel.structural_constr[11] == :convex
+        @test m.internalModel.constr_structure[11] == :convex
         @test m.internalModel.nonlinear_constrs[11][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[11][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[11][:convexified] == :false
@@ -1136,7 +1136,7 @@ end
         @test m.internalModel.bounding_constr_mip[11][:cnt] == 2
 
         # 14
-        @test m.internalModel.structural_constr[14] == :convex
+        @test m.internalModel.constr_structure[14] == :convex
         @test m.internalModel.nonlinear_constrs[14][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[14][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[14][:convexified] == :false
@@ -1148,7 +1148,7 @@ end
         @test m.internalModel.bounding_constr_mip[14][:cnt] == 2
 
         # 15
-        @test m.internalModel.structural_constr[15] == :convex
+        @test m.internalModel.constr_structure[15] == :convex
         @test m.internalModel.nonlinear_constrs[15][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[15][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[15][:convexified] == :false
@@ -1160,7 +1160,7 @@ end
         @test m.internalModel.bounding_constr_mip[15][:cnt] == 3
 
         # 19
-        @test m.internalModel.structural_constr[19] == :convex
+        @test m.internalModel.constr_structure[19] == :convex
         @test m.internalModel.nonlinear_constrs[19][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[19][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[19][:convexified] == :false
@@ -1172,7 +1172,7 @@ end
         @test m.internalModel.bounding_constr_mip[19][:cnt] == 2
 
         # 22
-        @test m.internalModel.structural_constr[22] == :convex
+        @test m.internalModel.constr_structure[22] == :convex
         @test m.internalModel.nonlinear_constrs[22][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[22][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[22][:convexified] == :false
@@ -1184,7 +1184,7 @@ end
         @test m.internalModel.bounding_constr_mip[22][:cnt] == 4
 
         # 25
-        @test m.internalModel.structural_constr[25] == :convex
+        @test m.internalModel.constr_structure[25] == :convex
         @test m.internalModel.nonlinear_constrs[25][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[25][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[25][:convexified] == :false
@@ -1196,7 +1196,7 @@ end
         @test m.internalModel.bounding_constr_mip[25][:cnt] == 5
 
         # 26
-        @test m.internalModel.structural_constr[26] == :convex
+        @test m.internalModel.constr_structure[26] == :convex
         @test m.internalModel.nonlinear_constrs[26][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[26][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[26][:convexified] == :false
@@ -1215,7 +1215,7 @@ end
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
                                disc_ratio=8,
-                               log=100)
+                               loglevel=100)
 
         m = nlp2(solver=test_solver)
 
@@ -1263,7 +1263,7 @@ end
     @testset "Linear Lifting : general" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=100)
+                               loglevel=100)
 
         m = basic_linear_lift(solver=test_solver)
 
@@ -1344,7 +1344,7 @@ end
     @testset "Expression Test || complex || Affine || operator_b" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=100)
+                                loglevel=100)
 
         m=operator_b(solver=test_solver)
 
@@ -1436,7 +1436,7 @@ end
 
         test_solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(logLevel=0),
-                               log=100)
+                               loglevel=100)
 
         m = bpml(solver=test_solver)
 
@@ -1470,25 +1470,25 @@ end
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:nonlinear_type] == :BINPROD
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:nonlinear_type] == :MULTILINEAR
 
-        @test length(m.internalModel.var_type_lifted) == 22
-        @test m.internalModel.var_type_lifted[11] == :Cont
-        @test m.internalModel.var_type_lifted[12] == :Bin
-        @test m.internalModel.var_type_lifted[13] == :Cont
-        @test m.internalModel.var_type_lifted[14] == :Bin
-        @test m.internalModel.var_type_lifted[15] == :Cont
-        @test m.internalModel.var_type_lifted[16] == :Cont
-        @test m.internalModel.var_type_lifted[17] == :Cont
-        @test m.internalModel.var_type_lifted[18] == :Cont
-        @test m.internalModel.var_type_lifted[19] == :Cont
-        @test m.internalModel.var_type_lifted[20] == :Cont
-        @test m.internalModel.var_type_lifted[21] == :Bin
-        @test m.internalModel.var_type_lifted[22] == :Cont
+        @test length(m.internalModel.var_type) == 22
+        @test m.internalModel.var_type[11] == :Cont
+        @test m.internalModel.var_type[12] == :Bin
+        @test m.internalModel.var_type[13] == :Cont
+        @test m.internalModel.var_type[14] == :Bin
+        @test m.internalModel.var_type[15] == :Cont
+        @test m.internalModel.var_type[16] == :Cont
+        @test m.internalModel.var_type[17] == :Cont
+        @test m.internalModel.var_type[18] == :Cont
+        @test m.internalModel.var_type[19] == :Cont
+        @test m.internalModel.var_type[20] == :Cont
+        @test m.internalModel.var_type[21] == :Bin
+        @test m.internalModel.var_type[22] == :Cont
     end
 
     @testset "Operator :: bmpl && binlin && binprod with linear lifting and coefficients" begin
         test_solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(logLevel=0),
-                               log=100)
+                               loglevel=100)
 
         m = bmpl_linearlifting(solver=test_solver)
 
@@ -1619,7 +1619,7 @@ end
 @testset "Expression Parser Test :: Special Operators" begin
     test_solver=PODSolver(nlp_solver=IpoptSolver(),
                            mip_solver=CbcSolver(logLevel=0),
-                           log=100)
+                           loglevel=100)
 
     m = specialopts(solver=test_solver)
     JuMP.build(m)
@@ -1661,7 +1661,7 @@ end
 
     test_solver=PODSolver(nlp_solver=IpoptSolver(),
                            mip_solver=CbcSolver(logLevel=0),
-                           log=100)
+                           loglevel=100)
 
     m = operator_basic(solver=test_solver)
     JuMP.build(m)
@@ -2493,7 +2493,7 @@ end
     @testset "Corner Cases - 1 : sign convertor special case" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=100)
+                                loglevel=100)
 
         m = Model(solver=test_solver)
         @variable(m, x[1:5], Bin)
@@ -2511,7 +2511,7 @@ end
     @testset "Corner Cases - 2 : full sub-expression" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=100)
+                                loglevel=100)
 
         m = Model(solver=test_solver)
         @variable(m, x[1:5]>=0)

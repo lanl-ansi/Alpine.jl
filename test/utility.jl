@@ -5,7 +5,7 @@
                           mip_solver=CbcSolver(logLevel=0),
                           presolve_bp=true,
                           disc_var_pick=1,
-                          log=100,
+                          loglevel=100,
                           maxiter=2,
                           presolve_bt_width_tol=1e-3,
                           presolve_bt=false)

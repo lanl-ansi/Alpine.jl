@@ -63,8 +63,8 @@ function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict
 
     @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
     lift_idx = m.nonlinear_terms[k][:y_idx]
-    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[i] == :Bin]
-    cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[i] == :Cont]
+    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Bin]
+    cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Cont]
 
     @assert length(bin_idx) == 1
     @assert length(cont_idx) == 1
@@ -116,14 +116,14 @@ function amp_convhull_prepare(m::PODNonlinearModel, discretization::Dict, nonlin
     counted_var = []
     id = Set()                      # Coverting the nonlinear indices into a set
     for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
-        m.var_type_lifted[var.args[2]] == :Cont && push!(id, var.args[2])
-        m.var_type_lifted[var.args[2]] == :Cont && push!(counted_var, var.args[2])
+        m.var_type[var.args[2]] == :Cont && push!(id, var.args[2])
+        m.var_type[var.args[2]] == :Cont && push!(counted_var, var.args[2])
     end
 
     if length(id) < length(counted_var) # Got repeating terms, now the sequence matters
         id = []
         for var in nonlinear_key
-            m.var_type_lifted[var.args[2]] == :Cont && push!(id, var.args[2])
+            m.var_type[var.args[2]] == :Cont && push!(id, var.args[2])
         end
     end
 
@@ -372,7 +372,7 @@ end
 function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
 
     @assert length(sol_vec) == m.num_var_orig
-    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
+    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
 
     for i in 1:length(m.nonlinear_terms)
         for bi in keys(m.nonlinear_terms)

@@ -33,11 +33,9 @@ More specifically, the Tightening McCormick used here can be genealized in the f
 ```
 
 """
-function create_bounding_mip(m::PODNonlinearModel; kwargs...)
+function create_bounding_mip(m::PODNonlinearModel; use_disc=nothing)
 
-    options = Dict(kwargs)
-
-    haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
+    use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP Model
     start_build = time()
@@ -60,18 +58,16 @@ end
 warpper function to convexify the problem for a bounding model. This function talks to nonlinear_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
-function amp_post_convexification(m::PODNonlinearModel; kwargs...)
+function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)
 
-    options = Dict(kwargs)
+    use_disc == nothing ? discretization = m.discretization : discretization = options[:use_disc]
 
-    haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
-
-    for i in 1:length(m.method_convexification)                 # Additional user-defined convexification method
+    for i in 1:length(m.method_convexification)             # Additional user-defined convexification method
         eval(m.method_convexification[i])(m)
     end
 
-    amp_post_mccormick(m, use_disc=discretization)    # handles all bi-linear and monomial convexificaitons
-    amp_post_convhull(m, use_disc=discretization)         # convex hull representation
+    amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
+    amp_post_convhull(m, use_disc=discretization)           # convex hull representation
 
     convexification_exam(m) # Exam to see if all non-linear terms have been convexificed
 
@@ -83,16 +79,16 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     if haskey(options, :use_disc)
-        l_var = [options[:use_disc][i][1]   for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
-        u_var = [options[:use_disc][i][end] for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
+        l_var = [options[:use_disc][i][1]   for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+        u_var = [options[:use_disc][i][end] for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     else
         l_var = m.l_var_tight
         u_var = m.u_var_tight
     end
 
-    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)])
+    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)])
 
-    for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+    for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
         (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
         (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))     # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
@@ -105,12 +101,12 @@ end
 function amp_post_lifted_constraints(m::PODNonlinearModel)
 
     for i in 1:m.num_constr_orig
-        if m.structural_constr[i] == :affine
+        if m.constr_structure[i] == :affine
             amp_post_affine_constraint(m.model_mip, m.bounding_constr_mip[i])
-        elseif m.structural_constr[i] == :convex
+        elseif m.constr_structure[i] == :convex
             amp_post_convex_constraint(m.model_mip, m.bounding_constr_mip[i])
         else
-            error("Unknown structural_constr type $(m.structural_constr[i])")
+            error("Unknown constr_structure type $(m.constr_structure[i])")
         end
     end
 
@@ -161,12 +157,12 @@ end
 
 function amp_post_lifted_objective(m::PODNonlinearModel)
 
-    if m.structural_obj == :affine
+    if m.obj_structure == :affine
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
-    elseif m.structural_obj == :convex
+    elseif m.obj_structure == :convex
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
-        error("Unknown structural obj type $(m.structural_obj)")
+        error("Unknown structural obj type $(m.obj_structure)")
     end
 
     return
@@ -226,7 +222,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_ratio) ? ratio = options[:use_ratio] : ratio = m.disc_ratio
     haskey(options, :branching) ? branching = options[:branching] : branching = false
 
-    (length(point_vec) < m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
+    (length(point_vec) < m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
 
     branching && (discretization = deepcopy(discretization))
 
@@ -282,9 +278,9 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
                     end
                     chunk = (ub_local - lb_local)/2
                     insert!(discretization[i], pos, lb_local + chunk)
-                    (m.log > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
+                    (m.loglevel > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
                 else
-                    (m.log > 99) && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+                    (m.loglevel > 99) && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
                 end
                 break
             end
@@ -306,7 +302,7 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
         chunk = distance / ((m.logs[:n_iter]+1)*m.disc_uniform_rate)
         discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.disc_uniform_rate]
         push!(discretization[i], ub_local)   # Safety Scheme
-        (m.log > 99) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
+        (m.loglevel > 99) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
     end
 
     return discretization
@@ -316,7 +312,7 @@ end
 """
     TODO: docstring
 """
-function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
+function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
 
@@ -355,6 +351,7 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
     end
 
     println("INCUMB_RATIO = $(incumb_ratio)")
+
     return incumb_ratio
 end
 

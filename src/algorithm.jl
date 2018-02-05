@@ -4,7 +4,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     colorful_pod::Any                                           # Turn on for a color solver
 
     # basic solver parameters
-    log::Int                                                    # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
+    loglevel::Int                                                    # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     maxiter::Int                                                # Target Maximum Iterations
     relgap::Float64                                             # Relative optimality gap termination condition
@@ -85,9 +85,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     d_orig::JuMP.NLPEvaluator                                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
 
     # additional initial data that may be useful later on - non populated for now
-    A_orig                                                      # Linear constraint matrix
-    A_l_orig                                                    # Linear constraint matrix LHS
-    A_u_orig                                                    # Linear constraint matrix RHS
+    A_orig::Any                                                 # Linear constraint matrix
+    A_l_orig::Vector{Float64}                                   # Linear constraint matrix LHS
+    A_u_orig::Vector{Float64}                                   # Linear constraint matrix RHS
     is_obj_linear_orig::Bool                                    # Bool variable for type of objective
     c_orig::Vector{Float64}                                     # Coefficient vector for linear objective
     num_lconstr_updated::Int                                    # Updated number of linear constraints - includes linear constraints added via @NLconstraint macro
@@ -97,35 +97,38 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # local solution model extra data for each iteration
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
-    var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
-    x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
-    x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    num_var_linear_lifted_mip::Int                              # Number of linear lifting variables required.
-    num_var_nonlinear_lifted_mip::Int                           # Number of lifted variables
+
+    num_var_linear_mip::Int                                     # Number of linear lifting variables required.
+    num_var_nonlinear_mip::Int                                  # Number of lifted variables
     num_var_disc_mip::Int                                       # Number of variables on which discretization is performed
     num_constr_convex::Int                                      # Number of structural constraints
+
+    # Expression related and Structural Property Placeholder
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
-    term_seq::Dict{Int, Any}                                 # Vector-Dictionary for nl terms detection
+    term_seq::Dict{Int, Any}                                    # Vector-Dictionary for nl terms detection
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
-    all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
-    structural_obj::Symbol                                      # A symbolic indicator of the expression type of objective function
-    structural_constr::Vector{Symbol}                           # A vector indicate whether a constraint is with sepcial structure
+    obj_structure::Symbol                                       # A symbolic indicator of the expression type of objective function
+    constr_structure::Vector{Symbol}                            # A vector indicate whether a constraint is with sepcial structure
     bounding_obj_expr_mip::Expr                                 # Lifted objective expression; if linear, same as obj_expr_orig
     bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
     bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
+
+    # Discretization Related
+    all_nonlinear_vars::Vector{Int}                             # A vector of all original variable indices that is involved in the nonlinear terms
     discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
     var_disc_mip::Vector{Any}                                   # Variables on which discretization is performed
-    sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
+
+    # Re-formulated problem
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
     u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
-    var_type_lifted::Vector{Symbol}                             # Updated variable type for local solve
+    var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
-    # Solution and bound information
+    # Solution information
     best_bound::Float64                                         # Best bound from MIP
     best_obj::Float64                                           # Best feasible objective value
     best_sol::Vector{Float64}                                   # Best feasible solution
@@ -140,7 +143,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # constructor
     function PODNonlinearModel(colorful_pod,
-                                log, timeout, maxiter, relgap, tol,
+                                loglevel, timeout, maxiter, relgap, tol,
                                 nlp_solver,
                                 minlp_solver,
                                 mip_solver,
@@ -179,7 +182,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.colorful_pod = colorful_pod
 
-        m.log = log
+        m.loglevel = loglevel
         m.timeout = timeout
         m.maxiter = maxiter
         m.relgap = relgap
@@ -247,14 +250,16 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.bounding_constr_mip = []
         m.var_disc_mip = []
         m.discretization = Dict()
-        m.num_var_linear_lifted_mip = 0
-        m.num_var_nonlinear_lifted_mip = 0
+        m.num_var_linear_mip = 0
+        m.num_var_nonlinear_mip = 0
         m.num_var_disc_mip = 0
         m.num_constr_convex = 0
-        m.structural_constr = []
+        m.constr_structure = []
         m.bound_sol_history = []
 
         m.user_parameters = Dict()
+
+        m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -292,7 +297,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
-    m.var_type_lifted = copy(m.var_type_orig)
+    m.var_type = copy(m.var_type_orig)
 
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
@@ -306,32 +311,29 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
         end
     end
 
-    m.structural_obj = :none
-    m.structural_constr = [:none for i in 1:m.num_constr_orig]
+    m.obj_structure = :none
+    m.constr_structure = [:none for i in 1:m.num_constr_orig]
 
     for i = 1:m.num_constr_orig
         if MathProgBase.isconstrlinear(m.d_orig, i)
             m.num_lconstr_orig += 1
-            m.structural_constr[i] = :generic_linear
+            m.constr_structure[i] = :generic_linear
         else
-            m.structural_constr[i] = :generic_nonlinear
+            m.constr_structure[i] = :generic_nonlinear
         end
     end
     m.num_nlconstr_orig = m.num_constr_orig - m.num_lconstr_orig
 
     # not using this any where (in optional fields)
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
-    m.is_obj_linear_orig ? (m.structural_obj = :generic_linear) : (m.structural_obj = :generic_nonlinear)
+    m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
     # populate data to create the bounding model
     process_expr(m)                 # Compact process of every expression
-    initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
+    init_tight_bound(m)      # Initialize tightened bound vectors for future usage
     resolve_var_bounds(m)           # resolve lifted var bounds
-    pick_vars_discretization(m)     # Picking variables to be discretized
-    initialize_discretization(m)    # Initialize discretization dictionary
-
-    # Setup the memory space for recording bounding solutions
-    m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
+    pick_disc_vars(m)               # Picking variables to be discretized
+    init_disc(m)                    # Initialize discretization dictionarys
 
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
@@ -352,7 +354,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
     presolve(m)
     global_solve(m)
-    (m.log > 0) && logging_row_entry(m, finsih_entry=true)
+    m.loglevel > 0 && logging_row_entry(m, finsih_entry=true)
     summary_status(m)
 end
 
@@ -383,8 +385,8 @@ is then used to partition the variables for the subsequent Adaptive Multivariate
 function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
-    (m.log > 0) && println("\nPOD algorithm presolver started.")
-    (m.log > 0) && println("Performing local solve to obtain a feasible solution.")
+    (m.loglevel > 0) && println("\nPOD algorithm presolver started.")
+    (m.loglevel > 0) && println("Performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
     # Regarding upcoming changes in status
@@ -393,22 +395,22 @@ function presolve(m::PODNonlinearModel)
 
     if m.status[:local_solve] in status_pass
         bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
-        (m.presolve_bt) && initialize_discretization(m)      # Reinitialize discretization dictionary on tight bounds
-        (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m, true))
+        (m.presolve_bt) && init_disc(m)      # Reinitialize discretization dictionary on tight bounds
+        (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
-        (m.log > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
+        (m.loglevel > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-        (m.log > 0) && println("second attempt at local solve using tightened bounds...")
+        (m.loglevel > 0) && println("second attempt at local solve using tightened bounds...")
         local_solve(m, presolve = true) # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
         if m.status in status_pass  # successful second try
-            (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m, true))
+            (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
             add_partition(m, use_solution=m.best_sol)
         else    # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
-            (m.log > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
+            (m.loglevel > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
             create_bounding_mip(m)       # Build the bounding ATMC model
             bounding_solve(m)            # Solve bounding model
-            (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m))
+            (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
             add_partition(m, use_solution=m.best_bound_sol)
         end
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
@@ -422,8 +424,8 @@ function presolve(m::PODNonlinearModel)
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
-    (m.log > 0) && println("Presolve ended.")
-    (m.log > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
+    (m.loglevel > 0) && println("Presolve ended.")
+    (m.loglevel > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
 
     return
 end
@@ -444,22 +446,57 @@ For example, this algorithm can easily be reformed as a uniform-partitioning alg
 """
 function global_solve(m::PODNonlinearModel)
 
-    (m.log > 0) && logging_head(m)
-    (!m.presolve_track_time) && reset_timer(m)
-    while (m.best_rel_gap > m.relgap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
+    m.loglevel > 0 && logging_head(m)
+    m.presolve_track_time || reset_timer(m)
+    while !check_exit(m)
         m.logs[:n_iter] += 1
-        create_bounding_mip(m)                           # Build the bounding ATMC model
-        bounding_solve(m)                                # Solve bounding model
-        update_opt_gap(m)
-        (m.log > 0) && logging_row_entry(m)
-        local_solve(m)                                   # Solve upper bounding model
-        (m.best_rel_gap <= m.relgap || m.logs[:n_iter] >= m.maxiter) && break
-        (m.disc_var_pick == 3) && update_discretization_var_set(m)
-        (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m))    # Only perform for a maximum three times
-        add_partition(m)                                 # Add extra discretizations
+        create_bounding_mip(m)                  # Build the relaxation model
+        bounding_solve(m)                       # Solve the relaxation model
+        update_opt_gap(m)                       # Update optimality gap
+        check_exit(m) && break                  # Feasibility check
+        m.loglevel > 0 && logging_row_entry(m)  # Logging
+        local_solve(m)                          # Solve local model for feasible solution
+        check_exit(m) && break                  # Detect optimality termination
+        auto_adjustments(m)                     # Automated adjustments
+        add_partition(m)                        # Add extra discretizations
     end
 
     return
+end
+
+"""
+    A wrapper function that collects some automated solver adjustments within the main while loop.
+"""
+function auto_adjustments(m::PODNonlinearModel)
+
+    m.disc_var_pick == 3 && update_discretization_var_set(m)
+
+    if m.disc_ratio_branch
+        m.disc_ratio = update_disc_ratio(m)    # Only perform for a maximum three times
+    end
+
+    return
+end
+
+"""
+    Summarized function to determine whether to interrupt the main while loop.
+"""
+function check_exit(m::PODNonlinearModel)
+
+    # Infeasibility check
+    m.status[:bounding_solve] == :Infeasible && return true
+
+    # Unbounded check
+    m.status[:bounding_solve] == :Unbounded && return true
+
+    # Optimality check
+    m.best_rel_gap <= m.relgap && return true
+    m.logs[:n_iter] >= m.maxiter && return true
+
+    # Userlimits check
+    m.logs[:time_left] < m.tol && return true
+
+    return false
 end
 
 """
@@ -501,6 +538,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     else
         l_var, u_var = m.l_var_orig, m.u_var_orig
     end
+
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
     (!m.d_orig.want_hess) && MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess,:HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
     (presolve && !isempty(var_type_screener)) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
@@ -520,25 +558,22 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         push!(m.logs[:obj], candidate_obj)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
             m.best_obj = candidate_obj
-            m.best_sol = MathProgBase.getsolution(local_solve_nlp_model)
             m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 5)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status
         return
-    elseif local_solve_nlp_status in status_reroute
+    elseif local_solve_nlp_status == :Infeasible
         push!(m.logs[:obj], "-")
         m.status[:local_solve] = :Infeasible
         return
     elseif local_solve_nlp_status == :Unbounded
         m.status[:local_solve] = :Unbounded
-        (presolve == true) && warn("[PRESOLVE] NLP local solve is unbounded.")
-        (presolve == false) && warn("[LOCAL SOLVE] NLP local solve is unbounded.")
+        presolve == true ? warn("[PRESOLVE] NLP local solve is unbounded.") : warn("[LOCAL SOLVE] NLP local solve is unbounded.")
         return
     else
         m.status[:local_solve] = :Error
-		(presolve == true) && warn("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).")
-        (presolve == false) && warn("[LOCAL SOLVE] NLP local solve failure.")
+		presolve == true ? warn("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).") : warn("[LOCAL SOLVE] NLP local solve failure.")
         return
     end
 
@@ -555,46 +590,48 @@ The convexification utilized is Tighten McCormick scheme.
 See `create_bounding_mip` for more details of the problem solved here.
 
 """
-function bounding_solve(m::PODNonlinearModel; kwargs...)
+function bounding_solve(m::PODNonlinearModel)
 
-    # ================= Solve Start ================ #
     convertor = Dict(:Max=>:<, :Min=>:>)
     boundlocator = Dict(:Max=>:+, :Min=>:-)
     boundlocator_rev = Dict(:Max=>:-, :Max=>:+)
+
+    # Updates time metric and position solver
     update_mip_time_limit(m)
     update_boundstop_options(m)
+
+    # ================= Solve Start ================ #
     start_bounding_solve = time()
     status = solve(m.model_mip, suppress_warnings=true)
-    cputime_bounding_solve = time() - start_bounding_solve
-    m.logs[:total_time] += cputime_bounding_solve
+    m.logs[:total_time] += time() - start_bounding_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     # ================= Solve End ================ #
 
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
-    status_reroute = [:Infeasible]
+    status_infeasible = [:Infeasible]
+
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
-        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
+        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
         (m.disc_consecutive_forbid > 0) && (m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol)) # Requires proper offseting
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound
             m.best_bound_sol = copy(candidate_bound_sol)
-            m.sol_incumb_lb = [getvalue(Variable(m.model_mip, i)) for i in 1:m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip] # can remove this
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
         end
-    elseif status in status_reroute
+    elseif status in status_infeasible
         push!(m.logs[:bound], "-")
-        m.status[:bounding_solve] = status
-        print_iis_gurobi(m.model_mip)
-        error("[PROBLEM INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
+        m.status[:bounding_solve] = :Infeasible
+        false && print_iis_gurobi(m.model_mip) # Diagnostic code
+        warn("[INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
     elseif status == :Unbounded
-        m.status[:bounding_solve] = status
-        error("[MIP UNBOUNDED] MIP solver failure")
+        m.status[:bounding_solve] = :Unbounded
+        warn("[UNBOUNDED] MIP solver return unbounded")
     else
-        error("[MIP UNEXPECTED] MIP solver failure $(status)")
+        error("[EXCEPTION] MIP solver failure $(status)")
     end
 
     return

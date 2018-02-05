@@ -30,7 +30,7 @@ end
 
 function logging_summary(m::PODNonlinearModel)
 
-    if m.log > 0
+    if m.loglevel > 0
         print_with_color(:light_yellow, "full problem loaded into POD\n")
         println("problen sense $(m.sense_orig)")
         @printf "number of constraints = %d\n" m.num_constr_orig
@@ -144,31 +144,39 @@ function create_status!(m)
     status[:presolve] = :none                   # Status of presolve
     status[:local_solve] = :none                # Status of local solve
     status[:bounding_solve] = :none             # Status of bounding solve
-    status[:lower_bounding_solve] = :none       # Status of lower bonding solve
-    status[:upper_bounding_solve] = :none       # Status of bounding solve
     status[:feasible_solution] = :none          # Status of whether a upper bound is detected or not
-    status[:upper_bound] = :none                # Status of whether a upper bound has been detected
-    status[:lower_bound] = :none                # Status of whether a lower bound has been detected
     status[:bound] = :none                      # Status of whether a bound has been detected
-    status[:bound_tightening_solve] = :none     # Status of bound-tightening solve
 
     m.status = status
 end
 
+
+"""
+    This function summarize the eventual solver status based on all available infomration
+        recorded in the solver. The output status is self-defined which requires users to
+        read our documentation to understand what details is behind a status symbol.
+"""
 function summary_status(m::PODNonlinearModel)
 
+    # POD Solver Status Definition
+    # :Optimal : normal termination with gap closed within time limits
+    # :UserLimits : any non-optimal termination related to user-defined parameters
+    # :Infeasible : termination with relaxation proven infeasible or detection of
+    #               variable bound conflicts
+    # :Heuristic : termination with feasible solution found but not bounds detected
+    #               happens when lower bound problem is extremely hard to solve
+    # :Unknown : termination with no exception recorded
+
     if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
-        if m.best_rel_gap > m.relgap
-            m.pod_status = :UserLimits
-        else
-            m.pod_status = :Optimal
-        end
-    elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
+        m.best_rel_gap > m.relgap ? m.pod_status = :UserLimits : m.pod_status = :Optimal
+    elseif m.status[:bounding_solve] == :Infeasible
         m.pod_status = :Infeasible
+    elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
+        m.pod_status = :UserLimits
     elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
         m.pod_status = :Heuristic
     else
-        error("[UNEXPECTED] Missing bound and feasible solution during status summary.")
+        warn("[EXCEPTION] Indefinite POD status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/POD.jl/issues) to help us make POD better.")
     end
 
     print_with_color(:green, "\n POD ended with status $(m.pod_status)\n")

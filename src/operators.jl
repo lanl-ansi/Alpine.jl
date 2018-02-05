@@ -56,17 +56,17 @@ function expr_parsing(m::PODNonlinearModel)
 	is_strucural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
 	if !is_strucural
 		m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
-		m.structural_obj = :generic_linear
+		m.obj_structure = :generic_linear
 	end
-	(m.log > 99) && println("[OBJ] $(m.obj_expr_orig)")
+	(m.loglevel > 99) && println("[OBJ] $(m.obj_expr_orig)")
 
 	for i in 1:m.num_constr_orig
 		is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
 		if !is_strucural
 			m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], i, m)
-			m.structural_constr[i] = :generic_linear
+			m.constr_structure[i] = :generic_linear
 		end
-		(m.log > 99) && println("[CONSTR] $(m.constr_expr_orig[i])")
+		(m.loglevel > 99) && println("[CONSTR] $(m.constr_expr_orig[i])")
 	end
 
 	return
@@ -77,31 +77,31 @@ end
 """
 function expr_conversion(m::PODNonlinearModel)
 
-	if m.structural_obj == :generic_linear
+	if m.obj_structure == :generic_linear
 		m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
-		m.structural_obj = :affine
+		m.obj_structure = :affine
 	end
-	m.log > 99 && println("type :: ", m.structural_obj)
-	m.log > 99 && println("lifted ::", m.bounding_obj_expr_mip)
-	m.log > 99 && println("coeffs ::", m.bounding_obj_mip[:coefs])
-	m.log > 99 && println("vars ::", m.bounding_obj_mip[:vars])
-	m.log > 99 && println("sense ::", m.bounding_obj_mip[:sense])
-	m.log > 99 && println("rhs ::", m.bounding_obj_mip[:rhs])
-	m.log > 99 && println("----------------")
+	m.loglevel > 99 && println("type :: ", m.obj_structure)
+	m.loglevel > 99 && println("lifted ::", m.bounding_obj_expr_mip)
+	m.loglevel > 99 && println("coeffs ::", m.bounding_obj_mip[:coefs])
+	m.loglevel > 99 && println("vars ::", m.bounding_obj_mip[:vars])
+	m.loglevel > 99 && println("sense ::", m.bounding_obj_mip[:sense])
+	m.loglevel > 99 && println("rhs ::", m.bounding_obj_mip[:rhs])
+	m.loglevel > 99 && println("----------------")
 
 
 	for i in 1:m.num_constr_orig
-		if m.structural_constr[i] == :generic_linear
+		if m.constr_structure[i] == :generic_linear
 			m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
-			m.structural_constr[i] = :affine
+			m.constr_structure[i] = :affine
 		end
-		m.log > 99 && println("type :: ", m.structural_constr[i])
-		m.log > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
-		m.log > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-		m.log > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
-		m.log > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
-		m.log > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-		m.log > 99 && println("----------------")
+		m.loglevel > 99 && println("type :: ", m.constr_structure[i])
+		m.loglevel > 99 && println("lifted ::", m.bounding_constr_expr_mip[i])
+		m.loglevel > 99 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+		m.loglevel > 99 && println("vars ::", m.bounding_constr_mip[i][:vars])
+		m.loglevel > 99 && println("sense ::", m.bounding_constr_mip[i][:sense])
+		m.loglevel > 99 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+		m.loglevel > 99 && println("----------------")
 	end
 
 	return
@@ -133,9 +133,9 @@ function expr_finalized(m::PODNonlinearModel)
 	end
 
 	m.all_nonlinear_vars = sort(m.all_nonlinear_vars)
-    m.num_var_linear_lifted_mip = length(m.linear_terms)
-	m.num_var_nonlinear_lifted_mip = length(m.nonlinear_terms)
-	m.num_constr_convex = length([i for i in m.structural_constr if i == :convex])
+    m.num_var_linear_mip = length(m.linear_terms)
+	m.num_var_nonlinear_mip = length(m.nonlinear_terms)
+	m.num_constr_convex = length([i for i in m.constr_structure if i == :convex])
 
 	return m
 end
@@ -222,7 +222,7 @@ function store_nl_term(m::PODNonlinearModel, nl_key, var_idxs, term_type, operat
     m.nonlinear_terms[nl_key] = Dict(:lifted_var_ref => lifted_var_ref,
                                     :id => nl_cnt + 1,
                                     :y_idx => y_idx,
-                                    :y_type => resolve_lifted_var_type([m.var_type_lifted[k] for k in var_idxs], operator),
+                                    :y_type => resolve_lifted_var_type([m.var_type[k] for k in var_idxs], operator),
                                     :var_idxs => var_idxs,
                                     :ref => nl_key,
                                     :evaluator => evaluator,
@@ -233,8 +233,8 @@ function store_nl_term(m::PODNonlinearModel, nl_key, var_idxs, term_type, operat
 
     m.term_seq[nl_cnt+l_cnt+1] = nl_key                              # Assistive information
 
-    push!(m.var_type_lifted, m.nonlinear_terms[nl_key][:y_type])    # Keep track of the lifted var type
-    (m.log) > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
+    push!(m.var_type, m.nonlinear_terms[nl_key][:y_type])    # Keep track of the lifted var type
+    (m.loglevel) > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
@@ -252,14 +252,14 @@ function store_linear_term(m::PODNonlinearModel, term_key, expr)
                                     :id => length(keys(m.linear_terms)) + 1,
                                     :ref => term_key,
                                     :y_idx => y_idx,
-                                    :y_type => resolve_lifted_var_type([m.var_type_lifted[k[2]] for k in term_key[:coef_var]], :+),
+                                    :y_type => resolve_lifted_var_type([m.var_type[k[2]] for k in term_key[:coef_var]], :+),
                                     :evaluator => linear,
                                     :lifted_constr_ref => lifted_constr_ref,
                                     :constr_id => Set())
 
     m.term_seq[l_cnt+nl_cnt + 1] = term_key
-    push!(m.var_type_lifted, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-    m.log > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
+    push!(m.var_type, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
+    m.loglevel > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
 
     return y_idx
 end
@@ -381,11 +381,11 @@ function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type_lifted[var_idxs[end]] != :Bin && return false, expr
+            !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Bin && return false, expr
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
-                m.var_type_lifted[linear_lift_var.args[2]] != :Bin && false, expr
+                m.var_type[linear_lift_var.args[2]] != :Bin && false, expr
                 push!(var_idxs, linear_lift_var.args[2])
                 continue
             end
@@ -411,11 +411,11 @@ function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type_lifted[var_idxs[end]] != :Bin && return false, expr
+            !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Bin && return false, expr
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
-                m.var_type_lifted[linear_lift_var.args[2]] != :Bin && false, expr
+                m.var_type[linear_lift_var.args[2]] != :Bin && false, expr
                 push!(var_idxs, linear_lift_var.args[2])
                 continue
             end
@@ -454,12 +454,12 @@ function resolve_bpml_term(expr, constr_id::Int, m)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type_lifted[expr.args[i].args[2]])
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type[expr.args[i].args[2]])
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                push!(var_types, m.var_type_lifted[linear_lift_var.args[2]])
+                push!(var_types, m.var_type[linear_lift_var.args[2]])
                 continue
             end
         end
@@ -469,8 +469,8 @@ function resolve_bpml_term(expr, constr_id::Int, m)
         if length(var_idxs) >= 2 && (:Bin in var_types) && (:Cont in var_types)
 
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
-            cont_var_idxs = [idx for idx in var_idxs if m.var_type_lifted[idx] == :Cont]
-            bin_var_idxs = [idx for idx in var_idxs if m.var_type_lifted[idx] == :Bin]
+            cont_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Cont]
+            bin_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Bin]
 
             if length(cont_var_idxs) == length(bin_var_idxs) == 1
                 # Case 1 : simple x * y case where x is binary and y is continous
@@ -562,12 +562,12 @@ function resolve_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr    # Don't consider the discrete variable
+            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr    # Don't consider the discrete variable
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr  # Don't consider the discrete variable
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr  # Don't consider the discrete variable
                 continue
             end
         end
@@ -604,12 +604,12 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr
+            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr
                 continue
             end
         end
@@ -634,12 +634,12 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr
                 continue
             end
         end
@@ -675,12 +675,12 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
                 continue
             end
         end
@@ -708,7 +708,7 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type_lifted[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
             (expr.args[i].head == :call) && return false, expr
         end
         # Cofirm detection of patter A and perform store & lifting procedures
@@ -887,7 +887,7 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
         m.bounding_constr_expr_mip[idx] = expr
 
         # Recording structural identifier
-        m.structural_constr[idx] = :convex
+        m.constr_structure[idx] = :convex
 
         # Recording the function for adding constraints
         m.bounding_constr_mip[idx] = Dict(:sense => sense,
@@ -935,7 +935,7 @@ function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, s
         m.bounding_obj_expr_mip = expr
 
         # Recording structural identifier
-        m.structural_obj = :convex
+        m.obj_structure = :convex
 
         # Record a function that can be used to add objective function
         m.bounding_obj_mip = Dict(:sense => nothing,

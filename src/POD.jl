@@ -20,9 +20,8 @@ include("amp.jl")
 include("embedding.jl")
 
 # Convexification method
-include("tmc.jl")
 include("multi.jl")
-include("bin.jl")
+include("tmc.jl")
 
 # Model Manipulation and utilities
 include("bounds.jl")
