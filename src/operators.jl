@@ -355,18 +355,218 @@ function resolve_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-binprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
+
 bpml(k,vec) = prod([vec[i] for i in k[:var_idxs]])
-bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
+discmulti(k, vec) = prod([vec[i] for i in k[:var_idxs]])
+binint(l, vec) = prod([vec[i] for i in k[:var_idxs]])
+intprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
+binprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
 binlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
+intlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
+bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
 sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
 linear(k, vec) = sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
+
+
+function resolve_discmulti_term(expr, constr_id::Int, m::PODNonlinearModel)
+
+    # Alwasy construct the binlin term after lifting
+    @assert expr.head == :call
+
+    if (expr.args[1] == :*)
+        # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
+        var_idxs = []
+        var_types = []
+        scalar = 1.0
+        for i in 1:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                scalar *= expr.args[i]
+                continue
+            end
+            (isa(expr.args[i], Symbol)) && continue
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type[expr.args[i].args[2]])
+            if (expr.args[i].head == :call)
+                down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
+                !down_check && return false, expr
+                push!(var_idxs, linear_lift_var.args[2])
+                push!(var_types, m.var_type[linear_lift_var.args[2]])
+                continue
+            end
+        end
+
+        term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
+
+        cont_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Cont]
+        bin_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Bin]
+        int_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Int]
+
+        # Must carry at both discrete and continous variables
+        isempty(int_var_idxs) && isempty(bin_var_idxs) && return false, expr
+        isempty(cont_var_idxs) && return false, expr
+
+        # Lift clusters of continous variables multiplication if necessary
+        if length(cont_var_idxs) > 1
+            ml_term_key = [Expr(:ref, :x, idx) for idx in cont_var_idxs]
+            ml_term_expr = Expr(:call, :*)
+            for idx in cont_var_idxs
+                push!(ml_term_expr.args, Expr(:ref, :x, idx))
+            end
+            ml_lift_term = expr_resolve_term_pattern(ml_term_expr, constr_id, m)
+            ml_idx = ml_lift_term.args[2]
+        else
+            ml_idx = cont_var_idxs[1]
+        end
+
+        # Lift clusters of binary vars multiplication if necessary
+        if length(bin_var_idxs) > 1
+            bp_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
+            bp_term_expr = Expr(:call, :*)
+            for idx in bin_var_idxs
+                push!(bp_term_expr.args, Expr(:ref, :x, idx))
+            end
+            bp_lift_term = expr_resolve_term_pattern(bp_term_expr, constr_id, m)
+            bp_idx = bp_lift_term.args[2]
+        else
+            isempty(bin_var_idxs) ? bp_idx = -1 : bp_idx = bin_var_idxs[1]
+        end
+
+        # lift clusters of integer varis multiplication if necessary
+        if length(int_var_idxs) > 1
+            ip_term_key = [Expr(:ref, :x, idx) for idx in int_var_idxs]
+            ip_term_expr = Expr(:call, :*)
+            for idx in cont_var_idxs
+                push!(ip_term_expr.args, Expr(:ref, :x, idx))
+            end
+            ip_lift_term = expr_resolve_term_pattern(ip_term_expr, constr_id, m)
+        else
+            isempty(int_var_idxs) ? ip_idx = -1 : ip_idx = ip_var_idxs[1]
+        end
+
+        if bp_idx < 0 # intlin term if no binary variable
+            intlin_key = [Expr(:ref, :x, ip_idx), Expr(:ref, :x, ml_idx)]
+            intlin_idxs = [ip_idx, ml_idx;]
+            intlin_key in keys(m.nonlinear_terms) || store_nl_term(m, intlin_key, intlin_idxs, :INTLIN, :*, intlin)
+            return true, lift_nl_term(m, intlin_key, constr_id, scalar)
+        end
+
+        if ip_idx < 0 # binlin term if no integer variable
+            binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ml_idx)]
+            binlin_idxs = [bp_idx, ml_idx;]
+            binlin_key in keys(m.nonlinear_terms) || store_nl_term(m, binlin_key, intlin_idxs, :BINLIN, :*, binlin)
+            return true, lift_nl_term(m, binlin_key, constr_id, scalar)
+        end
+
+        # Otherwise, first :intlin term then :binlin term by assumption
+        intlin_key = [Expr(:ref, :x, ip_idx), Expr(:ref, :x, ml_idx)]
+        intlin_expr = Expr(:call, :*)
+        push!(intlin_expr.args, Expr(:ref, :x, ip_idx))
+        push!(intlin_expr.args, Expr(:ref, :x, ml_idx))
+        intlin_lift = expr_resolve_term_pattern(intlin_expr, constr_id, m)
+        intlin_idx = intlin_lift.args[2]
+
+        binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, intlin_idx)]
+        binlin_idxs = [bp_idx, intlin_idx;]
+        binlin_key in keys(m.nonlinear_terms) || store_nl_term(m, binlin_key, intlin_idxs, :BINLIN, :*, binlin)
+        return true, lift_nl_term(m, binlin_key, constr_id, scalar)
+
+    end
+
+    return false, expr
+end
+
+function resolve_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
+end
+
+function resolve_intlin_term(expr, constr_id::Int, m::PODNonlinearModel)
+end
+
 """
-    Recognize products of binary variables
-    TODO: docstring
+    Recognize prodcuts of binary variables and multilinear products
+
+        General Case : x1 * x2 .. * xN * y1 * y2 .. * yM
+            where x are binary variables, y are continous variables
+
+        Special Case : x * y
+            where x is binary and y is continuous
+
+    Re-Directs to resolve_binlin_term() & resolve_binprod_term()
+"""
+function resolve_bpml_term(expr, constr_id::Int, m::PODNonlinearModel)
+
+    # Alwasy construct the binlin term after lifting
+    @assert expr.head == :call
+
+    if (expr.args[1] == :*)
+
+        var_idxs = []
+        var_types = []
+        scalar = 1.0
+
+        for i in 1:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                scalar *= expr.args[i]
+                continue
+            end
+            (isa(expr.args[i], Symbol)) && continue
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type[expr.args[i].args[2]])
+            if (expr.args[i].head == :call)
+                down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
+                !down_check && return false, expr
+                push!(var_idxs, linear_lift_var.args[2])
+                push!(var_types, m.var_type[linear_lift_var.args[2]])
+                continue
+            end
+        end
+
+        cont_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Cont]
+        bin_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Bin]
+
+        # Must carry at both discrete and continous variables
+        isempty(bin_var_idxs) && return false, expr
+        isempty(cont_var_idxs) && return false, expr
+
+        # Lift clusters of continous vars multiplication if necessary
+        if length(cont_var_idxs) > 1
+            ml_term_key = [Expr(:ref, :x, idx) for idx in cont_var_idxs]
+            ml_term_expr = Expr(:call, :*)
+            for idx in cont_var_idxs
+                push!(ml_term_expr.args, Expr(:ref, :x, idx))
+            end
+            ml_lift_term = expr_resolve_term_pattern(ml_term_expr, constr_id, m)
+            ml_idx = ml_lift_term.args[2]
+        else
+            ml_idx = cont_var_idxs[1]
+        end
+
+        # Lift clusters of binary vars multiplication if necessary
+        if length(bin_var_idxs) > 1
+            bp_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
+            bp_term_expr = Expr(:call, :*)
+            for idx in bin_var_idxs
+                push!(bp_term_expr.args, Expr(:ref, :x, idx))
+            end
+            bp_lift_term = expr_resolve_term_pattern(bp_term_expr, constr_id, m)
+            bp_idx = bp_lift_term.args[2]
+        else
+            bp_idx = bin_var_idxs[1]
+        end
+
+        binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ml_idx)]
+        binlin_idxs = [bp_idx, ml_idx;]
+        binlin_key in keys(m.nonlinear_terms) || store_nl_term(m, binlin_key, binlin_idxs, :BINLIN, :*, binlin)
+        return true, lift_nl_term(m, binlin_key, constr_id, scalar)
+    end
+
+    return false, expr
+end
+
+"""
+    Recognize products of binary variables : x1 * x2 * .. * xN
 """
 function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
     @assert expr.head == :call
@@ -392,12 +592,8 @@ function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         if length(var_idxs) >= 2
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
-            if term_key in keys(m.nonlinear_terms)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            else
-                store_nl_term(m, term_key, var_idxs, :BINPROD, :*, binprod)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            end
+            term_key in keys(m.nonlinear_terms) || store_nl_term(m, term_key, var_idxs, :BINPROD, :*, binprod)
+            return true, lift_nl_term(m, term_key, constr_id, scalar)
         end
     elseif (expr.args[1] == :^) && length(expr.args) == 3
         # Pattern: (x)^(>2), where x is binary variable
@@ -422,12 +618,8 @@ function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         if length(var_idxs) == 1 && power_scalar > 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
-            if term_key in keys(m.nonlinear_terms)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            else
-                store_nl_term(m, term_key, var_idxs, :BINPROD, :*, binprod)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            end
+            term_key in keys(m.nonlinear_terms) || store_nl_term(m, term_key, var_idxs, :BINPROD, :*, binprod)
+            return true, lift_nl_term(m, term_key, constr_id, scalar)
         end
     end
 
@@ -435,117 +627,7 @@ function resolve_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
 end
 
 """
-    Recognize prodcuts of binary variables and multilinear products
-    TODO: docstring
-"""
-function resolve_bpml_term(expr, constr_id::Int, m)
-
-    # Alwasy construct the binlin term after lifting
-    @assert expr.head == :call
-    if (expr.args[1] == :*)
-        # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
-        var_idxs = []
-        var_types = []
-        scalar = 1.0
-        for i in 1:length(expr.args)
-            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
-                scalar *= expr.args[i]
-                continue
-            end
-            (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type[expr.args[i].args[2]])
-            if (expr.args[i].head == :call)
-                down_check, linear_lift_var = resolve_linear_term(expr.args[i], constr_id, m)
-                !down_check && return false, expr
-                push!(var_idxs, linear_lift_var.args[2])
-                push!(var_types, m.var_type[linear_lift_var.args[2]])
-                continue
-            end
-        end
-
-        (:Int in var_types) && error("Integer variable detected during expression parsing...")
-
-        if length(var_idxs) >= 2 && (:Bin in var_types) && (:Cont in var_types)
-
-            term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
-            cont_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Cont]
-            bin_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Bin]
-
-            if length(cont_var_idxs) == length(bin_var_idxs) == 1
-                # Case 1 : simple x * y case where x is binary and y is continous
-                if term_key in keys(m.nonlinear_terms)
-                    return true, lift_nl_term(m, term_key, constr_id, scalar)
-                else
-                    store_nl_term(m, term_key, var_idxs, :BINLIN, :*, binlin)
-                    return true, lift_nl_term(m, term_key, constr_id, scalar)
-                end
-            elseif length(bin_var_idxs) > 1 && length(cont_var_idxs) == 1
-
-                # Case 2 : x * ... * x * y only with one continuous variable
-                # Partial binary product extracted
-                binprod_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
-                binprod_term_expr = Expr(:call, :*)
-                for idx in bin_var_idxs push!(binprod_term_expr.args, Expr(:ref, :x, idx)) end
-                binprod_lift_term = expr_resolve_term_pattern(binprod_term_expr, constr_id, m)
-
-                # After lifting the binary variable products, reconstrcut binlin term
-                binlin_term_key = [Expr(:ref, :x, binprod_lift_term.args[2]), Expr(:ref, :x, cont_var_idxs[1])]
-                binlin_var_idxs = [binprod_lift_term.args[2], cont_var_idxs[1];]
-                if binlin_term_key in keys(m.nonlinear_terms)
-                    return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
-                else
-                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :BINLIN, :*, binlin)
-                    return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
-                end
-
-            elseif length(bin_var_idxs) == 1 && length(cont_var_idxs) > 1
-                # Case 3 : x * y * ... * y only with one binary variable
-                ml_term_key = [Expr(:ref, :x, idx) for idx in cont_var_idxs]
-                ml_term_expr = Expr(:call, :*)
-                for idx in cont_var_idxs push!(ml_term_expr.args, Expr(:ref, :x, idx)) end
-                ml_lift_term = expr_resolve_term_pattern(ml_term_expr, constr_id, m)
-
-                binlin_term_key = [Expr(:ref, :x, ml_lift_term.args[2]), Expr(:ref, :x, bin_var_idxs[1])]
-                binlin_var_idxs = [ml_lift_term.args[2], bin_var_idxs[1];]
-                if binlin_term_key in keys(m.nonlinear_terms)
-                    return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
-                else
-                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :BINLIN, :*, binlin)
-                    return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
-                end
-            else
-                # Case 3 : x * ... * x * y * ... * y
-                ml_term_key = [Expr(:ref, :x, idx) for idx in cont_var_idxs]
-                ml_term_expr = Expr(:call, :*)
-                for idx in cont_var_idxs push!(ml_term_expr.args, Expr(:ref, :x, idx)) end
-                ml_lift_term = expr_resolve_term_pattern(ml_term_expr, constr_id, m)
-
-                binprod_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
-                binprod_term_expr = Expr(:call, :*)
-                for idx in bin_var_idxs push!(binprod_term_expr.args, Expr(:ref, :x, idx)) end
-                binprod_lift_term = expr_resolve_term_pattern(binprod_term_expr, constr_id, m)
-
-                # Reconstruct binlin term
-                binlin_term_key = [Expr(:ref, :x, ml_lift_term.args[2]), Expr(:ref, :x, binprod_lift_term.args[2])]
-                binlin_var_idxs = [ml_lift_term.args[2], binprod_lift_term.args[2];]
-                if binlin_term_key in keys(m.nonlinear_terms)
-                    return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
-                else
-                    store_nl_term(m, binlin_term_key, binlin_var_idxs, :BINLIN, :*, binlin)
-                    return true, lift_nl_term(m, binlin_term_key, constr_id, scalar)
-                end
-            end
-
-        end
-    end
-
-    return false, expr
-end
-
-"""
-    Recognize bilinear terms
-    TODO: docstring
+    Recognize bilinear terms: x * y, where x and y are continous variables
 """
 function resolve_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
 
@@ -588,8 +670,7 @@ function resolve_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
 end
 
 """
-    Recognize multilinear terms
-    TODO: docstring
+    Recognize multilinear terms: x1 * x2 * .. * xN, where all x are continous variables
 """
 function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
 
@@ -615,13 +696,8 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         if length(var_idxs) > 2
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
-            if term_key in keys(m.nonlinear_terms)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            else
-
-                store_nl_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            end
+            term_key in keys(m.nonlinear_terms) || store_nl_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear)
+            return true, lift_nl_term(m, term_key, constr_id, scalar)
         end
     elseif (expr.args[1] == :^) && length(expr.args) == 3 # Pattern: (x)^(>2)
         var_idxs = []
@@ -645,12 +721,8 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         if length(var_idxs) == 1 && power_scalar > 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
-            if term_key in keys(m.nonlinear_terms)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            else
-                store_nl_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            end
+            term_key in keys(m.nonlinear_terms) || store_nl_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear)
+            return true, lift_nl_term(m, term_key, constr_id, scalar)
         end
     end
 
@@ -658,8 +730,7 @@ function resolve_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
 end
 
 """
-    Recognize monomial terms
-    TODO: docstring
+    Recognize monomial terms: x^2 or x * x, where x is continuous
 """
 function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
 
@@ -686,12 +757,8 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         if length(var_idxs) == 1 && power_scalar == 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:2]
-            if term_key in keys(m.nonlinear_terms)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            else
-                store_nl_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            end
+            term_key in keys(m.nonlinear_terms) || store_nl_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial)
+            return true, lift_nl_term(m, term_key, constr_id, scalar)
         end
     end
 
@@ -715,12 +782,8 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
         if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:2]
-            if term_key in keys(m.nonlinear_terms)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            else
-                store_nl_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            end
+            term_key in keys(m.nonlinear_terms) || store_nl_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial)
+            return true, lift_nl_term(m, term_key, constr_id, scalar)
         end
     end
 
@@ -728,8 +791,7 @@ function resolve_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
 end
 
 """
-    Recognize sin/cos terms
-    TODO: docstring
+    Recognize sin/cos terms: sin(x) / cos(x)
 """
 function resolve_sincos_term(expr, constr_id::Int, m::PODNonlinearModel)
 
@@ -755,13 +817,8 @@ function resolve_sincos_term(expr, constr_id::Int, m::PODNonlinearModel)
         end
         if length(var_idxs) == 1
             term_key = Dict(:operator=>operator, :scalar=>scalar, :vars=>var_idxs)
-            if term_key in keys(m.nonlinear_terms)
-                term_key in keys(m.nonlinear_terms)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            else
-                store_nl_term(m, term_key, var_idxs, term_key[:operator], term_key[:operator], sincos)
-                return true, lift_nl_term(m, term_key, constr_id, scalar)
-            end
+            term_key in keys(m.nonlinear_terms) || store_nl_term(m, term_key, var_idxs, term_key[:operator], term_key[:operator], sincos)
+            return true, lift_nl_term(m, term_key, constr_id, scalar)
         end
     end
 

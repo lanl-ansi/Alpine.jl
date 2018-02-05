@@ -532,22 +532,22 @@ end
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[8]), :(x[9])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[9]), :(x[10])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[10]), :(x[6])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[11]), :(x[1])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[13]), :(x[2])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[15]), :(x[3])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[17]), :(x[4])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[19]), :(x[5])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[1]), :(x[11])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[2]), :(x[13])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[3]), :(x[15])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[4]), :(x[17])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[5]), :(x[19])])
 
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[6])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[1])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[2])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[3])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[4])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[5])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[11])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[13])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[15])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[17])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[19])]][:nonlinear_type] == :BINLIN
     end
 
     @testset "Operator :: bmpl && binlin && binprod solve test II" begin
@@ -570,13 +570,13 @@ end
         nlk1 = Expr[:(x[9]), :(x[9])]
         nlk2 = Expr[:(x[10]), :(x[10])]
         nlk3 = Expr[:(x[8]), :(x[8])]
-        nlk4 = Expr[:(x[15]), :(x[3])]
+        nlk4 = Expr[:(x[3]), :(x[15])]
         nlk5 = Expr[:(x[6]), :(x[6])]
-        nlk6 = Expr[:(x[13]), :(x[2])]
-        nlk7 = Expr[:(x[17]), :(x[4])]
-        nlk8 = Expr[:(x[19]), :(x[5])]
+        nlk6 = Expr[:(x[2]), :(x[13])]
+        nlk7 = Expr[:(x[4]), :(x[17])]
+        nlk8 = Expr[:(x[5]), :(x[19])]
         nlk9 = Expr[:(x[7]), :(x[7])]
-        nlk10 = Expr[:(x[11]), :(x[1])]
+        nlk10 = Expr[:(x[1]), :(x[11])]
 
         @test m.internalModel.nonlinear_terms[nlk1][:id] == 7
         @test m.internalModel.nonlinear_terms[nlk2][:id] == 9
@@ -629,38 +629,27 @@ end
         @test m.objVal <= 13307.63749
         @test m.objBound >= 13307.63690
 
-        nlk1 = Expr[:(x[9]), :(x[9])]
-        nlk2 = Expr[:(x[10]), :(x[10])]
-        nlk3 = Expr[:(x[8]), :(x[8])]
-        nlk4 = Expr[:(x[15]), :(x[3])]
-        nlk5 = Expr[:(x[6]), :(x[6])]
-        nlk6 = Expr[:(x[13]), :(x[2])]
-        nlk7 = Expr[:(x[17]), :(x[4])]
-        nlk8 = Expr[:(x[19]), :(x[5])]
-        nlk9 = Expr[:(x[7]), :(x[7])]
-        nlk10 = Expr[:(x[11]), :(x[1])]
-
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[6]), :(x[7])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[7]), :(x[8])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[8]), :(x[9])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[9]), :(x[10])])
         @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[10]), :(x[6])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[11]), :(x[1])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[13]), :(x[2])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[15]), :(x[3])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[17]), :(x[4])])
-        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[19]), :(x[5])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[1]), :(x[11])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[2]), :(x[13])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[3]), :(x[15])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[4]), :(x[17])])
+        @test haskey(m.internalModel.nonlinear_terms, Expr[:(x[5]), :(x[19])])
 
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[6])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[1])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[2])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[3])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[4])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[19]), :(x[5])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[11])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[13])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[15])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[17])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[19])]][:nonlinear_type] == :BINLIN
     end
 end
 

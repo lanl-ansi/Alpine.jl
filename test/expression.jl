@@ -1444,16 +1444,18 @@ end
 
         @test length(keys(m.internalModel.nonlinear_terms)) == 12
 
+        @show keys(m.internalModel.nonlinear_terms)
+
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:y_idx] == 11
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:y_idx] == 12
         @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[6])]][:y_idx] == 13
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:y_idx] == 14
         @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[6])]][:y_idx] == 15
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:y_idx] == 16
-        @test m.internalModel.nonlinear_terms[Expr[:(x[16]), :(x[1])]][:y_idx] == 17
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[16])]][:y_idx] == 17
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[8])]][:y_idx] == 18
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[1])]][:y_idx] == 19
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[14])]][:y_idx] == 20
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[18])]][:y_idx] == 19
+        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[18])]][:y_idx] == 20
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:y_idx] == 21
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:y_idx] == 22
 
@@ -1463,10 +1465,10 @@ end
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :BINPROD
         @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[6])]][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonlinear_terms[Expr[:(x[16]), :(x[1])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[16])]][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[8])]][:nonlinear_type] == :MULTILINEAR
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[1])]][:nonlinear_type] == :BINLIN
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[14])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[18])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[18])]][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:nonlinear_type] == :BINPROD
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:nonlinear_type] == :MULTILINEAR
 
@@ -1486,6 +1488,7 @@ end
     end
 
     @testset "Operator :: bmpl && binlin && binprod with linear lifting and coefficients" begin
+
         test_solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(logLevel=0),
                                loglevel=100)
@@ -1493,6 +1496,8 @@ end
         m = bmpl_linearlifting(solver=test_solver)
 
         JuMP.build(m)
+
+        @show keys(m.internalModel.nonlinear_terms)
 
         lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
                                Pair{Symbol,Any}(:scalar, 0.0),
@@ -1541,7 +1546,7 @@ end
         nlk5 = Expr[:(x[1]), :(x[13])]
         nlk6 = Expr[:(x[1]), :(x[15])]
         nlk7 = Expr[:(x[2]), :(x[6])]
-        nlk8 = Expr[:(x[23]), :(x[24])]
+        nlk8 = Expr[:(x[24]), :(x[23])]
         nlk9 = Expr[:(x[1]), :(x[2])]
         nlk10 = Expr[:(x[2]), :(x[3])]
         nlk11 = Expr[:(x[20]), :(x[21])]
