@@ -7,7 +7,6 @@ using Compat
 include("const.jl")
 
 # Engine for High-level Algorithmic Control and User-interface
-include("algorithm.jl")
 include("solver.jl")
 
 # Engine for expression handling
@@ -15,6 +14,7 @@ include("nlexpr.jl")
 include("operators.jl")
 
 # Main Algorithmic Process
+include("algorithm.jl")
 include("presolve.jl")
 include("amp.jl")
 include("embedding.jl")

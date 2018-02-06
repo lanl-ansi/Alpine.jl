@@ -53,7 +53,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                 # else
                 elseif m.nonlinear_terms[bi][:nonlinear_type] == :BILINEAR
                     # Partitioning on left
-                    if (idx_a in m.var_disc_mip) && !(idx_b in m.var_disc_mip) && (part_cnt_b == 1)
+                    if (idx_a in m.disc_vars) && !(idx_b in m.disc_vars) && (part_cnt_b == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                         λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
@@ -63,7 +63,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Partitioning of right
-                    if !(idx_a in m.var_disc_mip) && (idx_b in m.var_disc_mip) && (part_cnt_a == 1)
+                    if !(idx_a in m.disc_vars) && (idx_b in m.disc_vars) && (part_cnt_a == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                         λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
@@ -73,7 +73,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Partitioning on both variables
-                    if (idx_a in m.var_disc_mip) && (idx_b in m.var_disc_mip)
+                    if (idx_a in m.disc_vars) && (idx_b in m.disc_vars)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
@@ -86,7 +86,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Error condition
-                    #if !(idx_a in m.var_disc_mip) && !(idx_b in m.var_disc_mip)
+                    #if !(idx_a in m.disc_vars) && !(idx_b in m.disc_vars)
                     #    error("Error case. At least one term should show up in discretization choices.")
                     #end
                 end

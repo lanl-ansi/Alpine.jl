@@ -46,8 +46,8 @@ function logging_summary(m::PODNonlinearModel)
         println("maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
         println("detected nonlinear terms = $(length(m.nonlinear_terms))")
-        println("number of variables involved in nonlinear terms = $(length(m.all_nonlinear_vars))")
-        println("number of selected variables to discretize = $(length(m.var_disc_mip))")
+        println("number of variables involved in nonlinear terms = $(length(m.candidate_disc_vars))")
+        println("number of selected variables to discretize = $(length(m.disc_vars))")
 
         for i in POD_C_NLTERMS
             cnt = length([1 for j in keys(m.nonlinear_terms) if m.nonlinear_terms[j][:nonlinear_type] == i])
@@ -89,6 +89,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     else
         UB_block = string(" ", string(m.logs[:obj][end]), " " ^ (b_len - length(string(m.logs[:obj][end]))))
     end
+    @show m.logs[:bound]
     LB_block = string(" ", round(m.logs[:bound][end],4), " " ^ (b_len - length(string(round(m.logs[:bound][end], 4)))))
     incumb_UB_block = string(" ", round(m.best_obj,4), " " ^ (b_len - length(string(round(m.best_obj, 4)))))
     incumb_LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))

@@ -22,6 +22,14 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
             amp_convexify_binlin(m, k, discretization)
         elseif nl_type == :BINPROD && !m.nonlinear_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
+        elseif nl_type == :BININT
+            error("No method implemented to relax BININT term")
+        elseif nl_type == :INTPROD
+            error("No method implemented to relax INTPROD term")
+        elseif nl_type == :INTLIN
+            error("No method implemented to relax INTLIN term")
+        elseif nl_type in [:sin, :cos]
+            error("No method implemented to relax sin/cos terms.")
         end
     end
 
@@ -52,11 +60,6 @@ function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, dis
     return λ, α
 end
 
-
-"""
-    TODO: docstring
-    This function redirect the bpml term to its right convexification
-"""
 function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict)
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
@@ -83,10 +86,6 @@ function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict
     return
 end
 
-"""
-    TODO: docstring
-    This function is very important
-"""
 function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
@@ -107,10 +106,6 @@ function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
     return β
 end
 
-"""
-    TODO: docstring
-    This function is dedicated to monomial & multilinear nonlinear terms.
-"""
 function amp_convhull_prepare(m::PODNonlinearModel, discretization::Dict, nonlinear_key::Any; monomial=false)
 
     counted_var = []
@@ -150,18 +145,11 @@ function amp_convhull_λ(m::PODNonlinearModel, nonlinear_key::Any, ml_indices::A
     return λ
 end
 
-"""
-    TODO: docstring
-    extreme value calculation method for monomial (simple)
-"""
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, monomial_index::Int, λ::Dict)
     λ[monomial_index][:vals] = [discretization[monomial_index][i]^2 for i in 1:length(discretization[monomial_index])]
     return λ
 end
 
-"""
-    Extreme value for gneral multilinear terms Efficient implementation
-"""
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, ml_indices::Any, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
 
     if level > length(dim)
@@ -185,7 +173,6 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
     return λ
 end
 
-# Process Binary Variables
 function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
     for i in ml_indices
@@ -207,7 +194,6 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::T
     return α
 end
 
-# Regular multilinear treatment
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
 
     # Adding λ constraints
@@ -226,7 +212,6 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     return
 end
 
-# Monomial Term Treatment
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
 
     partition_cnt = length(discretization[monomial_idx])-1

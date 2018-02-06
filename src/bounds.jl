@@ -126,7 +126,6 @@ function bounds_propagation(m::PODNonlinearModel)
     return
 end
 
-
 """
     resolve_var_bounds(m::PODNonlinearModel)
 
@@ -169,96 +168,6 @@ function resolve_var_bounds(m::PODNonlinearModel)
 end
 
 function resolve_inf_bounds(m::PODNonlinearModel)
-
-    return
-end
-
-function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
-
-    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
-    cnt = 0
-    bound = []
-    for var in k
-        cnt += 1
-        var_idx = var.args[2]
-        var_bounds = [m.l_var_tight[var_idx], m.u_var_tight[var_idx]]
-        if cnt == 1
-            bound = copy(var_bounds)
-        elseif cnt == 2
-            bound = bound * var_bounds'
-        else
-            bound = diag(bound) * var_bounds'
-        end
-    end
-    if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
-        m.l_var_tight[lifted_idx] = minimum(bound)
-    end
-    if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
-        m.u_var_tight[lifted_idx] = maximum(bound)
-    end
-
-    return
-end
-
-function basic_binprod_bounds(m::PODNonlinearModel, k::Any)
-
-    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
-    m.l_var_tight[lifted_idx] = 0
-    m.u_var_tight[lifted_idx] = 1
-
-    return
-end
-
-function basic_sincos_bounds(m::PODNonlinearModel, k::Any)
-
-    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
-    m.l_var_tight[lifted_idx] = -1  # TODO can be improved
-    m.u_var_tight[lifted_idx] = 1
-
-    return
-end
-
-function basic_binlin_bounds(m::PODNonlinearModel, k::Any)
-
-    lifted_idx = m.nonlinear_terms[k][:lifted_var_ref].args[2]
-
-    prod_idxs = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Cont]
-    @assert length(prod_idxs) == 1
-    lin_idx = prod_idxs[1]
-
-    if m.l_var_tight[lin_idx] > 0.0
-        m.l_var_tight[lifted_idx] = 0.0
-        m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
-    elseif m.u_var_tight[lin_idx] < 0.0
-        m.u_var_tight[lifted_idx] = 0.0
-        m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
-    else
-        m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
-        m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
-    end
-
-    return
-end
-
-function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms=nothing)
-
-    linear_terms == nothing ? linear_terms = m.linear_terms : linear_term = linear_terms
-
-    lifted_idx = linear_terms[k][:y_idx]
-    ub = 0.0
-    lb = 0.0
-    for j in linear_terms[k][:ref][:coef_var]
-        (j[1] > 0.0) ? ub += abs(j[1])*m.u_var_tight[j[2]] : ub -= abs(j[1])*m.l_var_tight[j[2]]
-        (j[1] > 0.0) ? lb += abs(j[1])*m.l_var_tight[j[2]] : lb -= abs(j[1])*m.u_var_tight[j[2]]
-    end
-    lb += linear_terms[k][:ref][:scalar]
-    ub += linear_terms[k][:ref][:scalar]
-    if lb > m.l_var_tight[lifted_idx] + m.tol
-        m.l_var_tight[lifted_idx] = lb
-    end
-    if ub < m.u_var_tight[lifted_idx] - m.tol
-        m.u_var_tight[lifted_idx] = ub
-    end
 
     return
 end
@@ -330,9 +239,9 @@ and the .discretization will be cleared with the tight bounds for basic McCormic
 """
 function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
 
-    for var in m.all_nonlinear_vars
+    for var in m.candidate_disc_vars
         if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
-            deleteat!(m.var_disc_mip, findfirst(m.var_disc_mip, var)) # Clean nonlinear_terms by deleting the info
+            deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonlinear_terms by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end
     end

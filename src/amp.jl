@@ -227,7 +227,7 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     branching && (discretization = deepcopy(discretization))
 
     # ? Perform discretization base on type of nonlinear terms ? #
-    for i in m.var_disc_mip
+    for i in m.disc_vars
         point = point_vec[i]                # Original Variable
         # @show i, point, discretization[i]
         if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin, :Int])  # DO not add partitions to discrete variables
@@ -295,7 +295,7 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
 
-    for i in m.var_disc_mip  # Only construct when discretized
+    for i in m.disc_vars  # Only construct when discretized
         lb_local = discretization[i][1]
         ub_local = discretization[i][end]
         distance = ub_local - lb_local

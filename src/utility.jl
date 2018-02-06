@@ -238,7 +238,7 @@ function fix_domains(m::PODNonlinearModel)
     l_var = copy(m.l_var_orig)
     u_var = copy(m.u_var_orig)
     for i in 1:m.num_var_orig
-        if i in m.var_disc_mip
+        if i in m.disc_vars
             point = m.best_bound_sol[i]
             for j in 1:length(m.discretization[i])
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
@@ -293,16 +293,16 @@ function pick_disc_vars(m::PODNonlinearModel)
 
     if isa(m.disc_var_pick, Function)
         eval(m.disc_var_pick)(m)
-        (length(m.var_disc_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+        (length(m.disc_vars) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.disc_var_pick, Int) || isa(m.disc_var_pick, String)
         if m.disc_var_pick == 0
             select_all_nlvar(m)
         elseif m.disc_var_pick == 1
             min_vertex_cover(m)
         elseif m.disc_var_pick == 2
-            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         elseif m.disc_var_pick == 3 # Initial
-            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
@@ -339,7 +339,7 @@ function select_all_nlvar(m::PODNonlinearModel)
     end
     nodes = collect(nodes)
     m.num_var_disc_mip = length(nodes)
-    m.var_disc_mip = nodes
+    m.disc_vars = nodes
 
     return
 end
@@ -387,7 +387,7 @@ end
 """
 function update_discretization_var_set(m::PODNonlinearModel)
 
-    length(m.all_nonlinear_vars) <= 15 && return   # Separation
+    length(m.candidate_disc_vars) <= 15 && return   # Separation
 
     # If no feasible solution found, do NOT update
     if m.status[:feasible_solution] != :Detected
@@ -395,7 +395,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
         return
     end
 
-	var_idxs = copy(m.all_nonlinear_vars)
+	var_idxs = copy(m.candidate_disc_vars)
     var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonlinear_terms)))
 
     for i in 1:m.num_var_orig       # Original Variables
@@ -424,7 +424,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
     distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    (m.loglevel > 100) && println("updated partition var selection => $(m.var_disc_mip)")
+    (m.loglevel > 100) && println("updated partition var selection => $(m.disc_vars)")
     return
 end
 
@@ -482,7 +482,7 @@ function min_vertex_cover(m::PODNonlinearModel)
 
     # Getting required information
     m.num_var_disc_mip = Int(sum(xVal))
-    m.var_disc_mip = [i for i in nodes if xVal[i] > 1e-5]
+    m.disc_vars = [i for i in nodes if xVal[i] > 1e-5]
 
     return
 end
@@ -494,11 +494,11 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     nodes, arcs = collect_var_graph(m)
 
     # A little bit redundency before
-    disvec = [distance[i] for i in keys(distance) if i in m.all_nonlinear_vars]
+    disvec = [distance[i] for i in keys(distance) if i in m.candidate_disc_vars]
     disvec = abs.(disvec[disvec .> 0.0])
     isempty(disvec) ? heavy = 1.0 : heavy = 1/minimum(disvec)
     weights = Dict()
-    for i in m.all_nonlinear_vars
+    for i in m.candidate_disc_vars
         isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
         (m.loglevel > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
     end
@@ -516,7 +516,7 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     xVal = getvalue(x)
     m.num_var_disc_mip = Int(sum(xVal))
-    m.var_disc_mip = [i for i in nodes if xVal[i] > 0]
-    (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_disc_mip)) : $(m.var_disc_mip)")
+    m.disc_vars = [i for i in nodes if xVal[i] > 0]
+    (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
     return
 end
