@@ -95,8 +95,8 @@ function store_nonlinear_term(m::PODNonlinearModel, nl_key::Any, var_idxs::Any, 
 
     m.term_seq[nl_cnt+l_cnt+1] = nl_key                              # Assistive information
 
-    push!(m.var_type, :Cont)  # TODO check if this replacement is good since additional constraints should be able to sufficiently constraint the type
-    # push!(m.var_type, m.nonlinear_terms[nl_key][:y_type])            # Keep track of the lifted var type
+    # push!(m.var_type, :Cont)  # TODO check if this replacement is good since additional constraints should be able to sufficiently constraint the type
+    push!(m.var_type, m.nonlinear_terms[nl_key][:y_type])            # Keep track of the lifted var type
     m.loglevel > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
