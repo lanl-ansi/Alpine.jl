@@ -22,13 +22,13 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
             amp_convexify_binlin(m, k, discretization)
         elseif nl_type == :BINPROD && !m.nonlinear_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
-        elseif nl_type == :BININT
+        elseif nl_type == :BININT && !m.nonlinear_terms[k][:convexified]
             error("No method implemented to relax BININT term")
-        elseif nl_type == :INTPROD
+        elseif nl_type == :INTPROD && !m.nonlinear_terms[k][:convexified]
             error("No method implemented to relax INTPROD term")
-        elseif nl_type == :INTLIN
+        elseif nl_type == :INTLIN && !m.nonlinear_terms[k][:convexified]
             error("No method implemented to relax INTLIN term")
-        elseif nl_type in [:sin, :cos]
+        elseif nl_type in [:sin, :cos] && !m.nonlinear_terms[l][:convexified]
             error("No method implemented to relax sin/cos terms.")
         end
     end
@@ -37,6 +37,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
 end
 
 function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
@@ -49,6 +50,7 @@ function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, 
 end
 
 function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k, monomial=true)
@@ -304,9 +306,9 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
         return
     elseif m.convhull_formulation == "mini"
         for j in 1:min(partition_cnt, 1) # Constraint cluster of α >= f(λ)
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1;], dim)
             @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [lambda_cnt;], dim)
             @constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
         end
         for j in 1:partition_cnt         # Constriant cluster of α <= f(λ)

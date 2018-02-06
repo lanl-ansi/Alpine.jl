@@ -844,13 +844,8 @@ end
                                loglevel=100)
 
         m = castro4m2(solver=test_solver)
-        e = nothing
-        try
-            solve(m)
-        catch e
-            println("Expected error.")
-        end
-        @test e != nothing
+        status = solve(m)
+        @test status == :UserLimits
         @test m.internalModel.status[:local_solve] == :Error
 
     end
@@ -876,19 +871,16 @@ end
 end
 
 @testset "Algorithm Special Test" begin
+
     @testset "Convex Model Solve" begin
         test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                               mip_solver=CbcSolver(logLevel=0),
+                               mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                                maxiter=1,
                                colorful_pod="solarized",
                                loglevel=100)
         m = convex_solve(solver=test_solver)
-        e = nothing
-        try
-            solve(m)
-        catch e
-            @test e != nothing
-        end
+        status = solve(m)
+        @test status == :Optimal
     end
 
     @testset "Uniform partitioning" begin

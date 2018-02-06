@@ -31,6 +31,7 @@ function presolve(m::PODNonlinearModel)
         (m.presolve_bt) && init_disc(m)      # Reinitialize discretization dictionary on tight bounds
         (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
+        m.loglevel > 0 && println("Presolve ended.")
     elseif m.status[:local_solve] in status_reroute
         (m.loglevel > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
@@ -46,18 +47,17 @@ function presolve(m::PODNonlinearModel)
             (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
             add_partition(m, use_solution=m.best_bound_sol)
         end
+        m.loglevel > 0 && println("Presolve ended.")
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
-        error("NLP solver returns $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this.")
+        warn("Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this.")
     else
-        error("NLP local solve is $(m.status[:local_solve]) - quitting solve.")
-        quit()
+        warn("Presolve ends with local solver yielding $(m.status[:local_solve]).")
     end
 
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
-    (m.loglevel > 0) && println("Presolve ended.")
     (m.loglevel > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
 
     return
@@ -201,10 +201,12 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         m.status[:local_solve] = :Infeasible
         return
     elseif local_solve_nlp_status == :Unbounded
+        push!(m.logs[:obj], "-")
         m.status[:local_solve] = :Unbounded
         presolve == true ? warn("[PRESOLVE] NLP local solve is unbounded.") : warn("[LOCAL SOLVE] NLP local solve is unbounded.")
         return
     else
+        push!(m.logs[:obj], "-")
         m.status[:local_solve] = :Error
 		presolve == true ? warn("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).") : warn("[LOCAL SOLVE] NLP local solve failure.")
         return

@@ -124,35 +124,10 @@ end
 
 function collect_nonlinear_vars(m::PODNonlinearModel)
 
+    # Walk through all nonlinear terms
 	for i in keys(m.nonlinear_terms)
-		if m.nonlinear_terms[i][:nonlinear_type] in POD_C_MONOMIAL
-			for var in i
-				@assert isa(var.args[2], Int)
-				var.args[2] in m.candidate_disc_vars || push!(m.candidate_disc_vars, var.args[2])
-			end
-		elseif m.nonlinear_terms[i][:nonlinear_type] in POD_C_TRIGONOMETRIC
-			for var in m.nonlinear_terms[i][:var_idxs]
-				@assert isa(var, Int)
-				var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
-			end
-		elseif m.nonlinear_terms[i][:nonlinear_type] == :BININT
-			continue
-		elseif m.nonlinear_terms[i][:nonlinear_type] == :BINLIN
-			continue
-		elseif m.nonlinear_terms[i][:nonlinear_type] == :INTLIN
-			for var in m.nonlinear_terms[i][:var_idxs]
-				@assert isa(var, Int)
-				var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
-			end
-		elseif m.nonlinear_terms[i][:nonlinear_type] == :BINPROD
-			continue
-		elseif m.nonlinear_terms[i][:nonlinear_type] == :INTPROD
-			for var in m.nonlinear_terms[i][:var_idxs]
-				@assert isa(var, Int)
-				var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
-			end
-		end
-	end
+        m.nonlinear_terms[i][:discvar_collector](m, i)
+    end
 
 	return
 end

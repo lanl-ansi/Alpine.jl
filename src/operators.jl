@@ -101,7 +101,7 @@ function store_nonlinear_term(m::PODNonlinearModel, nl_key::Any, var_idxs::Any, 
     return y_idx
 end
 
-function store_linear_term(m::PODNonlinearModel, term_key, expr)
+function store_linear_term(m::PODNonlinearModel, term_key::Any, expr::Any)#, bound_resolver::Function)
 
     l_cnt = length(keys(m.linear_terms))
     nl_cnt = length(keys(m.nonlinear_terms))
@@ -118,7 +118,8 @@ function store_linear_term(m::PODNonlinearModel, term_key, expr)
                                     :y_type => resolve_lifted_var_type([m.var_type[k[2]] for k in term_key[:coef_var]], :+),
                                     :evaluator => linear,
                                     :lifted_constr_ref => lifted_constr_ref,
-                                    :constr_id => Set())
+                                    :constr_id => Set(),
+                                    :bound_resolver => nothing)
 
     m.term_seq[l_cnt+nl_cnt + 1] = term_key
     push!(m.var_type, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
@@ -895,9 +896,9 @@ function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
 end
 
 function collect_monomial_discvar(m::PODNonlinearModel, k::Any)
-    for var in m.nonlinear_terms[k][:var_idxs]
-        @assert isa(var, Int)
-        var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
+    for var in k
+        @assert isa(var.args[2], Int)
+        var.args[2] in m.candidate_disc_vars || push!(m.candidate_disc_vars, var.args[2])
     end
     return
 end

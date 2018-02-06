@@ -245,7 +245,7 @@
 
         @test status == :UserLimits
         @test m.objVal <= 228.7810
-        @test isapprox(m.objBound, 127.38069214825349; atol=1e-3)
+        @test m.objBound >= 127.2135
 
         @test length(m.internalModel.candidate_disc_vars) == 24
         @test Set(m.internalModel.candidate_disc_vars) == Set([26, 27, 28, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 122, 123, 124])
