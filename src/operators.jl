@@ -332,12 +332,13 @@ function detect_discretemulti_term(expr, constr_id::Int, m::PODNonlinearModel)
         if length(int_var_idxs) > 1
             ip_term_key = [Expr(:ref, :x, idx) for idx in int_var_idxs]
             ip_term_expr = Expr(:call, :*)
-            for idx in cont_var_idxs
+            for idx in int_var_idxs
                 push!(ip_term_expr.args, Expr(:ref, :x, idx))
             end
             ip_lift_term = expr_resolve_term_pattern(ip_term_expr, constr_id, m)
+            ip_idx = ip_lift_term.args[2]
         else
-            isempty(int_var_idxs) ? ip_idx = -1 : ip_idx = ip_var_idxs[1]
+            isempty(int_var_idxs) ? ip_idx = -1 : ip_idx = int_var_idxs[1]
         end
 
         if bp_idx < 0 # intlin term if no binary variable
@@ -631,7 +632,7 @@ function collect_intprod_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     for var in m.nonlinear_terms[k][:var_idxs]
         @assert isa(var, Int)
         if var_bowl == nothing
-            var in candidate_disc_vars || push!(m.candidate_disc_vars, var)
+            var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
         else
             var in var_bowl || push!(var_bowl, var)
         end
