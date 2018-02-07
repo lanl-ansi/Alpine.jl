@@ -435,37 +435,34 @@ function build_discvar_graph(m::PODNonlinearModel)
     arcs = Set()
 
     for k in keys(m.nonlinear_terms)
+        m.nonlinear_terms[k][:discvar_collector](m, k, var_bowl=nodes)
+    end
+
+    for k in keys(m.nonlinear_terms)
         if m.nonlinear_terms[k][:nonlinear_type] == :BILINEAR
             arc = []
             for i in k
                 @assert isa(i.args[2], Int)
-                push!(nodes, i.args[2])
                 push!(arc, i.args[2])
             end
             push!(arcs, sort(arc))
         elseif m.nonlinear_terms[k][:nonlinear_type] == :MONOMIAL
             @assert isa(m.nonlinear_terms[k][:var_idxs][1], Int)
-            push!(nodes, m.nonlinear_terms[k][:var_idxs][1])
             push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1];])
         elseif m.nonlinear_terms[k][:nonlinear_type] == :MULTILINEAR
             var_idxs = m.nonlinear_terms[k][:var_idxs]
             for i in 1:length(var_idxs)
-                push!(nodes, var_idxs[i])
                 for j in 1:length(var_idxs)
                     i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
                 end
             end
         elseif m.nonlinear_terms[k][:nonlinear_type] == :INTLIN
-            for i in m.nonlinear_terms[k][:var_idxs]
-                push!(nodes, i)
-            end
             @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
             var_idxs = copy(m.nonlinear_terms[k][:var_idxs])
             push!(arc, sort(var_idxs))
         elseif m.nonlinear_terms[k][:nonlinear_type] == :INTPROD
             var_idxs = m.nonlinear_terms[k][:var_idxs]
             for i in 1:length(var_idxs)
-                push!(nodes, var_idxs[i])
                 for j in 1:length(var_idxs)
                     i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
                 end
@@ -483,43 +480,6 @@ function build_discvar_graph(m::PODNonlinearModel)
     end
 
     @assert length(nodes) == length(m.candidate_disc_vars)
-
-    nodes = collect(nodes)
-    arcs = collect(arcs)
-
-    return nodes, arcs
-end
-
-
-function _build_discvar_graph(m::PODNonlinearModel)
-
-    # Collect the information of nonlinear terms in terms of arcs and nodes
-    nodes = Set()
-    arcs = Set()
-
-    for k in keys(m.nonlinear_terms)
-        if m.nonlinear_terms[k][:nonlinear_type] == :BILINEAR
-            arc = []
-            for i in k
-                @assert isa(i.args[2], Int)
-                push!(nodes, i.args[2])
-                push!(arc, i.args[2])
-            end
-            push!(arcs, sort(arc))
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :MONOMIAL
-            @assert isa(m.nonlinear_terms[k][:var_idxs][1], Int)
-            push!(nodes, m.nonlinear_terms[k][:var_idxs][1])
-            push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1]])
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :MULTILINEAR
-            for i in 1:length(k)
-                @assert isa(k[i].args[2], Int)
-                push!(nodes, k[i].args[2])
-                for j in 1:length(k)
-                    i != j && push!(arcs, sort([k[i].args[2], k[j].args[2]]))
-                end
-            end
-        end
-    end
 
     nodes = collect(nodes)
     arcs = collect(arcs)

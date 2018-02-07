@@ -89,7 +89,7 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)])
 
     for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
-        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
+        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])  # This is a tricky step, not enforcing category of lifted variables is able to improve performance
         (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
         (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))     # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
     end

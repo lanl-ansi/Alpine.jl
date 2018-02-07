@@ -415,16 +415,20 @@ function basic_intlin_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function collect_binlin_discvar(m::PODNonlinearModel, k::Any)
+function collect_binlin_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     # Exact linearization exist
     return
 end
 
-function collect_intlin_discvar(m::PODNonlinearModel, k::Any)
+function collect_intlin_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
 
     for i in m.nonlinear_terms[k][:var_idxs]
         @assert isa(i, Int)
-        i in m.candidate_disc_vars || push!(m.candidate_disc_vars, i)
+        if bowl == nothing
+            i in m.candidate_disc_vars || push!(m.candidate_disc_vars, i)
+        else
+            i in var_bowl || push!(var_bowl, i)
+        end
     end
 
     return
@@ -529,7 +533,7 @@ function basic_binint_bound(m::PODNonlinearModel, k::Any)
     return
 end
 
-function collect_binint_discvar(m::PODNonlinearModel, k::Any)
+function collect_binint_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     # Exact linearization exist
     return
 end
@@ -623,10 +627,14 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function collect_intprod_discvar(m::PODNonlinearModel, k::Any)
+function collect_intprod_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     for var in m.nonlinear_terms[k][:var_idxs]
         @assert isa(var, Int)
-        var in candidate_disc_vars || push!(m.candidate_disc_vars, var)
+        if var_bowl == nothing
+            var in candidate_disc_vars || push!(m.candidate_disc_vars, var)
+        else
+            var in var_bowl || push!(var_bowl, var)
+        end
     end
     return
 end
@@ -702,7 +710,7 @@ function basic_binprod_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function collect_binprod_discvar(m::PODNonlinearModel, k::Any)
+function collect_binprod_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     # Exact linearization exists
     return
 end
@@ -895,10 +903,14 @@ function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function collect_monomial_discvar(m::PODNonlinearModel, k::Any)
+function collect_monomial_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     for var in k
         @assert isa(var.args[2], Int)
-        var.args[2] in m.candidate_disc_vars || push!(m.candidate_disc_vars, var.args[2])
+        if var_bowl == nothing
+            var.args[2] in m.candidate_disc_vars || push!(m.candidate_disc_vars, var.args[2])
+        else
+            var.args[2] in var_bowl || push!(var_bowl, var.args[2])
+        end
     end
     return
 end
@@ -948,10 +960,14 @@ function basic_sincos_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function collect_sincos_discvar(m::PODNonlinearModel, k::Any)
+function collect_sincos_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     for var in m.nonlinear_terms[k][:var_idxs]
         @assert isa(var, Int)
-        var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
+        if var_bowl == nothing
+            var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
+        else
+            var in var_bowl || push!(var_bowl, var)
+        end
     end
     return
 end
