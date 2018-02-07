@@ -9,7 +9,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Variable holders
     λ = Dict()  # Extreme points and multipliers
     α = Dict()  # Partitioning Variables
-    β = Dict()  # Lifted variables for further
+    β = Dict()  # Lifted variables for exact formulation
 
     # Construct λ variable space
     for k in keys(m.nonlinear_terms)
@@ -19,24 +19,79 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         elseif nl_type == :MONOMIAL && !m.nonlinear_terms[k][:convexified]
             λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
         elseif nl_type == :BINLIN && !m.nonlinear_terms[k][:convexified]
-            amp_convexify_binlin(m, k, discretization)
+            β = amp_convexify_binlin(m, k, β)
         elseif nl_type == :BINPROD && !m.nonlinear_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
-        elseif nl_type == :BININT && !m.nonlinear_terms[k][:convexified]
-            error("No method implemented to relax BININT term")
         elseif nl_type == :INTPROD && !m.nonlinear_terms[k][:convexified]
-            error("No method implemented to relax INTPROD term")
+            λ, α = amp_convexify_intprod(m, k, λ, α, discretization)
+        elseif nl_type == :BININT && !m.nonlinear_terms[k][:convexified]
+            β = amp_convexify_binint(m, k, β)
         elseif nl_type == :INTLIN && !m.nonlinear_terms[k][:convexified]
-            error("No method implemented to relax INTLIN term")
+            λ, α = amp_convexify_intlin(m, k, λ, α, discretization)
         elseif nl_type in [:sin, :cos] && !m.nonlinear_terms[l][:convexified]
-            error("No method implemented to relax sin/cos terms.")
+            β = amp_convexify_sincos(m, k, β)
         end
     end
 
     return
 end
 
-function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+function amp_convexify_intprod(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+
+    error("No method implemented to relax INTPROD term")
+
+    return λ, α
+end
+
+function amp_convexify_binint(m::PODNonlinearModel, k::Any, β::Dict)
+
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
+    @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
+
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+
+    if haskey(β, lift_idx)
+        return β
+    else
+        β[lift_idx] = Variable(m.model_mip, lift_idx)
+    end
+
+    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Bin]
+    int_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Int]
+
+    @assert length(bin_idx) == length(int_idx) == 1
+
+    bin_idx = bin_idx[1]
+    cont_idx = cont_idx[1]
+
+    mccormick_binlin(m.model_mip, Variable(m.model_mip, lift_idx),
+        Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
+        m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
+
+    return β
+end
+
+function amp_convexify_intlin(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+
+    error("No method implemented to relax INTLIN term")
+
+    return λ, α
+end
+
+function amp_convexify_sincos(m::PODNonlinearModel, k::Any, β::Dict)
+
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+    if haskey(β, lift_idx)
+        return β
+    else
+        error("No method implemented to relax INTPROD term")
+    end
+
+    return β
+end
+
+function amp_convexify_multilinear(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
@@ -49,7 +104,7 @@ function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, 
     return λ, α
 end
 
-function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+function amp_convexify_monomial(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
@@ -62,17 +117,24 @@ function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, dis
     return λ, α
 end
 
-function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict)
+function amp_convexify_binlin(m::PODNonlinearModel, k::Any, β::Dict)
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
+
     lift_idx = m.nonlinear_terms[k][:y_idx]
+
+    if haskey(β, lift_idx)
+        return β
+    else
+        β[lift_idx] = Variable(m.model_mip, lift_idx)
+    end
+
     bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Bin]
     cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Cont]
 
-    @assert length(bin_idx) == 1
-    @assert length(cont_idx) == 1
+    @assert length(bin_idx) == length(cont_idx) == 1
 
     bin_idx = bin_idx[1]
     cont_idx = cont_idx[1]
@@ -81,21 +143,18 @@ function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict
         Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
         m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
 
-    # mccormick(m.model_mip, Variable(m.model_mip, lift_idx),
-    #     Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
-    #     0, 1, m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
-
-    return
+    return β
 end
 
-function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
+function amp_convexify_binprod(m::PODNonlinearModel, k::Any, β::Dict)
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
-    if haskey(β, m.nonlinear_terms[k][:var_idxs])
-        return β
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+    if haskey(β, lift_idx)
+        return β    # Already constructed
     else
-        β[m.nonlinear_terms[k][:var_idxs]] = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
+        β[lift_idx] = Variable(m.model_mip, lift_idx)
     end
 
     z = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])

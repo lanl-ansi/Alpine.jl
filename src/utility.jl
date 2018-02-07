@@ -428,14 +428,75 @@ function update_discretization_var_set(m::PODNonlinearModel)
     return
 end
 
-"""
-    Dedicated for bilinear info
-"""
-function collect_var_graph(m::PODNonlinearModel)
+function build_discvar_graph(m::PODNonlinearModel)
 
     # Collect the information of nonlinear terms in terms of arcs and nodes
     nodes = Set()
     arcs = Set()
+
+    for k in keys(m.nonlinear_terms)
+        if m.nonlinear_terms[k][:nonlinear_type] == :BILINEAR
+            arc = []
+            for i in k
+                @assert isa(i.args[2], Int)
+                push!(nodes, i.args[2])
+                push!(arc, i.args[2])
+            end
+            push!(arcs, sort(arc))
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :MONOMIAL
+            @assert isa(m.nonlinear_terms[k][:var_idxs][1], Int)
+            push!(nodes, m.nonlinear_terms[k][:var_idxs][1])
+            push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1];])
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :MULTILINEAR
+            var_idxs = m.nonlinear_terms[k][:var_idxs]
+            for i in 1:length(var_idxs)
+                push!(nodes, var_idxs[i])
+                for j in 1:length(var_idxs)
+                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
+                end
+            end
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :INTLIN
+            for i in m.nonlinear_terms[k][:var_idxs]
+                push!(nodes, i)
+            end
+            @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
+            var_idxs = copy(m.nonlinear_terms[k][:var_idxs])
+            push!(arc, sort(var_idxs))
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :INTPROD
+            var_idxs = m.nonlinear_terms[k][:var_idxs]
+            for i in 1:length(var_idxs)
+                push!(nodes, var_idxs[i])
+                for j in 1:length(var_idxs)
+                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
+                end
+            end
+        elseif m.nonlinear_terms[k][:nonlinear_type] in [:cos, :sin]
+            @assert length(m.nonlinear_terms[k][:var_idxs]) == 1
+            var_idx = m.nonlinear_terms[k][:var_idxs][1]
+            @assert isa(var_idx, Int)
+            push!(arcs, [var_idx, var_idx;])
+        elseif m.nonlinear_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
+            continue
+        else
+            error("[EXCEPTION] Unexpected nonlinear term when building discvar graph.")
+        end
+    end
+
+    @assert length(nodes) == length(m.candidate_disc_vars)
+
+    nodes = collect(nodes)
+    arcs = collect(arcs)
+
+    return nodes, arcs
+end
+
+
+function _build_discvar_graph(m::PODNonlinearModel)
+
+    # Collect the information of nonlinear terms in terms of arcs and nodes
+    nodes = Set()
+    arcs = Set()
+
     for k in keys(m.nonlinear_terms)
         if m.nonlinear_terms[k][:nonlinear_type] == :BILINEAR
             arc = []
@@ -459,6 +520,7 @@ function collect_var_graph(m::PODNonlinearModel)
             end
         end
     end
+
     nodes = collect(nodes)
     arcs = collect(arcs)
 
@@ -467,13 +529,13 @@ end
 
 function min_vertex_cover(m::PODNonlinearModel)
 
-    nodes, arcs = collect_var_graph(m)
+    nodes, arcs = build_discvar_graph(m)
 
     # Set up minimum vertex cover problem
     minvertex = Model(solver=m.mip_solver)
     @variable(minvertex, x[nodes], Bin)
-    for arc in arcs
-        @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
+    for a in arcs
+        @constraint(minvertex, x[a[1]] + x[a[2]] >= 1)
     end
     @objective(minvertex, Min, sum(x))
 
@@ -491,7 +553,7 @@ end
 function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     # Collect the graph information
-    nodes, arcs = collect_var_graph(m)
+    nodes, arcs = build_discvar_graph(m)
 
     # A little bit redundency before
     disvec = [distance[i] for i in keys(distance) if i in m.candidate_disc_vars]
