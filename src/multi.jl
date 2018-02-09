@@ -87,7 +87,7 @@ function amp_convexify_sincos(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, 
 
     ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
     λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
-    λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
+    # Follow the template populate_convhull_extreme_values to build a specifc extreme value calculator
     α = amp_convhull_α(m, ml_indices, α, dim, discretization)
     amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
 
