@@ -30,7 +30,7 @@ function update_opt_gap(m::PODNonlinearModel)
         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
     end
 
-    # absoluate or anyother bound calculation shows here..
+    # absoluate or any other bound calculation shows here..
     return
 end
 
@@ -77,16 +77,16 @@ function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
 end
 
 """
-    initialize_discretization(m::PODNonlinearModel)
+    init_disc(m::PODNonlinearModel)
 
 This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
 The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
 """
-function initialize_discretization(m::PODNonlinearModel; kwargs...)
+function init_disc(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
-    for var in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
+    for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         lb = m.l_var_tight[var]
         ub = m.u_var_tight[var]
         m.discretization[var] = [lb, ub]
@@ -115,7 +115,7 @@ function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vect
         var_discretization[var] = [lb, ub]
     end
 
-    total_var_cnt = m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip
+    total_var_cnt = m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip
     orig_var_cnt = m.num_var_orig
     if length(lbs) == total_var_cnt
         for var in (1+orig_var_cnt):total_var_cnt
@@ -183,7 +183,7 @@ An utility function used to recongize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::PODNonlinearModel)
 
-    if string(m.mip_solver)[1:6] == "Gurobi"
+    if m.mip_solver_id == "Gurobi"
         push!(m.mip_solver.options, (:BestBdStop, stopbound))
         # Calculation of the bound
         if m.sense_orig == :Min
@@ -195,15 +195,13 @@ function update_boundstop_options(m::PODNonlinearModel)
         for i in 1:length(m.mip_solver.options)
             if m.mip_solver.options[i][1] == :BestBdStop
                 deleteat!(m.mip_solver.options, i)
-                if string(m.mip_solver)[1:6] == "Gurobi"
+                if m.mip_solver_id == "Gurobi"
                     push!(m.mip_solver.options, (:BestBdStop, stopbound))
                 else
                     return
                 end
             end
         end
-    else
-        return
     end
 
     return
@@ -235,13 +233,13 @@ This function is used to fix variables to certain domains during the local solve
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
 """
-function fix_domains(m::PODNonlinearModel; kwargs...)
+function fix_domains(m::PODNonlinearModel)
 
     l_var = copy(m.l_var_orig)
     u_var = copy(m.u_var_orig)
     for i in 1:m.num_var_orig
-        if i in m.var_disc_mip
-            point = m.sol_incumb_lb[i]
+        if i in m.disc_vars
+            point = m.best_bound_sol[i]
             for j in 1:length(m.discretization[i])
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
                     @assert j < length(m.discretization[i])
@@ -251,8 +249,8 @@ function fix_domains(m::PODNonlinearModel; kwargs...)
                 end
             end
         elseif m.var_type_orig[i] == :Bin || m.var_type_orig[i] == :Int
-            l_var[i] = round(m.sol_incumb_lb[i])
-            u_var[i] = round(m.sol_incumb_lb[i])
+            l_var[i] = round(m.best_bound_sol[i])
+            u_var[i] = round(m.best_bound_sol[i])
         end
     end
 
@@ -278,7 +276,7 @@ function convexification_exam(m::PODNonlinearModel)
 end
 
 """
-    pick_vars_discretization(m::PODNonlinearModel)
+    pick_disc_vars(m::PODNonlinearModel)
 
 This function helps pick the variables for discretization. The method chosen depends on user-inputs.
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
@@ -291,20 +289,20 @@ For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is require
 For more information, read more details at [Hacking Solver](@ref).
 
 """
-function pick_vars_discretization(m::PODNonlinearModel)
+function pick_disc_vars(m::PODNonlinearModel)
 
     if isa(m.disc_var_pick, Function)
         eval(m.disc_var_pick)(m)
-        (length(m.var_disc_mip) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+        (length(m.disc_vars) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.disc_var_pick, Int) || isa(m.disc_var_pick, String)
         if m.disc_var_pick == 0
             select_all_nlvar(m)
         elseif m.disc_var_pick == 1
             min_vertex_cover(m)
         elseif m.disc_var_pick == 2
-            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         elseif m.disc_var_pick == 3 # Initial
-            (length(m.all_nonlinear_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
         else
             error("Unsupported default indicator for picking variables for discretization")
         end
@@ -322,17 +320,17 @@ end
 A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
 
 """
-function select_all_nlvar(m::PODNonlinearModel; kwargs...)
+function select_all_nlvar(m::PODNonlinearModel)
 
     nodes = Set()
     for k in keys(m.nonlinear_terms)
         # Assumption Max cover is always safe
-        if m.nonlinear_terms[k][:nonlinear_type] in [:monomial, :bilinear, :multilinear]
+        if m.nonlinear_terms[k][:nonlinear_type] in POD_C_MONOMIAL
             for i in k
                 @assert isa(i.args[2], Int)
                 push!(nodes, i.args[2])
             end
-        elseif m.nonlinear_terms[k][:nonlinear_type] in [:sin, :cos]
+        elseif m.nonlinear_terms[k][:nonlinear_type] in POD_C_TRIGONOMETRIC
             for i in k[:vars]
                 @assert isa(i, Int)
                 push!(nodes, i)
@@ -341,7 +339,7 @@ function select_all_nlvar(m::PODNonlinearModel; kwargs...)
     end
     nodes = collect(nodes)
     m.num_var_disc_mip = length(nodes)
-    m.var_disc_mip = nodes
+    m.disc_vars = nodes
 
     return
 end
@@ -389,7 +387,7 @@ end
 """
 function update_discretization_var_set(m::PODNonlinearModel)
 
-    length(m.all_nonlinear_vars) <= 15 && return   # Separation
+    length(m.candidate_disc_vars) <= 15 && return   # Separation
 
     # If no feasible solution found, do NOT update
     if m.status[:feasible_solution] != :Detected
@@ -397,7 +395,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
         return
     end
 
-	var_idxs = copy(m.all_nonlinear_vars)
+	var_idxs = copy(m.candidate_disc_vars)
     var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonlinear_terms)))
 
     for i in 1:m.num_var_orig       # Original Variables
@@ -426,41 +424,63 @@ function update_discretization_var_set(m::PODNonlinearModel)
     distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    (m.log > 100) && println("updated partition var selection => $(m.var_disc_mip)")
+    (m.loglevel > 100) && println("updated partition var selection => $(m.disc_vars)")
     return
 end
 
-"""
-    Dedicated for bilinear info
-"""
-function collect_var_graph(m::PODNonlinearModel)
+function build_discvar_graph(m::PODNonlinearModel)
 
     # Collect the information of nonlinear terms in terms of arcs and nodes
     nodes = Set()
     arcs = Set()
+
     for k in keys(m.nonlinear_terms)
-        if m.nonlinear_terms[k][:nonlinear_type] == :bilinear
+        m.nonlinear_terms[k][:discvar_collector](m, k, var_bowl=nodes)
+    end
+
+    for k in keys(m.nonlinear_terms)
+        if m.nonlinear_terms[k][:nonlinear_type] == :BILINEAR
             arc = []
             for i in k
                 @assert isa(i.args[2], Int)
-                push!(nodes, i.args[2])
                 push!(arc, i.args[2])
             end
             push!(arcs, sort(arc))
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :monomial
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :MONOMIAL
             @assert isa(m.nonlinear_terms[k][:var_idxs][1], Int)
-            push!(nodes, m.nonlinear_terms[k][:var_idxs][1])
-            push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1]])
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :multilinear
-            for i in 1:length(k)
-                @assert isa(k[i].args[2], Int)
-                push!(nodes, k[i].args[2])
-                for j in 1:length(k)
-                    i != j && push!(arcs, sort([k[i].args[2], k[j].args[2]]))
+            push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1];])
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :MULTILINEAR
+            var_idxs = m.nonlinear_terms[k][:var_idxs]
+            for i in 1:length(var_idxs)
+                for j in 1:length(var_idxs)
+                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
                 end
             end
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :INTLIN
+            @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
+            var_idxs = copy(m.nonlinear_terms[k][:var_idxs])
+            push!(arc, sort(var_idxs))
+        elseif m.nonlinear_terms[k][:nonlinear_type] == :INTPROD
+            var_idxs = m.nonlinear_terms[k][:var_idxs]
+            for i in 1:length(var_idxs)
+                for j in 1:length(var_idxs)
+                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
+                end
+            end
+        elseif m.nonlinear_terms[k][:nonlinear_type] in [:cos, :sin]
+            @assert length(m.nonlinear_terms[k][:var_idxs]) == 1
+            var_idx = m.nonlinear_terms[k][:var_idxs][1]
+            @assert isa(var_idx, Int)
+            push!(arcs, [var_idx, var_idx;])
+        elseif m.nonlinear_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
+            continue
+        else
+            error("[EXCEPTION] Unexpected nonlinear term when building discvar graph.")
         end
     end
+
+    @assert length(nodes) == length(m.candidate_disc_vars)
+
     nodes = collect(nodes)
     arcs = collect(arcs)
 
@@ -469,22 +489,22 @@ end
 
 function min_vertex_cover(m::PODNonlinearModel)
 
-    nodes, arcs = collect_var_graph(m)
+    nodes, arcs = build_discvar_graph(m)
 
     # Set up minimum vertex cover problem
     minvertex = Model(solver=m.mip_solver)
     @variable(minvertex, x[nodes], Bin)
-    for arc in arcs
-        @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
+    for a in arcs
+        @constraint(minvertex, x[a[1]] + x[a[2]] >= 1)
     end
     @objective(minvertex, Min, sum(x))
-    status = solve(minvertex, suppress_warnings=true)
 
+    status = solve(minvertex, suppress_warnings=true)
     xVal = getvalue(x)
 
     # Getting required information
     m.num_var_disc_mip = Int(sum(xVal))
-    m.var_disc_mip = [i for i in nodes if xVal[i] > 1e-5]
+    m.disc_vars = [i for i in nodes if xVal[i] > 1e-5]
 
     return
 end
@@ -493,16 +513,16 @@ end
 function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     # Collect the graph information
-    nodes, arcs = collect_var_graph(m)
+    nodes, arcs = build_discvar_graph(m)
 
     # A little bit redundency before
-    disvec = [distance[i] for i in keys(distance) if i in m.all_nonlinear_vars]
+    disvec = [distance[i] for i in keys(distance) if i in m.candidate_disc_vars]
     disvec = abs.(disvec[disvec .> 0.0])
     isempty(disvec) ? heavy = 1.0 : heavy = 1/minimum(disvec)
     weights = Dict()
-    for i in m.all_nonlinear_vars
+    for i in m.candidate_disc_vars
         isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-        (m.log > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
+        (m.loglevel > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
     end
 
     # Set up minimum vertex cover problem
@@ -518,7 +538,7 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     xVal = getvalue(x)
     m.num_var_disc_mip = Int(sum(xVal))
-    m.var_disc_mip = [i for i in nodes if xVal[i] > 0]
-    (m.log >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.var_disc_mip)) : $(m.var_disc_mip)")
+    m.disc_vars = [i for i in nodes if xVal[i] > 0]
+    (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
     return
 end

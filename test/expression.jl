@@ -2,9 +2,9 @@
 
     @testset "Expression Test || bilinear || Affine || exprs.jl" begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=10000)
+                                loglevel=100)
 
         m=exprstest(solver=test_solver)
 
@@ -117,9 +117,9 @@
     end
 
     @testset "Expression Test || bilinear || Affine || nlp1.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000)
+                               loglevel=100)
         m=nlp1(solver=test_solver)
 
         JuMP.build(m)
@@ -138,9 +138,9 @@
 
     @testset "Expression Test || bilinear || Affine || nlp3.jl" begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=CbcSolver(OutputFlag=0),
-								   log=10000)
+								   loglevel=100)
 
         m=nlp3(solver=test_solver)
 
@@ -215,9 +215,9 @@
 
     @testset "Expression Test || bilinear || Simple || bi1.jl " begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000)
+                               loglevel=100)
 
         m = operator_c(solver=test_solver)
 
@@ -236,9 +236,9 @@
 
     @testset "Expression Test || bilinear || Complex || blend029.jl " begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000)
+                               loglevel=100)
 
         m = blend029(solver=test_solver)
 
@@ -303,7 +303,7 @@
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[55])]][:id] == 1
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[55])]][:lifted_var_ref] == :(x[103])
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[55])]][:convexified] == false
-        @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[55])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[55])]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.bounding_constr_mip[206][:rhs] == 0.0
         @test m.internalModel.bounding_constr_mip[206][:vars] == Any[:(x[107]), :(x[103]), :(x[108]), :(x[109]), :(x[110]), :(x[2]), :(x[14])]
@@ -314,17 +314,17 @@
         @test m.internalModel.nonlinear_terms[[:(x[38]), :(x[56])]][:id] == 5
         @test m.internalModel.nonlinear_terms[[:(x[38]), :(x[56])]][:lifted_var_ref] == :(x[107])
         @test m.internalModel.nonlinear_terms[[:(x[38]), :(x[56])]][:convexified] == false
-        @test m.internalModel.nonlinear_terms[[:(x[38]), :(x[56])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[:(x[38]), :(x[56])]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[26])]][:id] == 6
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[26])]][:lifted_var_ref] == :(x[108])
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[26])]][:convexified] == false
-        @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[26])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[26])]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[32])]][:id] == 8
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[32])]][:lifted_var_ref] == :(x[110])
         @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[32])]][:convexified] == false
-        @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[32])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[:(x[37]), :(x[32])]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.bounding_constr_mip[213][:rhs] == 0.0
         @test m.internalModel.bounding_constr_mip[213][:vars] == Any[:(x[129]), :(x[127]), :(x[124]), :(x[130]), :(x[6]), :(x[18])]
@@ -335,24 +335,24 @@
         @test m.internalModel.nonlinear_terms[[:(x[48]), :(x[60])]][:id] == 27
         @test m.internalModel.nonlinear_terms[[:(x[48]), :(x[60])]][:lifted_var_ref] == :(x[129])
         @test m.internalModel.nonlinear_terms[[:(x[48]), :(x[60])]][:convexified] == false
-        @test m.internalModel.nonlinear_terms[[:(x[48]), :(x[60])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[:(x[48]), :(x[60])]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[59])]][:id] == 25
         @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[59])]][:lifted_var_ref] == :(x[127])
         @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[59])]][:convexified] == false
-        @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[59])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[59])]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[36])]][:id] == 28
         @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[36])]][:lifted_var_ref] == :(x[130])
         @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[36])]][:convexified] == false
-        @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[36])]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[:(x[47]), :(x[36])]][:nonlinear_type] == :BILINEAR
     end
 
     @testset "Expression Test || multilinear || Simple || multi.jl " begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000)
+                               loglevel=100)
 
         m = multi3(solver=test_solver, exprmode=1)
 
@@ -361,7 +361,7 @@
         @test length(keys(m.internalModel.nonlinear_terms)) == 1
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:id] == 1
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:lifted_var_ref] == :(x[4])
-        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :MULTILINEAR
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
         @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[4])]
@@ -382,10 +382,10 @@
         @test length(keys(m.internalModel.nonlinear_terms)) == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[4])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 3)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 3)]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
         @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[5])]
@@ -400,10 +400,10 @@
         @test length(keys(m.internalModel.nonlinear_terms)) == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[4])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 4)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
         @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[5])]
@@ -425,7 +425,7 @@
 
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:id] == 1
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :MULTILINEAR
 
         @test m.internalModel.bounding_constr_mip[1][:rhs] == 4.0
         @test m.internalModel.bounding_constr_mip[1][:vars] == Any[:(x[1]), :(x[2]), :(x[3]), :(x[4])]
@@ -441,13 +441,13 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 6)]][:id] == 3
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 6)]][:lifted_var_ref] == :(x[7])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 6)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 6)]][:nonlinear_type] == :BILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -465,10 +465,10 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[:(x[5]), :(x[3]), :(x[4])]][:id] == 2
         @test m.internalModel.nonlinear_terms[[:(x[5]), :(x[3]), :(x[4])]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[:(x[5]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[[:(x[5]), :(x[3]), :(x[4])]][:nonlinear_type] == :MULTILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -485,10 +485,10 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[5])]][:id] == 2
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[5])]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[5])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[5])]][:nonlinear_type] == :MULTILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -505,13 +505,13 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 5)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 5)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 5)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 5)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:id] == 3
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[7])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -528,10 +528,10 @@
 
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:id] == 1
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :MULTILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 5), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
         @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[6])]
@@ -547,13 +547,13 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 3), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 5)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 5)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 5)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 5)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:id] == 3
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:lifted_var_ref] == :(x[7])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:nonlinear_type] == :BILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -571,10 +571,10 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[5]), :(x[4])]][:id] == 2
         @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[5]), :(x[4])]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[5]), :(x[4])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[[:(x[1]), :(x[5]), :(x[4])]][:nonlinear_type] == :MULTILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -592,10 +592,10 @@
 
         @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[3]), :(x[4])]][:id] == 1
         @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[3]), :(x[4])]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[[:(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :MULTILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:nonlinear_type] == :BILINEAR
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
         @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[6])]
@@ -610,13 +610,13 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 5)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 5)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 5)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 4), Expr(:ref, :x, 5)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:id] == 3
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:lifted_var_ref] == :(x[7])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 6)]][:nonlinear_type] == :BILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -633,13 +633,13 @@
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 3)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:lifted_var_ref] == :(x[6])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 5)]][:nonlinear_type] == :BILINEAR
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:id] == 3
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[7])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
 
 
         @test m.internalModel.bounding_obj_mip[:rhs] == 0
@@ -650,9 +650,9 @@
     end
 
     @testset "Expression Test || bilinear || Complex-div || div.jl" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000)
+                               loglevel=100)
 
         m = div(solver=test_solver)
 
@@ -661,15 +661,15 @@
         @test length(keys(m.internalModel.nonlinear_terms)) == 3
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 1)]][:id] == 1
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 1)]][:lifted_var_ref] == :(x[3])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 1)]][:nonlinear_type] == :monomial
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 1)]][:nonlinear_type] == :MONOMIAL
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 2)]][:id] == 2
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[4])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 2)]][:nonlinear_type] == :monomial
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 2), Expr(:ref, :x, 2)]][:nonlinear_type] == :MONOMIAL
 
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:id] == 3
         @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:lifted_var_ref] == :(x[5])
-        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :bilinear
+        @test m.internalModel.nonlinear_terms[[Expr(:ref, :x, 1), Expr(:ref, :x, 2)]][:nonlinear_type] == :BILINEAR
 
         aff_mip = m.internalModel.bounding_constr_mip
 
@@ -744,9 +744,9 @@ end
 @testset "Expression Parser Test :: Basic II" begin
 
     @testset "Expression parsing || part1 " begin
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+        m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
 								   mip_solver=CbcSolver(OutputFlag=0),
-								   log=10000))
+								   loglevel=100))
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, x[1]^2 >= 1)  					# Basic monomial x[5]=x[1]^2
         @NLconstraint(m, x[1]*x[2] <= 1)				# x[6] <= 1 : x[6] = x[1]*x[2]
@@ -783,9 +783,9 @@ end
     end
 
     @testset "Expression parsing || part2" begin
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+        m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000))
+                               loglevel=100))
 
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, (x[1]*x[2]) * x[3] >= 1)
@@ -839,9 +839,9 @@ end
     end
 
     @testset "Expression parsing || part3" begin
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+        m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000))
+                               loglevel=100))
 
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, ((x[1]*x[2])*x[3])*x[4] >= 1)
@@ -902,9 +902,9 @@ end
     end
 
     @testset "Expression parsing || part7" begin
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+        m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000))
+                               loglevel=100))
         @variable(m, x[1:4]>=0)
 
         @NLconstraint(m, x[1]*x[2]*x[3]*x[4] >= 1)
@@ -951,9 +951,9 @@ end
     end
 
     @testset "Expression parsing || part8" begin
-        m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
+        m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000))
+                               loglevel=100))
         @variable(m, x[1:4]>=0)
 
         @NLconstraint(m, (x[1]*x[2]*x[3])*x[4] >= 1)
@@ -1005,9 +1005,9 @@ end
 
     @testset "Convex Parsing :: PART I" begin
 
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=10000)
+                                loglevel=100)
         m = convex_test(test_solver)
 
         JuMP.build(m)
@@ -1015,7 +1015,7 @@ end
         @test m.internalModel.num_constr_convex == 21
 
         # 0 : OBJ
-        @test m.internalModel.structural_obj == :convex
+        @test m.internalModel.obj_structure == :convex
         @test m.internalModel.nonlinear_constrs[0][:expr_orig] == :objective
         @test m.internalModel.nonlinear_constrs[0][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[0][:convexified] == false
@@ -1028,7 +1028,7 @@ end
         @test m.internalModel.bounding_obj_mip[:cnt] == 2
 
         # 1
-        @test m.internalModel.structural_constr[1] == :convex
+        @test m.internalModel.constr_structure[1] == :convex
         @test m.internalModel.nonlinear_constrs[1][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[1][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[1][:convexified] == false
@@ -1040,7 +1040,7 @@ end
         @test m.internalModel.bounding_constr_mip[1][:cnt] == 2
 
         # 2
-        @test m.internalModel.structural_constr[2] == :convex
+        @test m.internalModel.constr_structure[2] == :convex
         @test m.internalModel.nonlinear_constrs[2][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[2][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[2][:convexified] == false
@@ -1052,7 +1052,7 @@ end
         @test m.internalModel.bounding_constr_mip[2][:cnt] == 2
 
         # 4
-        @test m.internalModel.structural_constr[4] == :convex
+        @test m.internalModel.constr_structure[4] == :convex
         @test m.internalModel.nonlinear_constrs[4][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[4][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[4][:convexified] == false
@@ -1064,7 +1064,7 @@ end
         @test m.internalModel.bounding_constr_mip[4][:cnt] == 2
 
         # 5
-        @test m.internalModel.structural_constr[5] == :convex
+        @test m.internalModel.constr_structure[5] == :convex
         @test m.internalModel.nonlinear_constrs[5][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[5][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[5][:convexified] == :false
@@ -1076,7 +1076,7 @@ end
         @test m.internalModel.bounding_constr_mip[5][:cnt] == 3
 
         # 6
-        @test m.internalModel.structural_constr[6] == :convex
+        @test m.internalModel.constr_structure[6] == :convex
         @test m.internalModel.nonlinear_constrs[6][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[6][:convex_type] == :convexC
         @test m.internalModel.nonlinear_constrs[6][:convexified] == :false
@@ -1088,7 +1088,7 @@ end
         @test m.internalModel.bounding_constr_mip[6][:cnt] == 3
 
         # 7
-        @test m.internalModel.structural_constr[7] == :convex
+        @test m.internalModel.constr_structure[7] == :convex
         @test m.internalModel.nonlinear_constrs[7][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[7][:convex_type] == :convexC
         @test m.internalModel.nonlinear_constrs[7][:convexified] == :false
@@ -1100,7 +1100,7 @@ end
         @test m.internalModel.bounding_constr_mip[7][:cnt] == 2
 
         # 8
-        @test m.internalModel.structural_constr[8] == :convex
+        @test m.internalModel.constr_structure[8] == :convex
         @test m.internalModel.nonlinear_constrs[8][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[8][:convex_type] == :convexB
         @test m.internalModel.nonlinear_constrs[8][:convexified] == :false
@@ -1112,7 +1112,7 @@ end
         @test m.internalModel.bounding_constr_mip[8][:cnt] == 3
 
         # 9
-        @test m.internalModel.structural_constr[9] == :convex
+        @test m.internalModel.constr_structure[9] == :convex
         @test m.internalModel.nonlinear_constrs[9][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[9][:convex_type] == :convexB
         @test m.internalModel.nonlinear_constrs[9][:convexified] == :false
@@ -1124,7 +1124,7 @@ end
         @test m.internalModel.bounding_constr_mip[9][:cnt] == 4
 
         # 11
-        @test m.internalModel.structural_constr[11] == :convex
+        @test m.internalModel.constr_structure[11] == :convex
         @test m.internalModel.nonlinear_constrs[11][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[11][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[11][:convexified] == :false
@@ -1136,7 +1136,7 @@ end
         @test m.internalModel.bounding_constr_mip[11][:cnt] == 2
 
         # 14
-        @test m.internalModel.structural_constr[14] == :convex
+        @test m.internalModel.constr_structure[14] == :convex
         @test m.internalModel.nonlinear_constrs[14][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[14][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[14][:convexified] == :false
@@ -1148,7 +1148,7 @@ end
         @test m.internalModel.bounding_constr_mip[14][:cnt] == 2
 
         # 15
-        @test m.internalModel.structural_constr[15] == :convex
+        @test m.internalModel.constr_structure[15] == :convex
         @test m.internalModel.nonlinear_constrs[15][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[15][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[15][:convexified] == :false
@@ -1160,7 +1160,7 @@ end
         @test m.internalModel.bounding_constr_mip[15][:cnt] == 3
 
         # 19
-        @test m.internalModel.structural_constr[19] == :convex
+        @test m.internalModel.constr_structure[19] == :convex
         @test m.internalModel.nonlinear_constrs[19][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[19][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[19][:convexified] == :false
@@ -1172,7 +1172,7 @@ end
         @test m.internalModel.bounding_constr_mip[19][:cnt] == 2
 
         # 22
-        @test m.internalModel.structural_constr[22] == :convex
+        @test m.internalModel.constr_structure[22] == :convex
         @test m.internalModel.nonlinear_constrs[22][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[22][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[22][:convexified] == :false
@@ -1184,7 +1184,7 @@ end
         @test m.internalModel.bounding_constr_mip[22][:cnt] == 4
 
         # 25
-        @test m.internalModel.structural_constr[25] == :convex
+        @test m.internalModel.constr_structure[25] == :convex
         @test m.internalModel.nonlinear_constrs[25][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[25][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[25][:convexified] == :false
@@ -1196,7 +1196,7 @@ end
         @test m.internalModel.bounding_constr_mip[25][:cnt] == 5
 
         # 26
-        @test m.internalModel.structural_constr[26] == :convex
+        @test m.internalModel.constr_structure[26] == :convex
         @test m.internalModel.nonlinear_constrs[26][:expr_orig] == :constraints
         @test m.internalModel.nonlinear_constrs[26][:convex_type] == :convexA
         @test m.internalModel.nonlinear_constrs[26][:convexified] == :false
@@ -1212,10 +1212,10 @@ end
 @testset "Expression Praser Test :: Linear Lifting" begin
 
     @testset "Linear Lifting : nlp2" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
                                disc_ratio=8,
-                               log=10000)
+                               loglevel=100)
 
         m = nlp2(solver=test_solver)
 
@@ -1261,9 +1261,9 @@ end
     end
 
     @testset "Linear Lifting : general" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log=10000)
+                               loglevel=100)
 
         m = basic_linear_lift(solver=test_solver)
 
@@ -1320,15 +1320,15 @@ end
         @test m.internalModel.nonlinear_terms[nlk8][:lifted_var_ref].args[2] == 17
         @test m.internalModel.nonlinear_terms[nlk9][:lifted_var_ref].args[2] == 15
 
-        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :multilinear
-        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :monomial
-        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :monomial
-        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :monomial
+        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :MULTILINEAR
+        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :MONOMIAL
+        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :MONOMIAL
+        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :MONOMIAL
 
         @test m.internalModel.nonlinear_terms[nlk1][:var_idxs] == [8,9,12]
         @test m.internalModel.nonlinear_terms[nlk2][:var_idxs] == [2,2]
@@ -1342,9 +1342,9 @@ end
     end
 
     @testset "Expression Test || complex || Affine || operator_b" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=10000)
+                                loglevel=100)
 
         m=operator_b(solver=test_solver)
 
@@ -1386,11 +1386,11 @@ end
         @test length(keys(m.internalModel.nonlinear_terms)) == 31
         ids = [1:31;]
         yids = [8,9,11,13,14,15,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,37,38,39,41,43,45,47,49,50]
-        nltypes = [:bilinear, :bilinear, :bilinear, :bilinear, :monomial,
-                   :monomial, :multilinear, :monomial, :multilinear, :multilinear,
-                   :multilinear, :bilinear, :bilinear, :multilinear, :bilinear,
-                   :bilinear, :multilinear, :multilinear, :bilinear, :monomial,
-                   :multilinear, :multilinear, :multilinear, :sin, :cos,
+        nltypes = [:BILINEAR, :BILINEAR, :BILINEAR, :BILINEAR, :MONOMIAL,
+                   :MONOMIAL, :MULTILINEAR, :MONOMIAL, :MULTILINEAR, :MULTILINEAR,
+                   :MULTILINEAR, :BILINEAR, :BILINEAR, :MULTILINEAR, :BILINEAR,
+                   :BILINEAR, :MULTILINEAR, :MULTILINEAR, :BILINEAR, :MONOMIAL,
+                   :MULTILINEAR, :MULTILINEAR, :MULTILINEAR, :sin, :cos,
                    :sin, :cos, :sin, :sin, :cos, :sin]
         for i in 1:31
             @test m.internalModel.nonlinear_terms[nlk[i]][:id] == i
@@ -1432,11 +1432,11 @@ end
 
 @testset "Expression Parser Test :: BMPL -> BINLIN Opt" begin
 
-    @testset "Operator :: bmpl && linbin && binprod" begin
+    @testset "Operator :: bmpl && binlin && binprod" begin
 
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
+        test_solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(logLevel=0),
-                               log=10000)
+                               loglevel=100)
 
         m = bpml(solver=test_solver)
 
@@ -1444,55 +1444,60 @@ end
 
         @test length(keys(m.internalModel.nonlinear_terms)) == 12
 
+        @show keys(m.internalModel.nonlinear_terms)
+
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:y_idx] == 11
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:y_idx] == 12
         @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[6])]][:y_idx] == 13
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:y_idx] == 14
         @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[6])]][:y_idx] == 15
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:y_idx] == 16
-        @test m.internalModel.nonlinear_terms[Expr[:(x[16]), :(x[1])]][:y_idx] == 17
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[16])]][:y_idx] == 17
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[8])]][:y_idx] == 18
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[1])]][:y_idx] == 19
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[14])]][:y_idx] == 20
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[18])]][:y_idx] == 19
+        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[18])]][:y_idx] == 20
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:y_idx] == 21
         @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:y_idx] == 22
 
-        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[6])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[6])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[Expr[:(x[16]), :(x[1])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[8])]][:nonlinear_type] == :multilinear
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[1])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[18]), :(x[14])]][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:nonlinear_type] == :multilinear
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[6])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[6])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[16])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[8])]][:nonlinear_type] == :MULTILINEAR
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[18])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[18])]][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7]), :(x[9]), :(x[10]), :(x[6])]][:nonlinear_type] == :MULTILINEAR
 
-        @test length(m.internalModel.var_type_lifted) == 22
-        @test m.internalModel.var_type_lifted[11] == :Cont
-        @test m.internalModel.var_type_lifted[12] == :Bin
-        @test m.internalModel.var_type_lifted[13] == :Cont
-        @test m.internalModel.var_type_lifted[14] == :Bin
-        @test m.internalModel.var_type_lifted[15] == :Cont
-        @test m.internalModel.var_type_lifted[16] == :Cont
-        @test m.internalModel.var_type_lifted[17] == :Cont
-        @test m.internalModel.var_type_lifted[18] == :Cont
-        @test m.internalModel.var_type_lifted[19] == :Cont
-        @test m.internalModel.var_type_lifted[20] == :Cont
-        @test m.internalModel.var_type_lifted[21] == :Bin
-        @test m.internalModel.var_type_lifted[22] == :Cont
+        @test length(m.internalModel.var_type) == 22
+        @test m.internalModel.var_type[11] == :Cont
+        @test m.internalModel.var_type[12] == :Bin
+        @test m.internalModel.var_type[13] == :Cont
+        @test m.internalModel.var_type[14] == :Bin
+        @test m.internalModel.var_type[15] == :Cont
+        @test m.internalModel.var_type[16] == :Cont
+        @test m.internalModel.var_type[17] == :Cont
+        @test m.internalModel.var_type[18] == :Cont
+        @test m.internalModel.var_type[19] == :Cont
+        @test m.internalModel.var_type[20] == :Cont
+        @test m.internalModel.var_type[21] == :Bin
+        @test m.internalModel.var_type[22] == :Cont
     end
 
-    @testset "Operator :: bmpl && linbin && binprod with linear lifting and coefficients" begin
-        test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
+    @testset "Operator :: bmpl && binlin && binprod with linear lifting and coefficients" begin
+
+        test_solver=PODSolver(nlp_solver=IpoptSolver(),
                                mip_solver=CbcSolver(logLevel=0),
-                               log=10000)
+                               loglevel=100)
 
         m = bmpl_linearlifting(solver=test_solver)
 
         JuMP.build(m)
+
+        @show keys(m.internalModel.nonlinear_terms)
 
         lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
                                Pair{Symbol,Any}(:scalar, 0.0),
@@ -1541,7 +1546,7 @@ end
         nlk5 = Expr[:(x[1]), :(x[13])]
         nlk6 = Expr[:(x[1]), :(x[15])]
         nlk7 = Expr[:(x[2]), :(x[6])]
-        nlk8 = Expr[:(x[23]), :(x[24])]
+        nlk8 = Expr[:(x[24]), :(x[23])]
         nlk9 = Expr[:(x[1]), :(x[2])]
         nlk10 = Expr[:(x[2]), :(x[3])]
         nlk11 = Expr[:(x[20]), :(x[21])]
@@ -1601,25 +1606,25 @@ end
         @test m.internalModel.nonlinear_terms[nlk11][:y_idx] == 22
         @test m.internalModel.nonlinear_terms[nlk12][:y_idx] == 24
 
-        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :multilinear
-        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :binlin
-        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[nlk10][:nonlinear_type] == :binprod
-        @test m.internalModel.nonlinear_terms[nlk11][:nonlinear_type] == :bilinear
-        @test m.internalModel.nonlinear_terms[nlk12][:nonlinear_type] == :binprod
+        @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :MULTILINEAR
+        @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[nlk10][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[nlk11][:nonlinear_type] == :BILINEAR
+        @test m.internalModel.nonlinear_terms[nlk12][:nonlinear_type] == :BINPROD
     end
 end
 
 @testset "Expression Parser Test :: Special Operators" begin
-    test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
+    test_solver=PODSolver(nlp_solver=IpoptSolver(),
                            mip_solver=CbcSolver(logLevel=0),
-                           log=10000)
+                           loglevel=100)
 
     m = specialopts(solver=test_solver)
     JuMP.build(m)
@@ -1659,459 +1664,433 @@ end
 
 @testset "Expression Parser Test :: Basic Multiplication Operators (Machine Generated for diffs)" begin
 
-    test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
+    test_solver=PODSolver(nlp_solver=IpoptSolver(),
                            mip_solver=CbcSolver(logLevel=0),
-                           log=10000)
+                           loglevel=100)
 
     m = operator_basic(solver=test_solver)
     JuMP.build(m)
 
-    # Test Generation Code commented
-    # for k in keys(m.internalModel.nonlinear_terms)
-    #     println("@test m.internalModel.nonlinear_terms[$(k)][:y_idx] == $(m.internalModel.nonlinear_terms[k][:y_idx])")
-    #     println("@test m.internalModel.nonlinear_terms[$(k)][:id] == $(m.internalModel.nonlinear_terms[k][:id])")
-    #     println("@test m.internalModel.nonlinear_terms[$(k)][:lifted_constr_ref] == :($(m.internalModel.nonlinear_terms[k][:lifted_constr_ref]))")
-    #     println("@test m.internalModel.nonlinear_terms[$(k)][:nonlinear_type] == :$(m.internalModel.nonlinear_terms[k][:nonlinear_type])")
-    # end
-
-    # for i in 1:m.internalModel.num_constr_orig
-    #     if m.internalModel.structural_constr[i] == :affine
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:rhs] == $(m.internalModel.bounding_constr_mip[i][:rhs])")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:vars] == $(m.internalModel.bounding_constr_mip[i][:vars])")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:coefs] == $(m.internalModel.bounding_constr_mip[i][:coefs])")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:sense] == :($(m.internalModel.bounding_constr_mip[i][:sense]))")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:cnt] == $(m.internalModel.bounding_constr_mip[i][:cnt])")
-    #     elseif m.internalModel.structural_constr[i] == :convex
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:rhs] == $(m.internalModel.bounding_constr_mip[i][:rhs])")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:vars] == $(m.internalModel.bounding_constr_mip[i][:vars])")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:coefs] == $(m.internalModel.bounding_constr_mip[i][:coefs])")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:sense] == :($(m.internalModel.bounding_constr_mip[i][:sense]))")
-    #         println("@test m.internalModel.bounding_constr_mip[$(i)][:cnt] == $(m.internalModel.bounding_constr_mip[i][:cnt])")
-    #     else
-    #         error("Unknown structural_constr type $(m.structural_constr[i])")
-    #     end
-    # end
-
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:y_idx] == 31
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:id] == 27
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:lifted_constr_ref] == :(x[31] == x[3] * x[4])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[76])]][:y_idx] == 83
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[76])]][:id] == 79
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[76])]][:lifted_constr_ref] == :(x[83] == x[4] * x[5] * x[76])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[76])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[76])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[2])]][:y_idx] == 9
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[2])]][:id] == 5
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[2])]][:lifted_constr_ref] == :(x[9] == (*)(x[2]))
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[2])]][:nonlinear_type] == :monomial
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[2])]][:nonlinear_type] == :MONOMIAL
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7])]][:y_idx] == 19
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7])]][:id] == 15
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7])]][:lifted_constr_ref] == :(x[19] == x[5] * x[7])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[31])]][:y_idx] == 32
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[31])]][:id] == 28
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[31])]][:lifted_constr_ref] == :(x[32] == x[2] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[31])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[31])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10])]][:y_idx] == 49
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10])]][:id] == 45
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10])]][:lifted_constr_ref] == :(x[49] == x[1] * x[2] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5]), :(x[9])]][:y_idx] == 50
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5]), :(x[9])]][:id] == 46
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5]), :(x[9])]][:lifted_constr_ref] == :(x[50] == x[3] * x[5] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5]), :(x[9])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[5]), :(x[9])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[47])]][:y_idx] == 69
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[47])]][:id] == 65
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[47])]][:lifted_constr_ref] == :(x[69] == x[4] * x[47])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[47])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[47])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[4])]][:y_idx] == 28
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[4])]][:id] == 24
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[4])]][:lifted_constr_ref] == :(x[28] == (*)(x[4]))
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[4])]][:nonlinear_type] == :monomial
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[4])]][:nonlinear_type] == :MONOMIAL
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[10])]][:y_idx] == 37
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[10])]][:id] == 33
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[10])]][:lifted_constr_ref] == :(x[37] == x[4] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[10])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[10])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[1])]][:y_idx] == 5
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[1])]][:id] == 1
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[1])]][:lifted_constr_ref] == :(x[5] == (*)(x[1]))
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[1])]][:nonlinear_type] == :monomial
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[1])]][:nonlinear_type] == :MONOMIAL
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[95])]][:y_idx] == 96
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[95])]][:id] == 92
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[95])]][:lifted_constr_ref] == :(x[96] == x[5] * x[95])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[95])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[95])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[40])]][:y_idx] == 41
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[40])]][:id] == 37
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[40])]][:lifted_constr_ref] == :(x[41] == x[2] * x[40])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[40])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[40])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:y_idx] == 26
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:id] == 22
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:lifted_constr_ref] == :(x[26] == x[6] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[78]), :(x[28])]][:y_idx] == 84
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[78]), :(x[28])]][:id] == 80
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[78]), :(x[28])]][:lifted_constr_ref] == :(x[84] == x[1] * x[78] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[78]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[78]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[43])]][:y_idx] == 58
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[43])]][:id] == 54
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[43])]][:lifted_constr_ref] == :(x[58] == x[6] * x[43])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[43])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[43])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[6]), :(x[10])]][:y_idx] == 106
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[6]), :(x[10])]][:id] == 102
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[6]), :(x[10])]][:lifted_constr_ref] == :(x[106] == x[4] * x[6] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[6]), :(x[10])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[6]), :(x[10])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4]), :(x[10])]][:y_idx] == 90
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4]), :(x[10])]][:id] == 86
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4]), :(x[10])]][:lifted_constr_ref] == :(x[90] == x[2] * x[4] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4]), :(x[10])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[4]), :(x[10])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[41])]][:y_idx] == 42
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[41])]][:id] == 38
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[41])]][:lifted_constr_ref] == :(x[42] == x[1] * x[41])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[41])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[41])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[37])]][:y_idx] == 38
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[37])]][:id] == 34
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[37])]][:lifted_constr_ref] == :(x[38] == x[2] * x[37])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[37])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[37])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[85])]][:y_idx] == 87
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[85])]][:id] == 83
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[85])]][:lifted_constr_ref] == :(x[87] == x[5] * x[85])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[85])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[85])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5]), :(x[28])]][:y_idx] == 66
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5]), :(x[28])]][:id] == 62
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5]), :(x[28])]][:lifted_constr_ref] == :(x[66] == x[2] * x[3] * x[5] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10])]][:y_idx] == 53
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10])]][:id] == 49
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10])]][:lifted_constr_ref] == :(x[53] == x[5] * x[9] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6]), :(x[28])]][:y_idx] == 107
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6]), :(x[28])]][:id] == 103
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6]), :(x[28])]][:lifted_constr_ref] == :(x[107] == x[3] * x[6] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5])]][:y_idx] == 17
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5])]][:id] == 13
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5])]][:lifted_constr_ref] == :(x[17] == x[2] * x[5])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[37])]][:y_idx] == 57
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[37])]][:id] == 53
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[37])]][:lifted_constr_ref] == :(x[57] == x[6] * x[37])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[37])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[37])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7]), :(x[28])]][:y_idx] == 81
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7]), :(x[28])]][:id] == 77
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7]), :(x[28])]][:lifted_constr_ref] == :(x[81] == x[5] * x[7] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[7]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[38])]][:y_idx] == 39
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[38])]][:id] == 35
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[38])]][:lifted_constr_ref] == :(x[39] == x[1] * x[38])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[38])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[38])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[9])]][:y_idx] == 48
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[9])]][:id] == 44
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[9])]][:lifted_constr_ref] == :(x[48] == x[1] * x[3] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[9])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[9])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[23])]][:y_idx] == 24
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[23])]][:id] == 20
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[23])]][:lifted_constr_ref] == :(x[24] == x[4] * x[23])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[23])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[23])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[17])]][:y_idx] == 23
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[17])]][:id] == 19
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[17])]][:lifted_constr_ref] == :(x[23] == x[3] * x[17])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[17])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[17])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[10])]][:y_idx] == 51
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[10])]][:id] == 47
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[10])]][:lifted_constr_ref] == :(x[51] == x[1] * x[9] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[10])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[10])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[7])]][:y_idx] == 75
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[7])]][:id] == 71
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[7])]][:lifted_constr_ref] == :(x[75] == x[4] * x[5] * x[7])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[7])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5]), :(x[7])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[28])]][:y_idx] == 95
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[28])]][:id] == 91
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[28])]][:lifted_constr_ref] == :(x[95] == x[9] * x[10] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:y_idx] == 11
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:id] == 7
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:lifted_constr_ref] == :(x[11] == x[9] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[37])]][:y_idx] == 100
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[37])]][:id] == 96
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[37])]][:lifted_constr_ref] == :(x[100] == x[1] * x[2] * x[37])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[37])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[37])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4]), :(x[5])]][:y_idx] == 62
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4]), :(x[5])]][:id] == 58
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4]), :(x[5])]][:lifted_constr_ref] == :(x[62] == x[2] * x[3] * x[4] * x[5])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4]), :(x[5])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4]), :(x[5])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[9]), :(x[10])]][:y_idx] == 65
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[9]), :(x[10])]][:id] == 61
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[9]), :(x[10])]][:lifted_constr_ref] == :(x[65] == x[1] * x[4] * x[9] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[9]), :(x[10])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[9]), :(x[10])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7]), :(x[28])]][:y_idx] == 80
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7]), :(x[28])]][:id] == 76
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7]), :(x[28])]][:lifted_constr_ref] == :(x[80] == x[1] * x[7] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:y_idx] == 46
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:id] == 42
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:lifted_constr_ref] == :(x[46] == x[1] * x[2] * x[3])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[40])]][:y_idx] == 59
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[40])]][:id] == 55
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[40])]][:lifted_constr_ref] == :(x[59] == x[17] * x[40])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[40])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[40])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[85])]][:y_idx] == 86
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[85])]][:id] == 82
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[85])]][:lifted_constr_ref] == :(x[86] == x[1] * x[85])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[85])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[85])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[31])]][:y_idx] == 97
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[31])]][:id] == 93
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[31])]][:lifted_constr_ref] == :(x[97] == x[1] * x[2] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[31])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[31])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[28])]][:y_idx] == 29
     @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[28])]][:id] == 25
     @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[28])]][:lifted_constr_ref] == :(x[29] == x[13] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[28])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[28])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[28])]][:y_idx] == 92
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[28])]][:id] == 88
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[28])]][:lifted_constr_ref] == :(x[92] == x[2] * x[3] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9])]][:y_idx] == 20
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9])]][:id] == 16
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9])]][:lifted_constr_ref] == :(x[20] == x[1] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10]), :(x[28])]][:y_idx] == 109
     @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10]), :(x[28])]][:id] == 105
     @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10]), :(x[28])]][:lifted_constr_ref] == :(x[109] == x[14] * x[10] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[92])]][:y_idx] == 93
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[92])]][:id] == 89
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[92])]][:lifted_constr_ref] == :(x[93] == x[1] * x[92])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[92])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[92])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:y_idx] == 85
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:id] == 81
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:lifted_constr_ref] == :(x[85] == x[2] * x[3] * x[4])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[11])]][:y_idx] == 16
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[11])]][:id] == 12
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[11])]][:lifted_constr_ref] == :(x[16] == x[1] * x[11])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[11])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[11])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[21])]][:y_idx] == 25
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[21])]][:id] == 21
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[21])]][:lifted_constr_ref] == :(x[25] == x[4] * x[21])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[21])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[21])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[53]), :(x[28])]][:y_idx] == 73
     @test m.internalModel.nonlinear_terms[Expr[:(x[53]), :(x[28])]][:id] == 69
     @test m.internalModel.nonlinear_terms[Expr[:(x[53]), :(x[28])]][:lifted_constr_ref] == :(x[73] == x[53] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[53]), :(x[28])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[53]), :(x[28])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[32])]][:y_idx] == 34
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[32])]][:id] == 30
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[32])]][:lifted_constr_ref] == :(x[34] == x[5] * x[32])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[32])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[32])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[28])]][:y_idx] == 40
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[28])]][:id] == 36
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[28])]][:lifted_constr_ref] == :(x[40] == x[3] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[28])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[28])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10]), :(x[28])]][:y_idx] == 67
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10]), :(x[28])]][:id] == 63
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10]), :(x[28])]][:lifted_constr_ref] == :(x[67] == x[5] * x[9] * x[10] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[10]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[43])]][:y_idx] == 102
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[43])]][:id] == 98
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[43])]][:lifted_constr_ref] == :(x[102] == x[5] * x[9] * x[43])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[43])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9]), :(x[43])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[26])]][:y_idx] == 27
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[26])]][:id] == 23
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[26])]][:lifted_constr_ref] == :(x[27] == x[4] * x[26])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[26])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[26])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[20]), :(x[31])]][:y_idx] == 56
     @test m.internalModel.nonlinear_terms[Expr[:(x[20]), :(x[31])]][:id] == 52
     @test m.internalModel.nonlinear_terms[Expr[:(x[20]), :(x[31])]][:lifted_constr_ref] == :(x[56] == x[20] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[20]), :(x[31])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[20]), :(x[31])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[4]), :(x[9])]][:y_idx] == 63
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[4]), :(x[9])]][:id] == 59
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[4]), :(x[9])]][:lifted_constr_ref] == :(x[63] == x[1] * x[3] * x[4] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[4]), :(x[9])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[3]), :(x[4]), :(x[9])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10])]][:y_idx] == 15
     @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10])]][:id] == 11
     @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10])]][:lifted_constr_ref] == :(x[15] == x[14] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[10])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[76])]][:y_idx] == 77
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[76])]][:id] == 73
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[76])]][:lifted_constr_ref] == :(x[77] == x[1] * x[4] * x[76])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[76])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[76])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[88])]][:y_idx] == 89
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[88])]][:id] == 85
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[88])]][:lifted_constr_ref] == :(x[89] == x[1] * x[88])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[88])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[88])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[90])]][:y_idx] == 94
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[90])]][:id] == 90
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[90])]][:lifted_constr_ref] == :(x[94] == x[5] * x[90])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[90])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[90])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10]), :(x[28])]][:y_idx] == 108
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10]), :(x[28])]][:id] == 104
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10]), :(x[28])]][:lifted_constr_ref] == :(x[108] == x[6] * x[10] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[10]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[48])]][:y_idx] == 70
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[48])]][:id] == 66
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[48])]][:lifted_constr_ref] == :(x[70] == x[4] * x[48])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[48])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[48])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[31])]][:y_idx] == 54
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[31])]][:id] == 50
     @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[31])]][:lifted_constr_ref] == :(x[54] == x[6] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[31])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[31])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[31])]][:y_idx] == 99
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[31])]][:id] == 95
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[31])]][:lifted_constr_ref] == :(x[99] == x[1] * x[9] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[31])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[9]), :(x[31])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[35])]][:y_idx] == 36
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[35])]][:id] == 32
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[35])]][:lifted_constr_ref] == :(x[36] == x[1] * x[35])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[35])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[35])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9])]][:y_idx] == 14
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9])]][:id] == 10
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9])]][:lifted_constr_ref] == :(x[14] == x[5] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[9])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[13])]][:y_idx] == 22
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[13])]][:id] == 18
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[13])]][:lifted_constr_ref] == :(x[22] == x[4] * x[13])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[13])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[13])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10]), :(x[28])]][:y_idx] == 64
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10]), :(x[28])]][:id] == 60
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10]), :(x[28])]][:lifted_constr_ref] == :(x[64] == x[1] * x[2] * x[10] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10]), :(x[28])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[10]), :(x[28])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[46]), :(x[28])]][:y_idx] == 72
     @test m.internalModel.nonlinear_terms[Expr[:(x[46]), :(x[28])]][:id] == 68
     @test m.internalModel.nonlinear_terms[Expr[:(x[46]), :(x[28])]][:lifted_constr_ref] == :(x[72] == x[46] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[46]), :(x[28])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[46]), :(x[28])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[31])]][:y_idx] == 55
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[31])]][:id] == 51
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[31])]][:lifted_constr_ref] == :(x[55] == x[17] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[31])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[31])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[31])]][:y_idx] == 98
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[31])]][:id] == 94
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[31])]][:lifted_constr_ref] == :(x[98] == x[2] * x[5] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[31])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[31])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[28])]][:y_idx] == 43
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[28])]][:id] == 39
     @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[28])]][:lifted_constr_ref] == :(x[43] == x[10] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[28])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[10]), :(x[28])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[10])]][:y_idx] == 78
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[10])]][:id] == 74
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[10])]][:lifted_constr_ref] == :(x[78] == x[2] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[10])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[10])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[10])]][:y_idx] == 52
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[10])]][:id] == 48
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[10])]][:lifted_constr_ref] == :(x[52] == x[2] * x[5] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[10])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[5]), :(x[10])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[90])]][:y_idx] == 91
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[90])]][:id] == 87
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[90])]][:lifted_constr_ref] == :(x[91] == x[1] * x[90])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[90])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[90])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[17])]][:y_idx] == 104
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[17])]][:id] == 100
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[17])]][:lifted_constr_ref] == :(x[104] == x[3] * x[4] * x[17])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[17])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[17])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[9])]][:y_idx] == 76
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[9])]][:id] == 72
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[9])]][:lifted_constr_ref] == :(x[76] == x[3] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[9])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[9])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[78])]][:y_idx] == 79
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[78])]][:id] == 75
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[78])]][:lifted_constr_ref] == :(x[79] == x[1] * x[4] * x[78])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[78])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[78])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[3])]][:y_idx] == 10
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[3])]][:id] == 6
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[3])]][:lifted_constr_ref] == :(x[10] == (*)(x[3]))
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[3])]][:nonlinear_type] == :monomial
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[3])]][:nonlinear_type] == :MONOMIAL
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[49])]][:y_idx] == 71
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[49])]][:id] == 67
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[49])]][:lifted_constr_ref] == :(x[71] == x[4] * x[49])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[49])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[49])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[9])]][:y_idx] == 88
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[9])]][:id] == 84
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[9])]][:lifted_constr_ref] == :(x[88] == x[3] * x[4] * x[9])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[9])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[9])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[28])]][:y_idx] == 30
     @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[28])]][:id] == 26
     @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[28])]][:lifted_constr_ref] == :(x[30] == x[15] * x[28])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[28])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[28])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[46])]][:y_idx] == 68
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[46])]][:id] == 64
     @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[46])]][:lifted_constr_ref] == :(x[68] == x[4] * x[46])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[46])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[46])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:y_idx] == 12
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:id] == 8
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:lifted_constr_ref] == :(x[12] == x[5] * x[11])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[11])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[7])]][:y_idx] == 74
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[7])]][:id] == 70
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[7])]][:lifted_constr_ref] == :(x[74] == x[1] * x[4] * x[7])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[7])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[7])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[20])]][:y_idx] == 105
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[20])]][:id] == 101
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[20])]][:lifted_constr_ref] == :(x[105] == x[3] * x[4] * x[20])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[20])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[20])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[11])]][:y_idx] == 82
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[11])]][:id] == 78
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[11])]][:lifted_constr_ref] == :(x[82] == x[1] * x[4] * x[11])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[11])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[11])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[43])]][:y_idx] == 44
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[43])]][:id] == 40
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[43])]][:lifted_constr_ref] == :(x[44] == x[9] * x[43])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[43])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[43])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:y_idx] == 61
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:id] == 57
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:lifted_constr_ref] == :(x[61] == x[1] * x[2] * x[3] * x[4])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[10])]][:y_idx] == 18
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[10])]][:id] == 14
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[10])]][:lifted_constr_ref] == :(x[18] == x[17] * x[10])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[10])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[10])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7])]][:y_idx] == 8
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7])]][:id] == 4
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7])]][:lifted_constr_ref] == :(x[8] == x[1] * x[7])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[7])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:y_idx] == 6
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:id] == 2
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:lifted_constr_ref] == :(x[6] == x[1] * x[2])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[40])]][:y_idx] == 101
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[40])]][:id] == 97
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[40])]][:lifted_constr_ref] == :(x[101] == x[1] * x[2] * x[40])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[40])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2]), :(x[40])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[37])]][:y_idx] == 60
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[37])]][:id] == 56
     @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[37])]][:lifted_constr_ref] == :(x[60] == x[17] * x[37])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[37])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[17]), :(x[37])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[6])]][:y_idx] == 103
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[6])]][:id] == 99
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[6])]][:lifted_constr_ref] == :(x[103] == x[3] * x[4] * x[6])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[6])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4]), :(x[6])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:y_idx] == 7
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:id] == 3
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:lifted_constr_ref] == :(x[7] == x[2] * x[3])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5])]][:y_idx] == 47
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5])]][:id] == 43
     @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5])]][:lifted_constr_ref] == :(x[47] == x[2] * x[3] * x[5])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5])]][:nonlinear_type] == :multilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[5])]][:nonlinear_type] == :MULTILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6])]][:y_idx] == 13
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6])]][:id] == 9
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6])]][:lifted_constr_ref] == :(x[13] == x[3] * x[6])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[6])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[31])]][:y_idx] == 35
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[31])]][:id] == 31
     @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[31])]][:lifted_constr_ref] == :(x[35] == x[9] * x[31])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[31])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[31])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[32])]][:y_idx] == 33
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[32])]][:id] == 29
     @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[32])]][:lifted_constr_ref] == :(x[33] == x[1] * x[32])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[32])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[32])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[20])]][:y_idx] == 21
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[20])]][:id] == 17
     @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[20])]][:lifted_constr_ref] == :(x[21] == x[3] * x[20])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[20])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[20])]][:nonlinear_type] == :BILINEAR
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[44])]][:y_idx] == 45
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[44])]][:id] == 41
     @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[44])]][:lifted_constr_ref] == :(x[45] == x[5] * x[44])
-    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[44])]][:nonlinear_type] == :bilinear
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[44])]][:nonlinear_type] == :BILINEAR
 
     @test m.internalModel.bounding_constr_mip[1][:rhs] == 1.0
     @test m.internalModel.bounding_constr_mip[1][:vars] == Any[:(x[5])]
@@ -2517,9 +2496,9 @@ end
 
 @testset "Expression parsing corner cases" begin
     @testset "Corner Cases - 1 : sign convertor special case" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=100)
+                                loglevel=100)
 
         m = Model(solver=test_solver)
         @variable(m, x[1:5], Bin)
@@ -2535,9 +2514,9 @@ end
     end
 
     @testset "Corner Cases - 2 : full sub-expression" begin
-        test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log=100)
+                                loglevel=100)
 
         m = Model(solver=test_solver)
         @variable(m, x[1:5]>=0)

@@ -1,4 +1,3 @@
-
 """
     TODO: docstring
 """
@@ -17,7 +16,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
 
     for bi in keys(m.nonlinear_terms)
         nl_type = m.nonlinear_terms[bi][:nonlinear_type]
-        if ((!m.monomial_convexhull)*(nl_type == :monomial) || (!m.bilinear_convexhull)*(nl_type == :bilinear)) && (m.nonlinear_terms[bi][:convexified] == false)
+        if ((!m.monomial_convexhull)*(nl_type == :MONOMIAL) || (!m.bilinear_convexhull)*(nl_type == :BILINEAR)) && (m.nonlinear_terms[bi][:convexified] == false)
             @assert length(bi) == 2
             m.nonlinear_terms[bi][:convexified] = true  # Bookeeping the examined terms
             idx_a = bi[1].args[2]
@@ -38,23 +37,23 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
             (ub[idx_b][end] == +Inf) && error("Infinite upper bound detected on VAR$idx_b, resolve it please")
 
             if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
-                if m.nonlinear_terms[bi][:nonlinear_type] == :monomial
+                if m.nonlinear_terms[bi][:nonlinear_type] == :MONOMIAL
                     mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
-                elseif m.nonlinear_terms[bi][:nonlinear_type] == :bilinear
+                elseif m.nonlinear_terms[bi][:nonlinear_type] == :BILINEAR
                     mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
                         lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
                 end
             else                                                    # Tighten McCormick
-                # if m.nonlinear_terms[bi][:monomial_satus]
-                if m.nonlinear_terms[bi][:nonlinear_type] == :monomial
+                # if m.nonlinear_terms[bi][:MONOMIAL_satus]
+                if m.nonlinear_terms[bi][:nonlinear_type] == :MONOMIAL
                     λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                     λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                     amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
                     amp_post_tmc_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
                 # else
-                elseif m.nonlinear_terms[bi][:nonlinear_type] == :bilinear
+                elseif m.nonlinear_terms[bi][:nonlinear_type] == :BILINEAR
                     # Partitioning on left
-                    if (idx_a in m.var_disc_mip) && !(idx_b in m.var_disc_mip) && (part_cnt_b == 1)
+                    if (idx_a in m.disc_vars) && !(idx_b in m.disc_vars) && (part_cnt_b == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                         λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
@@ -64,7 +63,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Partitioning of right
-                    if !(idx_a in m.var_disc_mip) && (idx_b in m.var_disc_mip) && (part_cnt_a == 1)
+                    if !(idx_a in m.disc_vars) && (idx_b in m.disc_vars) && (part_cnt_a == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                         λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
@@ -74,7 +73,7 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Partitioning on both variables
-                    if (idx_a in m.var_disc_mip) && (idx_b in m.var_disc_mip)
+                    if (idx_a in m.disc_vars) && (idx_b in m.disc_vars)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
@@ -87,13 +86,11 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Error condition
-                    #if !(idx_a in m.var_disc_mip) && !(idx_b in m.var_disc_mip)
+                    #if !(idx_a in m.disc_vars) && !(idx_b in m.disc_vars)
                     #    error("Error case. At least one term should show up in discretization choices.")
                     #end
                 end
             end
-        elseif nl_type == :binprod
-
         end
     end
     return
@@ -208,15 +205,35 @@ end
 
 Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
 """
-function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
+function mccormick(m::JuMP.Model,xy::JuMP.Variable,x::JuMP.Variable,y::JuMP.Variable,xˡ,xᵘ,yˡ,yᵘ)
+
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
     @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
     @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
     @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
+
     return
 end
 
-function mccormick_bin(m,xy,x,y)
+function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable,lin::JuMP.Variable,lb,ub)
+
+    if lb >= 0
+        @constraint(m, binlin <= ub*bin)
+        @constraint(m, binlin <= lin)
+        @constraint(m, binlin >= lin - (1-bin)*ub)
+    else
+        @constraint(m, binlin <= ub)
+        @constraint(m, binlin >= lb)
+        @constraint(m, binlin <= bin*ub)
+        @constraint(m, binlin >= bin*lb)
+        @constraint(m, binlin <= lin - (1-bin)*lb)
+        @constraint(m, binlin >= lin - (1-bin)*ub)
+    end
+
+    return
+end
+
+function mccormick_bin(m::JuMP.Model,xy::JuMP.Variable,x::JuMP.Variable,y::JuMP.Variable)
     @constraint(m, xy <= x)
     @constraint(m, xy <= y)
     @constraint(m, xy >= x+y-1)
@@ -255,3 +272,11 @@ end
 #
 #     return
 # end
+
+function binprod_relax(m, z, x::Vector)
+    for i in x
+        @constraint(m, z <= i)
+    end
+    @constraint(m, z >= sum(x) - (length(x)-1))
+    return
+end

@@ -9,26 +9,90 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Variable holders
     λ = Dict()  # Extreme points and multipliers
     α = Dict()  # Partitioning Variables
-    β = Dict()  # Lifted variables for further
+    β = Dict()  # Lifted variables for exact formulation
 
     # Construct λ variable space
     for k in keys(m.nonlinear_terms)
         nl_type = m.nonlinear_terms[k][:nonlinear_type]
-        if ((nl_type == :multilinear) || (nl_type == :bilinear)) && (m.nonlinear_terms[k][:convexified] == false)
+        if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) && (m.nonlinear_terms[k][:convexified] == false)
             λ, α = amp_convexify_multilinear(m, k, λ, α, discretization)
-        elseif nl_type == :monomial && !m.nonlinear_terms[k][:convexified]
+        elseif nl_type == :MONOMIAL && !m.nonlinear_terms[k][:convexified]
             λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
-        elseif nl_type == :binlin && !m.nonlinear_terms[k][:convexified]
-            amp_convexify_binlin(m, k, discretization)
-        elseif nl_type == :binprod && !m.nonlinear_terms[k][:convexified]
+        elseif nl_type == :BINLIN && !m.nonlinear_terms[k][:convexified]
+            β = amp_convexify_binlin(m, k, β)
+        elseif nl_type == :BINPROD && !m.nonlinear_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
+        elseif nl_type == :INTPROD && !m.nonlinear_terms[k][:convexified]
+            λ, α = amp_convexify_intprod(m, k, λ, α, discretization)
+        elseif nl_type == :BININT && !m.nonlinear_terms[k][:convexified]
+            β = amp_convexify_binint(m, k, β)
+        elseif nl_type == :INTLIN && !m.nonlinear_terms[k][:convexified]
+            λ, α = amp_convexify_intlin(m, k, λ, α, discretization)
+        elseif nl_type in [:sin, :cos] && !m.nonlinear_terms[l][:convexified]
+            β = amp_convexify_sincos(m, k, β)
         end
     end
 
     return
 end
 
-function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+function amp_convexify_intprod(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+
+    error("No method implemented to relax INTPROD term")
+
+    return λ, α
+end
+
+function amp_convexify_binint(m::PODNonlinearModel, k::Any, β::Dict)
+
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
+    @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
+
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+
+    if haskey(β, lift_idx)
+        return β
+    else
+        β[lift_idx] = Variable(m.model_mip, lift_idx)
+    end
+
+    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Bin]
+    int_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Int]
+
+    @assert length(bin_idx) == length(int_idx) == 1
+
+    bin_idx = bin_idx[1]
+    cont_idx = cont_idx[1]
+
+    mccormick_binlin(m.model_mip, Variable(m.model_mip, lift_idx),
+        Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
+        m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
+
+    return β
+end
+
+function amp_convexify_intlin(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+
+    error("No method implemented to relax INTLIN term")
+
+    return λ, α
+end
+
+function amp_convexify_sincos(m::PODNonlinearModel, k::Any, β::Dict)
+
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+    if haskey(β, lift_idx)
+        return β
+    else
+        error("No method implemented to relax INTPROD term")
+    end
+
+    return β
+end
+
+function amp_convexify_multilinear(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
@@ -40,7 +104,8 @@ function amp_convexify_multilinear(m::PODNonlinearModel, k, λ::Dict, α::Dict, 
     return λ, α
 end
 
-function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, discretization::Dict)
+function amp_convexify_monomial(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     monomial_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k, monomial=true)
@@ -52,45 +117,44 @@ function amp_convexify_monomial(m::PODNonlinearModel, k, λ::Dict, α::Dict, dis
     return λ, α
 end
 
-
-"""
-    TODO: docstring
-    This function redirect the bpml term to its right convexification
-"""
-function amp_convexify_binlin(m::PODNonlinearModel, k::Any, discretization::Dict)
+function amp_convexify_binlin(m::PODNonlinearModel, k::Any, β::Dict)
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
-    lift_idx = m.nonlinear_terms[k][:y_idx]
-    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[i] == :Bin]
-    cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type_lifted[i] == :Cont]
 
-    @assert length(bin_idx) == 1
-    @assert length(cont_idx) == 1
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+
+    if haskey(β, lift_idx)
+        return β
+    else
+        β[lift_idx] = Variable(m.model_mip, lift_idx)
+    end
+
+    bin_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Bin]
+    cont_idx = [i for i in m.nonlinear_terms[k][:var_idxs] if m.var_type[i] == :Cont]
+
+    @assert length(bin_idx) == length(cont_idx) == 1
+
     bin_idx = bin_idx[1]
     cont_idx = cont_idx[1]
 
-    mccormick(m.model_mip, Variable(m.model_mip, lift_idx),
+    mccormick_binlin(m.model_mip, Variable(m.model_mip, lift_idx),
         Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
-        0, 1, m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
+        m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
 
-    return
+    return β
 end
 
-"""
-    TODO: docstring
-    This function is very important
-"""
-function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
+function amp_convexify_binprod(m::PODNonlinearModel, k::Any, β::Dict)
 
-    # [BUG FIXED]  added marker
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
-    if haskey(β, m.nonlinear_terms[k][:var_idxs])
-        return β
+    lift_idx = m.nonlinear_terms[k][:y_idx]
+    if haskey(β, lift_idx)
+        return β    # Already constructed
     else
-        β[m.nonlinear_terms[k][:var_idxs]] = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
+        β[lift_idx] = Variable(m.model_mip, lift_idx)
     end
 
     z = Variable(m.model_mip, m.nonlinear_terms[k][:y_idx])
@@ -103,23 +167,19 @@ function amp_convexify_binprod(m::PODNonlinearModel, k, β::Dict)
     return β
 end
 
-"""
-    TODO: docstring
-    This function is dedicated to monomial & multilinear nonlinear terms.
-"""
 function amp_convhull_prepare(m::PODNonlinearModel, discretization::Dict, nonlinear_key::Any; monomial=false)
 
     counted_var = []
     id = Set()                      # Coverting the nonlinear indices into a set
     for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
-        m.var_type_lifted[var.args[2]] == :Cont && push!(id, var.args[2])
-        m.var_type_lifted[var.args[2]] == :Cont && push!(counted_var, var.args[2])
+        m.var_type[var.args[2]] == :Cont && push!(id, var.args[2])
+        m.var_type[var.args[2]] == :Cont && push!(counted_var, var.args[2])
     end
 
     if length(id) < length(counted_var) # Got repeating terms, now the sequence matters
         id = []
         for var in nonlinear_key
-            m.var_type_lifted[var.args[2]] == :Cont && push!(id, var.args[2])
+            m.var_type[var.args[2]] == :Cont && push!(id, var.args[2])
         end
     end
 
@@ -146,18 +206,11 @@ function amp_convhull_λ(m::PODNonlinearModel, nonlinear_key::Any, ml_indices::A
     return λ
 end
 
-"""
-    TODO: docstring
-    extreme value calculation method for monomial (simple)
-"""
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, monomial_index::Int, λ::Dict)
     λ[monomial_index][:vals] = [discretization[monomial_index][i]^2 for i in 1:length(discretization[monomial_index])]
     return λ
 end
 
-"""
-    Extreme value for gneral multilinear terms Efficient implementation
-"""
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, ml_indices::Any, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
 
     if level > length(dim)
@@ -181,7 +234,6 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
     return λ
 end
 
-# Process Binary Variables
 function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::Tuple, discretization::Dict; kwargs...)
 
     for i in ml_indices
@@ -203,7 +255,6 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::T
     return α
 end
 
-# Regular multilinear treatment
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
 
     # Adding λ constraints
@@ -222,7 +273,6 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     return
 end
 
-# Monomial Term Treatment
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
 
     partition_cnt = length(discretization[monomial_idx])-1
@@ -315,9 +365,9 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
         return
     elseif m.convhull_formulation == "mini"
         for j in 1:min(partition_cnt, 1) # Constraint cluster of α >= f(λ)
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1;], dim)
             @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [(lambda_cnt-j+1):(lambda_cnt);], dim)
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [lambda_cnt;], dim)
             @constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
         end
         for j in 1:partition_cnt         # Constriant cluster of α <= f(λ)
@@ -368,7 +418,7 @@ end
 function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
 
     @assert length(sol_vec) == m.num_var_orig
-    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
+    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
 
     for i in 1:length(m.nonlinear_terms)
         for bi in keys(m.nonlinear_terms)

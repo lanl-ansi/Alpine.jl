@@ -1,11 +1,11 @@
 @testset "Utility Function Tests: Solver identifier fetch" begin
 
-    test_solver=PODSolver(minlp_local_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
-                          nlp_local_solver=IpoptSolver(print_level=0),
+    test_solver=PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                          nlp_solver=IpoptSolver(print_level=0),
                           mip_solver=CbcSolver(logLevel=0),
                           presolve_bp=true,
                           disc_var_pick=1,
-                          log=100,
+                          loglevel=100,
                           maxiter=2,
                           presolve_bt_width_tol=1e-3,
                           presolve_bt=false)
@@ -16,32 +16,32 @@
     @test m.internalModel.logs[:n_iter] == 2
 
     POD.fetch_mip_solver_identifier(m.internalModel;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
-    @test m.internalModel.mip_solver_identifier == "Pajarito"
+    @test m.internalModel.mip_solver_id == "Pajarito"
     POD.fetch_mip_solver_identifier(m.internalModel;override="Gurobi.GurobiSolver(nothing, Any[])")
-    @test m.internalModel.mip_solver_identifier == "Gurobi"
+    @test m.internalModel.mip_solver_id == "Gurobi"
     POD.fetch_mip_solver_identifier(m.internalModel;override="CPLEX.CplexSolver(Any[])")
-    @test m.internalModel.mip_solver_identifier == "CPLEX"
+    @test m.internalModel.mip_solver_id == "CPLEX"
     POD.fetch_mip_solver_identifier(m.internalModel;override="Cbc.CbcMathProgSolverInterface.CbcSolver(Any[])")
-    @test m.internalModel.mip_solver_identifier == "Cbc"
+    @test m.internalModel.mip_solver_id == "Cbc"
     POD.fetch_mip_solver_identifier(m.internalModel;override="GLPKMathProgInterface.GLPKInterfaceMIP.GLPKSolverMIP(false, Any[])")
-    @test m.internalModel.mip_solver_identifier == "GLPK"
+    @test m.internalModel.mip_solver_id == "GLPK"
 
     POD.fetch_nlp_solver_identifier(m.internalModel;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
-    @test m.internalModel.nlp_local_solver_identifier == "Pajarito"
+    @test m.internalModel.nlp_solver_id == "Pajarito"
     POD.fetch_nlp_solver_identifier(m.internalModel;override="Ipopt.IpoptSolver(Any[])")
-    @test m.internalModel.nlp_local_solver_identifier == "Ipopt"
+    @test m.internalModel.nlp_solver_id == "Ipopt"
     POD.fetch_nlp_solver_identifier(m.internalModel;override="AmplNLWriter.AmplNLSolver(\"bonmin\", String[], \"\")")
-    @test m.internalModel.nlp_local_solver_identifier == "Bonmin"
+    @test m.internalModel.nlp_solver_id == "Bonmin"
     @test "NLopt" == "NLopt"
     POD.fetch_nlp_solver_identifier(m.internalModel;override="KNITRO.KnitroSolver(Any[])")
-    @test m.internalModel.nlp_local_solver_identifier == "Knitro"
+    @test m.internalModel.nlp_solver_id == "Knitro"
 
     POD.fetch_minlp_solver_identifier(m.internalModel;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
-    @test m.internalModel.minlp_local_solver_identifier == "Pajarito"
+    @test m.internalModel.minlp_solver_id == "Pajarito"
     POD.fetch_minlp_solver_identifier(m.internalModel;override="AmplNLWriter.AmplNLSolver(\"bonmin\", String[], \"\")")
-    @test m.internalModel.minlp_local_solver_identifier == "Bonmin"
+    @test m.internalModel.minlp_solver_id == "Bonmin"
     POD.fetch_minlp_solver_identifier(m.internalModel;override="KNITRO.KnitroSolver(Any[])")
-    @test m.internalModel.minlp_local_solver_identifier == "Knitro"
+    @test m.internalModel.minlp_solver_id == "Knitro"
     @test "NLopt" == "NLopt"
 end
 
