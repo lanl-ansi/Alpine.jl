@@ -425,7 +425,7 @@ function collect_intlin_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
 
     for i in m.nonlinear_terms[k][:var_idxs]
         @assert isa(i, Int)
-        if bowl == nothing
+        if var_bowl == nothing
             i in m.candidate_disc_vars || push!(m.candidate_disc_vars, i)
         else
             i in var_bowl || push!(var_bowl, i)
@@ -593,7 +593,8 @@ function detect_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
                 continue
             end
         end
-        if length(var_idxs) == 1 && power_scalar > 2.0
+
+        if length(var_idxs) == 1 && power_scalar >= 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
             term_key in keys(m.nonlinear_terms) || store_nonlinear_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
             return true, lift_nonlinear_term(m, term_key, constr_id, scalar)

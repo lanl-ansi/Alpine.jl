@@ -2533,10 +2533,435 @@ end
 end
 
 @testset "Expression Parser Test || INTPROD Operators" begin
+
+    test_solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+
+    m = intprod_basic(solver=test_solver)
+
+    JuMP.build(m) # Setup internal model
+
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:y_idx] == 18
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:id] == 4
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:lifted_constr_ref] == :(x[18] == x[2] * x[3] * x[4])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3]), :(x[4])]][:constr_id] == Set(Any[3])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[16])]][:y_idx] == 17
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[16])]][:id] == 3
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[16])]][:lifted_constr_ref] == :(x[17] == x[1] * x[4] * x[16])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[16])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[16])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[4]), :(x[16])]][:constr_id] == Set(Any[2])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[2])]][:y_idx] == 12
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[2])]][:id] == 1
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[2])]][:lifted_constr_ref] == :(x[12] == x[11] * x[2])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[2])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[2])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[2])]][:constr_id] == Set(Any[0])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[5])]][:y_idx] == 19
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[5])]][:id] == 5
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[5])]][:lifted_constr_ref] == :(x[19] == (*)(x[5]))
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[5])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[5])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[5])]][:constr_id] == Set(Any[4])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[20]), :(x[19])]][:y_idx] == 21
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[20]), :(x[19])]][:id] == 6
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[20]), :(x[19])]][:lifted_constr_ref] == :(x[21] == x[5] * x[20] * x[19])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[20]), :(x[19])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[20]), :(x[19])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[20]), :(x[19])]][:constr_id] == Set(Any[4])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:y_idx] == 15
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:id] == 2
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:lifted_constr_ref] == :(x[15] == x[13] * x[14])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:constr_id] == Set(Any[1])
+    lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 4), (1.0, 1), (1.0, 5), (1.0, 3)])))
+    @test m.internalModel.linear_terms[lk1][:y_idx] == 11
+    @test m.internalModel.linear_terms[lk1][:id] == 1
+    @test m.internalModel.linear_terms[lk1][:y_type] == :(Int)
+    lk2 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (-1.0, 3)])))
+    @test m.internalModel.linear_terms[lk2][:y_idx] == 20
+    @test m.internalModel.linear_terms[lk2][:id] == 5
+    @test m.internalModel.linear_terms[lk2][:y_type] == :(Int)
+    lk3 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 3)])))
+    @test m.internalModel.linear_terms[lk3][:y_idx] == 16
+    @test m.internalModel.linear_terms[lk3][:id] == 4
+    @test m.internalModel.linear_terms[lk3][:y_type] == :(Int)
+    lk4 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 4), (1.0, 3)])))
+    @test m.internalModel.linear_terms[lk4][:y_idx] == 14
+    @test m.internalModel.linear_terms[lk4][:id] == 3
+    @test m.internalModel.linear_terms[lk4][:y_type] == :(Int)
+    lk5 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 1)])))
+    @test m.internalModel.linear_terms[lk5][:y_idx] == 13
+    @test m.internalModel.linear_terms[lk5][:id] == 2
+    @test m.internalModel.linear_terms[lk5][:y_type] == :(Int)
+    @test m.internalModel.bounding_constr_mip[1][:rhs] == 25.0
+    @test m.internalModel.bounding_constr_mip[1][:vars] == Any[:(x[15])]
+    @test m.internalModel.bounding_constr_mip[1][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[1][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[1][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[2][:rhs] == 25.0
+    @test m.internalModel.bounding_constr_mip[2][:vars] == Any[:(x[17])]
+    @test m.internalModel.bounding_constr_mip[2][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[2][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[2][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[3][:rhs] == 10.0
+    @test m.internalModel.bounding_constr_mip[3][:vars] == Any[:(x[1]), :(x[18])]
+    @test m.internalModel.bounding_constr_mip[3][:coefs] == Any[1.0, -1.0]
+    @test m.internalModel.bounding_constr_mip[3][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[3][:cnt] == 2
+    @test m.internalModel.bounding_constr_mip[4][:rhs] == 40.0
+    @test m.internalModel.bounding_constr_mip[4][:vars] == Any[:(x[21])]
+    @test m.internalModel.bounding_constr_mip[4][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[4][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[4][:cnt] == 1
 end
 
 @testset "Expression Parser Test || DPML -> INTPROD, BINLIN,  Operators" begin
-end
 
-@testset "Expression Parser Test || INTLIN Operators" begin
+    test_solver = PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    m = discretemulti_basic(solver=test_solver)
+
+    JuMP.build(m)
+
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:y_idx] == 18
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:id] == 3
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:lifted_constr_ref] == :(x[18] == x[3] * x[8])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[8])]][:constr_id] == Set(Any[0])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[9])]][:y_idx] == 33
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[9])]][:id] == 18
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[9])]][:lifted_constr_ref] == :(x[33] == x[32] * x[9])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[9])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[9])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[9])]][:constr_id] == Set(Any[12])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[40]), :(x[41])]][:y_idx] == 42
+    @test m.internalModel.nonlinear_terms[Expr[:(x[40]), :(x[41])]][:id] == 27
+    @test m.internalModel.nonlinear_terms[Expr[:(x[40]), :(x[41])]][:lifted_constr_ref] == :(x[42] == x[40] * x[41])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[40]), :(x[41])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[40]), :(x[41])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[40]), :(x[41])]][:constr_id] == Set(Any[18])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[8])]][:y_idx] == 23
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[8])]][:id] == 8
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[8])]][:lifted_constr_ref] == :(x[23] == x[13] * x[8])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[8])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[8])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[8])]][:constr_id] == Set(Any[15, 6])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[44]), :(x[45])]][:y_idx] == 46
+    @test m.internalModel.nonlinear_terms[Expr[:(x[44]), :(x[45])]][:id] == 31
+    @test m.internalModel.nonlinear_terms[Expr[:(x[44]), :(x[45])]][:lifted_constr_ref] == :(x[46] == x[44] * x[45])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[44]), :(x[45])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[44]), :(x[45])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[44]), :(x[45])]][:constr_id] == Set(Any[19])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:y_idx] == 48
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:id] == 33
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:lifted_constr_ref] == :(x[48] == x[3] * x[4])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:nonlinear_type] == :BINPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:y_type] == :Bin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[4])]][:constr_id] == Set(Any[20])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[9])]][:y_idx] == 24
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[9])]][:id] == 9
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[9])]][:lifted_constr_ref] == :(x[24] == x[14] * x[9])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[9])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[9])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[9])]][:constr_id] == Set(Any[7, 16])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:y_idx] == 19
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:id] == 4
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:lifted_constr_ref] == :(x[19] == x[4] * x[9])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[9])]][:constr_id] == Set(Any[0])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[24])]][:y_idx] == 37
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[24])]][:id] == 22
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[24])]][:lifted_constr_ref] == :(x[37] == x[4] * x[24])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[24])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[24])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[24])]][:constr_id] == Set(Any[16])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:y_idx] == 16
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:id] == 1
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:lifted_constr_ref] == :(x[16] == x[1] * x[6])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:constr_id] == Set(Any[0])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[22])]][:y_idx] == 35
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[22])]][:id] == 20
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[22])]][:lifted_constr_ref] == :(x[35] == x[2] * x[22])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[22])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[22])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[22])]][:constr_id] == Set(Any[14])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[10])]][:y_idx] == 25
+    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[10])]][:id] == 10
+    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[10])]][:lifted_constr_ref] == :(x[25] == x[15] * x[10])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[10])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[10])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[15]), :(x[10])]][:constr_id] == Set(Any[17, 8])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:y_idx] == 51
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:id] == 36
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:lifted_constr_ref] == :(x[51] == x[9] * x[10])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :BILINEAR
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[9]), :(x[10])]][:constr_id] == Set(Any[21])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[7])]][:y_idx] == 29
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[7])]][:id] == 14
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[7])]][:lifted_constr_ref] == :(x[29] == x[28] * x[7])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[7])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[7])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[7])]][:constr_id] == Set(Any[10])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[8])]][:y_idx] == 31
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[8])]][:id] == 16
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[8])]][:lifted_constr_ref] == :(x[31] == x[30] * x[8])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[8])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[8])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[8])]][:constr_id] == Set(Any[11])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:y_idx] == 47
+    @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:id] == 32
+    @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:lifted_constr_ref] == :(x[47] == x[8] * x[9])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:nonlinear_type] == :BILINEAR
+    @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[8]), :(x[9])]][:constr_id] == Set(Any[20])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[15])]][:y_idx] == 32
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[15])]][:id] == 17
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[15])]][:lifted_constr_ref] == :(x[32] == x[14] * x[15])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[15])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[15])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[14]), :(x[15])]][:constr_id] == Set(Any[21, 12])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:y_idx] == 43
+    @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:id] == 28
+    @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:lifted_constr_ref] == :(x[43] == x[7] * x[8])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:nonlinear_type] == :BILINEAR
+    @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[7]), :(x[8])]][:constr_id] == Set(Any[19])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[23])]][:y_idx] == 36
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[23])]][:id] == 21
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[23])]][:lifted_constr_ref] == :(x[36] == x[3] * x[23])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[23])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[23])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[3]), :(x[23])]][:constr_id] == Set(Any[15])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:y_idx] == 17
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:id] == 2
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:lifted_constr_ref] == :(x[17] == x[2] * x[7])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[7])]][:constr_id] == Set(Any[0])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[7])]][:y_idx] == 22
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[7])]][:id] == 7
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[7])]][:lifted_constr_ref] == :(x[22] == x[12] * x[7])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[7])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[7])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[7])]][:constr_id] == Set(Any[14, 5])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[12])]][:y_idx] == 26
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[12])]][:id] == 11
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[12])]][:lifted_constr_ref] == :(x[26] == x[11] * x[12])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[12])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[12])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[12])]][:constr_id] == Set(Any[9, 18])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5])]][:y_idx] == 52
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5])]][:id] == 37
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5])]][:lifted_constr_ref] == :(x[52] == x[4] * x[5])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5])]][:nonlinear_type] == :BINPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5])]][:y_type] == :Bin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[4]), :(x[5])]][:constr_id] == Set(Any[21])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[21])]][:y_idx] == 34
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[21])]][:id] == 19
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[21])]][:lifted_constr_ref] == :(x[34] == x[1] * x[21])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[21])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[21])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[21])]][:constr_id] == Set(Any[13])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:y_idx] == 40
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:id] == 25
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:lifted_constr_ref] == :(x[40] == x[1] * x[2])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:nonlinear_type] == :BINPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:y_type] == :Bin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:constr_id] == Set(Any[18])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:y_idx] == 30
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:id] == 15
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:lifted_constr_ref] == :(x[30] == x[13] * x[14])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[13]), :(x[14])]][:constr_id] == Set(Any[11, 20])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[43])]][:y_idx] == 45
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[43])]][:id] == 30
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[43])]][:lifted_constr_ref] == :(x[45] == x[28] * x[43])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[43])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[43])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[28]), :(x[43])]][:constr_id] == Set(Any[19])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[52]), :(x[53])]][:y_idx] == 54
+    @test m.internalModel.nonlinear_terms[Expr[:(x[52]), :(x[53])]][:id] == 39
+    @test m.internalModel.nonlinear_terms[Expr[:(x[52]), :(x[53])]][:lifted_constr_ref] == :(x[54] == x[52] * x[53])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[52]), :(x[53])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[52]), :(x[53])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[52]), :(x[53])]][:constr_id] == Set(Any[21])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[48]), :(x[49])]][:y_idx] == 50
+    @test m.internalModel.nonlinear_terms[Expr[:(x[48]), :(x[49])]][:id] == 35
+    @test m.internalModel.nonlinear_terms[Expr[:(x[48]), :(x[49])]][:lifted_constr_ref] == :(x[50] == x[48] * x[49])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[48]), :(x[49])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[48]), :(x[49])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[48]), :(x[49])]][:constr_id] == Set(Any[20])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[51])]][:y_idx] == 53
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[51])]][:id] == 38
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[51])]][:lifted_constr_ref] == :(x[53] == x[32] * x[51])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[51])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[51])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[32]), :(x[51])]][:constr_id] == Set(Any[21])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:y_idx] == 44
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:id] == 29
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:lifted_constr_ref] == :(x[44] == x[2] * x[3])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:nonlinear_type] == :BINPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:y_type] == :Bin
+    @test m.internalModel.nonlinear_terms[Expr[:(x[2]), :(x[3])]][:constr_id] == Set(Any[19])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[39])]][:y_idx] == 41
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[39])]][:id] == 26
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[39])]][:lifted_constr_ref] == :(x[41] == x[26] * x[39])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[39])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[39])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[39])]][:constr_id] == Set(Any[18])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[6])]][:y_idx] == 27
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[6])]][:id] == 12
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[6])]][:lifted_constr_ref] == :(x[27] == x[26] * x[6])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[6])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[6])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[26]), :(x[6])]][:constr_id] == Set(Any[9])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:y_idx] == 28
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:id] == 13
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:lifted_constr_ref] == :(x[28] == x[12] * x[13])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:nonlinear_type] == :INTPROD
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:y_type] == :Int
+    @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[13])]][:constr_id] == Set(Any[10, 19])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[25])]][:y_idx] == 38
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[25])]][:id] == 23
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[25])]][:lifted_constr_ref] == :(x[38] == x[5] * x[25])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[25])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[25])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[25])]][:constr_id] == Set(Any[17])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:y_idx] == 39
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:id] == 24
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:lifted_constr_ref] == :(x[39] == x[6] * x[7])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[6]), :(x[7])]][:constr_id] == Set(Any[18])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[47])]][:y_idx] == 49
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[47])]][:id] == 34
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[47])]][:lifted_constr_ref] == :(x[49] == x[30] * x[47])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[47])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[47])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[30]), :(x[47])]][:constr_id] == Set(Any[20])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:y_idx] == 20
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:id] == 5
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:lifted_constr_ref] == :(x[20] == x[5] * x[10])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:nonlinear_type] == :BINLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[5]), :(x[10])]][:constr_id] == Set(Any[0])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[6])]][:y_idx] == 21
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[6])]][:id] == 6
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[6])]][:lifted_constr_ref] == :(x[21] == x[11] * x[6])
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[6])]][:nonlinear_type] == :INTLIN
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[6])]][:y_type] == :Cont
+    @test m.internalModel.nonlinear_terms[Expr[:(x[11]), :(x[6])]][:constr_id] == Set(Any[4, 13])
+    @test m.internalModel.bounding_constr_mip[1][:rhs] == 3.0
+    @test m.internalModel.bounding_constr_mip[1][:vars] == Any[:(x[1]), :(x[2]), :(x[3]), :(x[4]), :(x[5])]
+    @test m.internalModel.bounding_constr_mip[1][:coefs] == Any[1.0, 1.0, 1.0, 1.0, 1.0]
+    @test m.internalModel.bounding_constr_mip[1][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[1][:cnt] == 5
+    @test m.internalModel.bounding_constr_mip[2][:rhs] == 10.0
+    @test m.internalModel.bounding_constr_mip[2][:vars] == Any[:(x[11]), :(x[12]), :(x[13]), :(x[14]), :(x[15])]
+    @test m.internalModel.bounding_constr_mip[2][:coefs] == Any[1.0, 1.0, 1.0, 1.0, 1.0]
+    @test m.internalModel.bounding_constr_mip[2][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[2][:cnt] == 5
+    @test m.internalModel.bounding_constr_mip[3][:rhs] == 8.0
+    @test m.internalModel.bounding_constr_mip[3][:vars] == Any[:(x[11]), :(x[12]), :(x[13]), :(x[14]), :(x[15])]
+    @test m.internalModel.bounding_constr_mip[3][:coefs] == Any[1.0, 1.0, 1.0, 1.0, 1.0]
+    @test m.internalModel.bounding_constr_mip[3][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[3][:cnt] == 5
+    @test m.internalModel.bounding_constr_mip[4][:rhs] == 17.1
+    @test m.internalModel.bounding_constr_mip[4][:vars] == Any[:(x[21])]
+    @test m.internalModel.bounding_constr_mip[4][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[4][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[4][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[5][:rhs] == 17.1
+    @test m.internalModel.bounding_constr_mip[5][:vars] == Any[:(x[22])]
+    @test m.internalModel.bounding_constr_mip[5][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[5][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[5][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[6][:rhs] == 17.1
+    @test m.internalModel.bounding_constr_mip[6][:vars] == Any[:(x[23])]
+    @test m.internalModel.bounding_constr_mip[6][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[6][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[6][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[7][:rhs] == 17.1
+    @test m.internalModel.bounding_constr_mip[7][:vars] == Any[:(x[24])]
+    @test m.internalModel.bounding_constr_mip[7][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[7][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[7][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[8][:rhs] == 17.1
+    @test m.internalModel.bounding_constr_mip[8][:vars] == Any[:(x[25])]
+    @test m.internalModel.bounding_constr_mip[8][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[8][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[8][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[9][:rhs] == 18.6
+    @test m.internalModel.bounding_constr_mip[9][:vars] == Any[:(x[27])]
+    @test m.internalModel.bounding_constr_mip[9][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[9][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[9][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[10][:rhs] == 18.6
+    @test m.internalModel.bounding_constr_mip[10][:vars] == Any[:(x[29])]
+    @test m.internalModel.bounding_constr_mip[10][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[10][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[10][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[11][:rhs] == 18.6
+    @test m.internalModel.bounding_constr_mip[11][:vars] == Any[:(x[31])]
+    @test m.internalModel.bounding_constr_mip[11][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[11][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[11][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[12][:rhs] == 18.6
+    @test m.internalModel.bounding_constr_mip[12][:vars] == Any[:(x[33])]
+    @test m.internalModel.bounding_constr_mip[12][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[12][:sense] == :(>=)
+    @test m.internalModel.bounding_constr_mip[12][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[13][:rhs] == 28.1
+    @test m.internalModel.bounding_constr_mip[13][:vars] == Any[:(x[34])]
+    @test m.internalModel.bounding_constr_mip[13][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[13][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[13][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[14][:rhs] == 28.1
+    @test m.internalModel.bounding_constr_mip[14][:vars] == Any[:(x[35])]
+    @test m.internalModel.bounding_constr_mip[14][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[14][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[14][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[15][:rhs] == 28.1
+    @test m.internalModel.bounding_constr_mip[15][:vars] == Any[:(x[36])]
+    @test m.internalModel.bounding_constr_mip[15][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[15][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[15][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[16][:rhs] == 28.1
+    @test m.internalModel.bounding_constr_mip[16][:vars] == Any[:(x[37])]
+    @test m.internalModel.bounding_constr_mip[16][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[16][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[16][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[17][:rhs] == 28.1
+    @test m.internalModel.bounding_constr_mip[17][:vars] == Any[:(x[38])]
+    @test m.internalModel.bounding_constr_mip[17][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[17][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[17][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[18][:rhs] == 33.2
+    @test m.internalModel.bounding_constr_mip[18][:vars] == Any[:(x[42])]
+    @test m.internalModel.bounding_constr_mip[18][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[18][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[18][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[19][:rhs] == 33.2
+    @test m.internalModel.bounding_constr_mip[19][:vars] == Any[:(x[46])]
+    @test m.internalModel.bounding_constr_mip[19][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[19][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[19][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[20][:rhs] == 33.2
+    @test m.internalModel.bounding_constr_mip[20][:vars] == Any[:(x[50])]
+    @test m.internalModel.bounding_constr_mip[20][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[20][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[20][:cnt] == 1
+    @test m.internalModel.bounding_constr_mip[21][:rhs] == 33.2
+    @test m.internalModel.bounding_constr_mip[21][:vars] == Any[:(x[54])]
+    @test m.internalModel.bounding_constr_mip[21][:coefs] == Any[1.0]
+    @test m.internalModel.bounding_constr_mip[21][:sense] == :(<=)
+    @test m.internalModel.bounding_constr_mip[21][:cnt] == 1
 end

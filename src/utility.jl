@@ -459,7 +459,7 @@ function build_discvar_graph(m::PODNonlinearModel)
         elseif m.nonlinear_terms[k][:nonlinear_type] == :INTLIN
             @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
             var_idxs = copy(m.nonlinear_terms[k][:var_idxs])
-            push!(arc, sort(var_idxs))
+            push!(arcs, sort(var_idxs))
         elseif m.nonlinear_terms[k][:nonlinear_type] == :INTPROD
             var_idxs = m.nonlinear_terms[k][:var_idxs]
             for i in 1:length(var_idxs)

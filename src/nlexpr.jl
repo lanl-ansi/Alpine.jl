@@ -197,8 +197,8 @@ end
 
 function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
 
-    # println("inner recursive input ", expr)
-    !(expr.args[1] in [:*,:^]) && return nothing, nothing, nothing         # Limited Area
+    # @show "inner recursive input $(expr)"
+    expr.args[1] in [:*,:^] || return nothing, nothing, nothing         # Limited Area
 
     if expr.args[1] == :*
         for i in 2:length(expr.args)
@@ -210,6 +210,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
                 push!(power, 1)
             elseif (expr.args[i].head == :call)
                 scalar, var_idxs, power = expr_is_axn(expr.args[i], scalar, var_idxs, power)
+                scalar == nothing && return nothing, nothing, nothing
             end
         end
     elseif expr.args[1] == :^
@@ -230,7 +231,6 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
     !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
     (var_idxs == nothing) && (scalar == nothing) && (power == nothing) && return nothing, nothing, nothing # Unrecognized sub-structure
 
-    # println("inner recursive ", scalar, " ", var_idxs)
     @assert length(var_idxs) == length(power)
     return scalar, var_idxs, power
 end

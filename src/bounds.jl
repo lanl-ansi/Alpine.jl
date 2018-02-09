@@ -143,17 +143,7 @@ function resolve_var_bounds(m::PODNonlinearModel)
     for i in 1:length(m.term_seq)
         k = m.term_seq[i]
         if haskey(m.nonlinear_terms, k)
-            if m.nonlinear_terms[k][:nonlinear_type] in POD_C_MONOMIAL
-                basic_monomial_bounds(m, k)
-            elseif m.nonlinear_terms[k][:nonlinear_type] in [:BINPROD]
-                basic_binprod_bounds(m, k)
-            elseif m.nonlinear_terms[k][:nonlinear_type] in POD_C_TRIGONOMETRIC
-                basic_sincos_bounds(m, k)
-            elseif m.nonlinear_terms[k][:nonlinear_type] in [:BINLIN]
-                basic_binlin_bounds(m, k)
-            else
-                error("Unexpected nonlinear term $(k) encountered during resolve variable bounds")
-            end
+            m.nonlinear_terms[k][:bound_resolver](m, k)
         elseif haskey(m.linear_terms, k)
             basic_linear_bounds(m, k)
         else

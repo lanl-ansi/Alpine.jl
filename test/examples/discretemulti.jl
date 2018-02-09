@@ -144,13 +144,27 @@ function bpml_negative(solver=nothing)
 	return m
 end
 
-function dpml_basic(solver=nothing)
+function intprod_basic(;solver=nothing)
+	m = Model(solver=solver)
+
+	@variable(m, 1 <= Z[1:10] <= 10, Int)
+	@NLconstraint(m, (Z[1]+Z[2])*(Z[3]+Z[4]) >= 25)
+	@NLconstraint(m, Z[1]*(Z[2]+Z[3])*Z[4] >= 25)
+	@NLconstraint(m, Z[1]-Z[2]*Z[3]*Z[4]+15 >= 25)
+	@NLconstraint(m, Z[5]*(Z[2]-Z[3])*Z[5]^2 >= 40)
+	@NLobjective(m, Min, sum(Z[i] for i in 1:5)*Z[2])
+
+	return m
+end
+
+function discretemulti_basic(;solver=nothing)
+
 	m = Model(solver=solver)
 
 	srand(10)
 	@variable(m, X[1:5], Bin)
 	@variable(m, 0.1<=Y[1:5]<=0.1+10*rand())
-	@variable(m, 1<=Z[1:5]<=10)
+	@variable(m, 1<=Z[1:5]<=10, Int)
 	@constraint(m,  sum(X) >= 3)
 	@constraint(m,  sum(Z) >= 10)
 	@NLobjective(m, Min, sum(X[i]*Y[i] for i in 1:5))
@@ -158,5 +172,7 @@ function dpml_basic(solver=nothing)
 	@NLconstraint(m, [i in 1:5], Y[i]*Z[i] >= 17.1)
 	@NLconstraint(m, [i in 1:4], Y[i]*Z[i]*Z[i+1] >= 18.6)
 	@NLconstraint(m, [i in 1:5], X[i]*Y[i]*Z[i] <= 28.1)
-	@NLconstraint(m, [i in 1:4], X[i]*x[i+1]*Y[i]*Y[i+1]*Z[i]*Z[i+1] <= 33.2)
+	@NLconstraint(m, [i in 1:4], X[i]*X[i+1]*Y[i]*Y[i+1]*Z[i]*Z[i+1] <= 33.2)
+
+	return m
 end
