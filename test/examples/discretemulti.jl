@@ -1,14 +1,3 @@
-function circle(;verbose=false, solver=nothing)
-
-	m = Model(solver=solver)
-
-    @variable(m, x[1:5], Bin)
-    @NLconstraint(m, x[1]^2 + x[2]^2 >= 2)
-    @objective(m, Min, x[1]+x[2])
-
-	return m
-end
-
 function binprod_nlp3(;solver=nothing)
 
 	m = Model(solver=solver)
@@ -50,6 +39,16 @@ function binprod_nlp3(;solver=nothing)
 	return m
 end
 
+function circlebin(;verbose=false, solver=nothing)
+
+	m = Model(solver=solver)
+
+    @variable(m, x[1:5], Bin)
+    @NLconstraint(m, x[1]^2 + x[2]^2 >= 2)
+    @objective(m, Min, x[1]+x[2])
+
+	return m
+end
 
 function bpml(;verbose=false, solver=nothing)
 
@@ -143,4 +142,21 @@ function bpml_negative(solver=nothing)
 	@NLobjective(m, Max, sum(X[i]*Y[i]*Y[i+1] for i in 1:4) - X[5]*Y[5]*Y[1])
 
 	return m
+end
+
+function dpml_basic(solver=nothing)
+	m = Model(solver=solver)
+
+	srand(10)
+	@variable(m, X[1:5], Bin)
+	@variable(m, 0.1<=Y[1:5]<=0.1+10*rand())
+	@variable(m, 1<=Z[1:5]<=10)
+	@constraint(m,  sum(X) >= 3)
+	@constraint(m,  sum(Z) >= 10)
+	@NLobjective(m, Min, sum(X[i]*Y[i] for i in 1:5))
+	@NLconstraint(m, sum(X[i]*Z[i] for i in 1:5) >= 8)
+	@NLconstraint(m, [i in 1:5], Y[i]*Z[i] >= 17.1)
+	@NLconstraint(m, [i in 1:4], Y[i]*Z[i]*Z[i+1] >= 18.6)
+	@NLconstraint(m, [i in 1:5], X[i]*Y[i]*Z[i] <= 28.1)
+	@NLconstraint(m, [i in 1:4], X[i]*x[i+1]*Y[i]*Y[i+1]*Z[i]*Z[i+1] <= 33.2)
 end

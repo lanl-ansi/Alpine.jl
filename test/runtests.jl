@@ -11,14 +11,14 @@ include("$(poddir)/test/examples/exprstest.jl")
 
 # NLP Testing Instances
 include("$(poddir)/test/examples/nlp.jl")
-include("$(poddir)/test/examples/castrom2.jl")
+include("$(poddir)/test/examples/castro.jl")
 
 # Multilinear Testing Instances
-include("$(poddir)/test/examples/blend029.jl")
+include("$(poddir)/test/examples/blend.jl")
 include("$(poddir)/test/examples/multi.jl")
 
 # Special operators
-include("$(poddir)/test/examples/binprod.jl")
+include("$(poddir)/test/examples/discretemulti.jl")
 include("$(poddir)/test/examples/div.jl")
 include("$(poddir)/test/examples/circle.jl")
 include("$(poddir)/test/examples/convex.jl")
