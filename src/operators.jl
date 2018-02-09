@@ -123,7 +123,7 @@ function store_linear_term(m::PODNonlinearModel, term_key::Any, expr::Any)#, bou
 
     m.term_seq[l_cnt+nl_cnt + 1] = term_key
     push!(m.var_type, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-    m.loglevel > 99 && println("found lifted linear term $expr = $(lifted_var_ref)")
+    m.loglevel > 99 && println("found lifted linear term $(lifted_var_ref) = $expr")
 
     return y_idx
 end
@@ -425,7 +425,7 @@ function collect_intlin_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
 
     for i in m.nonlinear_terms[k][:var_idxs]
         @assert isa(i, Int)
-        if bowl == nothing
+        if var_bowl == nothing
             i in m.candidate_disc_vars || push!(m.candidate_disc_vars, i)
         else
             i in var_bowl || push!(var_bowl, i)
@@ -560,7 +560,7 @@ function detect_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
-                m.var_type[linear_lift_var.args[2]] != :Int && false, expr
+                m.var_type[linear_lift_var.args[2]] != :Int && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
                 continue
             end
@@ -588,13 +588,15 @@ function detect_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
-                m.var_type[linear_lift_var.args[2]] != :Int && false, expr
+                m.var_type[linear_lift_var.args[2]] != :Int && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
                 continue
             end
         end
-        if length(var_idxs) == 1 && power_scalar > 2.0
+
+        if length(var_idxs) == 1 && power_scalar >= 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
+            @show term_key
             term_key in keys(m.nonlinear_terms) || store_nonlinear_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
             return true, lift_nonlinear_term(m, term_key, constr_id, scalar)
         end
@@ -661,7 +663,7 @@ function detect_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
-                m.var_type[linear_lift_var.args[2]] != :Bin && false, expr
+                m.var_type[linear_lift_var.args[2]] != :Bin && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
                 continue
             end
@@ -687,7 +689,7 @@ function detect_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             if (expr.args[i].head == :call)
                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
-                m.var_type[linear_lift_var.args[2]] != :Bin && false, expr
+                m.var_type[linear_lift_var.args[2]] != :Bin && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
                 continue
             end

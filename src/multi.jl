@@ -79,16 +79,19 @@ function amp_convexify_intlin(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, 
     return λ, α
 end
 
-function amp_convexify_sincos(m::PODNonlinearModel, k::Any, β::Dict)
+function amp_convexify_sincos(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
 
-    lift_idx = m.nonlinear_terms[k][:y_idx]
-    if haskey(β, lift_idx)
-        return β
-    else
-        error("No method implemented to relax INTPROD term")
-    end
+    # Because with the single dimension here
 
-    return β
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
+    ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
+    λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
+    # Follow the template populate_convhull_extreme_values to build a specifc extreme value calculator
+    α = amp_convhull_α(m, ml_indices, α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+
+    return λ, α
 end
 
 function amp_convexify_multilinear(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
@@ -167,6 +170,7 @@ function amp_convexify_binprod(m::PODNonlinearModel, k::Any, β::Dict)
     return β
 end
 
+# This can be the most confusing function to use
 function amp_convhull_prepare(m::PODNonlinearModel, discretization::Dict, nonlinear_key::Any; monomial=false)
 
     counted_var = []

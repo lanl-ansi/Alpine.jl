@@ -62,7 +62,13 @@ function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
 
     if operator == :+
         detector = [i in [:Bin, :Int] ? true : false for i in var_types]
-        length(detector) == 1 && detector[1] && return :Bin
+        if length(detector) == 1 && detector[1] # Special case
+            if :Bin in var_types
+                return :Bin
+            else
+                return :Int
+            end
+        end
         prod(detector) && return :Int
         # o/w continous variables
     elseif operator == :*
@@ -459,7 +465,7 @@ function build_discvar_graph(m::PODNonlinearModel)
         elseif m.nonlinear_terms[k][:nonlinear_type] == :INTLIN
             @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
             var_idxs = copy(m.nonlinear_terms[k][:var_idxs])
-            push!(arc, sort(var_idxs))
+            push!(arcs, sort(var_idxs))
         elseif m.nonlinear_terms[k][:nonlinear_type] == :INTPROD
             var_idxs = m.nonlinear_terms[k][:var_idxs]
             for i in 1:length(var_idxs)
