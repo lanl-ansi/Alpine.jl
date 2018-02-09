@@ -2353,8 +2353,6 @@ end
 
         @test length(keys(m.internalModel.nonlinear_terms)) == 12
 
-        @show keys(m.internalModel.nonlinear_terms)
-
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[6])]][:y_idx] == 11
         @test m.internalModel.nonlinear_terms[Expr[:(x[1]), :(x[2])]][:y_idx] == 12
         @test m.internalModel.nonlinear_terms[Expr[:(x[12]), :(x[6])]][:y_idx] == 13
@@ -2405,8 +2403,6 @@ end
         m = bmpl_linearlifting(solver=test_solver)
 
         JuMP.build(m)
-
-        @show keys(m.internalModel.nonlinear_terms)
 
         lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),
                                Pair{Symbol,Any}(:scalar, 0.0),
@@ -2474,7 +2470,6 @@ end
         @test haskey(m.internalModel.nonlinear_terms, nlk11)
         @test haskey(m.internalModel.nonlinear_terms, nlk12)
 
-
         @test m.internalModel.nonlinear_terms[nlk1][:id] == 7
         @test m.internalModel.nonlinear_terms[nlk2][:id] == 1
         @test m.internalModel.nonlinear_terms[nlk3][:id] == 9
@@ -2487,7 +2482,6 @@ end
         @test m.internalModel.nonlinear_terms[nlk10][:id] == 2
         @test m.internalModel.nonlinear_terms[nlk11][:id] == 8
         @test m.internalModel.nonlinear_terms[nlk12][:id] == 10
-
 
         @test m.internalModel.nonlinear_terms[nlk1][:y_type] == :Cont
         @test m.internalModel.nonlinear_terms[nlk2][:y_type] == :Cont
@@ -2518,9 +2512,9 @@ end
         @test m.internalModel.nonlinear_terms[nlk1][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[nlk2][:nonlinear_type] == :MULTILINEAR
         @test m.internalModel.nonlinear_terms[nlk3][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :BINPROD
-        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :BINPROD
-        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :BINPROD
+        @test m.internalModel.nonlinear_terms[nlk4][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk5][:nonlinear_type] == :BINLIN
+        @test m.internalModel.nonlinear_terms[nlk6][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[nlk7][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[nlk8][:nonlinear_type] == :BINLIN
         @test m.internalModel.nonlinear_terms[nlk9][:nonlinear_type] == :BINPROD
