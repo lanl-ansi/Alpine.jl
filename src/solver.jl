@@ -590,7 +590,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # populate data to create the bounding model
     process_expr(m)                 # Compact process of every expression
-    init_tight_bound(m)      # Initialize tightened bound vectors for future usage
+    init_tight_bound(m)             # Initialize tightened bound vectors for future usage
     resolve_var_bounds(m)           # resolve lifted var bounds
     pick_disc_vars(m)               # Picking variables to be discretized
     init_disc(m)                    # Initialize discretization dictionarys

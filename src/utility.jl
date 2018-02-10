@@ -52,6 +52,49 @@ function show_solution(m::JuMP.Model)
     return
 end
 
+function tri_loc(x)
+    return mod(x, 2*pi)/pi
+end
+
+function tri_der(x, opt)
+    opt == :sin && return cos(x)
+    opt == :cos && return -sin(x)
+    erro("unsupported trigonometric function for derivative")
+end
+
+function tri_val(x, opt)
+    return eval(opt(x))
+end
+
+function tri_extreme_val(a, b, opt)
+
+    if b - a >= 2*pi
+        tri_der(a, opt) > 0.0 && return 1, -1
+        tri_der(a, opt) < 0.0 && return 1, -1
+        tri_der(a, opt) == 0.0 && return tri_val(a), -tri_val(a)
+    end
+
+    if tri_der(a, opt) * tri_der(b, opt) > 0.0
+        if (b - a) >= pi
+            tri_der(a, opt) > 0 && return 1, -1
+        else
+            tri_der(a, opt) < 0 && return -1, 1
+        end
+    elseif tri_der(a, opt) * tri_der(b, opt) < 0.0
+        tri_der(a, opt) > 0.0 && return 1, min(tri_val(a), tri_val(b))
+        tri_der(a, opt) < 0.0 && return -1, max(tri_val(a), tri_val(b))
+    else
+        if tri_der(a, opt) == 0.0 && tri_der(b, opt) == 0.0
+
+        elseif tri_der(a, opt) == 0.0 && tri_der(b, opt) != 0.0
+
+        elseif tri_der(a, opt) != 0.0 && tri_der(b, opt) == 0.0
+
+        end
+    end
+
+end
+
 
 """
     Tell what would be the variable type of a lifted term.

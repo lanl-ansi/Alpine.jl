@@ -38,6 +38,14 @@ end
 
 function amp_convexify_intprod(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
 
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
+    ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
+    λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
+    α = amp_convhull_α(m, ml_indices, α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+
     error("No method implemented to relax INTPROD term")
 
     return λ, α
@@ -74,7 +82,15 @@ end
 
 function amp_convexify_intlin(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
 
-    error("No method implemented to relax INTLIN term")
+    m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
+    ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
+    λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
+    α = amp_convhull_α(m, ml_indices, α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+
+    error("No method implemented to relax INTPROD term")
 
     return λ, α
 end
@@ -216,7 +232,22 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
 end
 
 function populate_convhull_extreme_values(m::PODNonlinearModel, disc::Dict, trifunc_index::Int, trioperator::Symbol, λ::Dict)
-    λ[trifunc_index][:vals] = [eval(trioperator)(disc[trifunc_index][i]) for i in 1:length(discretization[trifunc_index])]
+
+    λCnt = length(discretization[trifunc_index])
+    PCnt = λ - 1
+
+    for i in 1:λCnt
+        λ[trifunc_index][:vals][i] = eval(trioperator)(disc[trifunc_index][i])
+    end
+
+    # Safety Scheme :: adding partition is too late here
+    for i in 1:PCnt
+        vs, ve = tri_extreme_val(disc[trifunc_index][i], disc[trifunc_index][i+1], trioperator)
+        if vs != λ[trifunc_index][:vals][i] || ve != λ[trifunc_index][:vals][i+1]
+            error("Inconsistent extreme value with tri-function $(trioperator). Partition stepping over 0 grideant point.")
+        end
+    end
+
     return λ
 end
 
@@ -264,6 +295,7 @@ function amp_convhull_α(m::PODNonlinearModel, ml_indices::Any, α::Dict, dim::T
     return α
 end
 
+# Method for multilinear terms
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
 
     # Adding λ constraints
@@ -282,6 +314,12 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     return
 end
 
+# Method for multilinear terms (overlapping)
+function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, int_indices::Any, fixed_rate::Float64, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
+    return
+end
+
+# Method for power-2 term
 function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
 
     partition_cnt = length(discretization[monomial_idx])-1

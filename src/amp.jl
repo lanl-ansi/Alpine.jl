@@ -213,7 +213,7 @@ TODO: also need to document the speical diverted cases when new partition touche
 
 This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
 """
-function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
+function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
 
     options = Dict(kwargs)
 
@@ -222,27 +222,31 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_ratio) ? ratio = options[:use_ratio] : ratio = m.disc_ratio
     haskey(options, :branching) ? branching = options[:branching] : branching = false
 
-    (length(point_vec) < m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
+    if length(point_vec) < m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
+        point_vec = resolve_lifted_var_value(m, point_vec)  # Update the solution vector for lifted variable
+    end
 
-    branching && (discretization = deepcopy(discretization))
+    if branching
+        discretization = deepcopy(discretization)
+    end
 
     # ? Perform discretization base on type of nonlinear terms ? #
     for i in m.disc_vars
         point = point_vec[i]                # Original Variable
         # @show i, point, discretization[i]
-        if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin, :Int])  # DO not add partitions to discrete variables
-            continue
+        if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin])  # DO NOT add partitions to binary variables
+            continue # This is a safety scheme
         end
         if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
 			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
-			point = 0.5*(discretization[i][1]+discretization[i][end])
+			point = 0.5*(discretization[i][1] + discretization[i][end]) # Should choose the longest range
 		end
         (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
         (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
         for j in 1:length(discretization[i])
             if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                @assert j < length(m.discretization[i])
-                radius = calculate_radius(m, i, j, ratio)
+                @assert j < length(discretization[i])
+                radius = calculate_radius(discretization[i], j, ratio)
                 insert_partition(m, i, j, point, radius, discretization[i])
                 break
             end
@@ -252,10 +256,10 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     return discretization
 end
 
-function calculate_radius(m::PODNonlinearModel, var::Int, part::Int, ratio::Any)
+function calculate_radius(partvec::Vector, part::Int, ratio::Any)
 
-    lb_local = m.discretization[var][part]
-    ub_local = m.discretization[var][part+1]
+    lb_local = partvec[part]
+    ub_local = partvec[part+1]
 
     distance = ub_local - lb_local
     if isa(ratio, Float64) || isa(ratio, Int)
@@ -271,11 +275,9 @@ end
 
 function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::Float64, radius::Float64, partvec::Vector)
 
-    abstol = m.disc_abs_width_tol
-    reltol = m.disc_rel_width_tol
+    abstol, reltol = m.disc_abs_width_tol, m.disc_rel_width_tol
 
-    lb_local = m.discretization[var][partidx]
-    ub_local = m.discretization[var][partidx+1]
+    lb_local, ub_local = partvec[partidx], partvec[partidx+1]
 
     ub_touch = true
     lb_touch = true
@@ -296,7 +298,7 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::F
     if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
         distance = -1.0
         pos = -1
-        for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
+        for j in 2:length(partvec)  # it is made sure there should be at least two partitions
             if (partvec[j] - partvec[j-1]) > distance
                 lb_local = partvec[j-1]
                 ub_local = partvec[j]
@@ -314,8 +316,6 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::F
 
     return
 end
-
-
 
 function add_uniform_partition(m::PODNonlinearModel; kwargs...)
 
