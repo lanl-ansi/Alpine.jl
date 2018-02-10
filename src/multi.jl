@@ -81,15 +81,15 @@ end
 
 function amp_convexify_sincos(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
 
-    # Because with the single dimension here
-
+    # Be careful with the single dimension here
+    # TODO build test cases for this problem
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
-    ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
-    λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
-    # Follow the template populate_convhull_extreme_values to build a specifc extreme value calculator
-    α = amp_convhull_α(m, ml_indices, α, dim, discretization)
-    amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+    trifunc_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
+    λ = amp_convhull_λ(m, k, trifunc_index, λ, extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(m, discretization, trifunc_index, m.nonlinear_terms[k][:nonlinear_type], λ)
+    α = amp_convhull_α(m, trifunc_index, α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, trifunc_index, dim, extreme_point_cnt, discretization)
 
     return λ, α
 end
@@ -212,6 +212,11 @@ end
 
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, monomial_index::Int, λ::Dict)
     λ[monomial_index][:vals] = [discretization[monomial_index][i]^2 for i in 1:length(discretization[monomial_index])]
+    return λ
+end
+
+function populate_convhull_extreme_values(m::PODNonlinearModel, disc::Dict, trifunc_index::Int, trioperator::Symbol, λ::Dict)
+    λ[trifunc_index][:vals] = [eval(trioperator)(disc[trifunc_index][i]) for i in 1:length(discretization[trifunc_index])]
     return λ
 end
 

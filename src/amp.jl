@@ -69,7 +69,7 @@ function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)
     amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
     amp_post_convhull(m, use_disc=discretization)           # convex hull representation
 
-    convexification_exam(m) # Exam to see if all non-linear terms have been convexificed
+    is_fully_convex(m) # Exam to see if all non-linear terms have been convexificed
 
     return
 end
@@ -242,46 +242,8 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
         for j in 1:length(discretization[i])
             if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
                 @assert j < length(m.discretization[i])
-                lb_local = discretization[i][j]
-                ub_local = discretization[i][j+1]
-                distance = ub_local - lb_local
-                if isa(ratio, Float64) || isa(ratio, Int)
-                    radius = distance / ratio
-                elseif isa(ratio, Function)
-                    radius = distance / ratio(m)
-                else
-                    error("Undetermined discretization ratio")
-                end
-                lb_new = max(point - radius, lb_local)
-                ub_new = min(point + radius, ub_local)
-                ub_touch = true
-                lb_touch = true
-                if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.disc_abs_width_tol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > m.disc_rel_width_tol    # Insert new UB-based partition
-                    insert!(discretization[i], j+1, ub_new)
-                    ub_touch = false
-                end
-                if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.disc_abs_width_tol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > m.disc_rel_width_tol # Insert new LB-based partition
-                    insert!(discretization[i], j+1, lb_new)
-                    lb_touch = false
-                end
-                if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
-                    distance = -1.0
-                    pos = -1
-                    for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
-                        if (discretization[i][j] - discretization[i][j-1]) > distance
-                            lb_local = discretization[i][j-1]
-                            ub_local = discretization[i][j]
-                            distance = ub_local - lb_local
-                            point = lb_local + (ub_local - lb_local) / 2   # reset point
-                            pos = j
-                        end
-                    end
-                    chunk = (ub_local - lb_local)/2
-                    insert!(discretization[i], pos, lb_local + chunk)
-                    (m.loglevel > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
-                else
-                    (m.loglevel > 99) && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
-                end
+                radius = calculate_radius(m, i, j, ratio)
+                insert_partition(m, i, j, point, radius, discretization[i])
                 break
             end
         end
@@ -289,6 +251,71 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
 
     return discretization
 end
+
+function calculate_radius(m::PODNonlinearModel, var::Int, part::Int, ratio::Any)
+
+    lb_local = m.discretization[var][part]
+    ub_local = m.discretization[var][part+1]
+
+    distance = ub_local - lb_local
+    if isa(ratio, Float64) || isa(ratio, Int)
+        radius = distance / ratio
+    elseif isa(ratio, Function)
+        radius = distance / ratio(m)
+    else
+        error("Undetermined discretization ratio")
+    end
+
+    return radius
+end
+
+function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::Float64, radius::Float64, partvec::Vector)
+
+    abstol = m.disc_abs_width_tol
+    reltol = m.disc_rel_width_tol
+
+    lb_local = m.discretization[var][partidx]
+    ub_local = m.discretization[var][partidx+1]
+
+    ub_touch = true
+    lb_touch = true
+
+    lb_new = max(point - radius, lb_local)
+    ub_new = min(point + radius, ub_local)
+
+    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=abstol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > reltol # Insert new UB-based partition
+        insert!(partvec, partidx+1, ub_new)
+        ub_touch = false
+    end
+
+    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=abstol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > reltol # Insert new LB-based partition
+        insert!(partvec, partidx+1, lb_new)
+        lb_touch = false
+    end
+
+    if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
+        distance = -1.0
+        pos = -1
+        for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
+            if (partvec[j] - partvec[j-1]) > distance
+                lb_local = partvec[j-1]
+                ub_local = partvec[j]
+                distance = ub_local - lb_local
+                point = lb_local + (ub_local - lb_local) / 2   # reset point
+                pos = j
+            end
+        end
+        chunk = (ub_local - lb_local)/2
+        insert!(partvec, pos, lb_local + chunk)
+        (m.loglevel > 99) && println("[DEBUG] !DIVERT! VAR$(var): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
+    else
+        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+    end
+
+    return
+end
+
+
 
 function add_uniform_partition(m::PODNonlinearModel; kwargs...)
 
@@ -308,10 +335,6 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     return discretization
 end
 
-
-"""
-    TODO: docstring
-"""
 function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations

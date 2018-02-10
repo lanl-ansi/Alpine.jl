@@ -264,9 +264,9 @@ function fix_domains(m::PODNonlinearModel)
 end
 
 """
-    convexification_exam(m::PODNonlinearModel)
+    is_fully_convex(m::PODNonlinearModel)
 """
-function convexification_exam(m::PODNonlinearModel)
+function is_fully_convex(m::PODNonlinearModel)
 
     # Other more advanced convexification check goes here
     for term in keys(m.nonlinear_terms)
