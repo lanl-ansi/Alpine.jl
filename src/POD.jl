@@ -1,3 +1,5 @@
+__precompile__()
+
 module POD
 
 using JuMP
@@ -26,6 +28,8 @@ include("tmc.jl")
 # Model Manipulation and utilities
 include("bounds.jl")
 include("utility.jl")
+include("integer.jl")
+include("trigonometry.jl")
 
 # Othes
 include("log.jl")

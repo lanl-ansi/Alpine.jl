@@ -161,7 +161,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         if m.nlp_solver != UnsetSolver()
             local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_solver)
         else
-            warn("Handling NLP problem with minlp solver, could result in error due to MINLP solver.")
+            warn("Handling NLP problem using minlp solver, could result in error due to MINLP solver.")
             local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_solver)
         end
     end
@@ -249,7 +249,9 @@ function bounding_solve(m::PODNonlinearModel)
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
         candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
-        (m.disc_consecutive_forbid > 0) && (m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol)) # Requires proper offseting
+        if m.disc_consecutive_forbid > 0
+            m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol) # Requires proper offseting
+        end
         push!(m.logs[:bound], candidate_bound)
         if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
             m.best_bound = candidate_bound

@@ -52,49 +52,6 @@ function show_solution(m::JuMP.Model)
     return
 end
 
-function tri_loc(x)
-    return mod(x, 2*pi)/pi
-end
-
-function tri_der(x, opt)
-    opt == :sin && return cos(x)
-    opt == :cos && return -sin(x)
-    erro("unsupported trigonometric function for derivative")
-end
-
-function tri_val(x, opt)
-    return eval(opt(x))
-end
-
-function tri_extreme_val(a, b, opt)
-
-    if b - a >= 2*pi
-        tri_der(a, opt) > 0.0 && return 1, -1
-        tri_der(a, opt) < 0.0 && return 1, -1
-        tri_der(a, opt) == 0.0 && return tri_val(a), -tri_val(a)
-    end
-
-    if tri_der(a, opt) * tri_der(b, opt) > 0.0
-        if (b - a) >= pi
-            tri_der(a, opt) > 0 && return 1, -1
-        else
-            tri_der(a, opt) < 0 && return -1, 1
-        end
-    elseif tri_der(a, opt) * tri_der(b, opt) < 0.0
-        tri_der(a, opt) > 0.0 && return 1, min(tri_val(a), tri_val(b))
-        tri_der(a, opt) < 0.0 && return -1, max(tri_val(a), tri_val(b))
-    else
-        if tri_der(a, opt) == 0.0 && tri_der(b, opt) == 0.0
-
-        elseif tri_der(a, opt) == 0.0 && tri_der(b, opt) != 0.0
-
-        elseif tri_der(a, opt) != 0.0 && tri_der(b, opt) == 0.0
-
-        end
-    end
-
-end
-
 
 """
     Tell what would be the variable type of a lifted term.
@@ -131,14 +88,20 @@ end
 This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
 The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
 """
-function init_disc(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
+function init_disc(m::PODNonlinearModel)
 
     for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
-        lb = m.l_var_tight[var]
-        ub = m.u_var_tight[var]
-        m.discretization[var] = [lb, ub]
+        if m.var_type[var] in [:Bin, :Cont]
+            lb = m.l_var_tight[var]
+            ub = m.u_var_tight[var]
+            m.discretization[var] = [lb, ub]
+        elseif m.var_type[var] in [:Int]
+            m.int2bin ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
+            m.int2bin ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
+            m.discretization[var] = [lb, ub]
+        else
+            error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
+        end
     end
 
     return
@@ -152,9 +115,7 @@ Utility functions to convert bounds vectors to Dictionary based structures that 
 partition operations.
 
 """
-function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64}; kwargs...)
-
-    options = Dict(kwargs)
+function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
 
     @assert length(lbs) == length(ubs)
     var_discretization = Dict()
@@ -589,5 +550,6 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     m.num_var_disc_mip = Int(sum(xVal))
     m.disc_vars = [i for i in nodes if xVal[i] > 0]
     (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
+    
     return
 end

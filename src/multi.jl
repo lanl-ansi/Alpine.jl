@@ -451,7 +451,7 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
 end
 
 # Method for multilinear terms with discrete variables
-function amp_post_inequalities(m::PODNonlinearModel, d::Dict, λ::Dict, α::Dict, indices::Any, fixed_rate::Int, dim::Tuple, var_ind::Int, cnt::Int)
+function amp_post_inequalities(m::PODNonlinearModel, d::Dict, λ::Dict, α::Dict, indices::Any, fixed_rate::Float64, dim::Tuple, var_ind::Int, cnt::Int)
 
     l_cnt = length(d[var_ind])
     p_cnt = l_cnt - 1

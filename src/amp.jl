@@ -89,9 +89,19 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)])
 
     for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+
         (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])  # This is a tricky step, not enforcing category of lifted variables is able to improve performance
-        (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
-        (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))     # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+        if l_var[i] > -Inf
+            setlowerbound(x[i], l_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
+        end
+        if u_var[i] < Inf
+            setupperbound(x[i], u_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+        end
+
+        #TODO experimental code, make sure it is properly cleaned
+        m.int2bin && m.var_type[i] == :Int && setcategory(x[i], :Cont)
+        m.int2bin && m.var_type[i] == :Int && setlowerbound(x[i], floor(m.l_var_tight[i]) - 0.5)
+        m.int2bin && m.var_type[i] == :Int && setupperbound(x[i], ceil(m.l_var_tight[i]) + 0.5)
     end
 
     return
@@ -230,25 +240,47 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
         discretization = deepcopy(discretization)
     end
 
+    processed = Set{Int}()
+
     # ? Perform discretization base on type of nonlinear terms ? #
     for i in m.disc_vars
         point = point_vec[i]                # Original Variable
-        # @show i, point, discretization[i]
-        # Overriding methods to add partitions
+        λCnt = length(discretization[i])
+
+        # @show i, point, discretization[i] # Debugger
+        # Apply special and user methods
+        for injector in m.method_partition_injection
+            injector(m, i, discretization[i], point, ratio, processed)
+        end
+
+        # Built-in method based-on variable type
         if m.var_type[i] == :Cont
-            point = correct_point(m, discretization, point, i)
-            for j in 1:length(discretization[i])
+            i in processed && continue
+            point = correct_point(m, discretization[i], point)
+            for j in 1:λCnt
                 if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                    @assert j < length(discretization[i])
                     radius = calculate_radius(discretization[i], j, ratio)
                     insert_partition(m, i, j, point, radius, discretization[i])
+                    push!(processed, i)
                     break
                 end
             end
-        elseif m.var_type[i] == :Bin  # DO NOT add partitions to binary variables
-            continue # This is a safety scheme
+        elseif m.var_type[i] == :Bin # This should never happen
+            warn("Binary variable in m.disc_vars. Check out what is wrong...")
+            continue  # No partition should be added to binary variable unless user specified
         elseif m.var_type[i] == :Int
             error("Methods for adding partitions to integer variables are not added.")
+            i in processed && continue
+            point = discover_int_point(m, i, discretization, point)
+            if point != nothing
+                for j in 1:λCnt
+                    if point >= discretization[i][j] && point <= discretization[i][j+1]
+                        insert_partition(m, i, j, point, 0.5, discretization[i])
+                        push!(processed, i)
+                        break
+                    end
+                end
+            end
         else
             error("Unexpected variable types during injecting partitions")
         end
@@ -257,15 +289,15 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
     return discretization
 end
 
-function correct_point(m::PODNonlinearModel, d::Dict, point::Float64, i::Int)
+function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64)
 
-    if point < d[i][1] - m.tol || point > d[i][end] + m.tol
-        warn("Soluiton VAR$(i)=$(point) out of bounds [$(d[i][1]),$(d[i][end])]. Taking middle point...")
-        return 0.5*(d[i][1] + d[i][end]) # Should choose the longest range
+    if point < partvec[1] - m.tol || point > partvec[end] + m.tol
+        warn("Soluiton SOL=$(point) out of bounds [$(partvec[1]),$(partvec[end])]. Taking middle point...")
+        return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
     end
 
-    isapprox(point, d[i][1];atol=m.tol) && return d[i][1]
-    isapprox(point, d[i][end];atol=m.tol) && return d[i][end]
+    isapprox(point, partvec[1];atol=m.tol) && return partvec[1]
+    isapprox(point, partvec[end];atol=m.tol) && return partvec[end]
 
     return point
 end
@@ -292,12 +324,8 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::F
     abstol, reltol = m.disc_abs_width_tol, m.disc_rel_width_tol
 
     lb_local, ub_local = partvec[partidx], partvec[partidx+1]
-
-    ub_touch = true
-    lb_touch = true
-
-    lb_new = max(point - radius, lb_local)
-    ub_new = min(point + radius, ub_local)
+    ub_touch, lb_touch = true, true
+    lb_new, ub_new = max(point - radius, lb_local), min(point + radius, ub_local)
 
     if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=abstol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > reltol # Insert new UB-based partition
         insert!(partvec, partidx+1, ub_new)

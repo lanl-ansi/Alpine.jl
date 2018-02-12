@@ -40,14 +40,19 @@ function expr_resolve_term_pattern(expr, constr_id::Int, m::PODNonlinearModel; k
         skip && return expr
     end
 
+    # NOTE :: Sequence of which term to detect matters here
+    #         More specific term should be detected first to reduce the size of relaxation
+    #         model. For example, power-2 or bilinear term should be detected before
+    #         general multilinear terms to apply better outter approxiamtion.
+
     # LEVEL 1 : : Recognize all built-in structural patterns
+    skip, expr = detect_discretemulti_term(expr, constr_id, m)     #L1 : General case : discrete variables * continous variables
+    skip && return expr
+
     skip, expr = detect_binprod_term(expr, constr_id, m)           #L1 : binprod = binary products
     skip && return expr
 
-	skip, expr = detect_intprod_term(expr, constr_id, m)			#L1 : intprod = integer products
-	skip && return expr
-
-    skip, expr = detect_discretemulti_term(expr, constr_id, m)     #L1 : General case : discrete variables * continous variables
+    skip, expr = detect_intprod_term(expr, constr_id, m)		   #L1 : intprod = integer products
     skip && return expr
 
     # LEVEL 2 : : Recognize all built-in structural patterns
