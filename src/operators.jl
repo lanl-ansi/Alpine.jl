@@ -170,6 +170,7 @@ function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 (i == 2) ? push!(coef_var, (1.0, expr.args[i].args[2])) : push!(coef_var, (coef_fetch[expr.args[1]],expr.args[i].args[2]))
                 continue
             end
+            # Specical Check
             if expr.args[i].head == :call && expr.args[i].args[1] == :* && length(expr.args[i].args) == 3
                 sub_coef = [j for j in expr.args[i].args if (isa(j, Int) || isa(j, Float64))]
                 sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(j)) && j.head == :ref)]
@@ -178,6 +179,7 @@ function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
                 continue
             end
+            # General Check
             if expr.args[i].head == :call && expr.args[i].args[1] in [:-,:+] && length(expr.args[i].args) == 2 # resolve -(2) or -(x) terms
                 expr.args[i].args[1] == :+ ? sub_coef = [1.0] : sub_coef = [-1.0]
                 sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(j)) && j.head == :ref)]
@@ -187,6 +189,7 @@ function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
             else
                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
                 down_check ? expr.args[i] = linear_lift_var : return false, expr
+                push!(coef_var, (1.0, expr.args[i].args[2]))
             end
         end
         # By reaching here, it is already certain that we have found the term, always treat with :+
@@ -590,7 +593,6 @@ function detect_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
 
         if length(var_idxs) == 1 && power_scalar >= 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
-            @show term_key
             term_key in keys(m.nonlinear_terms) || store_nonlinear_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
             return true, lift_nonlinear_term(m, term_key, constr_id, scalar)
         end

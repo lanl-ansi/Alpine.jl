@@ -59,7 +59,7 @@ end
     @docstring TODO
 """
 function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
-
+    
     if operator == :+
         detector = [i in [:Bin, :Int] ? true : false for i in var_types]
         if length(detector) == 1 && detector[1] # Special case
@@ -550,6 +550,6 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     m.num_var_disc_mip = Int(sum(xVal))
     m.disc_vars = [i for i in nodes if xVal[i] > 0]
     (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
-    
+
     return
 end
