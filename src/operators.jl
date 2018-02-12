@@ -563,7 +563,7 @@ function detect_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
         end
 
-        if length(var_idxs) >= 2
+        if length(var_idxs) >= 1
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
             term_key in keys(m.nonlinear_terms) || store_nonlinear_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
             return true, lift_nonlinear_term(m, term_key, constr_id, scalar)
@@ -591,7 +591,7 @@ function detect_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
             end
         end
 
-        if length(var_idxs) == 1 && power_scalar >= 2.0
+        if length(var_idxs) == 1 && power_scalar >= 1.0 && mod(power_scalar, 1.0) == 0.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
             term_key in keys(m.nonlinear_terms) || store_nonlinear_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
             return true, lift_nonlinear_term(m, term_key, constr_id, scalar)
@@ -690,7 +690,7 @@ function detect_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
                 continue
             end
         end
-        if length(var_idxs) == 1 && power_scalar > 2.0
+        if length(var_idxs) == 1 && power_scalar > 2.0 && mod(power_scalar, 1.0) == 0.0 
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
             term_key in keys(m.nonlinear_terms) || store_nonlinear_term(m, term_key, var_idxs, :BINPROD, :*, binprod, basic_binprod_bounds, collect_binprod_discvar)
             return true, lift_nonlinear_term(m, term_key, constr_id, scalar)
@@ -808,7 +808,7 @@ function detect_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 continue
             end
         end
-        if length(var_idxs) == 1 && power_scalar > 2.0
+        if length(var_idxs) == 1 && power_scalar > 2.0 && mod(power_scalar, 1.0) == 0.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
             term_key in keys(m.nonlinear_terms) || store_nonlinear_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear, basic_monomial_bounds, collect_monomial_discvar)
             return true, lift_nonlinear_term(m, term_key, constr_id, scalar)
