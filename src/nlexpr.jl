@@ -404,9 +404,10 @@ end
 	Most issues can be caused by this function.
 """
 function expr_flatten(expr, level=0; kwargs...)
+
 	if level > 0  # No trivial constraint is allowed "3>5"
 		flat = expr_arrangeargs(expr.args)
-		if isa(flat, Float64)
+		if isa(flat, Float64) || isa(flat, Int)
 			return flat
 		else
 			expr.args = flat

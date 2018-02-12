@@ -24,6 +24,7 @@ include("$(poddir)/test/examples/circle.jl")
 include("$(poddir)/test/examples/convex.jl")
 include("$(poddir)/test/examples/linearlift.jl")
 include("$(poddir)/test/examples/specialopts.jl")
+include("$(poddir)/test/examples/brainpc3.jl")
 
 # Performe Tests
 include("$(poddir)/test/solver.jl")

@@ -66,10 +66,6 @@ function expr_resolve_term_pattern(expr, constr_id::Int, m::PODNonlinearModel; k
     return expr # if no structure is detected, simply return the original tree
 end
 
-"""
-    TODO: docstring
-    General funtioan to store a term
-"""
 function store_nonlinear_term(m::PODNonlinearModel, nl_key::Any, var_idxs::Any, term_type::Symbol, operator::Symbol, evaluator::Function, bd_resolver::Function, discvar_collector::Function)
 
     l_cnt = length(keys(m.linear_terms))
@@ -177,24 +173,21 @@ function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
                 continue
             end
-            if expr.args[i].head == :call && expr.args[i].args[1] in [:-,:+] && length(expr.args[i].args) == 2
+            if expr.args[i].head == :call && expr.args[i].args[1] in [:-,:+] && length(expr.args[i].args) == 2 # resolve -(2) or -(x) terms
                 expr.args[i].args[1] == :+ ? sub_coef = [1.0] : sub_coef = [-1.0]
                 sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(j)) && j.head == :ref)]
                 isempty(sub_vars) && return false, expr
                 length(sub_vars) != 1 && return false, expr
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
             else
-                return false, expr
+                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+                down_check ? expr.args[i] = linear_lift_var : return false, expr
             end
         end
         # By reaching here, it is already certain that we have found the term, always treat with :+
         term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
-        if term_key in keys(m.linear_terms)
-            return true, lift_linear_term(m, term_key, constr_id)
-        else
-            store_linear_term(m, term_key, expr)
-            return true, lift_linear_term(m, term_key, constr_id)
-        end
+        term_key in keys(m.linear_terms) || store_linear_term(m, term_key, expr)
+        return true, lift_linear_term(m, term_key, constr_id)
     elseif expr.args[1] in [:*] && length(expr.args) == 3
         # For terms like (3*x)*y
         scalar = 0.0
@@ -208,12 +201,8 @@ function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
 
         # By reaching here, it is already certain that we have found the term, always treat with :+
         term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
-        if term_key in keys(m.linear_terms)
-            return true, lift_linear_term(m, term_key, constr_id)
-        else
-            store_linear_term(m, term_key, expr)
-            return true, lift_linear_term(m, term_key, constr_id)
-        end
+        term_key in keys(m.linear_terms) || store_linear_term(m, term_key, expr)
+        return true, lift_linear_term(m, term_key, constr_id)
     end
 
     return false, expr
@@ -855,7 +844,6 @@ function detect_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
     # Type 2 monomial term : x * x
     if (expr.args[1] == :*)  # confirm head (:*)
         # ----- Pattern : coefficient * x * y  ------ #
-        # Collect children information for checking
         scalar = 1.0
         var_idxs = []
         for i in 2:length(expr.args)
