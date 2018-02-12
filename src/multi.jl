@@ -314,8 +314,26 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ml_
     return
 end
 
-# Method for multilinear terms (overlapping)
-function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, int_indices::Any, fixed_rate::Float64, dim::Tuple, extreme_point_cnt::Int, discretization::Dict)
+# Method for multilinear terms with integer variables
+function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, dml_indices, fixed_rate::Float64, dim::Tuple, ext_p_cnt::Int, d::Dict)
+
+    # Adding λ constraints
+    @constraint(m.model_mip, sum(λ[dml_indices][:vars]) == 1)
+    @constraint(m.model_mip, Variable(m.model_mip, λ[dml_indices][:lifted_var_idx]) == dot(λ[dml_indices][:vars], reshape(λ[dml_indices][:vals], ext_p_cnt)))
+
+    for (cnt, i) in enumerate(dml_indices)
+        if m.var_type[i] == :Int
+            amp_post_inequalities(m, d, λ, α, dml_indices, dim, i, cnt)        # Add links between λ and α
+        elseif m.var_type[i] == :Bin
+            amp_post_inequalities(m, d, λ, α, dml_indices, fixed_rate, dim, i, cnt)
+        else
+            error("EXCEPTION: unexpected variable type during integer related realxation")
+        end
+        l_cnt = length(d[i])
+        sliced_indices = [collect_indices(λ[dml_indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
+        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([d[i][k]],length(sliced_indices[k])), λ[dml_indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
+    end
+
     return
 end
 
@@ -367,6 +385,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
     return
 end
 
+# Method for regular multilinear terms
 function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
     lambda_cnt = length(discretization[var_ind])
@@ -429,6 +448,48 @@ function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::D
     end
 
     return
+end
+
+# Method for multilinear terms with discrete variables
+function amp_post_inequalities(m::PODNonlinearModel, d::Dict, λ::Dict, α::Dict, indices::Any, fixed_rate::Int, dim::Tuple, var_ind::Int, cnt::Int)
+
+    l_cnt = length(d[var_ind])
+    p_cnt = l_cnt - 1
+
+    # Embedding formulation
+    if m.convhull_formulation == "sos2" && m.convhull_ebd && p_cnt > 2
+        ebd_map = embedding_map(l_cnt, m.convhull_ebd_encode, m.convhull_ebd_ibs)
+        Y_cnt = Int(ebd_map[:L])
+        @assert Y_cnt == length(α[var_ind])
+        for i in 1:Y_cnt
+            p_sliced_indices = collect_indices(λ[indices][:indices], cnt, collect(ebd_map[i]), dim)
+            n_sliced_indices = collect_indices(λ[indices][:indices], cnt, collect(ebd_map[i+Y_cnt]), dim)
+            @constraint(m.model_mip, sum(λ[indices][:vars][p_sliced_indices]) <= α[var_ind][i])
+            @constraint(m.model_mip, sum(λ[indices][:vars][n_sliced_indices]) <= 1-α[var_ind][i])
+        end
+        m.convhull_ebd_link && ebd_link_xα(m, α[var_ind], l_cnt, d[var_ind], ebd_map[:H_orig], var_ind)
+        return
+    end
+
+    # SOS-2 Formulation
+    if m.convhull_formulation == "sos2"
+        for j in 1:l_cnt
+            sliced_indices = collect_indices(λ[indices][:indices], cnt, [j], dim)
+            if (j == 1)
+                d[var_ind][j+1] - d[var_ind][j] == 1.0 ? rate = fixed_rate : rate = 1.0
+                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][j] * rate)
+            elseif (j == l_cnt)
+                d[var_ind][j] - d[var_ind][j-1] == 1.0 ? rate = fixed_rate : rate = 1.0
+                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][p_cnt] * rate)
+            else
+                rate = fixed_rate
+                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= sum(α[var_ind][(j-1):j]) * rate)
+            end
+        end
+        return
+    else
+        error("Only SOS-2 formulation support convexification of terms with integer variables.")
+    end
 end
 
 function collect_indices(l::Array, locator::Tuple, dim::Tuple)

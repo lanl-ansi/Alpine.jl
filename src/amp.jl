@@ -234,26 +234,40 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
     for i in m.disc_vars
         point = point_vec[i]                # Original Variable
         # @show i, point, discretization[i]
-        if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin])  # DO NOT add partitions to binary variables
-            continue # This is a safety scheme
-        end
-        if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
-			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
-			point = 0.5*(discretization[i][1] + discretization[i][end]) # Should choose the longest range
-		end
-        (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
-        (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
-        for j in 1:length(discretization[i])
-            if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                @assert j < length(discretization[i])
-                radius = calculate_radius(discretization[i], j, ratio)
-                insert_partition(m, i, j, point, radius, discretization[i])
-                break
+        # Overriding methods to add partitions
+        if m.var_type[i] == :Cont
+            point = correct_point(m, discretization, point, i)
+            for j in 1:length(discretization[i])
+                if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+                    @assert j < length(discretization[i])
+                    radius = calculate_radius(discretization[i], j, ratio)
+                    insert_partition(m, i, j, point, radius, discretization[i])
+                    break
+                end
             end
+        elseif m.var_type[i] == :Bin  # DO NOT add partitions to binary variables
+            continue # This is a safety scheme
+        elseif m.var_type[i] == :Int
+            error("Methods for adding partitions to integer variables are not added.")
+        else
+            error("Unexpected variable types during injecting partitions")
         end
     end
 
     return discretization
+end
+
+function correct_point(m::PODNonlinearModel, d::Dict, point::Float64, i::Int)
+
+    if point < d[i][1] - m.tol || point > d[i][end] + m.tol
+        warn("Soluiton VAR$(i)=$(point) out of bounds [$(d[i][1]),$(d[i][end])]. Taking middle point...")
+        return 0.5*(d[i][1] + d[i][end]) # Should choose the longest range
+    end
+
+    isapprox(point, d[i][1];atol=m.tol) && return d[i][1]
+    isapprox(point, d[i][end];atol=m.tol) && return d[i][end]
+
+    return point
 end
 
 function calculate_radius(partvec::Vector, part::Int, ratio::Any)
