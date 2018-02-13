@@ -11,7 +11,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     α = Dict()  # Partitioning Variables
     β = Dict()  # Lifted variables for exact formulation
 
-    # Construct λ variable space
+    # Convexification Treatment for Complex Non-Convex Terms
     for k in keys(m.nonlinear_terms)
         nl_type = m.nonlinear_terms[k][:nonlinear_type]
         if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) && (m.nonlinear_terms[k][:convexified] == false)
@@ -33,10 +33,35 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         end
     end
 
+    # Experimental Code
+    if m.int2bin
+        for (idx, i) in enumerate(m.var_type)
+            if i == :Int
+                λ, α = amp_convexify_int(m, idx, λ, α, discretization)
+            end
+        end
+    end
+
     return
 end
 
+function amp_convexify_int(m::PODNonlinearModel, idx::Int, λ::Dict, α::Dict, discretization::Dict)
+
+    # Check if VAR idx exist in any Complex Nonlinear Terms
+    # If so, VAR idx has already been discretized/relaxed, in its linear term, the value will be relaxed as well
+
+    # If not, perform convexification method
+
+    # Relax the original variable in bounding model
+
+    # Stores Related information
+
+    return λ, α
+end
+
 function amp_convexify_intprod(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+
+    # Need to make sure this function works just fine
 
     m.nonlinear_terms[k][:convexified] = true  # Bookeeping the convexified terms
 

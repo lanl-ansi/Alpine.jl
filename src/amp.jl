@@ -101,7 +101,7 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
         #TODO experimental code, make sure it is properly cleaned
         m.int2bin && m.var_type[i] == :Int && setcategory(x[i], :Cont)
         m.int2bin && m.var_type[i] == :Int && setlowerbound(x[i], floor(m.l_var_tight[i]) - 0.5)
-        m.int2bin && m.var_type[i] == :Int && setupperbound(x[i], ceil(m.l_var_tight[i]) + 0.5)
+        m.int2bin && m.var_type[i] == :Int && setupperbound(x[i], ceil(m.u_var_tight[i]) + 0.5)
     end
 
     return
