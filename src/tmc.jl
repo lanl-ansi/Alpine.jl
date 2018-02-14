@@ -14,14 +14,14 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
     lb = Dict()
     ub = Dict()
 
-    for bi in keys(m.nonlinear_terms)
-        nl_type = m.nonlinear_terms[bi][:nonlinear_type]
-        if ((!m.monomial_convexhull)*(nl_type == :MONOMIAL) || (!m.bilinear_convexhull)*(nl_type == :BILINEAR)) && (m.nonlinear_terms[bi][:convexified] == false)
+    for bi in keys(m.nonconvex_terms)
+        nl_type = m.nonconvex_terms[bi][:nonlinear_type]
+        if ((!m.monomial_convexhull)*(nl_type == :MONOMIAL) || (!m.bilinear_convexhull)*(nl_type == :BILINEAR)) && (m.nonconvex_terms[bi][:convexified] == false)
             @assert length(bi) == 2
-            m.nonlinear_terms[bi][:convexified] = true  # Bookeeping the examined terms
+            m.nonconvex_terms[bi][:convexified] = true  # Bookeeping the examined terms
             idx_a = bi[1].args[2]
             idx_b = bi[2].args[2]
-            idx_ab = m.nonlinear_terms[bi][:lifted_var_ref].args[2]
+            idx_ab = m.nonconvex_terms[bi][:lifted_var_ref].args[2]
 
             part_cnt_a = length(discretization[idx_a]) - 1
             part_cnt_b = length(discretization[idx_b]) - 1
@@ -37,21 +37,21 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
             (ub[idx_b][end] == +Inf) && error("Infinite upper bound detected on VAR$idx_b, resolve it please")
 
             if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
-                if m.nonlinear_terms[bi][:nonlinear_type] == :MONOMIAL
+                if m.nonconvex_terms[bi][:nonlinear_type] == :MONOMIAL
                     mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
-                elseif m.nonlinear_terms[bi][:nonlinear_type] == :BILINEAR
+                elseif m.nonconvex_terms[bi][:nonlinear_type] == :BILINEAR
                     mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
                         lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
                 end
             else                                                    # Tighten McCormick
-                # if m.nonlinear_terms[bi][:MONOMIAL_satus]
-                if m.nonlinear_terms[bi][:nonlinear_type] == :MONOMIAL
+                # if m.nonconvex_terms[bi][:MONOMIAL_satus]
+                if m.nonconvex_terms[bi][:nonlinear_type] == :MONOMIAL
                     λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                     λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                     amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
                     amp_post_tmc_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
                 # else
-                elseif m.nonlinear_terms[bi][:nonlinear_type] == :BILINEAR
+                elseif m.nonconvex_terms[bi][:nonlinear_type] == :BILINEAR
                     # Partitioning on left
                     if (idx_a in m.disc_vars) && !(idx_b in m.disc_vars) && (part_cnt_b == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)

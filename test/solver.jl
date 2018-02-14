@@ -1,15 +1,13 @@
 @testset "PODNonlinearModel loading tests" begin
     # Random Model 1
-    test_solver = PODSolver(nlp_solver=IpoptSolver(),
-						   mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
     m = operator_c(solver=test_solver)
 
     status = JuMP.build(m)
     @test isa(m.internalModel, POD.PODNonlinearModel)
 
     # Expression Model 1
-    test_solver = PODSolver(nlp_solver=IpoptSolver(),
-						   mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
     m = exprstest(solver=test_solver)
     status = JuMP.build(m)
     @test isa(m.internalModel, POD.PODNonlinearModel)
@@ -30,7 +28,6 @@ end
 
     @test status == :UserLimits
     @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test isapprox(m.objBound, 3004.2470074351413;atol=1e-3)
     @test length(m.internalModel.candidate_disc_vars) == 8
     @test length(m.internalModel.disc_vars) == 8
     @test m.internalModel.disc_var_pick == 0
@@ -48,7 +45,6 @@ end
 
     @test status == :UserLimits
     @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test isapprox(m.objBound, 3004.2470074351413;atol=1e-3)
     @test length(m.internalModel.candidate_disc_vars) == 8
     @test length(m.internalModel.disc_vars) == 8
     @test m.internalModel.disc_var_pick == 2
@@ -66,7 +62,6 @@ end
 
     @test status == :UserLimits
     @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test isapprox(m.objBound,2606.2285443624664;atol=1e-3)
     @test length(m.internalModel.candidate_disc_vars) == 8
     @test length(m.internalModel.disc_vars) == 3
     @test m.internalModel.disc_var_pick == 1
@@ -83,7 +78,6 @@ end
 
     @test status == :UserLimits
     @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test isapprox(m.objBound, 4896.6075;atol=1e-3)
     @test length(m.internalModel.candidate_disc_vars) == 8
     @test length(m.internalModel.disc_vars) == 8
     @test m.internalModel.disc_var_pick == 3
@@ -105,7 +99,6 @@ end
 
     @test status == :UserLimits
     @test m.objVal <= 470.3176
-    @test isapprox(m.objBound, 77.9999999999999; atol=1e-3)
 
     @test length(m.internalModel.candidate_disc_vars) == 10
     @test length(m.internalModel.disc_vars) == 10
@@ -125,7 +118,6 @@ end
 
     @test status == :UserLimits
     @test m.objVal <= 470.3176
-    @test isapprox(m.objBound, 250055.0761; atol=1e-3)
     @test length(m.internalModel.candidate_disc_vars) == 10
     @test length(m.internalModel.disc_vars) == 4
     @test m.internalModel.disc_var_pick == 1
@@ -144,7 +136,6 @@ end
 
     @test status == :UserLimits
     @test m.objVal <= 470.3176
-    @test isapprox(m.objBound, 77.9999999999999; atol=1e-3)
 
     @test length(m.internalModel.candidate_disc_vars) == 10
     @test length(m.internalModel.disc_vars) == 10
@@ -223,7 +214,6 @@ end
 
     @test status == :UserLimits
     @test m.objVal <= 228.87
-    @test isapprox(m.objBound, 106.05582679267336; atol=1e-3)
 
     @test length(m.internalModel.candidate_disc_vars) == 24
     @test length(Set(m.internalModel.candidate_disc_vars)) == 24
@@ -245,7 +235,6 @@ end
 
     @test status == :UserLimits
     @test m.objVal <= 228.7810
-    @test m.objBound >= 127.2135
 
     @test length(m.internalModel.candidate_disc_vars) == 24
     @test length(Set(m.internalModel.candidate_disc_vars)) == 24

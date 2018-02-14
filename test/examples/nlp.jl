@@ -46,7 +46,7 @@ end
 
 function max_cover_var_picker(m::POD.PODNonlinearModel)
 	nodes = Set()
-	for pair in keys(m.nonlinear_terms)
+	for pair in keys(m.nonconvex_terms)
 		for i in pair
 			@assert isa(i.args[2], Int)
 			push!(nodes, i.args[2])

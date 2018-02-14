@@ -114,7 +114,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Expression related and Structural Property Placeholder
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
-    nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
+    nonconvex_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
     term_seq::Dict{Int, Any}                                    # Vector-Dictionary for nl terms detection
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     obj_structure::Symbol                                       # A symbolic indicator of the expression type of objective function
@@ -251,7 +251,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.indexes_lconstr_updated = Int[]
 
         m.linear_terms = Dict()
-        m.nonlinear_terms = Dict()
+        m.nonconvex_terms = Dict()
         m.term_seq = Dict()
         m.nonlinear_constrs = Dict()
         m.candidate_disc_vars = Int[]
@@ -650,15 +650,11 @@ end
 
 MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.var_start_orig = x)
 MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
-
 MathProgBase.status(m::PODNonlinearModel) = m.pod_status
 MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
 MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
 MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
 MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
-
-
-# MathProgBase.LinearQuadraticModel(s::PODSolver) = MathProgBase.NonlinearModel(s::PODSolver)
 
 function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
 

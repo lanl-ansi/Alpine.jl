@@ -45,12 +45,12 @@ function logging_summary(m::PODNonlinearModel)
         println("maximum solution time = ", m.timeout)
         println("maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
-        println("detected nonlinear terms = $(length(m.nonlinear_terms))")
+        println("detected nonlinear terms = $(length(m.nonconvex_terms))")
         println("number of variables involved in nonlinear terms = $(length(m.candidate_disc_vars))")
         println("number of selected variables to discretize = $(length(m.disc_vars))")
 
         for i in POD_C_NLTERMS
-            cnt = length([1 for j in keys(m.nonlinear_terms) if m.nonlinear_terms[j][:nonlinear_type] == i])
+            cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
             cnt > 0 && println("Term $(i) Count = $(cnt) ")
         end
 

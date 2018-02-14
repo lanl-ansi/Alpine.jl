@@ -55,7 +55,7 @@ end
 """
     amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
-warpper function to convexify the problem for a bounding model. This function talks to nonlinear_terms and convexification methods
+warpper function to convexify the problem for a bounding model. This function talks to nonconvex_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
 function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)

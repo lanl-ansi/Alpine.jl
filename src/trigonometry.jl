@@ -4,10 +4,10 @@ function sincos_partition_injection(m::PODNonlinearModel, var::Int, partvec::Vec
 
     # Only consider variables that shows up in :sin/:cos terms, and collect all operators
     operators = Set()
-    for nlk in keys(m.nonlinear_terms)
-        if m.nonlinear_terms[nlk][:nonlinear_type] in [:sin, :cos]
-            if var in m.nonlinear_terms[nlk][:var_idxs]
-                push!(operators, m.nonlinear_terms[nlk][:nonlinear_type])
+    for nlk in keys(m.nonconvex_terms)
+        if m.nonconvex_terms[nlk][:nonlinear_type] in [:sin, :cos]
+            if var in m.nonconvex_terms[nlk][:var_idxs]
+                push!(operators, m.nonconvex_terms[nlk][:nonlinear_type])
             end
         end
     end
