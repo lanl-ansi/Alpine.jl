@@ -2,14 +2,14 @@
     Find an integer point from solution point. Wrapps discover_else_integer() when rounded solution
     step on a integer that has already been discovered.
 """
-function discover_int_point(m::PODNonlinearModel, var::Int, partvec::Dict, point::Float64)
+function discover_int_point(m::PODNonlinearModel, var::Int, partvec::Vector, point::Float64)
 
     if point < partvec[1] + m.tol || point > partvec[end] - m.tol
         warn("Integer Soluiton SOL=$(point) out of bounds [$(d[i][1]),$(d[i][end])].")
         return discover_else_integer(m, var, partvec)
     end
 
-    round_int = Int(round(val))
+    round_int = Int(round(point))
 
     # Only return the value that is still convered within relaxed region
     if is_uncovered_integer(round_int, partvec)
@@ -28,9 +28,6 @@ function discover_else_integer(m::PODNonlinearModel, var::Int, partvec::Vector)
     l_cnt = length(partvec)
     p_cnt = length(partvec) - 1
 
-    @assert partvec[1] == m.l_var_tight[i] - 0.5
-    @assert partvec[end] == m.u_var_tight[i] + 0.5
-
     point = nothing
 
     incumblength = 0.0
@@ -44,15 +41,15 @@ function discover_else_integer(m::PODNonlinearModel, var::Int, partvec::Vector)
 
     # Region has been fully discovered
     incumblength == 1.0 && return nothing
-
-    interval_cnt = (partvec[incumbpart+1] - 0.5) - (partvec[incumbpart] + 0.5) + 1
+    interval_cnt = (partvec[incumbpart+1]) - (partvec[incumbpart])
 
     if mod(interval_cnt, 2) == 0
         return partvec[incumbpart] + 0.5 + interval_cnt/2 - 1
     else
-        return partvec[incumbpart] + 0.5 + interval_cnt/2
+        return partvec[incumbpart] + interval_cnt/2
     end
 
+    m.loglevel > 99 && prinln("[EXIT] NEW POINT = $(point)")
     return point
 end
 

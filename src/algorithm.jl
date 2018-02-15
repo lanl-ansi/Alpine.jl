@@ -9,11 +9,41 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     summary_status(m)
 end
 
+"""
+    global_solve(m::PODNonlinearModel)
+
+Perform the global algorithm that is based on the adaptive conexification scheme.
+This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) for converging lower bound (relaxed problem) and upper bound (feasible problem).
+Each [`bounding_solve`](@ref) provides a lower bound solution that is used as a partioning point for next iteration (this feature can be modified given different `add_adaptive_partition`).
+Each [`local_solve`](@ref) provides a local serach of incumbent feasible solution. The algrithm terminates given time limits, optimality condition, or iteration limits.
+
+The algorithm is can be reformed when `add_adaptive_partition` is replaced with user-defined functional input.
+For example, this algorithm can easily be reformed as a uniform-partitioning algorithm in other literature.
 
 """
+function global_solve(m::PODNonlinearModel)
 
+    m.loglevel > 0 && logging_head(m)
+    m.presolve_track_time || reset_timer(m)
+    while !check_exit(m)
+        m.logs[:n_iter] += 1
+        create_bounding_mip(m)                  # Build the relaxation model
+        bounding_solve(m)                       # Solve the relaxation model
+        update_opt_gap(m)                       # Update optimality gap
+        check_exit(m) && break                  # Feasibility check
+        m.loglevel > 0 && logging_row_entry(m)  # Logging
+        local_solve(m)                          # Solve local model for feasible solution
+        check_exit(m) && break                  # Detect optimality termination
+        auto_adjustments(m)                     # Automated adjustments
+        add_partition(m)                        # Add extra discretizations
+    end
+
+    return
+end
+
+
+"""
     presolve(m::PODNonlinearModel)
-
 """
 function presolve(m::PODNonlinearModel)
 
@@ -59,40 +89,6 @@ function presolve(m::PODNonlinearModel)
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
     (m.loglevel > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
-
-    return
-end
-
-
-"""
-
-    global_solve(m::PODNonlinearModel)
-
-Perform the global algorithm that is based on the adaptive conexification scheme.
-This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) for converging lower bound (relaxed problem) and upper bound (feasible problem).
-Each [`bounding_solve`](@ref) provides a lower bound solution that is used as a partioning point for next iteration (this feature can be modified given different `add_adaptive_partition`).
-Each [`local_solve`](@ref) provides a local serach of incumbent feasible solution. The algrithm terminates given time limits, optimality condition, or iteration limits.
-
-The algorithm is can be reformed when `add_adaptive_partition` is replaced with user-defined functional input.
-For example, this algorithm can easily be reformed as a uniform-partitioning algorithm in other literature.
-
-"""
-function global_solve(m::PODNonlinearModel)
-
-    m.loglevel > 0 && logging_head(m)
-    m.presolve_track_time || reset_timer(m)
-    while !check_exit(m)
-        m.logs[:n_iter] += 1
-        create_bounding_mip(m)                  # Build the relaxation model
-        bounding_solve(m)                       # Solve the relaxation model
-        update_opt_gap(m)                       # Update optimality gap
-        check_exit(m) && break                  # Feasibility check
-        m.loglevel > 0 && logging_row_entry(m)  # Logging
-        local_solve(m)                          # Solve local model for feasible solution
-        check_exit(m) && break                  # Detect optimality termination
-        auto_adjustments(m)                     # Automated adjustments
-        add_partition(m)                        # Add extra discretizations
-    end
 
     return
 end
@@ -172,9 +168,18 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         l_var, u_var = m.l_var_orig, m.u_var_orig
     end
 
-    MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig, m.num_constr_orig, l_var, u_var, m.l_constr_orig, m.u_constr_orig, m.sense_orig, m.d_orig)
-    (!m.d_orig.want_hess) && MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess,:HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
-    (presolve && !isempty(var_type_screener)) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
+    @show l_var, u_var
+    MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig,
+                                                     m.num_constr_orig,
+                                                     l_var,
+                                                     u_var,
+                                                     m.l_constr_orig,
+                                                     m.u_constr_orig,
+                                                     m.sense_orig,
+                                                     m.d_orig)
+
+    (!m.d_orig.want_hess) && MathProgBase.initialize(m.d_orig,[:Grad,:Jac,:Hess,:HessVec,:ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
+    presolve && !isempty(var_type_screener) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
     MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
 
     start_local_solve = time()
@@ -182,16 +187,39 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
+
+    # Symbol Definition
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
+    status_secondpass = [:RoundedFeasible]
     status_reroute = [:Infeasible]
 
+    # Collect solver status
     local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
+
+    # Correct status for integer problems :: post feasible solution heuristics heres
+    if false
+        rounded_sol = round_sol(m, local_solve_nlp_model)
+        if eval_feasibility(m, rounded_sol)
+            m.loglevel >= 100 && println("Feasible solution obtained by rounding local nlp solution.")
+            local_solve_nlp_status = :RoundedFeasible
+        end
+    end
+
     if local_solve_nlp_status in status_pass
         candidate_obj = MathProgBase.getobjval(local_solve_nlp_model)
         push!(m.logs[:obj], candidate_obj)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
             m.best_obj = candidate_obj
             m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 5)
+            m.status[:feasible_solution] = :Detected
+        end
+        m.status[:local_solve] = local_solve_nlp_status
+        return
+    elseif local_solve_nlp_status == :RoundedFeasible
+        candidate_obj = MathProgBase.eval_f(m.d_orig, rounded_sol) # Re-obtain the objective value
+        if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
+            m.best_obj = candidate_obj
+            m.best_sol = round.(rounded, 6)
             m.status[:feasible_solution] = :Detected
         end
         m.status[:local_solve] = local_solve_nlp_status

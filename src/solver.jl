@@ -236,6 +236,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.minlp_solver = minlp_solver
         m.mip_solver = mip_solver
 
+        m.user_parameters = user_parameters
+        m.int2bin = int2bin
+
         m.num_var_orig = 0
         m.num_cont_var_orig = 0
         m.num_int_var_orig = 0
@@ -265,9 +268,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_constr_convex = 0
         m.constr_structure = []
         m.bound_sol_history = []
-
-        m.user_parameters = Dict()
-        m.int2bin = false
 
         m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
 
@@ -619,8 +619,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     push!(m.method_partition_injection, sincos_partition_injection)
 
     # populate data to create the bounding model
+    recategorize_var(m)             # Initial round of variable recategorization
     process_expr(m)                 # Compact process of every expression
-    init_tight_bound(m)             # Initialize tightened bound vectors for future usage
+    init_tight_bound(m)
     resolve_var_bounds(m)           # resolve lifted var bounds
     pick_disc_vars(m)               # Picking variables to be discretized
     init_disc(m)                    # Initialize discretization dictionarys

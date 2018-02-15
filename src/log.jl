@@ -33,36 +33,54 @@ function logging_summary(m::PODNonlinearModel)
     if m.loglevel > 0
         print_with_color(:light_yellow, "full problem loaded into POD\n")
         println("problen sense $(m.sense_orig)")
-        @printf "number of constraints = %d\n" m.num_constr_orig
-        @printf "number of non-linear constraints = %d\n" m.num_nlconstr_orig
-        @printf "number of linear constraints = %d\n" m.num_lconstr_orig
-        @printf "number of variables = %d\n" m.num_var_orig
+        println("number of constraints = ", m.num_constr_orig)
+        println("number of non-linear constraints = ", m.num_nlconstr_orig)
+        println("number of linear constraints = ", m.num_lconstr_orig)
+        println("number of continuous variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]))
+        println("number of binary variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]))
+        println("number of integer variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
 
+        println("detected nonlinear terms = ", length(m.nonconvex_terms))
+        for i in POD_C_NLTERMS
+            cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
+            cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
+        end
+        println("number of variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
+        println("number of selected variables to discretize = ", length(m.disc_vars))
+
+        println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
+        println("                        SUB-SOLVERS  ")
         m.minlp_solver != UnsetSolver() && println("MINLP local solver = ", split(string(m.minlp_solver),".")[1])
         println("NLP local solver = ", split(string(m.nlp_solver),".")[1])
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
-
+        println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
+        println("                    SOLVER CONFIGURATION ")
         println("maximum solution time = ", m.timeout)
         println("maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
-        println("detected nonlinear terms = $(length(m.nonconvex_terms))")
-        println("number of variables involved in nonlinear terms = $(length(m.candidate_disc_vars))")
-        println("number of selected variables to discretize = $(length(m.disc_vars))")
-
-        for i in POD_C_NLTERMS
-            cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
-            cnt > 0 && println("Term $(i) Count = $(cnt) ")
+        println("default tolerance = ", m.tol)
+        m.recognize_convex && println("actively recognize convex patterns = ")
+        println("basic bound propagation ", m.presolve_bp)
+        println("use piece-wise relaxation formulation on integer variables = ", m.int2bin)
+        println("piece-wise relaxation formulation = $(m.convhull_formulation) formulation")
+        println("method for picking discretization variable = $(m.disc_var_pick)")
+        println("conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
+        if m.disc_ratio_branch
+            println("discretization ratio branch activated")
+        else
+            println("discretization ratio = ", m.disc_ratio)
         end
-
-        m.bilinear_convexhull && println("bilinear treatment = convex hull formulation")
-        m.monomial_convexhull && println("monomial treatment = convex hull formulation")
-
-        println("using piece-wise convex hull : $(m.convhull_formulation) formulation")
-        println("using method $(m.disc_var_pick) for picking discretization variable...")
-
         (m.convhull_ebd) && println("using convhull_ebd formulation")
         (m.convhull_ebd) && println("encoding method = $(m.convhull_ebd_encode)")
         (m.convhull_ebd) && println("independent branching scheme = $(m.convhull_ebd_ibs)")
+        println("bound tightening presolver = ", m.presolve_bt)
+        m.presolve_bt && println("bound tightening presolve maximum iteration = ", m.presolve_maxiter)
+        m.presolve_bt && println("bound tightening presolve algorithm = ", m.presolve_bt_algo)
+        m.presolve_bt && println("bound tightening presolve width tolerance = ", m.presolve_bt_width_tol)
+        m.presolve_bt && println("bound tightening presolve output tolerance = ", m.presolve_bt_output_tol)
+        m.presolve_bt && println("bound tightening presolve relaxation = ", m.presolve_bt_relax)
+        m.presolve_bt && println("bound tightening presolve mip regulation time = ", m.presolve_bt_mip_timeout)
+        println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
     end
 
     # Additional warnings

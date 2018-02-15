@@ -1,7 +1,7 @@
 function amp_post_convhull(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
-    haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
+    haskey(options, :use_disc) ? d = options[:use_disc] : d = m.discretization
 
     # Variable holders
     λ = Dict()  # Extreme points and multipliers
@@ -12,19 +12,19 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     for k in keys(m.nonconvex_terms)
         nl_type = m.nonconvex_terms[k][:nonlinear_type]
         if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) && (m.nonconvex_terms[k][:convexified] == false)
-            λ, α = amp_convexify_multilinear(m, k, λ, α, discretization)
+            λ, α = amp_convexify_multilinear(m, k, λ, α, d)
         elseif nl_type == :MONOMIAL && !m.nonconvex_terms[k][:convexified]
-            λ, α = amp_convexify_monomial(m, k, λ, α, discretization)
+            λ, α = amp_convexify_monomial(m, k, λ, α, d)
         elseif nl_type == :BINLIN && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binlin(m, k, β)
         elseif nl_type == :BINPROD && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
         elseif nl_type == :INTPROD && !m.nonconvex_terms[k][:convexified]
-            λ, α = amp_convexify_intprod(m, k, λ, α, discretization)
+            λ, α = amp_convexify_intprod(m, k, λ, α, d)
         elseif nl_type == :BININT && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binint(m, k, β)
         elseif nl_type == :INTLIN && !m.nonconvex_terms[k][:convexified]
-            λ, α = amp_convexify_intlin(m, k, λ, α, discretization)
+            λ, α = amp_convexify_intlin(m, k, λ, α, d)
         elseif nl_type in [:sin, :cos] && !m.nonconvex_terms[l][:convexified]
             β = amp_convexify_sincos(m, k, β)
         end
@@ -32,10 +32,8 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
 
     # Experimental Code
     if m.int2bin
-        for (idx, i) in enumerate(m.var_type)
-            if i == :Int
-                λ, α = amp_convexify_integer(m, idx, λ, α, discretization)
-            end
+        for i in 1:m.num_var_orig
+            m.var_type[i] == :Int && amp_convexify_integer(m, i, λ, α, d)
         end
     end
 
@@ -47,23 +45,24 @@ function amp_convexify_integer(m::PODNonlinearModel, idx::Int, λ::Dict, α::Dic
     # Check if VAR idx exist in any Complex Nonlinear Terms
     # If so, VAR idx has already been discretized/relaxed, in its linear term, the value will be relaxed as well
     for k in keys(m.nonconvex_terms)
-        idx in m.nonlinear_term[k][:var_idxs] && return
+        idx in m.nonconvex_terms[k][:var_idxs] && return
     end
 
     # Easy way to check whether integer variable idx has been discretized already
     haskey(α, idx) && return
 
+    println("Resolving SOLE integer VAR$(idx) ..")
     # Main Convexification Steps
     indices, dim, ext_cnt = amp_convhull_prepare(m, d, idx)
     λ = amp_convhull_λ(m, idx, λ, ext_cnt, dim)
     λ = populate_convhull_extreme_values(m, d, idx, λ)
-    α = amp_convhull_α(m, idx, α, dim, d)
+    α = amp_convhull_α(m, indices, α, dim, d)
     amp_post_convhull_constrs(m, λ, α, indices, dim, ext_cnt, d)
 
-    # Additional Relaxation
+    # Additional Relaxation : Safety
     setcategory(Variable(m.model_mip, idx), :Cont)
 
-    return λ, α
+    return
 end
 
 function amp_convexify_sincos(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
@@ -94,8 +93,21 @@ function amp_convexify_multilinear(m::PODNonlinearModel, k::Any, λ::Dict, α::D
     return λ, α
 end
 
-amp_convexify_intprod(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict) = amp_convexify_multilinear(m, k, λ, α, d)
-amp_convexify_intlin(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict) = amp_convexify_multilinear(m, k, λ, α, d)
+function amp_convexify_intprod(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, d::Dict)
+
+    m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
+
+    intprod_indices, dim, ext_cnt = amp_convhull_prepare(m, d, k)   # convert key to easy read mode
+    λ = amp_convhull_λ(m, k, intprod_indices, λ, ext_cnt, dim)
+    λ = populate_convhull_extreme_values(m, d, intprod_indices, λ, dim, ones(Int,length(dim)))
+    α = amp_convhull_α(m, intprod_indices, α, dim, d)
+    amp_post_convhull_constrs(m, λ, α, intprod_indices, dim, ext_cnt, d)
+    amp_post_tight_λ_bounds(m, intprod_indices, dim, λ, d)
+
+    return λ, α
+end
+
+amp_convexify_intlin(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, d::Dict) = amp_convexify_multilinear(m, k, λ, α, d)
 
 function amp_convexify_monomial(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
 
@@ -165,27 +177,26 @@ end
 """
     Method for general nonlinear terms
 """
-function amp_convhull_prepare(m::PODNonlinearModel, discretization::Dict, nonlinear_key::Vector; monomial=false)
+function amp_convhull_prepare(m::PODNonlinearModel, d::Dict, nonlinear_key::Any; monomial=false)
 
     counted_var = []
 
     id = Set()                      # Coverting the nonlinear indices into a set
     for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
-        m.var_type[var.args[2]] == :Cont && push!(id, var.args[2])
-        m.var_type[var.args[2]] == :Cont && push!(counted_var, var.args[2])
+        m.var_type[var.args[2]] in [:Cont, :Int] && push!(id, var.args[2])
+        m.var_type[var.args[2]] in [:Cont, :Int] && push!(counted_var, var.args[2])
     end
 
     if length(id) < length(counted_var) # Got repeating terms, now the sequence matters
         id = []
         for var in nonlinear_key
-            m.var_type[var.args[2]] == :Cont && push!(id, var.args[2])
+            m.var_type[var.args[2]] in [:Cont, :Int] && push!(id, var.args[2])
         end
     end
 
-    dim = [length(discretization[i]) for i in id]
+    dim = [length(d[i]) for i in id]
 
     monomial && return id[1], tuple(dim[1]), dim[1]   # One less dimension is required
-
     return id, tuple([i for i in dim]...), prod(dim)
 end
 
@@ -193,7 +204,7 @@ end
     Method for integers
 """
 function amp_convhull_prepare(m::PODNonlinearModel, d::Dict, idx::Int)
-    return [idx], tuple([length(d[idx])]), length(d)
+    return [idx], tuple(length(d[idx])), length(d[idx])
 end
 
 """
@@ -218,12 +229,12 @@ end
 """
 function amp_convhull_λ(m::PODNonlinearModel, idx::Int, λ::Dict, ext_cnt::Int, dim::Tuple)
 
-    @assert !(idx in keys(λ))
-    λ[idx] = Dict(:dim=>dim,
-                  :lifted_var_idx=>idx,
-                  :indices=>reshape([1:ext_cnt;], dim),
-                  :vars=>@variable(m.model_mip, [1:ext_cnt], lowerbound=0, basename="L$(idx)"),
-                  :vals=>ones(dim))
+    @assert !([idx] in keys(λ))
+    λ[[idx]] = Dict(:dim=>dim,
+                      :lifted_var_idx=>idx,
+                      :indices=>[1:ext_cnt;],
+                      :vars=>@variable(m.model_mip, [1:ext_cnt], lowerbound=0, basename="L$(idx)"),
+                      :vals=>ones(dim))
 
     return λ
 end
@@ -232,7 +243,7 @@ end
     Method for integer variables
 """
 function populate_convhull_extreme_values(m::PODNonlinearModel, d::Dict, int_index::Int, λ::Dict)
-    λ[int_index][:vals] = [d[int_index][i] for i in 1:length(d[i])]
+    λ[[int_index]][:vals] = [d[int_index][i] for i in 1:length(d[int_index])]
     return λ
 end
 
@@ -288,7 +299,7 @@ end
 """
     General Method for all term
 """
-function amp_convhull_α(m::PODNonlinearModel, indices::Set, α::Dict, dim::Tuple, discretization::Dict)
+function amp_convhull_α(m::PODNonlinearModel, indices::Any, α::Dict, dim::Tuple, discretization::Dict)
 
     for i in indices
         if !(i in keys(α))
@@ -309,23 +320,23 @@ function amp_convhull_α(m::PODNonlinearModel, indices::Set, α::Dict, dim::Tupl
     return α
 end
 
-amp_convhull_α(m::PODNonlinearModel, indices::Vector, α::Dict, dim::Tuple, d::Dict) = amp_convhull_α(m, Set(indices), α, dim, d)
-amp_convhull_α(m::PODNonlinearModel, idx::Int, α::Dict, dim, d::Dict) = amp_convhull_α(m, Set(idx), α, dim, d)
+amp_convhull_α(m::PODNonlinearModel, idx::Int, α::Dict, dim, d::Dict) = amp_convhull_α(m, [idx], α, dim, d)
 
 """
     Method for general multilinear terms with/without integer variables
 """
-function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, indices::Set, dim::Tuple, ext_cnt::Int, d::Dict)
+function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, indices::Any, dim::Tuple, ext_cnt::Int, d::Dict)
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[indices][:vars]) == 1)
     @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) == dot(λ[indices][:vars], reshape(λ[indices][:vals], ext_cnt)))
 
+    # Add links on each dimension
     for (cnt, i) in enumerate(indices)
         if m.var_type[i] == :Cont
-            amp_post_inequalities(m, d, λ, α, indices, dim, i, cnt)        # Add links between λ and α
+            amp_post_inequalities_cont(m, d, λ, α, indices, dim, i, cnt)        # Add links between λ and α
         elseif m.var_type[i] == :Int
-            amp_post_inequalities(m, d, λ, α, indices, 0.5, dim, i, cnt)
+            amp_post_inequalities_int(m, d, λ, α, indices, dim, i, cnt)         # Add links between λ and α
         else
             error("EXCEPTION: unexpected variable type during integer related realxation")
         end
@@ -336,8 +347,6 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ind
 
     return
 end
-
-amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, indices::Vector, dim::Tuple, ext_cnt::Int, d::Dict) = amp_post_convhull_constrs(m, λ, α, Set(indices), dim, ext_cnt, d)
 
 """
     Method for power-2 term
@@ -385,7 +394,7 @@ end
 """
     Method for regular multilinear terms
 """
-function amp_post_inequalities(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
+function amp_post_inequalities_cont(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
     lambda_cnt = length(discretization[var_ind])
     partition_cnt = lambda_cnt - 1
@@ -452,45 +461,126 @@ end
 """
     Method for multilinear terms with discrete variables
 """
-function amp_post_inequalities(m::PODNonlinearModel, d::Dict, λ::Dict, α::Dict, indices::Any, fixed_rate::Float64, dim::Tuple, var_ind::Int, cnt::Int)
+function amp_post_inequalities_int(m::PODNonlinearModel, d::Dict, λ::Dict, α::Dict, indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
     l_cnt = length(d[var_ind])
     p_cnt = l_cnt - 1
 
     # Embedding formulation
-    if m.convhull_formulation == "sos2" && m.convhull_ebd && p_cnt > 2
-        ebd_map = embedding_map(l_cnt, m.convhull_ebd_encode, m.convhull_ebd_ibs)
-        Y_cnt = Int(ebd_map[:L])
-        @assert Y_cnt == length(α[var_ind])
-        for i in 1:Y_cnt
-            p_sliced_indices = collect_indices(λ[indices][:indices], cnt, collect(ebd_map[i]), dim)
-            n_sliced_indices = collect_indices(λ[indices][:indices], cnt, collect(ebd_map[i+Y_cnt]), dim)
-            @constraint(m.model_mip, sum(λ[indices][:vars][p_sliced_indices]) <= α[var_ind][i])
-            @constraint(m.model_mip, sum(λ[indices][:vars][n_sliced_indices]) <= 1-α[var_ind][i])
-        end
-        m.convhull_ebd_link && ebd_link_xα(m, α[var_ind], l_cnt, d[var_ind], ebd_map[:H_orig], var_ind)
-        return
-    end
+    m.convhull_ebd && warn("Embedding is currently not supported for multilinear terms with discrete variables")
 
     # SOS-2 Formulation
     if m.convhull_formulation == "sos2"
         for j in 1:l_cnt
             sliced_indices = collect_indices(λ[indices][:indices], cnt, [j], dim)
             if (j == 1)
-                d[var_ind][j+1] - d[var_ind][j] == 1.0 ? rate = fixed_rate : rate = 1.0
-                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][j] * rate)
+                rate_r = amp_pick_ratevec(d[var_ind], j)
+                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][j] * rate_r)
             elseif (j == l_cnt)
-                d[var_ind][j] - d[var_ind][j-1] == 1.0 ? rate = fixed_rate : rate = 1.0
-                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][p_cnt] * rate)
+                rate_l = amp_pick_ratevec(d[var_ind], j)
+                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][p_cnt] * rate_l)
             else
-                rate = fixed_rate
-                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= sum(α[var_ind][(j-1):j]) * rate)
+                rate_l, rate_r = amp_pick_ratevec(d[var_ind], j)
+                @constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][j-1] * rate_l + α[var_ind][j] * rate_r)
             end
         end
-        return
     else
         error("Only SOS-2 formulation support convexification of terms with integer variables.")
     end
+
+    return
+end
+
+function amp_pick_ratevec(partvec::Vector, i::Int)
+
+    λCnt = length(partvec)
+
+    if i == 1
+        mod(partvec[i], 0.5) == 0.0 && partvec[i+1] - partvec[i] == 1.0 && return 0.5
+    elseif i == λCnt
+        mod(partvec[i], 0.5) == 0.0 && partvec[i] - partvec[i-1] == 1.0 && return 0.5
+    else
+        if mod(partvec[i], 0.5) == 0.0 && partvec[i] - partvec[i-1] == 1.0
+            l = 0.5
+        else
+            l = 1.0
+        end
+        if mod(partvec[i], 0.5) == 0.0 && partvec[i+1] - partvec[i] == 1.0
+            r = 0.5
+        else
+            r = 1.0
+        end
+        return l, r
+    end
+end
+
+"""
+    Method for INTPROD convexification
+"""
+function amp_post_tight_λ_bounds(m::PODNonlinearModel, intprod_indices::Any, dim::Tuple, λ::Dict, d::Dict)
+
+    tight_regions = [amp_collect_tight_regions(d[i]) for i in intprod_indices]
+
+    checker = [length(d[var])-1 == length(tight_regions[cnt]) for (cnt, var) in enumerate(intprod_indices)]
+
+    if prod(checker) # Check if fully discretized
+        amp_post_λ_upperbound(m, λ, intprod_indices, (1/2)^(length(intprod_indices)))
+    else
+        amp_post_λ_upperbound(m, λ, intprod_indices, dim, d, tight_regions)
+    end
+    return
+end
+
+function amp_collect_tight_regions(partvec::Vector)
+
+    PCnt = length(partvec) - 1
+    PCnt == 1 && return []
+
+    @assert PCnt >= 3
+
+    tight_regions = []
+    for i in 1:PCnt
+        if i == 1
+            (partvec[i]+1.0==partvec[i+1]) && (partvec[i+1]+1.0==partvec[i+2]) && push!(tight_regions,i)
+        elseif i == PCnt
+            (partvec[i]+1.0==partvec[i+1]) && (partvec[i]-1.0==partvec[i-1]) && push!(tight_regions, i)
+        else
+            (partvec[i]+1.0==partvec[i+1]) && (partvec[i+1]+1.0==partvec[i+2]) && (partvec[i]-1.0==partvec[i-1]) && push!(tight_regions, i)
+        end
+    end
+
+    return tight_regions
+end
+
+function amp_post_λ_upperbound(m::PODNonlinearModel, λ::Dict, indices::Any, dim::Tuple, d::Dict, tregions::Vector, reg=[], level=0)
+
+    if level == length(indices)
+        isempty(tregions[level]) && return
+        sliced_indices = Set(collect_indices(λ[indices][:indices], 1, [reg[1],reg[1]+1;], dim))
+        for i in 2:length(reg)
+            sliced_indices = intersect(sliced_indices, Set(collect_indices(λ[indices][:indices], i, [reg[i],reg[i]+1], dim)))
+        end
+        for i in sliced_indices
+            setupperbound(λ[indices][:vars][i], (1/2)^level)
+        end
+        return
+    end
+
+    for i in 1:length(tregions[level+1])
+        push!(reg, tregions[level+1][i])
+        amp_post_λ_upperbound(m, λ, indices, dim, d, tregions, reg, level+1)
+        length(reg) < level && error("Something is wrong")
+        length(reg) > level && pop!(reg)
+    end
+
+    return
+end
+
+function amp_post_λ_upperbound(m::PODNonlinearModel, λ::Dict, indices::Any, ub::Float64)
+
+    for i in λ[indices][:vars] setupperbound(i, ub) end
+
+    return
 end
 
 function collect_indices(l::Array, locator::Tuple, dim::Tuple)

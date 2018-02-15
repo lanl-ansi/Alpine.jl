@@ -194,7 +194,6 @@ An utility function used to recongize different sub-solvers and return the bound
 function update_boundstop_options(m::PODNonlinearModel)
 
     if m.mip_solver_id == "Gurobi"
-        push!(m.mip_solver.options, (:BestBdStop, stopbound))
         # Calculation of the bound
         if m.sense_orig == :Min
             stopbound = (1-m.relgap+m.tol) * m.best_obj
@@ -247,8 +246,9 @@ function fix_domains(m::PODNonlinearModel)
 
     l_var = copy(m.l_var_orig)
     u_var = copy(m.u_var_orig)
+
     for i in 1:m.num_var_orig
-        if i in m.disc_vars
+        if i in m.disc_vars && m.var_type[i] == :Cont
             point = m.best_bound_sol[i]
             for j in 1:length(m.discretization[i])
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
@@ -258,7 +258,7 @@ function fix_domains(m::PODNonlinearModel)
                     break
                 end
             end
-        elseif m.var_type_orig[i] == :Bin || m.var_type_orig[i] == :Int
+        elseif m.var_type[i] == :Bin || m.var_type[i] == :Int
             l_var[i] = round(m.best_bound_sol[i])
             u_var[i] = round(m.best_bound_sol[i])
         end
@@ -512,7 +512,6 @@ function min_vertex_cover(m::PODNonlinearModel)
 
     return
 end
-
 
 function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 

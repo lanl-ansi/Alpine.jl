@@ -126,6 +126,24 @@ function bounds_propagation(m::PODNonlinearModel)
         (exhausted == true && m.loglevel > 99) && println("Initial constraint-based bound evaluation exhausted...")
     end
 
+
+
+    return
+end
+
+"""
+    Categorize variable based on variable bounds
+"""
+function recategorize_var(m::PODNonlinearModel)
+
+    for i in 1:m.num_var_orig
+        if m.var_type_orig[i] == :Int && m.l_var_orig[i] == 0.0 && m.u_var_orig[i] == 1.0
+            m.var_type_orig[i] = :Bin
+            m.var_type[i] = :Bin
+            println("Converting VAR$(i) to binary variable")
+        end
+    end
+
     return
 end
 
