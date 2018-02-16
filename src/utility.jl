@@ -96,8 +96,8 @@ function init_disc(m::PODNonlinearModel)
             ub = m.u_var_tight[var]
             m.discretization[var] = [lb, ub]
         elseif m.var_type[var] in [:Int]
-            m.int2bin ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
-            m.int2bin ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
+            m.int_enable ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
+            m.int_enable ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
             m.discretization[var] = [lb, ub]
         else
             error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
@@ -343,34 +343,34 @@ end
 """
 function print_iis_gurobi(m::JuMP.Model)
 
-    # grb = MathProgBase.getrawsolver(internalmodel(m))
-    # Gurobi.computeIIS(grb)
-    # numconstr = Gurobi.num_constrs(grb)
-    # numvar = Gurobi.num_vars(grb)
-    #
-    # iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
-    # iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
-    # iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
-    #
-    # info("Irreducible Inconsistent Subsystem (IIS)")
-    # info("Variable bounds:")
-    # for i in 1:numvar
-    #     v = Variable(m, i)
-    #     if iislb[i] != 0 && iisub[i] != 0
-    #         println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
-    #     elseif iislb[i] != 0
-    #         println(getname(v), " >= ", getlowerbound(v))
-    #     elseif iisub[i] != 0
-    #         println(getname(v), " <= ", getupperbound(v))
-    #     end
-    # end
-    #
-    # info("Constraints:")
-    # for i in 1:numconstr
-    #     if iisconstr[i] != 0
-    #         println(m.linconstr[i])
-    #     end
-    # end
+    grb = MathProgBase.getrawsolver(internalmodel(m))
+    Gurobi.computeIIS(grb)
+    numconstr = Gurobi.num_constrs(grb)
+    numvar = Gurobi.num_vars(grb)
+
+    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+
+    info("Irreducible Inconsistent Subsystem (IIS)")
+    info("Variable bounds:")
+    for i in 1:numvar
+        v = Variable(m, i)
+        if iislb[i] != 0 && iisub[i] != 0
+            println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+        elseif iislb[i] != 0
+            println(getname(v), " >= ", getlowerbound(v))
+        elseif iisub[i] != 0
+            println(getname(v), " <= ", getupperbound(v))
+        end
+    end
+
+    info("Constraints:")
+    for i in 1:numconstr
+        if iisconstr[i] != 0
+            println(m.linconstr[i])
+        end
+    end
 
     return
 end
@@ -433,13 +433,6 @@ function build_discvar_graph(m::PODNonlinearModel)
         m.nonconvex_terms[k][:discvar_collector](m, k, var_bowl=nodes)
     end
 
-    # Collect integer variables
-    for i in 1:m.num_var_orig
-        if !(i in nodes) && m.var_type[i] == :Int
-            push!(nodes, i)
-        end
-    end
-
     for k in keys(m.nonconvex_terms)
         if m.nonconvex_terms[k][:nonlinear_type] == :BILINEAR
             arc = []
@@ -481,8 +474,14 @@ function build_discvar_graph(m::PODNonlinearModel)
         end
     end
 
-    @show length(nodes)
-    @show length(m.candidate_disc_vars)
+    # Collect integer variables
+    for i in 1:m.num_var_orig
+        if !(i in nodes) && m.var_type[i] == :Int
+            push!(nodes, i)
+            push!(arcs, [i,i;])
+        end
+    end
+
     @assert length(nodes) == length(m.candidate_disc_vars)
 
     nodes = collect(nodes)

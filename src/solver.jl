@@ -35,14 +35,14 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_consecutive_forbid::Int                                # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
     disc_ratio_branch::Bool
 
-    # parameters used to control convhull formulation
+    # Convexifications Formulation Parameters
     convhull_formulation::String                                # Formulation to used for relaxation
     convhull_ebd::Bool
     convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
     convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
     convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
 
-    # parameters related to presolving
+    # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
@@ -56,8 +56,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     presolve_bp::Bool                                           # Conduct basic bound propagation
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
-    # Experimental Features
-    int2bin::Bool                                               # Convert integer problem into binary problem by flatten the choice of variable domain
+    # Features for Integer Problems
+    int_enable::Bool                                            # Convert integer problem into binary problem by flatten the choice of variable domain
 
     # add all the solver options
     nlp_solver::MathProgBase.AbstractMathProgSolver             # Local continuous NLP solver for solving NLPs at each iteration
@@ -184,7 +184,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_bt_mip_timeout,
                                 presolve_bp,
                                 user_parameters,
-                                int2bin)
+                                int_enable)
 
         m = new()
 
@@ -237,7 +237,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.mip_solver = mip_solver
 
         m.user_parameters = user_parameters
-        m.int2bin = int2bin
+        m.int_enable = int_enable
 
         m.num_var_orig = 0
         m.num_cont_var_orig = 0
@@ -336,7 +336,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     presolve_bp::Bool
 
     user_parameters::Dict
-    int2bin::Bool
+    int_enable::Bool
 
     # other options to be added later on
 end
@@ -391,7 +391,7 @@ function PODSolver(;
     presolve_bp = true,
 
     user_parameters = Dict(),
-    int2bin = false,
+    int_enable = false,
 
     kwargs...
     )
@@ -451,7 +451,7 @@ function PODSolver(;
         presolve_bt_mip_timeout,
         presolve_bp,
         user_parameters,
-        int2bin)
+        int_enable)
     end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -510,7 +510,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_bp = s.presolve_bp
 
     user_parameters = s.user_parameters
-    int2bin = s.int2bin
+    int_enable = s.int_enable
 
     return PODNonlinearModel(colorful_pod,
                             loglevel, timeout, maxiter, relgap, tol,
@@ -548,7 +548,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             presolve_bt_mip_timeout,
                             presolve_bp,
                             user_parameters,
-                            int2bin)
+                            int_enable)
 end
 
 function MathProgBase.loadproblem!(m::PODNonlinearModel,

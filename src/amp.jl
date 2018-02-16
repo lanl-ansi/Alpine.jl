@@ -95,11 +95,11 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
         u_var[i] < Inf && setupperbound(x[i], u_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
 
         #TODO experimental code, make sure it is properly re-structured
-        m.int2bin && m.var_type[i] == :Int && setcategory(x[i], :Cont)
-        if m.int2bin && m.var_type[i] == :Int && i in m.disc_vars
+        m.int_enable && m.var_type[i] == :Int && setcategory(x[i], :Cont)
+        if m.int_enable && m.var_type[i] == :Int && i in m.disc_vars
             setlowerbound(x[i], floor(m.l_var_tight[i]) - 0.5)
         end
-        if m.int2bin && m.var_type[i] == :Int && i in m.disc_vars
+        if m.int_enable && m.var_type[i] == :Int && i in m.disc_vars
             setupperbound(x[i], ceil(m.u_var_tight[i]) + 0.5)
         end
     end

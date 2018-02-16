@@ -31,7 +31,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     end
 
     # Experimental Code
-    if m.int2bin
+    if m.int_enable
         for i in 1:m.num_var_orig
             m.var_type[i] == :Int && amp_convexify_integer(m, i, λ, α, d)
         end
@@ -512,6 +512,8 @@ function amp_pick_ratevec(partvec::Vector, i::Int)
         end
         return l, r
     end
+
+    return 1.0
 end
 
 """
@@ -519,15 +521,10 @@ end
 """
 function amp_post_tight_λ_bounds(m::PODNonlinearModel, intprod_indices::Any, dim::Tuple, λ::Dict, d::Dict)
 
+    D = length(intprod_indices)
     tight_regions = [amp_collect_tight_regions(d[i]) for i in intprod_indices]
-
     checker = [length(d[var])-1 == length(tight_regions[cnt]) for (cnt, var) in enumerate(intprod_indices)]
-
-    if prod(checker) # Check if fully discretized
-        amp_post_λ_upperbound(m, λ, intprod_indices, (1/2)^(length(intprod_indices)))
-    else
-        amp_post_λ_upperbound(m, λ, intprod_indices, dim, d, tight_regions)
-    end
+    prod(checker) ? amp_post_λ_upperbound(m, λ, intprod_indices, (1/2)^D) : amp_post_λ_upperbound(m, λ, intprod_indices, dim, d, tight_regions)
     return
 end
 
@@ -535,8 +532,6 @@ function amp_collect_tight_regions(partvec::Vector)
 
     PCnt = length(partvec) - 1
     PCnt == 1 && return []
-
-    @assert PCnt >= 3
 
     tight_regions = []
     for i in 1:PCnt

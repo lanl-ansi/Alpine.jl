@@ -3,7 +3,7 @@
     test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
                             nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
-                            int2bin=true,
+                            int_enable=true,
                             loglevel=100)
 
     m = st_miqp4(solver=test_solver)

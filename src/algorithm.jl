@@ -168,7 +168,6 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         l_var, u_var = m.l_var_orig, m.u_var_orig
     end
 
-    @show l_var, u_var
     MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig,
                                                      m.num_constr_orig,
                                                      l_var,
@@ -290,7 +289,7 @@ function bounding_solve(m::PODNonlinearModel)
     elseif status in status_infeasible
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = :Infeasible
-        false && print_iis_gurobi(m.model_mip) # Diagnostic code
+        true && print_iis_gurobi(m.model_mip) # Diagnostic code
         warn("[INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
     elseif status == :Unbounded
         m.status[:bounding_solve] = :Unbounded

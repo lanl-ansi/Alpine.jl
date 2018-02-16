@@ -115,6 +115,7 @@ end
 
 function ex1264a(;solver=nothing)
 
+    # 8.6
     m = Model(solver=solver)
 
     # ----- Variables ----- #
