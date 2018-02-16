@@ -20,6 +20,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         elseif nl_type == :BINPROD && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binprod(m, k, β)
         elseif nl_type == :INTPROD && !m.nonconvex_terms[k][:convexified]
+            m.int_enable || error("Integer features are OFF. No support for integer problems at this condition.")
             λ, α = amp_convexify_intprod(m, k, λ, α, d)
         elseif nl_type == :BININT && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binint(m, k, β)

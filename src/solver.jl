@@ -58,8 +58,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Features for Integer Problems (NOTE: no support for intlin problems)
     int_enable::Bool                                            # Convert integer problem into binary problem by flatten the choice of variable domain
-    int_cumulative_disc::Bool                                   # Cummulatively involve integer variables for discretization
-    int_fully_disc::Bool
+    int_cumulative_disc::Bool                                   # [INACTIVE] Cummulatively involve integer variables for discretization
+    int_fully_disc::Bool                                        # [INACTIVE] Construct equalvaient formulation for integer variables
 
     # add all the solver options
     nlp_solver::MathProgBase.AbstractMathProgSolver             # Local continuous NLP solver for solving NLPs at each iteration
@@ -186,7 +186,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_bt_mip_timeout,
                                 presolve_bp,
                                 user_parameters,
-                                int_enable)
+                                int_enable,
+                                int_cumulative_disc,
+                                int_fully_disc)
 
         m = new()
 
@@ -240,6 +242,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.user_parameters = user_parameters
         m.int_enable = int_enable
+        m.int_cumulative_disc = int_cumulative_disc
+        m.int_fully_disc = int_fully_disc
 
         m.num_var_orig = 0
         m.num_cont_var_orig = 0
@@ -339,6 +343,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     user_parameters::Dict
     int_enable::Bool
+    int_cumulative_disc::Bool
+    int_fully_disc::Bool
 
     # other options to be added later on
 end
@@ -394,6 +400,8 @@ function PODSolver(;
 
     user_parameters = Dict(),
     int_enable = false,
+    int_cumulative_disc = false,
+    int_fully_disc = false,
 
     kwargs...
     )
@@ -453,7 +461,9 @@ function PODSolver(;
         presolve_bt_mip_timeout,
         presolve_bp,
         user_parameters,
-        int_enable)
+        int_enable,
+        int_cumulative_disc,
+        int_fully_disc)
     end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -513,6 +523,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     user_parameters = s.user_parameters
     int_enable = s.int_enable
+    int_cumulative_disc = s.int_cumulative_disc
+    int_fully_disc = s.int_fully_disc
 
     return PODNonlinearModel(colorful_pod,
                             loglevel, timeout, maxiter, relgap, tol,
@@ -550,7 +562,9 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             presolve_bt_mip_timeout,
                             presolve_bp,
                             user_parameters,
-                            int_enable)
+                            int_enable,
+                            int_cumulative_disc,
+                            int_fully_disc)
 end
 
 function MathProgBase.loadproblem!(m::PODNonlinearModel,
@@ -613,6 +627,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
             m.constr_structure[i] = :generic_nonlinear
         end
     end
+
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
@@ -622,8 +637,12 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable recategorization
+
+    :Int in m.var_type_orig && warn("POD's support for integer variables is highly experimental.")
+    :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
+
     process_expr(m)                 # Compact process of every expression
-    init_tight_bound(m)
+    init_tight_bound(m)             # Initialize bounds for algorithmic processes
     resolve_var_bounds(m)           # resolve lifted var bounds
     pick_disc_vars(m)               # Picking variables to be discretized
     init_disc(m)                    # Initialize discretization dictionarys
@@ -638,9 +657,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # Initialize log
     logging_summary(m)
-
-    ## TODO area presented in warning
-    :Int in m.var_type_orig && warn("POD's support for integer variables is highly experimental.")
 
     ## Citation
     println("-----------------------------------------------------------------")
