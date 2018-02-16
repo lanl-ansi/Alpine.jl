@@ -1,4 +1,8 @@
+__precompile__()
+
 module POD
+
+PODDEBUG = false
 
 using JuMP
 using MathProgBase
@@ -18,6 +22,7 @@ include("algorithm.jl")
 include("presolve.jl")
 include("amp.jl")
 include("embedding.jl")
+include("heuristics.jl")
 
 # Convexification method
 include("multi.jl")
@@ -26,6 +31,8 @@ include("tmc.jl")
 # Model Manipulation and utilities
 include("bounds.jl")
 include("utility.jl")
+include("integer.jl")
+include("trigonometry.jl")
 
 # Othes
 include("log.jl")

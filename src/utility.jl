@@ -88,14 +88,20 @@ end
 This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
 The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
 """
-function init_disc(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
+function init_disc(m::PODNonlinearModel)
 
     for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
-        lb = m.l_var_tight[var]
-        ub = m.u_var_tight[var]
-        m.discretization[var] = [lb, ub]
+        if m.var_type[var] in [:Bin, :Cont]
+            lb = m.l_var_tight[var]
+            ub = m.u_var_tight[var]
+            m.discretization[var] = [lb, ub]
+        elseif m.var_type[var] in [:Int]
+            m.int_enable ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
+            m.int_enable ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
+            m.discretization[var] = [lb, ub]
+        else
+            error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
+        end
     end
 
     return
@@ -109,9 +115,7 @@ Utility functions to convert bounds vectors to Dictionary based structures that 
 partition operations.
 
 """
-function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64}; kwargs...)
-
-    options = Dict(kwargs)
+function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
 
     @assert length(lbs) == length(ubs)
     var_discretization = Dict()
@@ -190,7 +194,6 @@ An utility function used to recongize different sub-solvers and return the bound
 function update_boundstop_options(m::PODNonlinearModel)
 
     if m.mip_solver_id == "Gurobi"
-        push!(m.mip_solver.options, (:BestBdStop, stopbound))
         # Calculation of the bound
         if m.sense_orig == :Min
             stopbound = (1-m.relgap+m.tol) * m.best_obj
@@ -243,8 +246,9 @@ function fix_domains(m::PODNonlinearModel)
 
     l_var = copy(m.l_var_orig)
     u_var = copy(m.u_var_orig)
+
     for i in 1:m.num_var_orig
-        if i in m.disc_vars
+        if i in m.disc_vars && m.var_type[i] == :Cont
             point = m.best_bound_sol[i]
             for j in 1:length(m.discretization[i])
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
@@ -254,7 +258,7 @@ function fix_domains(m::PODNonlinearModel)
                     break
                 end
             end
-        elseif m.var_type_orig[i] == :Bin || m.var_type_orig[i] == :Int
+        elseif m.var_type[i] == :Bin || m.var_type[i] == :Int
             l_var[i] = round(m.best_bound_sol[i])
             u_var[i] = round(m.best_bound_sol[i])
         end
@@ -264,17 +268,17 @@ function fix_domains(m::PODNonlinearModel)
 end
 
 """
-    convexification_exam(m::PODNonlinearModel)
+    is_fully_convex(m::PODNonlinearModel)
 """
-function convexification_exam(m::PODNonlinearModel)
+function is_fully_convex(m::PODNonlinearModel)
 
     # Other more advanced convexification check goes here
-    for term in keys(m.nonlinear_terms)
-        if !m.nonlinear_terms[term][:convexified]
+    for term in keys(m.nonconvex_terms)
+        if !m.nonconvex_terms[term][:convexified]
             warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
             return
         else
-            m.nonlinear_terms[term][:convexified] = false    # Reset status for next iteration
+            m.nonconvex_terms[term][:convexified] = false    # Reset status for next iteration
         end
     end
 
@@ -299,7 +303,7 @@ function pick_disc_vars(m::PODNonlinearModel)
 
     if isa(m.disc_var_pick, Function)
         eval(m.disc_var_pick)(m)
-        (length(m.disc_vars) == 0 && length(m.nonlinear_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+        (length(m.disc_vars) == 0 && length(m.nonconvex_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
     elseif isa(m.disc_var_pick, Int) || isa(m.disc_var_pick, String)
         if m.disc_var_pick == 0
             select_all_nlvar(m)
@@ -328,24 +332,8 @@ A built-in method for selecting variables for discretization. It selects all var
 """
 function select_all_nlvar(m::PODNonlinearModel)
 
-    nodes = Set()
-    for k in keys(m.nonlinear_terms)
-        # Assumption Max cover is always safe
-        if m.nonlinear_terms[k][:nonlinear_type] in POD_C_MONOMIAL
-            for i in k
-                @assert isa(i.args[2], Int)
-                push!(nodes, i.args[2])
-            end
-        elseif m.nonlinear_terms[k][:nonlinear_type] in POD_C_TRIGONOMETRIC
-            for i in k[:vars]
-                @assert isa(i, Int)
-                push!(nodes, i)
-            end
-        end
-    end
-    nodes = collect(nodes)
-    m.num_var_disc_mip = length(nodes)
-    m.disc_vars = nodes
+    m.num_var_disc_mip = length(m.candidate_disc_vars)
+    m.disc_vars = copy(m.candidate_disc_vars)
 
     return
 end
@@ -355,34 +343,34 @@ end
 """
 function print_iis_gurobi(m::JuMP.Model)
 
-    # grb = MathProgBase.getrawsolver(internalmodel(m))
-    # Gurobi.computeIIS(grb)
-    # numconstr = Gurobi.num_constrs(grb)
-    # numvar = Gurobi.num_vars(grb)
-    #
-    # iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
-    # iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
-    # iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
-    #
-    # info("Irreducible Inconsistent Subsystem (IIS)")
-    # info("Variable bounds:")
-    # for i in 1:numvar
-    #     v = Variable(m, i)
-    #     if iislb[i] != 0 && iisub[i] != 0
-    #         println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
-    #     elseif iislb[i] != 0
-    #         println(getname(v), " >= ", getlowerbound(v))
-    #     elseif iisub[i] != 0
-    #         println(getname(v), " <= ", getupperbound(v))
-    #     end
-    # end
-    #
-    # info("Constraints:")
-    # for i in 1:numconstr
-    #     if iisconstr[i] != 0
-    #         println(m.linconstr[i])
-    #     end
-    # end
+    grb = MathProgBase.getrawsolver(internalmodel(m))
+    Gurobi.computeIIS(grb)
+    numconstr = Gurobi.num_constrs(grb)
+    numvar = Gurobi.num_vars(grb)
+
+    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+
+    info("Irreducible Inconsistent Subsystem (IIS)")
+    info("Variable bounds:")
+    for i in 1:numvar
+        v = Variable(m, i)
+        if iislb[i] != 0 && iisub[i] != 0
+            println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+        elseif iislb[i] != 0
+            println(getname(v), " >= ", getlowerbound(v))
+        elseif iisub[i] != 0
+            println(getname(v), " <= ", getupperbound(v))
+        end
+    end
+
+    info("Constraints:")
+    for i in 1:numconstr
+        if iisconstr[i] != 0
+            println(m.linconstr[i])
+        end
+    end
 
     return
 end
@@ -402,7 +390,7 @@ function update_discretization_var_set(m::PODNonlinearModel)
     end
 
 	var_idxs = copy(m.candidate_disc_vars)
-    var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonlinear_terms)))
+    var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonconvex_terms)))
 
     for i in 1:m.num_var_orig       # Original Variables
         var_diffs[i] = abs(m.best_sol[i]-m.best_bound_sol[i])
@@ -418,11 +406,11 @@ function update_discretization_var_set(m::PODNonlinearModel)
         end
     end
 
-    for i in 1:length(keys(m.nonlinear_terms))
-        for j in keys(m.nonlinear_terms)    # sequential evaluation to avoid dependency issue
-            if m.nonlinear_terms[j][:id] == i
-                var_diffs[m.nonlinear_terms[j][:lifted_var_ref].args[2]] = m.nonlinear_terms[j][:evaluator](m.nonlinear_terms[j], var_diffs)
-                # println("nonlinear evaluated $(var_diffs[m.nonlinear_terms[j][:lifted_var_ref].args[2]]) from $(m.nonlinear_terms[j][:lifted_constr_ref])")
+    for i in 1:length(keys(m.nonconvex_terms))
+        for j in keys(m.nonconvex_terms)    # sequential evaluation to avoid dependency issue
+            if m.nonconvex_terms[j][:id] == i
+                var_diffs[m.nonconvex_terms[j][:lifted_var_ref].args[2]] = m.nonconvex_terms[j][:evaluator](m.nonconvex_terms[j], var_diffs)
+                # println("nonlinear evaluated $(var_diffs[m.nonconvex_terms[j][:lifted_var_ref].args[2]]) from $(m.nonconvex_terms[j][:lifted_constr_ref])")
             end
         end
     end
@@ -440,48 +428,57 @@ function build_discvar_graph(m::PODNonlinearModel)
     nodes = Set()
     arcs = Set()
 
-    for k in keys(m.nonlinear_terms)
-        m.nonlinear_terms[k][:discvar_collector](m, k, var_bowl=nodes)
+    # Collect variables in nonconvex terms
+    for k in keys(m.nonconvex_terms)
+        m.nonconvex_terms[k][:discvar_collector](m, k, var_bowl=nodes)
     end
 
-    for k in keys(m.nonlinear_terms)
-        if m.nonlinear_terms[k][:nonlinear_type] == :BILINEAR
+    for k in keys(m.nonconvex_terms)
+        if m.nonconvex_terms[k][:nonlinear_type] == :BILINEAR
             arc = []
             for i in k
                 @assert isa(i.args[2], Int)
                 push!(arc, i.args[2])
             end
             push!(arcs, sort(arc))
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :MONOMIAL
-            @assert isa(m.nonlinear_terms[k][:var_idxs][1], Int)
-            push!(arcs, [m.nonlinear_terms[k][:var_idxs][1], m.nonlinear_terms[k][:var_idxs][1];])
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :MULTILINEAR
-            var_idxs = m.nonlinear_terms[k][:var_idxs]
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
+            @assert isa(m.nonconvex_terms[k][:var_idxs][1], Int)
+            push!(arcs, [m.nonconvex_terms[k][:var_idxs][1], m.nonconvex_terms[k][:var_idxs][1];])
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :MULTILINEAR
+            var_idxs = m.nonconvex_terms[k][:var_idxs]
             for i in 1:length(var_idxs)
                 for j in 1:length(var_idxs)
                     i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
                 end
             end
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :INTLIN
-            @assert length(m.nonlinear_terms[k][:var_idxs]) == 2
-            var_idxs = copy(m.nonlinear_terms[k][:var_idxs])
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
+            @assert length(m.nonconvex_terms[k][:var_idxs]) == 2
+            var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
             push!(arcs, sort(var_idxs))
-        elseif m.nonlinear_terms[k][:nonlinear_type] == :INTPROD
-            var_idxs = m.nonlinear_terms[k][:var_idxs]
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :INTPROD
+            var_idxs = m.nonconvex_terms[k][:var_idxs]
             for i in 1:length(var_idxs)
                 for j in 1:length(var_idxs)
                     i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
                 end
             end
-        elseif m.nonlinear_terms[k][:nonlinear_type] in [:cos, :sin]
-            @assert length(m.nonlinear_terms[k][:var_idxs]) == 1
-            var_idx = m.nonlinear_terms[k][:var_idxs][1]
+        elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
+            @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
+            var_idx = m.nonconvex_terms[k][:var_idxs][1]
             @assert isa(var_idx, Int)
             push!(arcs, [var_idx, var_idx;])
-        elseif m.nonlinear_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
+        elseif m.nonconvex_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
             continue
         else
             error("[EXCEPTION] Unexpected nonlinear term when building discvar graph.")
+        end
+    end
+
+    # Collect integer variables
+    for i in 1:m.num_var_orig
+        if !(i in nodes) && m.var_type[i] == :Int
+            push!(nodes, i)
+            push!(arcs, [i,i;])
         end
     end
 
@@ -515,7 +512,6 @@ function min_vertex_cover(m::PODNonlinearModel)
     return
 end
 
-
 function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     # Collect the graph information
@@ -546,5 +542,6 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     m.num_var_disc_mip = Int(sum(xVal))
     m.disc_vars = [i for i in nodes if xVal[i] > 0]
     (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
+
     return
 end

@@ -11,6 +11,9 @@ function init_tight_bound(m::PODNonlinearModel)
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
             m.u_var_tight[i] = 1.0
+        elseif m.var_type_orig[i] == :Int
+            m.l_var_tight[i] = floor(m.l_var_tight[i])
+            m.u_var_tight[i] = ceil(m.u_var_tight[i])
         end
     end
 
@@ -123,6 +126,24 @@ function bounds_propagation(m::PODNonlinearModel)
         (exhausted == true && m.loglevel > 99) && println("Initial constraint-based bound evaluation exhausted...")
     end
 
+
+
+    return
+end
+
+"""
+    Categorize variable based on variable bounds
+"""
+function recategorize_var(m::PODNonlinearModel)
+
+    for i in 1:m.num_var_orig
+        if m.var_type_orig[i] == :Int && m.l_var_orig[i] == 0.0 && m.u_var_orig[i] == 1.0
+            m.var_type_orig[i] = :Bin
+            m.var_type[i] = :Bin
+            println("Converting VAR$(i) to binary variable")
+        end
+    end
+
     return
 end
 
@@ -142,8 +163,8 @@ function resolve_var_bounds(m::PODNonlinearModel)
     # Potentially, additional mapping can be applied to reduce the complexity
     for i in 1:length(m.term_seq)
         k = m.term_seq[i]
-        if haskey(m.nonlinear_terms, k)
-            m.nonlinear_terms[k][:bound_resolver](m, k)
+        if haskey(m.nonconvex_terms, k)
+            m.nonconvex_terms[k][:bound_resolver](m, k)
         elseif haskey(m.linear_terms, k)
             basic_linear_bounds(m, k)
         else
@@ -158,18 +179,21 @@ function resolve_var_bounds(m::PODNonlinearModel)
 end
 
 function resolve_inf_bounds(m::PODNonlinearModel)
+    # Primarily detect if any variable is unbounded
+    for i in 1:m.num_var_orig
 
+    end
     return
 end
 
 """
-    resolve_var_bounds(nonlinear_terms::Dict, discretization::Dict)
+    resolve_var_bounds(nonconvex_terms::Dict, discretization::Dict)
 
 For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
 The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
 can help speed up the subsequent solve in subsequent iterations.
 """
-function resolve_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, term_seq::Dict, discretization::Dict; kwargs...)
+function resolve_var_bounds(nonconvex_terms::Dict, linear_terms::Dict, term_seq::Dict, discretization::Dict; kwargs...)
 
     # TODO this sequence need to be changed
 
@@ -178,10 +202,10 @@ function resolve_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, term_seq:
     # Potentially, additional mapping can be applied to reduce the complexity
     for i in 1:length(term_seq)
         k = term_seq[i]
-        if haskey(nonlinear_terms, k)
+        if haskey(nonconvex_terms, k)
             nlk = k
-            if nonlinear_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
-                lifted_idx = nonlinear_terms[nlk][:lifted_var_ref].args[2]
+            if nonconvex_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
+                lifted_idx = nonconvex_terms[nlk][:lifted_var_ref].args[2]
                 cnt = 0
                 bound = []
                 for var in nlk
@@ -202,12 +226,16 @@ function resolve_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, term_seq:
                 if maximum(bound) < discretization[lifted_idx][end]
                     discretization[lifted_idx][end] = maximum(bound)
                 end
-            elseif nonlinear_terms[nlk][:nonlinear_type] in [:BINPROD]
+            elseif nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
                 basic_binprod_bounds(m, k)
-            elseif nonlinear_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
+            elseif nonconvex_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
                 basic_sincos_bounds(m, k)
-            elseif nonlinear_terms[nlk][:nonlinear_type] in [:BINLIN]
+            elseif nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
                 basic_binlin_bounds(m, k)
+            elseif nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
+                basic_intlin_bounds(m, k)
+            else
+                error("EXPECTED ERROR : NEED IMPLEMENTATION")
             end
         elseif haskey(slinear_terms, k)
             basic_linear_bounds(m, k, linear_terms)
@@ -231,7 +259,7 @@ function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
 
     for var in m.candidate_disc_vars
         if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
-            deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonlinear_terms by deleting the info
+            deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonconvex_terms by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end
     end

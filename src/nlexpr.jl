@@ -1,7 +1,7 @@
 """
     process_expr(expr; kwargs...)
 
-High-level warpper for processing expression with sub-tree operators
+	High-level warpper for processing expression with sub-tree operators
 """
 function process_expr(m::PODNonlinearModel)
 
@@ -113,21 +113,29 @@ end
 """
 function expr_finalized(m::PODNonlinearModel)
 
-	collect_nonlinear_vars(m)
+	collect_nonconvex_vars(m)
 	m.candidate_disc_vars = sort(m.candidate_disc_vars)
     m.num_var_linear_mip = length(m.linear_terms)
-	m.num_var_nonlinear_mip = length(m.nonlinear_terms)
+	m.num_var_nonlinear_mip = length(m.nonconvex_terms)
 	m.num_constr_convex = length([i for i in m.constr_structure if i == :convex])
 
 	return m
 end
 
-function collect_nonlinear_vars(m::PODNonlinearModel)
+function collect_nonconvex_vars(m::PODNonlinearModel)
 
-    # Walk through all nonlinear terms
-	for i in keys(m.nonlinear_terms)
-        m.nonlinear_terms[i][:discvar_collector](m, i)
+    # Walk through all nonconvex terms
+	for i in keys(m.nonconvex_terms)
+        m.nonconvex_terms[i][:discvar_collector](m, i)
     end
+
+	# TODO : reconsider how to structure this
+	# NOTE : Walk through all nonconvex variables
+	for i in 1:m.num_var_orig
+		if !(i in m.candidate_disc_vars) && m.var_type[i] == :Int
+			push!(m.candidate_disc_vars, i)
+		end
+	end
 
 	return
 end
@@ -404,9 +412,10 @@ end
 	Most issues can be caused by this function.
 """
 function expr_flatten(expr, level=0; kwargs...)
+
 	if level > 0  # No trivial constraint is allowed "3>5"
 		flat = expr_arrangeargs(expr.args)
-		if isa(flat, Float64)
+		if isa(flat, Float64) || isa(flat, Int)
 			return flat
 		else
 			expr.args = flat

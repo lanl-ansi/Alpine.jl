@@ -21,6 +21,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
+    method_partition_injection::Array{Function}                 # Array of functions for special methods to add partitions to variable under complex conditions
     term_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize nonlinear terms in constraint expression
     constr_patterns::Array{Function}                            # Array of functions that user wish to use to parse/recognize structural constraint from expression
 
@@ -34,14 +35,14 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_consecutive_forbid::Int                                # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
     disc_ratio_branch::Bool
 
-    # parameters used to control convhull formulation
+    # Convexifications Formulation Parameters
     convhull_formulation::String                                # Formulation to used for relaxation
     convhull_ebd::Bool
     convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
     convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
     convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
 
-    # parameters related to presolving
+    # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
@@ -54,6 +55,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
+
+    # Features for Integer Problems (NOTE: no support for intlin problems)
+    int_enable::Bool                                            # Convert integer problem into binary problem by flatten the choice of variable domain
+    int_cumulative_disc::Bool                                   # [INACTIVE] Cummulatively involve integer variables for discretization
+    int_fully_disc::Bool                                        # [INACTIVE] Construct equalvaient formulation for integer variables
 
     # add all the solver options
     nlp_solver::MathProgBase.AbstractMathProgSolver             # Local continuous NLP solver for solving NLPs at each iteration
@@ -110,7 +116,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Expression related and Structural Property Placeholder
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
-    nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
+    nonconvex_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
     term_seq::Dict{Int, Any}                                    # Vector-Dictionary for nl terms detection
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     obj_structure::Symbol                                       # A symbolic indicator of the expression type of objective function
@@ -154,6 +160,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 bilinear_convexhull,
                                 monomial_convexhull,
                                 method_convexification,
+                                method_partition_injection,
                                 term_patterns,
                                 constr_patterns,
                                 disc_var_pick,
@@ -178,7 +185,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_bt_relax,
                                 presolve_bt_mip_timeout,
                                 presolve_bp,
-                                user_parameters)
+                                user_parameters,
+                                int_enable,
+                                int_cumulative_disc,
+                                int_fully_disc)
 
         m = new()
 
@@ -196,6 +206,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.monomial_convexhull = monomial_convexhull
 
         m.method_convexification = method_convexification
+        m.method_partition_injection = method_partition_injection
         m.term_patterns = term_patterns
         m.constr_patterns = constr_patterns
 
@@ -229,6 +240,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.minlp_solver = minlp_solver
         m.mip_solver = mip_solver
 
+        m.user_parameters = user_parameters
+        m.int_enable = int_enable
+        m.int_cumulative_disc = int_cumulative_disc
+        m.int_fully_disc = int_fully_disc
+
         m.num_var_orig = 0
         m.num_cont_var_orig = 0
         m.num_int_var_orig = 0
@@ -244,7 +260,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.indexes_lconstr_updated = Int[]
 
         m.linear_terms = Dict()
-        m.nonlinear_terms = Dict()
+        m.nonconvex_terms = Dict()
         m.term_seq = Dict()
         m.nonlinear_constrs = Dict()
         m.candidate_disc_vars = Int[]
@@ -258,8 +274,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_constr_convex = 0
         m.constr_structure = []
         m.bound_sol_history = []
-
-        m.user_parameters = Dict()
 
         m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
 
@@ -297,6 +311,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     monomial_convexhull::Bool
 
     method_convexification::Array{Function}
+    method_partition_injection::Array{Function}
     term_patterns::Array{Function}
     constr_patterns::Array{Function}
 
@@ -327,6 +342,9 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     presolve_bp::Bool
 
     user_parameters::Dict
+    int_enable::Bool
+    int_cumulative_disc::Bool
+    int_fully_disc::Bool
 
     # other options to be added later on
 end
@@ -350,6 +368,7 @@ function PODSolver(;
     monomial_convexhull = true,
 
     method_convexification = Array{Function}(0),
+    method_partition_injection = Array{Function}(0),
     term_patterns = Array{Function}(0),
     constr_patterns = Array{Function}(0),
 
@@ -380,27 +399,30 @@ function PODSolver(;
     presolve_bp = true,
 
     user_parameters = Dict(),
+    int_enable = false,
+    int_cumulative_disc = false,
+    int_fully_disc = false,
 
     kwargs...
     )
 
-
+    # Option Screening
     unsupport_opts = Dict(kwargs)
-    !isempty(keys(unsupport_opts)) && warn("Detected unsupported/experimental arguments = $(keys(unsupport_opts))")
+    !isempty(keys(unsupport_opts)) && error("Detected unsupported/experimental arguments = $(keys(unsupport_opts))")
 
-    if nlp_solver == UnsetSolver()
-        error("No NLP local solver specified (set nlp_solver)\n")
+    nlp_solver == UnsetSolver() && error("No NLP local solver specified (set nlp_solver)\n")
+    mip_solver == UnsetSolver() && error("NO MIP solver specififed (set mip_solver)\n")
+
+    # String Code Conversion
+    if disc_var_pick in ["select_all_nlvar", "all", "max"]
+        disc_var_pick = 0
+    elseif disc_var_pick in ["min_vertex_cover","min"]
+        disc_var_pick = 1
+    elseif disc_var_pick == "selective"
+        disc_var_pick = 2
+    elseif disc_var_pick == "dynamic"
+        disc_var_pick = 3
     end
-
-    if mip_solver == UnsetSolver()
-        error("NO MIP solver specififed (set mip_solver)\n")
-    end
-
-    # Code Conversion
-    (disc_var_pick in ["select_all_nlvar", "all", "max"]) && (disc_var_pick = 0)
-    (disc_var_pick in ["min_vertex_cover","min"]) && (disc_var_pick = 1)
-    (disc_var_pick == "selective") && (disc_var_pick = 2)
-    (disc_var_pick == "dynamic") && (disc_var_pick = 3)
 
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(colorful_pod,
@@ -413,6 +435,7 @@ function PODSolver(;
         bilinear_convexhull,
         monomial_convexhull,
         method_convexification,
+        method_partition_injection,
         term_patterns,
         constr_patterns,
         disc_var_pick,
@@ -437,7 +460,10 @@ function PODSolver(;
         presolve_bt_relax,
         presolve_bt_mip_timeout,
         presolve_bp,
-        user_parameters)
+        user_parameters,
+        int_enable,
+        int_cumulative_disc,
+        int_fully_disc)
     end
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
@@ -461,6 +487,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     monomial_convexhull = s.monomial_convexhull
 
     method_convexification = s.method_convexification
+    method_partition_injection = s.method_partition_injection
     term_patterns = s.term_patterns
     constr_patterns = s.constr_patterns
 
@@ -495,6 +522,9 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     presolve_bp = s.presolve_bp
 
     user_parameters = s.user_parameters
+    int_enable = s.int_enable
+    int_cumulative_disc = s.int_cumulative_disc
+    int_fully_disc = s.int_fully_disc
 
     return PODNonlinearModel(colorful_pod,
                             loglevel, timeout, maxiter, relgap, tol,
@@ -506,6 +536,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             bilinear_convexhull,
                             monomial_convexhull,
                             method_convexification,
+                            method_partition_injection,
                             term_patterns,
                             constr_patterns,
                             disc_var_pick,
@@ -530,7 +561,10 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             presolve_bt_relax,
                             presolve_bt_mip_timeout,
                             presolve_bp,
-                            user_parameters)
+                            user_parameters,
+                            int_enable,
+                            int_cumulative_disc,
+                            int_fully_disc)
 end
 
 function MathProgBase.loadproblem!(m::PODNonlinearModel,
@@ -539,6 +573,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
                                     l_constr::Vector{Float64}, u_constr::Vector{Float64},
                                     sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
 
+    # Basic Problem Dimensions
     m.num_var_orig = num_var
     m.num_constr_orig = num_constr
     m.l_var_orig = l_var
@@ -549,13 +584,22 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     if m.sense_orig == :Max
         m.best_obj = -Inf
         m.best_bound = Inf
+    else
+        m.best_obj = Inf
+        m.best_bound = -Inf
     end
     m.d_orig = d
+
+    # Initialize NLP interface
     MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess,:ExprGraph])
+
+    # Collect objective & constraints expressions
+    m.obj_expr_orig = MathProgBase.obj_expr(d)
     for i in 1:m.num_constr_orig
         push!(m.constr_expr_orig, MathProgBase.constr_expr(d, i))
     end
-    m.obj_expr_orig = MathProgBase.obj_expr(d)
+
+    # Collect original variable type and build dynamic variable type space
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
     m.var_type = copy(m.var_type_orig)
 
@@ -571,26 +615,34 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
         end
     end
 
+    # Initialize recognizable structure properties with :none
     m.obj_structure = :none
     m.constr_structure = [:none for i in 1:m.num_constr_orig]
-
     for i = 1:m.num_constr_orig
         if MathProgBase.isconstrlinear(m.d_orig, i)
             m.num_lconstr_orig += 1
             m.constr_structure[i] = :generic_linear
         else
+            m.num_nlconstr_orig += 1
             m.constr_structure[i] = :generic_nonlinear
         end
     end
-    m.num_nlconstr_orig = m.num_constr_orig - m.num_lconstr_orig
 
-    # not using this any where (in optional fields)
+    @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
     m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
+    # Preload Built-in Special Functions (append special functions to user-functions)
+    push!(m.method_partition_injection, sincos_partition_injection)
+
     # populate data to create the bounding model
+    recategorize_var(m)             # Initial round of variable recategorization
+
+    :Int in m.var_type_orig && warn("POD's support for integer variables is highly experimental.")
+    :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
+
     process_expr(m)                 # Compact process of every expression
-    init_tight_bound(m)      # Initialize tightened bound vectors for future usage
+    init_tight_bound(m)             # Initialize bounds for algorithmic processes
     resolve_var_bounds(m)           # resolve lifted var bounds
     pick_disc_vars(m)               # Picking variables to be discretized
     init_disc(m)                    # Initialize discretization dictionarys
@@ -598,29 +650,30 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
 
+    # Conduct solver-dependent detection
     fetch_mip_solver_identifier(m)
     fetch_nlp_solver_identifier(m)
     fetch_minlp_solver_identifier(m)
 
+    # Initialize log
     logging_summary(m)
 
-    ## TODO area presented in warning
-    :Int in m.var_type_orig && warn("POD currently don't not fully support integer variables.")
+    ## Citation
+    println("-----------------------------------------------------------------")
+    println("If you find POD useful, please cite the following work. Thanks!!!")
+    println("                          CITATION")
+    println("-----------------------------------------------------------------")
 
     return
 end
 
 MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.var_start_orig = x)
 MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
-
 MathProgBase.status(m::PODNonlinearModel) = m.pod_status
 MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
 MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
 MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
 MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
-
-
-# MathProgBase.LinearQuadraticModel(s::PODSolver) = MathProgBase.NonlinearModel(s::PODSolver)
 
 function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
 
