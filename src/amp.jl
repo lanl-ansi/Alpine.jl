@@ -69,7 +69,7 @@ function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)
     amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
     amp_post_convhull(m, use_disc=discretization)           # convex hull representation
 
-    is_fully_convex(m) # Exam to see if all non-linear terms have been convexificed
+    is_fully_convexified(m) # Exam to see if all non-linear terms have been convexificed
 
     return
 end

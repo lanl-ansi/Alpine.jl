@@ -268,9 +268,9 @@ function fix_domains(m::PODNonlinearModel)
 end
 
 """
-    is_fully_convex(m::PODNonlinearModel)
+    is_fully_convexified(m::PODNonlinearModel)
 """
-function is_fully_convex(m::PODNonlinearModel)
+function is_fully_convexified(m::PODNonlinearModel)
 
     # Other more advanced convexification check goes here
     for term in keys(m.nonconvex_terms)
@@ -372,53 +372,6 @@ function print_iis_gurobi(m::JuMP.Model)
         end
     end
 
-    return
-end
-
-"""
-    Collects distance of each variable's bounding solution to best feasible solution and select the ones that is the furthest
-    Currently don't support recursively convexification
-"""
-function update_discretization_var_set(m::PODNonlinearModel)
-
-    length(m.candidate_disc_vars) <= 15 && return   # Separation
-
-    # If no feasible solution found, do NOT update
-    if m.status[:feasible_solution] != :Detected
-        println("no feasible solution detected. No update disc var selection.")
-        return
-    end
-
-	var_idxs = copy(m.candidate_disc_vars)
-    var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonconvex_terms)))
-
-    for i in 1:m.num_var_orig       # Original Variables
-        var_diffs[i] = abs(m.best_sol[i]-m.best_bound_sol[i])
-        # println("var_diff[$(i)] = $(var_diffs[i])")
-    end
-
-    for i in 1:length(keys(m.linear_terms))
-        for j in keys(m.linear_terms)   # sequential evaluation to avoid dependency issue
-            if m.linear_terms[j][:id] == i
-                var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]] = m.linear_terms[j][:evaluator](m.linear_terms[j], var_diffs)
-                # println("linear evaluated $(var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]]) from $(m.linear_terms[j][:lifted_constr_ref])")
-            end
-        end
-    end
-
-    for i in 1:length(keys(m.nonconvex_terms))
-        for j in keys(m.nonconvex_terms)    # sequential evaluation to avoid dependency issue
-            if m.nonconvex_terms[j][:id] == i
-                var_diffs[m.nonconvex_terms[j][:lifted_var_ref].args[2]] = m.nonconvex_terms[j][:evaluator](m.nonconvex_terms[j], var_diffs)
-                # println("nonlinear evaluated $(var_diffs[m.nonconvex_terms[j][:lifted_var_ref].args[2]]) from $(m.nonconvex_terms[j][:lifted_constr_ref])")
-            end
-        end
-    end
-
-    distance = Dict(zip(var_idxs,var_diffs))
-    weighted_min_vertex_cover(m, distance)
-
-    (m.loglevel > 100) && println("updated partition var selection => $(m.disc_vars)")
     return
 end
 
@@ -544,4 +497,59 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
 
     return
+end
+
+function round_sol(m::PODNonlinearModel, nlp_model)
+    relaxed_sol = MathProgBase.getsolution(nlp_model)
+    return [m.var_type_orig[i] in [:Bin, :Int] ? round(relaxed_sol[i]) : relaxed_sol[i] for i in 1:m.num_var_orig]
+end
+
+"""
+    Evaluate a solution feasibility: Solution bust be in the feasible category and evaluated rhs must be feasible
+"""
+function eval_feasibility(m::PODNonlinearModel, sol::Vector)
+
+    length(sol) == m.num_var_orig || error("Candidate solution length mismatch.")
+
+
+    for i in 1:m.num_var_orig
+        # Check solution category and bounds
+        if m.var_type[i] == :Bin
+            isapprox(sol[i], 1.0;atol=m.tol) || isapprox(sol[i], 0.0;atol=m.tol) || return false
+        elseif m.var_type[i] == :Int
+            isapprox(mod(sol[i], 1.0), 0.0;atol=m.tol) || return false
+        end
+        # Check solution bounds (with tight bounds)
+        sol[i] <= m.l_var_tight[i] - m.tol || return false
+        sol[i] >= m.u_var_tight[i] + m.tol || return false
+    end
+
+    # Check constraint violation
+    eval_rhs = zeros(m.num_constr_orig)
+    MathProgBase.eval_g(m.d_orig, eval_rhs, rounded_sol)
+    feasible = true
+    for i in 1:m.num_constr_orig
+        if m.constr_type_orig[i] == :(==)
+            if !isapprox(eval_rhs[i], m.l_constr_orig[i]; atol=m.tol)
+                feasible = false
+                m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.l_constr_orig[i])")
+                m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+                return false
+            end
+        elseif m.constr_type_orig[i] == :(>=)
+            if !(eval_rhs[i] >= m.l_constr_orig[i] - m.tol)
+                m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.l_constr_orig[i])")
+                m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+                return false
+            end
+        elseif m.constr_type_orig[i] == :(<=)
+            if !(eval_rhs[i] <= m.u_constr_orig[i] + m.tol)
+                m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.u_constr_orig[i])")
+                m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+                return false
+            end
+        end
+    end
+
+    return feasible
 end

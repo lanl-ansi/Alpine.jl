@@ -6,7 +6,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     colorful_pod::Any                                           # Turn on for a color solver
 
     # basic solver parameters
-    loglevel::Int                                                    # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
+    loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     maxiter::Int                                                # Target Maximum Iterations
     relgap::Float64                                             # Relative optimality gap termination condition
@@ -129,7 +129,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Discretization Related
     candidate_disc_vars::Vector{Int}                            # A vector of all original variable indices that is involved in the nonlinear terms
     discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
-    disc_vars::Vector{Any}                                      # Variables on which discretization is performed
+    disc_vars::Vector{Int}                                      # Variables on which discretization is performed
+    int_vars::Vector{Int}                                       # Index vector of integer variables
+    bin_vars::Vector{Int}                                       # Index vector of binary variable
 
     # Re-formulated problem
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
@@ -267,6 +269,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.bounding_constr_expr_mip = []
         m.bounding_constr_mip = []
         m.disc_vars = []
+        m.int_vars = []
+        m.bin_vars = []
         m.discretization = Dict()
         m.num_var_linear_mip = 0
         m.num_var_nonlinear_mip = 0
@@ -602,6 +606,8 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # Collect original variable type and build dynamic variable type space
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
     m.var_type = copy(m.var_type_orig)
+    m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
+    m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)

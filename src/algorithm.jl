@@ -98,7 +98,8 @@ end
 """
 function auto_adjustments(m::PODNonlinearModel)
 
-    m.disc_var_pick == 3 && update_discretization_var_set(m)
+    m.disc_var_pick == 3 && update_disc_cont_var(m)
+    m.int_cumulative_disc && update_disc_int_var(m)
 
     if m.disc_ratio_branch
         m.disc_ratio = update_disc_ratio(m)    # Only perform for a maximum three times
