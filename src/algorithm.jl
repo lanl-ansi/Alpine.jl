@@ -289,7 +289,7 @@ function bounding_solve(m::PODNonlinearModel)
     elseif status in status_infeasible
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = :Infeasible
-        true && print_iis_gurobi(m.model_mip) # Diagnostic code
+        PODDEBUG && print_iis_gurobi(m.model_mip) # Diagnostic code
         warn("[INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
     elseif status == :Unbounded
         m.status[:bounding_solve] = :Unbounded

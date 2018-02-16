@@ -24,8 +24,10 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         elseif nl_type == :BININT && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binint(m, k, β)
         elseif nl_type == :INTLIN && !m.nonconvex_terms[k][:convexified]
+            error("No support for convexifying INTLIN terms")
             λ, α = amp_convexify_intlin(m, k, λ, α, d)
         elseif nl_type in [:sin, :cos] && !m.nonconvex_terms[l][:convexified]
+            error("No support for convexifying SIN/COS terms")
             β = amp_convexify_sincos(m, k, β)
         end
     end

@@ -2,11 +2,11 @@ __precompile__()
 
 module POD
 
+PODDEBUG = false
+
 using JuMP
 using MathProgBase
 using Compat
-
-using Gurobi
 
 include("const.jl")
 

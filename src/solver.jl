@@ -56,8 +56,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     presolve_bp::Bool                                           # Conduct basic bound propagation
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
-    # Features for Integer Problems
+    # Features for Integer Problems (NOTE: no support for intlin problems)
     int_enable::Bool                                            # Convert integer problem into binary problem by flatten the choice of variable domain
+    int_cumulative_disc::Bool                                   # Cummulatively involve integer variables for discretization
+    int_fully_disc::Bool
 
     # add all the solver options
     nlp_solver::MathProgBase.AbstractMathProgSolver             # Local continuous NLP solver for solving NLPs at each iteration
