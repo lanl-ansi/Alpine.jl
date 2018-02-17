@@ -404,7 +404,7 @@ function PODSolver(;
 
     user_parameters = Dict(),
     int_enable = false,
-    int_cumulative_disc = false,
+    int_cumulative_disc = true,
     int_fully_disc = false,
 
     kwargs...

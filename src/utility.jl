@@ -242,15 +242,18 @@ This function is used to fix variables to certain domains during the local solve
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
 """
-function fix_domains(m::PODNonlinearModel)
+function fix_domains(m::PODNonlinearModel;discrete_sol=nothing)
+
+    discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
 
     l_var = copy(m.l_var_orig)
     u_var = copy(m.u_var_orig)
 
     for i in 1:m.num_var_orig
         if i in m.disc_vars && m.var_type[i] == :Cont
-            point = m.best_bound_sol[i]
-            for j in 1:length(m.discretization[i])
+            discrete_sol == nothing ? point = m.best_bound_sol[i] : point = discrete_sol[i]
+            PCnt = length(m.discretization[i]) - 1
+            for j in 1:PCnt
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
                     @assert j < length(m.discretization[i])
                     l_var[i] = m.discretization[i][j]
@@ -259,8 +262,13 @@ function fix_domains(m::PODNonlinearModel)
                 end
             end
         elseif m.var_type[i] == :Bin || m.var_type[i] == :Int
-            l_var[i] = round(m.best_bound_sol[i])
-            u_var[i] = round(m.best_bound_sol[i])
+            if discrete_sol == nothing
+                l_var[i] = round(m.best_bound_sol[i])
+                u_var[i] = round(m.best_bound_sol[i])
+            else
+                l_var[i] = discrete_sol[i]
+                u_var[i] = discrete_sol[i]
+            end
         end
     end
 
