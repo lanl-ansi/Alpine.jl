@@ -52,7 +52,7 @@ function update_disc_int_var(m::PODNonlinearModel)
     if prod(checker)
         for i in m.candidate_disc_vars
             if m.var_type[i] == :Int && !(i in m.disc_vars)
-                println("PUMPing Integer VAR$(i) into discretization var set.")
+                m.loglevel > 99 && println("PUMPing Integer VAR$(i) into discretization var set.")
                 push!(m.disc_vars, i)
             end
         end

@@ -418,7 +418,7 @@ function PODSolver(;
     mip_solver == UnsetSolver() && error("NO MIP solver specififed (set mip_solver)\n")
 
     # String Code Conversion
-    if disc_var_pick in ["select_all_nlvar", "all", "max"]
+    if disc_var_pick in ["ncvar_collect_nodes", "all", "max"]
         disc_var_pick = 0
     elseif disc_var_pick in ["min_vertex_cover","min"]
         disc_var_pick = 1
@@ -611,6 +611,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
+
     for i in 1:m.num_constr_orig
         if l_constr[i] > -Inf && u_constr[i] < Inf
             m.constr_type_orig[i] = :(==)
@@ -639,7 +640,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
     # Preload Built-in Special Functions (append special functions to user-functions)
-    push!(m.method_partition_injection, sincos_partition_injection)
+    push!(m.method_partition_injection, sincos_partition_injector)
 
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable recategorization
@@ -821,7 +822,7 @@ end
 
     update_mip_time_limit(m::PODNonlinearModel)
 
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+    An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
 function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
 

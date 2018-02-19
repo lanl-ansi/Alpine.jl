@@ -1,4 +1,4 @@
-function sincos_partition_injection(m::PODNonlinearModel, var::Int, partvec::Vector, value::Any, ratio::Any, processed::Set{Int})
+function sincos_partition_injector(m::PODNonlinearModel, var::Int, partvec::Vector, value::Any, ratio::Any, processed::Set{Int})
 
     var in processed && return
 
@@ -17,25 +17,26 @@ function sincos_partition_injection(m::PODNonlinearModel, var::Int, partvec::Vec
 
     λCnt = length(partvec)
 
-    if λCnt == 2  # Initial Status
+    if λCnt == 2  # Initialization
         # Pre-segment the domain based on derivative information (limited to sin/cos)
         seg_points = []
         for o in operators
             (partvec[end] - partvec[1] > 100*pi) && error("Bounds on VAR$(var) is too large $((partvec[end] - partvec[1])/pi)PI. Error this run for performance consideration.")
-            seg_points = [seg_points, tri_zero_der(partvec[1], partvec[end], o);]
+            # seg_points = [seg_points, tri_zero_der(partvec[1], partvec[end], o);]
+            seg_points = [seg_points, tri_convexity_flip_points(partvec[1], partvec[end], o);]
         end
         seg_points = sort(unique(seg_points), rev=true) # pre-segment points
         for i in seg_points
             i in partvec || insert!(partvec, 2, i)
         end
-        push!(processed, i)
+        push!(processed, var)
     else
-        point = correct_point(m, discretization[i], point)
+        point = correct_point(m, partvec, value)
         for j in 1:λCnt
-            if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                radius = calculate_radius(discretization[i], j, ratio)
-                insert_partition(m, i, j, point, radius, discretization[i])
-                push!(processed, i)
+            if point >= partvec[j] && point <= partvec[j+1]  # Locating the right location
+                radius = calculate_radius(partvec, j, ratio)
+                insert_partition(m, var, j, point, radius, partvec)
+                push!(processed, var)
                 break
             end
         end
@@ -88,11 +89,11 @@ function tri_zero_der(a, b, opt)
             ex = (0.5+(2.0-a_pos))*pi
         end
         a + ex > b && return vals
-        push!(vals, a+ex) # Collect the initial value
+        a + ex < b && push!(vals, a+ex) # Collect the initial value
         nx = a+ex
         while nx <= b
             nx += pi
-            push!(vals, nx)
+            nx < b && push!(vals, nx)
         end
         return vals
     elseif opt == :cos
@@ -107,11 +108,60 @@ function tri_zero_der(a, b, opt)
             error("EXCEPTION unexpected pos condition in tri_zero_der")
         end
         a + ex > b && return vals
-        push!(vals, a + ex)
+        a + ex < b && push!(vals, a + ex)
         nx = a + ex
         while nx <= b
             nx += pi
-            push!(vals, nx)
+            nx < b && push!(vals, nx)
+        end
+        return vals
+    else
+        error("Function tri_zero_der currently only supports :sin, :cos, and :tan")
+    end
+
+    return vals
+end
+
+function tri_convexity_flip_points(a, b, opt)
+
+    opt in [:sin, :cos] || return []
+
+    vals = []
+
+    if opt == :sin
+        a_pos = tri_loc(a)
+        if a_pos < 1.0
+            ex = (1.0-a_pos)*pi
+        elseif a_pos in [1.0]
+            ex = 0.0
+        else
+            ex = (2.0-a_pos)*pi
+        end
+        a + ex > b && return vals
+        a + ex < b && push!(vals, a+ex) # Collect the initial value
+        nx = a + ex
+        while nx <= b
+            nx += pi
+            nx < b && push!(vals, nx)
+        end
+        return vals
+    elseif opt == :cos
+        a_pos = tri_loc(a)
+        if a_pos < 0.5
+            ex = (0.5-a_pos)*pi
+        elseif a_pos < 1.5
+            ex = (1.5-a_pos)*pi
+        elseif a_pos in [0.5, 1.5]
+            ex = 0.0
+        else
+            ex = (0.5+(2.0-a_pos))*pi
+        end
+        a + ex > b && return vals
+        a + ex < b && push!(vals, a + ex)
+        nx = a + ex
+        while nx <= b
+            nx += pi
+            nx < b && push!(vals, nx)
         end
         return vals
     else

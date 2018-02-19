@@ -389,14 +389,9 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
     for r in ratio_pool
         st = time()
         if presolve
-            branch_disc = add_adaptive_partition(m, use_disc=m.discretization,
-                                                    branching=true,
-                                                    use_ratio=r,
-                                                    use_solution=m.best_sol)
+            branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r, use_solution=m.best_sol)
         else
-            branch_disc = add_adaptive_partition(m, use_disc=m.discretization,
-                                                    branching=true,
-                                                    use_ratio=r)
+            branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r)
         end
         create_bounding_mip(m, use_disc=branch_disc)
         res = disc_branch_solve(m)

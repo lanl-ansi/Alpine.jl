@@ -27,9 +27,8 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         elseif nl_type == :INTLIN && !m.nonconvex_terms[k][:convexified]
             m.int_enable || error("Integer features are OFF. No support for INTLIN at this condition.")
             λ, α = amp_convexify_intlin(m, k, λ, α, d)
-        elseif nl_type in [:sin, :cos] && !m.nonconvex_terms[l][:convexified]
-            error("No support for convexifying SIN/COS terms")
-            β = amp_convexify_sincos(m, k, β)
+        elseif nl_type in [:sin, :cos] && !m.nonconvex_terms[k][:convexified]
+            λ, α = amp_convexify_sincos(m, k, λ, α, d)
         end
     end
 
@@ -68,17 +67,19 @@ function amp_convexify_integer(m::PODNonlinearModel, idx::Int, λ::Dict, α::Dic
     return
 end
 
-function amp_convexify_sincos(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, discretization::Dict)
+function amp_convexify_sincos(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, d::Dict)
 
     # Be careful with the single dimension here
     # TODO build test cases for this problem
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
+    trifunc_index, dim, ext_cnt = amp_convhull_prepare(m, d, k)   # convert key to easy read mode
+    # haskey(λ, trifunc_index) && error("Overlapping but not sure if will cause bug...")
+    λ = amp_convhull_λ(m, k, trifunc_index, λ, ext_cnt, dim)
+    λ = populate_sincos_extreme_values(m, d, trifunc_index, m.nonconvex_terms[k][:nonlinear_type], λ)
+    α = amp_convhull_α(m, trifunc_index, α, dim, d)
+    amp_post_convhull_constrs_sincos(m, λ, α, trifunc_index, dim, ext_cnt, d, m.nonconvex_terms[k][:nonlinear_type])
 
-    trifunc_index, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
-    λ = amp_convhull_λ(m, k, trifunc_index, λ, extreme_point_cnt, dim)
-    λ = populate_convhull_extreme_values(m, discretization, trifunc_index, m.nonconvex_terms[k][:nonlinear_type], λ)
-    α = amp_convhull_α(m, trifunc_index, α, dim, discretization)
-    amp_post_convhull_constrs(m, λ, α, trifunc_index, dim, extreme_point_cnt, discretization)
+    # post dedicated cutting planes
 
     return λ, α
 end
@@ -105,7 +106,7 @@ function amp_convexify_intprod(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict,
     λ = populate_convhull_extreme_values(m, d, intprod_indices, λ, dim, ones(Int,length(dim)))
     α = amp_convhull_α(m, intprod_indices, α, dim, d)
     amp_post_convhull_constrs(m, λ, α, intprod_indices, dim, ext_cnt, d)
-    amp_post_specialλ_ub(m, intprod_indices, dim, λ, d)
+    amp_post_special_λ_ub(m, intprod_indices, dim, λ, d)
 
     return λ, α
 end
@@ -121,7 +122,7 @@ function amp_convexify_intlin(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, 
     λ = populate_convhull_extreme_values(m, d, intlin_indices, λ, dim, ones(Int,length(dim)))
     α = amp_convhull_α(m, intlin_indices, α, dim, d)
     amp_post_convhull_constrs(m, λ, α, intlin_indices, dim, ext_cnt, d)
-    amp_post_specialλ_lb(m, intlin_indices, dim, λ, α, d)
+    amp_post_special_λ_lb(m, intlin_indices, dim, λ, α, d)
 
     return λ, α
 end
@@ -196,12 +197,21 @@ end
 """
 function amp_convhull_prepare(m::PODNonlinearModel, d::Dict, nonlinear_key::Any; monomial=false)
 
-    counted_var = []
-
+    counted_var = []                # Keep both vector and set for collection sake
     id = Set()                      # Coverting the nonlinear indices into a set
-    for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
-        m.var_type[var.args[2]] in [:Cont, :Int] && push!(id, var.args[2])
-        m.var_type[var.args[2]] in [:Cont, :Int] && push!(counted_var, var.args[2])
+
+    if isa(nonlinear_key, Vector)
+        for var in nonlinear_key        # This output regulates the sequence of how composing variable should be arranged
+            @assert isa(var, Expr)
+            m.var_type[var.args[2]] in [:Cont, :Int] && push!(id, var.args[2])
+            m.var_type[var.args[2]] in [:Cont, :Int] && push!(counted_var, var.args[2])
+        end
+    elseif isa(nonlinear_key, Dict)
+        for var in nonlinear_key[:vars]
+            @assert isa(var, Int)
+            m.var_type[var] in [:Cont, :Int] && push!(id, var)
+            m.var_type[var] in [:Cont, :Int] && push!(counted_var, var)
+        end
     end
 
     if length(id) < length(counted_var) # Got repeating terms, now the sequence matters
@@ -227,7 +237,7 @@ end
 """
     Method for general nonlinear terms
 """
-function amp_convhull_λ(m::PODNonlinearModel, nonlinear_key::Vector, indices::Any, λ::Dict, ext_cnt::Int, dim::Tuple)
+function amp_convhull_λ(m::PODNonlinearModel, nonlinear_key::Any, indices::Any, λ::Dict, ext_cnt::Int, dim::Tuple)
 
     y_idx = m.nonconvex_terms[nonlinear_key][:y_idx]
 
@@ -273,16 +283,17 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, d::Dict, mono_id
 end
 
 """
-    Method for sin/cos terms
+    Method for sin/cos... and potential some more terms
 """
-function populate_convhull_extreme_values(m::PODNonlinearModel, disc::Dict, trifunc_index::Int, trioperator::Symbol, λ::Dict)
+function populate_convhull_sincos_values(m::PODNonlinearModel, d::Dict, λ_Key::Any, operator::Symbol, λ::Dict)
 
-    λCnt = length(discretization[trifunc_index])
-    PCnt = λ - 1
+    @assert isa(λ_Key, Vector) || isa(λ_Key, Set)
+    @assert length(λ_Key) == 1
 
-    for i in 1:λCnt
-        λ[trifunc_index][:vals][i] = eval(trioperator)(disc[trifunc_index][i])
-    end
+    var = pop!(λ_Key)
+    push!(λ_Key, var)
+    λCnt = length(d[var])
+    λ[λ_Key][:vals] = [eval(operator)(d[var][i]) for i in 1:λCnt]
 
     return λ
 end
@@ -355,6 +366,37 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ind
             amp_post_inequalities_cont(m, d, λ, α, indices, dim, i, cnt)        # Add links between λ and α
         elseif m.var_type[i] == :Int
             amp_post_inequalities_int(m, d, λ, α, indices, dim, i, cnt)         # Add links between λ and α
+        else
+            error("EXCEPTION: unexpected variable type during integer related realxation")
+        end
+        sliced_indices = [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
+        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([d[i][k]],length(sliced_indices[k])), λ[indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
+    end
+
+    return
+end
+
+"""
+    Method for sin/cos terms
+"""
+function amp_post_convhull_constrs_sincos(m::PODNonlinearModel, λ::Dict, α::Dict, indices::Any, dim::Tuple, ext_cnt::Int, d::Dict, opt::Symbol)
+
+    @assert length(dim) == 1
+
+    # Adding λ constraints
+    @constraint(m.model_mip, sum(λ[indices][:vars]) == 1)
+
+    # Special Treatment for λ constriants
+    LBvec = [λ[indices][:vals][i] < 0.0 ? -1 : λ[indices][:vals][i] for i in 1:ext_cnt]
+    UBvec = [λ[indices][:vals][i] > 0.0 ? 1 : λ[indices][:vals][i] for i in 1:ext_cnt]
+    @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) >= dot(λ[indices][:vars], LBvec))
+    @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) <= dot(λ[indices][:vars], UBvec))
+
+    # Add links on each dimension
+    for (cnt, i) in enumerate(indices)
+        l_cnt = length(d[i])
+        if m.var_type[i] == :Cont
+            amp_post_inequalities_cont(m, d, λ, α, indices, dim, i, cnt)        # Add links between λ and α
         else
             error("EXCEPTION: unexpected variable type during integer related realxation")
         end
@@ -536,7 +578,7 @@ end
 """
     Method for INTPROD convexification
 """
-function amp_post_specialλ_ub(m::PODNonlinearModel, intprod_indices::Any, dim::Tuple, λ::Dict, d::Dict)
+function amp_post_special_λ_ub(m::PODNonlinearModel, intprod_indices::Any, dim::Tuple, λ::Dict, d::Dict)
 
     D = length(intprod_indices)
     tight_regions = [amp_collect_tight_regions(d[i]) for i in intprod_indices]
@@ -549,7 +591,7 @@ end
 """
     Method for INTLIN convexification
 """
-function amp_post_specialλ_lb(m::PODNonlinearModel, intlin_indices::Any, dim::Tuple, λ::Dict, α::Dict, d::Dict)
+function amp_post_special_λ_lb(m::PODNonlinearModel, intlin_indices::Any, dim::Tuple, λ::Dict, α::Dict, d::Dict)
 
     D = length(intlin_indices)
     @assert D == 2

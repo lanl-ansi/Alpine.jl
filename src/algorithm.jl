@@ -296,3 +296,41 @@ function bounding_solve(m::PODNonlinearModel)
 
     return
 end
+
+"""
+    pick_disc_vars(m::PODNonlinearModel)
+
+This function helps pick the variables for discretization. The method chosen depends on user-inputs.
+In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
+there exist two built-in method:
+
+    * `max-cover(m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover(m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+
+For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
+For more information, read more details at [Hacking Solver](@ref).
+
+"""
+function pick_disc_vars(m::PODNonlinearModel)
+
+    if isa(m.disc_var_pick, Function)
+        eval(m.disc_var_pick)(m)
+        length(m.disc_vars) == 0 && length(m.nonconvex_terms) > 0 && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+    elseif isa(m.disc_var_pick, Int)
+        if m.disc_var_pick == 0
+            ncvar_collect_nodes(m)
+        elseif m.disc_var_pick == 1
+            min_vertex_cover(m)
+        elseif m.disc_var_pick == 2
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
+        elseif m.disc_var_pick == 3 # Initial
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
+        else
+            error("Unsupported default indicator for picking variables for discretization")
+        end
+    else
+        error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
+    end
+
+    return
+end
