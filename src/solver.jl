@@ -648,6 +648,12 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     :Int in m.var_type_orig && warn("POD's support for integer variables is highly experimental.")
     :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
 
+    # Conduct solver-dependent detection
+    fetch_mip_solver_identifier(m)
+    fetch_nlp_solver_identifier(m)
+    fetch_minlp_solver_identifier(m)
+
+    # Main Algorithmic Initialization
     process_expr(m)                 # Compact process of every expression
     init_tight_bound(m)             # Initialize bounds for algorithmic processes
     resolve_var_bounds(m)           # resolve lifted var bounds
@@ -656,11 +662,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
-
-    # Conduct solver-dependent detection
-    fetch_mip_solver_identifier(m)
-    fetch_nlp_solver_identifier(m)
-    fetch_minlp_solver_identifier(m)
 
     # Initialize log
     logging_summary(m)
@@ -681,165 +682,3 @@ MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
 MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
 MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
 MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
-
-function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
-
-    isempty(override) ? solverstring = string(m.mip_solver) : solverstring=override
-
-    # Higher-level solvers: that can use sub-solvers
-    if contains(solverstring,"Pajarito")
-        m.mip_solver_id = "Pajarito"
-        return
-    end
-
-    # Lower level solvers
-    if contains(solverstring,"Gurobi")
-        m.mip_solver_id = "Gurobi"
-    elseif contains(solverstring,"CPLEX")
-        m.mip_solver_id = "CPLEX"
-    elseif contains(solverstring,"Cbc")
-        m.mip_solver_id = "Cbc"
-    elseif contains(solverstring,"GLPK")
-        m.mip_solver_id = "GLPK"
-    else
-        error("Unsupported mip solver name. Using blank")
-    end
-
-    return
-end
-
-function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
-
-    isempty(override) ? solverstring = string(m.nlp_solver) : solverstring=override
-
-    # Higher-level solver
-    if contains(solverstring, "Pajarito")
-        m.nlp_solver_id = "Pajarito"
-        return
-    end
-
-    # Lower-level solver
-    if contains(solverstring, "Ipopt")
-        m.nlp_solver_id = "Ipopt"
-    elseif contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
-        m.nlp_solver_id = "Bonmin"
-    elseif contains(solverstring, "KNITRO")
-        m.nlp_solver_id = "Knitro"
-    elseif contains(solverstring, "NLopt")
-        m.nlp_solver_id = "NLopt"
-    else
-        error("Unsupported nlp solver name. Using blank")
-    end
-
-    return
-end
-
-function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
-
-    (m.minlp_solver == UnsetSolver()) && return
-
-    isempty(override) ? solverstring = string(m.minlp_solver) : solverstring=override
-
-    # Higher-level solver
-    if contains(solverstring, "Pajarito")
-        m.minlp_solver_id = "Pajarito"
-        return
-    end
-
-    # Lower-level Solver
-    if contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
-        m.minlp_solver_id = "Bonmin"
-    elseif contains(solverstring, "KNITRO")
-        m.minlp_solver_id = "Knitro"
-    elseif contains(solverstring, "NLopt")
-        m.minlp_solver_id = "NLopt"
-    elseif contains(solverstring, "CoinOptServices.OsilSolver(\"bonmin\"")
-        m.minlp_solver_id = "Bonmin"
-    else
-        error("Unsupported nlp solver name. Using blank")
-    end
-
-    return
-end
-
-"""
-
-    update_mip_time_limit(m::PODNonlinearModel)
-
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
-"""
-function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-    if m.mip_solver_id == "CPLEX"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
-    elseif m.mip_solver_id == "Gurobi"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
-    elseif m.mip_solver_id == "Cbc"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
-    elseif m.mip_solver_id == "GLPK"
-        insert_timeleft_symbol(m.mip_solver.opts, timelimit,:tm_lim,m.timeout)
-    elseif m.mip_solver_id == "Pajarito"
-        (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
-    else
-        error("Needs support for this MIP solver")
-    end
-
-    return
-end
-
-"""
-
-    update_mip_time_limit(m::PODNonlinearModel)
-
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
-"""
-function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-    if m.nlp_solver_id == "Ipopt"
-        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
-    elseif m.nlp_solver_id == "Pajarito"
-        (timelimit < Inf) && (m.nlp_solver.timeout = timelimit)
-    elseif m.nlp_solver_id == "AmplNL"
-        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
-    elseif m.nlp_solver_id == "Knitro"
-        error("You never tell me anything about knitro. Probably because they have a very short trail length.")
-    elseif m.nlp_solver_id == "NLopt"
-        m.nlp_solver.maxtime = timelimit
-    else
-        error("Needs support for this MIP solver")
-    end
-
-    return
-end
-
-"""
-
-    update_mip_time_limit(m::PODNonlinearModel)
-
-    An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
-"""
-function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
-
-    options = Dict(kwargs)
-    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-    if m.minlp_solver_id == "Pajarito"
-        (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
-    elseif m.minlp_solver_id == "AmplNL"
-        insert_timeleft_symbol(m.minlp_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
-    elseif m.minlp_solver_id == "Knitro"
-        error("You never tell me anything about knitro. Probably because they charge everything they own.")
-    elseif m.minlp_solver_id == "NLopt"
-        m.minlp_solver.maxtime = timelimit
-    else
-        error("Needs support for this MIP solver")
-    end
-
-    return
-end
