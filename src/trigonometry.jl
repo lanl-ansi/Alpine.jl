@@ -22,8 +22,8 @@ function sincos_partition_injector(m::PODNonlinearModel, var::Int, partvec::Vect
         seg_points = []
         for o in operators
             (partvec[end] - partvec[1] > 100*pi) && error("Bounds on VAR$(var) is too large $((partvec[end] - partvec[1])/pi)PI. Error this run for performance consideration.")
-            # seg_points = [seg_points, tri_zero_der(partvec[1], partvec[end], o);]
-            seg_points = [seg_points, tri_convexity_flip_points(partvec[1], partvec[end], o);]
+            seg_points = [seg_points, tri_zero_der_points(partvec[1], partvec[end], o);]
+            # seg_points = [seg_points, tri_convexity_flip_points(partvec[1], partvec[end], o);]
         end
         seg_points = sort(unique(seg_points), rev=true) # pre-segment points
         for i in seg_points
@@ -44,6 +44,35 @@ function sincos_partition_injector(m::PODNonlinearModel, var::Int, partvec::Vect
 
     return
 end
+
+function populate_bound_regions(λ::Dict, indices::Any, d::Dict, o::Symbol)
+
+    VALvec = λ[indices][:vals]
+    UBvec = Float64[]
+    LBvec = Float64[]
+    var = pop!(indices); push!(indices, var);
+    p = d[var]
+
+    ext_cnt = length(VALvec)
+    for i in 1:ext_cnt
+        if i == 1 || i == ext_cnt
+            push!(UBvec, VALvec[i])
+            push!(LBvec, VALvec[i])
+        else
+            l = tri_val(p[i-1], o) + tri_der(p[i-1], o) * (p[i] - p[i-1])
+            r = tri_val(p[i+1], o) - tri_der(p[i+1], o) * (p[i+1] - p[i])
+            if VALvec[i] == 0.0
+                l, r = 0.0, 0.0
+            end
+            push!(UBvec, maximum([l, r, VALvec[i];]))
+            push!(LBvec, minimum([l, r, VALvec[i];]))
+            # @show i, l, r
+        end
+    end
+
+    return UBvec, LBvec
+end
+
 
 """
     Relative angle location in a 2π range
@@ -66,13 +95,13 @@ end
     Trigonometric values
 """
 function tri_val(x, opt)
-    return eval(opt(x))
+    return eval(opt)(x)
 end
 
 """
     Return a vector of values within [a->b] such that the derivative of trigonometric function is 0
 """
-function tri_zero_der(a, b, opt)
+function tri_zero_der_points(a, b, opt)
     opt == :tan && return []
 
     vals = []
@@ -105,7 +134,7 @@ function tri_zero_der(a, b, opt)
         elseif a_pos in [0.0, 1.0, 2.0]
             ex = 0.0
         else
-            error("EXCEPTION unexpected pos condition in tri_zero_der")
+            error("EXCEPTION unexpected pos condition in tri_zero_der_points")
         end
         a + ex > b && return vals
         a + ex < b && push!(vals, a + ex)
@@ -116,7 +145,7 @@ function tri_zero_der(a, b, opt)
         end
         return vals
     else
-        error("Function tri_zero_der currently only supports :sin, :cos, and :tan")
+        error("Function tri_zero_der_points currently only supports :sin, :cos, and :tan")
     end
 
     return vals
@@ -165,11 +194,33 @@ function tri_convexity_flip_points(a, b, opt)
         end
         return vals
     else
-        error("Function tri_zero_der currently only supports :sin, :cos, and :tan")
+        error("Function tri_zero_der_points currently only supports :sin, :cos, and :tan")
     end
 
     return vals
 end
+
+function tri_cycle_points(a, b, opt)
+    opt in [:sin, :cos] || return []
+
+    if opt in [:sin, :cos]
+        a_pos = tri_loc(a)
+        a_pos == 0.0 ? ex = 0.0 : ex = (2.0-a_pos)*pi
+        a + ex > b && return vals
+        a + ex < b && push!(vals, a+ex) # Collect the initial value
+        nx = a + ex
+        while nx <= b
+            nx += pi
+            nx < b && push!(vals, nx)
+        end
+        return valss
+    else
+        error("Function tri_zero_der_points currently only supports :sin, :cos, and :tan")
+    end
+
+    return vals
+end
+
 
 """
     Calculate extreme values within range [a, b] and return then by sequence of [a->b]
@@ -200,5 +251,4 @@ function tri_extreme_val(a, b, opt)
 
         end
     end
-
 end

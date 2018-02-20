@@ -77,7 +77,7 @@ function amp_convexify_sincos(m::PODNonlinearModel, k::Any, λ::Dict, α::Dict, 
     λ = amp_convhull_λ(m, k, trifunc_index, λ, ext_cnt, dim)
     λ = populate_sincos_extreme_values(m, d, trifunc_index, m.nonconvex_terms[k][:nonlinear_type], λ)
     α = amp_convhull_α(m, trifunc_index, α, dim, d)
-    amp_post_convhull_constrs_sincos(m, λ, α, trifunc_index, dim, ext_cnt, d, m.nonconvex_terms[k][:nonlinear_type])
+    amp_post_constrs_sincos(m, λ, α, trifunc_index, dim, ext_cnt, d, m.nonconvex_terms[k][:nonlinear_type])
 
     # post dedicated cutting planes
 
@@ -285,7 +285,7 @@ end
 """
     Method for sin/cos... and potential some more terms
 """
-function populate_convhull_sincos_values(m::PODNonlinearModel, d::Dict, λ_Key::Any, operator::Symbol, λ::Dict)
+function populate_sincos_extreme_values(m::PODNonlinearModel, d::Dict, λ_Key::Any, operator::Symbol, λ::Dict)
 
     @assert isa(λ_Key, Vector) || isa(λ_Key, Set)
     @assert length(λ_Key) == 1
@@ -379,28 +379,33 @@ end
 """
     Method for sin/cos terms
 """
-function amp_post_convhull_constrs_sincos(m::PODNonlinearModel, λ::Dict, α::Dict, indices::Any, dim::Tuple, ext_cnt::Int, d::Dict, opt::Symbol)
+function amp_post_constrs_sincos(m::PODNonlinearModel, λ::Dict, α::Dict, indices::Any, dim::Tuple, ext_cnt::Int, d::Dict, opt::Symbol)
 
-    @assert length(dim) == 1
+    # Some basic assertion as the function has limited scope
+    @assert length(indices) == length(dim) == 1
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[indices][:vars]) == 1)
 
     # Special Treatment for λ constriants
-    LBvec = [λ[indices][:vals][i] < 0.0 ? -1 : λ[indices][:vals][i] for i in 1:ext_cnt]
-    UBvec = [λ[indices][:vals][i] > 0.0 ? 1 : λ[indices][:vals][i] for i in 1:ext_cnt]
-    @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) >= dot(λ[indices][:vars], LBvec))
+    @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) <= dot(λ[indices][:vars], ones(ext_cnt)))
+    @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) >= dot(λ[indices][:vars], -ones(ext_cnt)))
+
+    # Upper & Lower Bound Regionss
+    UBvec, LBvec = populate_bound_regions(λ, indices, d, opt)
+    m.loglevel > 99 && println("Ave Regions Length = $(mean(UBvec-LBvec))")
     @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) <= dot(λ[indices][:vars], UBvec))
+    @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) >= dot(λ[indices][:vars], LBvec))
 
     # Add links on each dimension
     for (cnt, i) in enumerate(indices)
         l_cnt = length(d[i])
-        if m.var_type[i] == :Cont
-            amp_post_inequalities_cont(m, d, λ, α, indices, dim, i, cnt)        # Add links between λ and α
-        else
-            error("EXCEPTION: unexpected variable type during integer related realxation")
-        end
-        sliced_indices = [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
+        cnt <= 2 || error("EXCEPTION: two variable included in a sin/cos term, there is a bug.")
+        m.var_type[i] == :Cont || error("EXCEPTION: unexpected variable type during integer related realxation")
+        # Add links between λ and α
+        amp_post_inequalities_cont(m, d, λ, α, indices, dim, i, cnt)
+        # Add x = f(λ) for convex representation of x value
+        sliced_indices = [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt]
         @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([d[i][k]],length(sliced_indices[k])), λ[indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
     end
 

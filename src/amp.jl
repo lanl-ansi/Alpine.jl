@@ -336,22 +336,18 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::N
     end
 
     if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
-        distance = -1.0
-        pos = -1
-        for j in 2:length(partvec)  # it is made sure there should be at least two partitions
-            if (partvec[j] - partvec[j-1]) > distance
-                lb_local = partvec[j-1]
-                ub_local = partvec[j]
-                distance = ub_local - lb_local
-                point = lb_local + (ub_local - lb_local) / 2   # reset point
-                pos = j
-            end
-        end
+        distvec = [(j, partvec[j+1]-partvec[j]) for j in 1:length(partvec)-1]
+        sort!(distvec, by=x->x[2])
+        point_orig = point
+        pos = distvec[end][1]
+        lb_local = partvec[pos]
+        ub_local = partvec[pos+1]
         chunk = (ub_local - lb_local)/2
+        point = lb_local + (ub_local - lb_local) / 2
         insert!(partvec, pos, lb_local + chunk)
-        (m.loglevel > 99) && println("[DEBUG] !DIVERT! VAR$(var): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
+        (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(round(point,4)) |$(round(lb_local,4)) | 2 SEGMENTS | $(round(ub_local,4))|")
     else
-        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
     end
 
     return
