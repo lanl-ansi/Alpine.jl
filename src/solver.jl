@@ -33,11 +33,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretizations
     disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretizations
     disc_consecutive_forbid::Int                                # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
-    disc_ratio_branch::Bool
+    disc_ratio_branch::Bool                                     # Branching tests for picking fixed disc ratios
 
     # Convexifications Formulation Parameters
     convhull_formulation::String                                # Formulation to used for relaxation
-    convhull_ebd::Bool
+    convhull_warmstart::Bool                                    # Warm start the bounding MIP
+    convhull_no_good_cuts::Bool                                 # Add no good cuts to MIP base on pool solutions
+    convhull_ebd::Bool                                          # Enable embedding formulation
     convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
     convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
     convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
@@ -145,6 +147,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     best_bound_sol::Vector{Float64}                             # Best bound solution
     best_rel_gap::Float64                                       # Relative optimality gap = |best_bound - best_obj|/|best_obj|
     bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by parameter disc_consecutive_forbid
+    bound_sol_pool::Dict{Any, Any}                                 # A pool of solutions from solving model_mip
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
@@ -178,6 +181,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 convhull_ebd_encode,
                                 convhull_ebd_ibs,
                                 convhull_ebd_link,
+                                convhull_warmstart,
+                                convhull_no_good_cuts,
                                 presolve_track_time,
                                 presolve_bt,
                                 presolve_maxiter,
@@ -226,6 +231,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.convhull_ebd_encode = convhull_ebd_encode
         m.convhull_ebd_ibs = convhull_ebd_ibs
         m.convhull_ebd_link = convhull_ebd_link
+        m.convhull_warmstart = convhull_warmstart
+        m.convhull_no_good_cuts = convhull_no_good_cuts
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bt = presolve_bt
@@ -277,6 +284,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_var_disc_mip = 0
         m.num_constr_convex = 0
         m.constr_structure = []
+        m.best_bound_sol = []
         m.bound_sol_history = []
 
         m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
@@ -333,6 +341,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     convhull_ebd_encode::Any
     convhull_ebd_ibs::Bool
     convhull_ebd_link::Bool
+    convhull_warmstart::Bool
+    convhull_no_good_cuts::Bool
 
     presolve_track_time::Bool
     presolve_bt::Bool
@@ -390,6 +400,8 @@ function PODSolver(;
     convhull_ebd_encode = "default",
     convhull_ebd_ibs = false,
     convhull_ebd_link = false,
+    convhull_warmstart = true,
+    convhull_no_good_cuts = true,
 
     presolve_track_time = true,
     presolve_maxiter = 9999,
@@ -455,6 +467,8 @@ function PODSolver(;
         convhull_ebd_encode,
         convhull_ebd_ibs,
         convhull_ebd_link,
+        convhull_warmstart,
+        convhull_no_good_cuts,
         presolve_track_time,
         presolve_bt,
         presolve_maxiter,
@@ -513,6 +527,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     convhull_ebd_encode = s.convhull_ebd_encode
     convhull_ebd_ibs = s.convhull_ebd_ibs
     convhull_ebd_link = s.convhull_ebd_link
+    convhull_warmstart = s.convhull_warmstart
+    convhull_no_good_cuts = s.convhull_no_good_cuts
 
     presolve_track_time = s.presolve_track_time
     presolve_bt = s.presolve_bt
@@ -556,6 +572,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             convhull_ebd_encode,
                             convhull_ebd_ibs,
                             convhull_ebd_link,
+                            convhull_warmstart,
+                            convhull_no_good_cuts,
                             presolve_track_time,
                             presolve_bt,
                             presolve_maxiter,
@@ -653,12 +671,21 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     fetch_nlp_solver_identifier(m)
     fetch_minlp_solver_identifier(m)
 
+    # Solver Dependent Options
+    if m.mip_solver_id != :Gurobi
+        m.convhull_warmstart == false
+        m.convhull_no_good_cuts == false
+    end
+
     # Main Algorithmic Initialization
     process_expr(m)                 # Compact process of every expression
     init_tight_bound(m)             # Initialize bounds for algorithmic processes
     resolve_var_bounds(m)           # resolve lifted var bounds
     pick_disc_vars(m)               # Picking variables to be discretized
     init_disc(m)                    # Initialize discretization dictionarys
+
+    # Prepare the solution pool
+    m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
 
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal

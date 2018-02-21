@@ -283,6 +283,7 @@ function bounding_solve(m::PODNonlinearModel)
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
         end
+        collect_lb_pool(m)    # Always collect details sub-optimal solution
     elseif status in status_infeasible
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = :Infeasible
