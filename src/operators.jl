@@ -98,7 +98,7 @@ function store_nonconvex_term(m::PODNonlinearModel, nl_key::Any, var_idxs::Any, 
 
     # push!(m.var_type, :Cont)  # TODO check if this replacement is good since additional constraints should be able to sufficiently constraint the type
     push!(m.var_type, m.nonconvex_terms[nl_key][:y_type])            # Keep track of the lifted var type
-    m.loglevel > 99 && println("found lifted $(term_type) term $(lifted_constr_ref)")
+    m.loglevel > 199 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
@@ -124,7 +124,7 @@ function store_linear_term(m::PODNonlinearModel, term_key::Any, expr::Any)#, bou
 
     m.term_seq[l_cnt+nl_cnt + 1] = term_key
     push!(m.var_type, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-    m.loglevel > 99 && println("found lifted linear term $(lifted_var_ref) = $expr")
+    m.loglevel > 199 && println("found lifted linear term $(lifted_var_ref) = $expr")
 
     return y_idx
 end
@@ -237,6 +237,28 @@ function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms=nothing)
     end
 
     return
+end
+
+function basic_linear_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+
+    lifted_idx = m.linear_terms[k][:y_idx]
+    ub = 0.0
+    lb = 0.0
+    for j in m.linear_terms[k][:ref][:coef_var]
+        (j[1] > 0.0) ? ub += abs(j[1])*d[j[2]][end] : ub -= abs(j[1])*d[j[2]][1]
+        (j[1] > 0.0) ? lb += abs(j[1])*d[j[2]][1] : lb -= abs(j[1])*d[j[2]][end]
+    end
+    lb += m.linear_terms[k][:ref][:scalar]
+    ub += m.linear_terms[k][:ref][:scalar]
+
+    if lb > d[lifted_idx][1] + m.tol
+        d[lifted_idx][1] = lb
+    end
+    if ub < d[lifted_idx][end] - m.tol
+        d[lifted_idx][end] = ub
+    end
+
+    return d
 end
 
 
@@ -379,7 +401,7 @@ function basic_binlin_bounds(m::PODNonlinearModel, k::Any)
 
     if m.l_var_tight[lin_idx] > 0.0
         m.l_var_tight[lifted_idx] = 0.0
-        m.u_var_tight[lifted_idx] = m.u_var_tight[lifted_idx]
+        m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
     elseif m.u_var_tight[lin_idx] < 0.0
         m.u_var_tight[lifted_idx] = 0.0
         m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
@@ -389,6 +411,28 @@ function basic_binlin_bounds(m::PODNonlinearModel, k::Any)
     end
 
     return
+end
+
+function basic_binlin_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+
+    lifted_idx = m.nonconvex_terms[k][:y_idx]
+
+    prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
+    @assert length(prod_idxs) == 1
+    lin_idx = prod_idxs[1]
+
+    if d[lin_idx][1] > 0.0
+        d[lifted_idx][1] = 0.0
+        d[lifted_idx][end] = d[lin_idx][end]
+    elseif d[lin_idx][end] < 0.0
+        d[lifted_idx][end] = 0.0
+        d[lifted_idx][1] = d[lin_idx][1]
+    else
+        d[lifted_idx][end] = d[lin_idx][end]
+        d[lifted_idx][1] = d[lin_idx][1]
+    end
+
+    return d
 end
 
 function basic_intlin_bounds(m::PODNonlinearModel, k::Any)
@@ -411,6 +455,28 @@ function basic_intlin_bounds(m::PODNonlinearModel, k::Any)
     m.u_var_tight[lifted_idx] = min(m.u_var_tight[lifted_idx], maximum(crossrange))
 
     return
+end
+
+function basic_intlin_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+
+    lifted_idx = m.nonconvex_terms[k][:y_idx]
+
+    lins = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
+    ints = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
+    @assert length(lins) == 1 == length(ints)
+
+    lin_idx = lins[1]
+    int_idx = ints[1]
+
+    linrange = [d[lin_idx][1],d[lin_idx][end];]
+    intrange = [d[int_idx][1],d[int_idx][end];]
+
+    crossrange = linrange * intrange'
+
+    d[lifted_idx][1] = max(d[lifted_idx][1], minimum(crossrange))
+    d[lifted_idx][end] = min(d[lifted_idx][end], maximum(crossrange))
+
+    return d
 end
 
 function collect_binlin_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
@@ -531,6 +597,28 @@ function basic_binint_bound(m::PODNonlinearModel, k::Any)
     return
 end
 
+function basic_binint_bound(m::PODNonlinearModel, k::Any, d::Dict)
+
+    lifted_idx = m.nonconvex_terms[k][:y_idx]
+
+    prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
+    @assert length(prod_idxs) == 1
+    lin_idx = prod_idxs[1]
+
+    if d[lin_idx][1] > 0.0
+        d[lifted_idx][1] = 0.0
+        d[lifted_idx][end] = d[lin_idx][end]
+    elseif m.u_var_tight[lin_idx] < 0.0
+        d[lifted_idx][end] = 0.0
+        d[lifted_idx][1] = d[lin_idx][1]
+    else
+        d[lifted_idx][end] = d[lin_idx][end]
+        d[lifted_idx][1] = d[lin_idx][1]
+    end
+
+    return d
+end
+
 function collect_binint_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     # Exact linearization exist
     return
@@ -606,7 +694,8 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
 
     bound = []
-    for (cnt,var) in enumerate(m.nonconvex_terms[k][:var_idxs])
+    for (cnt,varexpr) in enumerate(k)
+        var = varexpr.args[2]
         var_bounds = [m.l_var_tight[var], m.u_var_tight[var]]
         if cnt == 1
             bound = copy(var_bounds)
@@ -616,6 +705,7 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
             bound = diag(bound) * var_bounds'
         end
     end
+
     if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
         m.l_var_tight[lifted_idx] = minimum(bound)
     end
@@ -624,6 +714,32 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
     end
 
     return
+end
+
+function basic_intprod_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+
+    lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
+
+    bound = []
+    for (cnt,varexpr) in enumerate(k)
+        var = varexpr.args[2]
+        var_bounds = [d[var][1], d[var][end]]
+        if cnt == 1
+            bound = copy(var_bounds)
+        elseif cnt == 2
+            bound = bound * var_bounds'
+        else
+            bound = diag(bound) * var_bounds'
+        end
+    end
+    if minimum(bound) > d[lifted_idx][1] + m.tol
+        d[lifted_idx][1] = minimum(bound)
+    end
+    if maximum(bound) < d[lifted_idx][end] - m.tol
+        d[lifted_idx][end] = maximum(bound)
+    end
+
+    return d
 end
 
 function collect_intprod_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
@@ -707,6 +823,15 @@ function basic_binprod_bounds(m::PODNonlinearModel, k::Any)
     m.u_var_tight[lifted_idx] = 1
 
     return
+end
+
+function basic_binprod_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+
+    lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
+    d[lifted_idx][1] = 0
+    d[lifted_idx][end] = 1
+
+    return d
 end
 
 function collect_binprod_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
@@ -901,6 +1026,35 @@ function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
+function basic_monomial_bounds(m::PODNonlinearModel, nlk::Any, d::Dict)
+
+    lifted_idx = m.nonconvex_terms[nlk][:lifted_var_ref].args[2]
+    cnt = 0
+    bound = []
+    for var in nlk
+        cnt += 1
+        var_idx = var.args[2]
+        var_bounds = [d[var_idx][1], d[var_idx][end]]
+        if cnt == 1
+            bound = copy(var_bounds)
+        elseif cnt == 2
+            bound = bound * var_bounds'
+        else
+            bound = diag(bound) * var_bounds'
+        end
+    end
+
+    if minimum(bound) > d[lifted_idx][1] + m.tol
+        d[lifted_idx][1] = minimum(bound)
+    end
+
+    if maximum(bound) < d[lifted_idx][end] - m.tol
+        d[lifted_idx][end] = maximum(bound)
+    end
+
+    return d
+end
+
 function collect_monomial_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     for var in k
         @assert isa(var.args[2], Int)
@@ -957,6 +1111,16 @@ function basic_sincos_bounds(m::PODNonlinearModel, k::Any)
 
     return
 end
+
+function basic_sincos_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+
+    lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
+    d[lifted_idx][1] = -1  # TODO can be improved
+    d[lifted_idx][end] = 1
+
+    return d
+end
+
 
 function collect_sincos_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
     for var in m.nonconvex_terms[k][:var_idxs]

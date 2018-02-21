@@ -83,84 +83,6 @@ function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
 end
 
 """
-    init_disc(m::PODNonlinearModel)
-
-This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
-The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
-"""
-function init_disc(m::PODNonlinearModel)
-
-    for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
-        if m.var_type[var] in [:Bin, :Cont]
-            lb = m.l_var_tight[var]
-            ub = m.u_var_tight[var]
-            m.discretization[var] = [lb, ub]
-        elseif m.var_type[var] in [:Int]
-            m.int_enable ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
-            m.int_enable ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
-            m.discretization[var] = [lb, ub]
-        else
-            error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
-        end
-    end
-
-    return
-end
-
-"""
-
-    to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
-
-Utility functions to convert bounds vectors to Dictionary based structures that is more suitable for
-partition operations.
-
-"""
-function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
-
-    @assert length(lbs) == length(ubs)
-    var_discretization = Dict()
-    for var in 1:m.num_var_orig
-        lb = lbs[var]
-        ub = ubs[var]
-        var_discretization[var] = [lb, ub]
-    end
-
-    total_var_cnt = m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip
-    orig_var_cnt = m.num_var_orig
-    if length(lbs) == total_var_cnt
-        for var in (1+orig_var_cnt):total_var_cnt
-            lb = lbs[var]
-            ub = ubs[var]
-            var_discretization[var] = [lb, ub]
-        end
-    else
-        for var in (1+orig_var_cnt):total_var_cnt
-            lb = -Inf
-            ub = Inf
-            var_discretization[var] = [lb, ub]
-        end
-    end
-
-    return var_discretization
-end
-
-"""
-    flatten_discretization(discretization::Dict)
-
-Utility functions to eliminate all partition on discretizing variable and keep the loose bounds.
-
-"""
-function flatten_discretization(discretization::Dict; kwargs...)
-
-    flatten_discretization = Dict()
-    for var in keys(discretization)
-        flatten_discretization[var] = [discretization[var][1],discretization[var][end]]
-    end
-
-    return flatten_discretization
-end
-
-"""
     @docstring
 """
 function insert_timeleft_symbol(options, val::Float64, keywords::Symbol, timeout; options_string_type=1)
@@ -242,15 +164,18 @@ This function is used to fix variables to certain domains during the local solve
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
 """
-function fix_domains(m::PODNonlinearModel)
+function fix_domains(m::PODNonlinearModel;discrete_sol=nothing)
 
-    l_var = copy(m.l_var_orig)
-    u_var = copy(m.u_var_orig)
+    discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
+
+    l_var = [m.l_var_tight[i] for i in 1:m.num_var_orig]
+    u_var = [m.u_var_tight[i] for i in 1:m.num_var_orig]
 
     for i in 1:m.num_var_orig
         if i in m.disc_vars && m.var_type[i] == :Cont
-            point = m.best_bound_sol[i]
-            for j in 1:length(m.discretization[i])
+            discrete_sol == nothing ? point = m.best_bound_sol[i] : point = discrete_sol[i]
+            PCnt = length(m.discretization[i]) - 1
+            for j in 1:PCnt
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
                     @assert j < length(m.discretization[i])
                     l_var[i] = m.discretization[i][j]
@@ -259,8 +184,13 @@ function fix_domains(m::PODNonlinearModel)
                 end
             end
         elseif m.var_type[i] == :Bin || m.var_type[i] == :Int
-            l_var[i] = round(m.best_bound_sol[i])
-            u_var[i] = round(m.best_bound_sol[i])
+            if discrete_sol == nothing
+                l_var[i] = round(m.best_bound_sol[i])
+                u_var[i] = round(m.best_bound_sol[i])
+            else
+                l_var[i] = discrete_sol[i]
+                u_var[i] = discrete_sol[i]
+            end
         end
     end
 
@@ -268,9 +198,9 @@ function fix_domains(m::PODNonlinearModel)
 end
 
 """
-    is_fully_convex(m::PODNonlinearModel)
+    is_fully_convexified(m::PODNonlinearModel)
 """
-function is_fully_convex(m::PODNonlinearModel)
+function is_fully_convexified(m::PODNonlinearModel)
 
     # Other more advanced convexification check goes here
     for term in keys(m.nonconvex_terms)
@@ -286,56 +216,71 @@ function is_fully_convex(m::PODNonlinearModel)
 end
 
 """
-    pick_disc_vars(m::PODNonlinearModel)
 
-This function helps pick the variables for discretization. The method chosen depends on user-inputs.
-In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
-there exist two built-in method:
+    ncvar_collect_nodes(m:PODNonlinearModel)
 
-    * `max-cover(m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
-    * `min-vertex-cover(m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
-
-For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
-For more information, read more details at [Hacking Solver](@ref).
+A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
 
 """
-function pick_disc_vars(m::PODNonlinearModel)
+function ncvar_collect_nodes(m::PODNonlinearModel;getoutput=false)
 
-    if isa(m.disc_var_pick, Function)
-        eval(m.disc_var_pick)(m)
-        (length(m.disc_vars) == 0 && length(m.nonconvex_terms) > 0) && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
-    elseif isa(m.disc_var_pick, Int) || isa(m.disc_var_pick, String)
-        if m.disc_var_pick == 0
-            select_all_nlvar(m)
-        elseif m.disc_var_pick == 1
-            min_vertex_cover(m)
-        elseif m.disc_var_pick == 2
-            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
-        elseif m.disc_var_pick == 3 # Initial
-            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : select_all_nlvar(m)
-        else
-            error("Unsupported default indicator for picking variables for discretization")
-        end
+    # Pick variables that is bound width more than tolerance length
+    if getoutput
+        return [i for i in m.candidate_disc_vars]
     else
-        error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
+        m.disc_vars = [i for i in m.candidate_disc_vars]
+        m.num_var_disc_mip = length(m.disc_vars)
     end
 
     return
 end
 
 """
-
-    select_all_nlvar(m:PODNonlinearModel)
-
-A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
-
+    Reconsideration required
 """
-function select_all_nlvar(m::PODNonlinearModel)
+function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
 
-    m.num_var_disc_mip = length(m.candidate_disc_vars)
-    m.disc_vars = copy(m.candidate_disc_vars)
+    arcs = Set()
 
-    return
+    for k in keys(m.nonconvex_terms)
+        if m.nonconvex_terms[k][:nonlinear_type] == :BILINEAR
+            arc = [i.args[2] for i in k]
+            length(arc) == 2 && push!(arcs, sort(arc))
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
+            @assert isa(m.nonconvex_terms[k][:var_idxs][1], Int)
+            varidx = m.nonconvex_terms[k][:var_idxs][1]
+            push!(arcs, [varidx, varidx;])
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :MULTILINEAR
+            varidxs = m.nonconvex_terms[k][:var_idxs]
+            for i in 1:length(varidxs)
+                for j in 1:length(varidxs)
+                    if i != j
+                        push!(arcs, sort([varidxs[i], varidxs[j];]))
+                    end
+                end
+            end
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
+            var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
+            push!(arcs, sort(var_idxs))
+        elseif m.nonconvex_terms[k][:nonlinear_type] == :INTPROD
+            var_idxs = m.nonconvex_terms[k][:var_idxs]
+            for i in 1:length(var_idxs)
+                for j in 1:length(var_idxs)
+                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
+                end
+            end
+        elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
+            @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
+            var_idx = m.nonconvex_terms[k][:var_idxs][1]
+            push!(arcs, [var_idx, var_idx;])
+        elseif m.nonconvex_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
+            continue
+        else
+            error("[EXCEPTION] Unexpected nonlinear term when building discvar graph.")
+        end
+    end
+
+    return arcs
 end
 
 """
@@ -376,103 +321,13 @@ function print_iis_gurobi(m::JuMP.Model)
 end
 
 """
-    Collects distance of each variable's bounding solution to best feasible solution and select the ones that is the furthest
-    Currently don't support recursively convexification
+    TODO can be improved
 """
-function update_discretization_var_set(m::PODNonlinearModel)
-
-    length(m.candidate_disc_vars) <= 15 && return   # Separation
-
-    # If no feasible solution found, do NOT update
-    if m.status[:feasible_solution] != :Detected
-        println("no feasible solution detected. No update disc var selection.")
-        return
-    end
-
-	var_idxs = copy(m.candidate_disc_vars)
-    var_diffs = Vector{Float64}(m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonconvex_terms)))
-
-    for i in 1:m.num_var_orig       # Original Variables
-        var_diffs[i] = abs(m.best_sol[i]-m.best_bound_sol[i])
-        # println("var_diff[$(i)] = $(var_diffs[i])")
-    end
-
-    for i in 1:length(keys(m.linear_terms))
-        for j in keys(m.linear_terms)   # sequential evaluation to avoid dependency issue
-            if m.linear_terms[j][:id] == i
-                var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]] = m.linear_terms[j][:evaluator](m.linear_terms[j], var_diffs)
-                # println("linear evaluated $(var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]]) from $(m.linear_terms[j][:lifted_constr_ref])")
-            end
-        end
-    end
-
-    for i in 1:length(keys(m.nonconvex_terms))
-        for j in keys(m.nonconvex_terms)    # sequential evaluation to avoid dependency issue
-            if m.nonconvex_terms[j][:id] == i
-                var_diffs[m.nonconvex_terms[j][:lifted_var_ref].args[2]] = m.nonconvex_terms[j][:evaluator](m.nonconvex_terms[j], var_diffs)
-                # println("nonlinear evaluated $(var_diffs[m.nonconvex_terms[j][:lifted_var_ref].args[2]]) from $(m.nonconvex_terms[j][:lifted_constr_ref])")
-            end
-        end
-    end
-
-    distance = Dict(zip(var_idxs,var_diffs))
-    weighted_min_vertex_cover(m, distance)
-
-    (m.loglevel > 100) && println("updated partition var selection => $(m.disc_vars)")
-    return
-end
-
 function build_discvar_graph(m::PODNonlinearModel)
 
     # Collect the information of nonlinear terms in terms of arcs and nodes
-    nodes = Set()
-    arcs = Set()
-
-    # Collect variables in nonconvex terms
-    for k in keys(m.nonconvex_terms)
-        m.nonconvex_terms[k][:discvar_collector](m, k, var_bowl=nodes)
-    end
-
-    for k in keys(m.nonconvex_terms)
-        if m.nonconvex_terms[k][:nonlinear_type] == :BILINEAR
-            arc = []
-            for i in k
-                @assert isa(i.args[2], Int)
-                push!(arc, i.args[2])
-            end
-            push!(arcs, sort(arc))
-        elseif m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
-            @assert isa(m.nonconvex_terms[k][:var_idxs][1], Int)
-            push!(arcs, [m.nonconvex_terms[k][:var_idxs][1], m.nonconvex_terms[k][:var_idxs][1];])
-        elseif m.nonconvex_terms[k][:nonlinear_type] == :MULTILINEAR
-            var_idxs = m.nonconvex_terms[k][:var_idxs]
-            for i in 1:length(var_idxs)
-                for j in 1:length(var_idxs)
-                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
-                end
-            end
-        elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
-            @assert length(m.nonconvex_terms[k][:var_idxs]) == 2
-            var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
-            push!(arcs, sort(var_idxs))
-        elseif m.nonconvex_terms[k][:nonlinear_type] == :INTPROD
-            var_idxs = m.nonconvex_terms[k][:var_idxs]
-            for i in 1:length(var_idxs)
-                for j in 1:length(var_idxs)
-                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
-                end
-            end
-        elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
-            @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
-            var_idx = m.nonconvex_terms[k][:var_idxs][1]
-            @assert isa(var_idx, Int)
-            push!(arcs, [var_idx, var_idx;])
-        elseif m.nonconvex_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
-            continue
-        else
-            error("[EXCEPTION] Unexpected nonlinear term when building discvar graph.")
-        end
-    end
+    nodes = ncvar_collect_nodes(m, getoutput=true)
+    arcs = ncvar_collect_arcs(m, nodes)
 
     # Collect integer variables
     for i in 1:m.num_var_orig
@@ -481,8 +336,6 @@ function build_discvar_graph(m::PODNonlinearModel)
             push!(arcs, [i,i;])
         end
     end
-
-    @assert length(nodes) == length(m.candidate_disc_vars)
 
     nodes = collect(nodes)
     arcs = collect(arcs)
@@ -495,19 +348,18 @@ function min_vertex_cover(m::PODNonlinearModel)
     nodes, arcs = build_discvar_graph(m)
 
     # Set up minimum vertex cover problem
+    update_mip_time_limit(m, timelimit=60.0)  # Set a timer to avoid waste of time in proving optimality
     minvertex = Model(solver=m.mip_solver)
     @variable(minvertex, x[nodes], Bin)
-    for a in arcs
-        @constraint(minvertex, x[a[1]] + x[a[2]] >= 1)
-    end
+    @constraint(minvertex, [a in arcs], x[a[1]] + x[a[2]] >= 1)
     @objective(minvertex, Min, sum(x))
 
     status = solve(minvertex, suppress_warnings=true)
     xVal = getvalue(x)
 
-    # Getting required information
+    # Collecting required information
     m.num_var_disc_mip = Int(sum(xVal))
-    m.disc_vars = [i for i in nodes if xVal[i] > 1e-5]
+    m.disc_vars = [i for i in nodes if xVal[i] > m.tol && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= m.tol]
 
     return
 end
@@ -528,6 +380,7 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     end
 
     # Set up minimum vertex cover problem
+    update_mip_time_limit(m, timelimit=60.0)  # Set a timer to avoid waste of time in proving optimality
     minvertex = Model(solver=m.mip_solver)
     @variable(minvertex, x[nodes], Bin)
     for arc in arcs
@@ -540,8 +393,237 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 
     xVal = getvalue(x)
     m.num_var_disc_mip = Int(sum(xVal))
-    m.disc_vars = [i for i in nodes if xVal[i] > 0]
-    (m.loglevel >= 99) && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
+    m.disc_vars = [i for i in nodes if xVal[i] > 0 && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= m.tol]
+    m.loglevel >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
+
+    return
+end
+
+function round_sol(m::PODNonlinearModel, nlp_model)
+
+    relaxed_sol = MathProgBase.getsolution(nlp_model)
+    rounded_sol = copy(relaxed_sol)
+    for i in 1:m.num_var_orig
+        if m.var_type_orig[i] == :Bin
+            relaxed_sol[i] >= 0.5 ? rounded_sol[i] = 1 : rounded_sol[i] = 0
+        elseif m.var_type_orig[i] == :Int
+            rounded_sol[i] = round(relaxed_sol[i])
+        else
+            rounded_sol[i] = relaxed_sol[i]
+        end
+    end
+
+    return rounded_sol
+end
+
+"""
+    Evaluate a solution feasibility: Solution bust be in the feasible category and evaluated rhs must be feasible
+"""
+function eval_feasibility(m::PODNonlinearModel, sol::Vector)
+
+    length(sol) == m.num_var_orig || error("Candidate solution length mismatch.")
+
+
+    for i in 1:m.num_var_orig
+        # Check solution category and bounds
+        if m.var_type[i] == :Bin
+            isapprox(sol[i], 1.0;atol=m.tol) || isapprox(sol[i], 0.0;atol=m.tol) || return false
+        elseif m.var_type[i] == :Int
+            isapprox(mod(sol[i], 1.0), 0.0;atol=m.tol) || return false
+        end
+        # Check solution bounds (with tight bounds)
+        sol[i] <= m.l_var_tight[i] - m.tol || return false
+        sol[i] >= m.u_var_tight[i] + m.tol || return false
+    end
+
+    # Check constraint violation
+    eval_rhs = zeros(m.num_constr_orig)
+    MathProgBase.eval_g(m.d_orig, eval_rhs, rounded_sol)
+    feasible = true
+    for i in 1:m.num_constr_orig
+        if m.constr_type_orig[i] == :(==)
+            if !isapprox(eval_rhs[i], m.l_constr_orig[i]; atol=m.tol)
+                feasible = false
+                m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.l_constr_orig[i])")
+                m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+                return false
+            end
+        elseif m.constr_type_orig[i] == :(>=)
+            if !(eval_rhs[i] >= m.l_constr_orig[i] - m.tol)
+                m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.l_constr_orig[i])")
+                m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+                return false
+            end
+        elseif m.constr_type_orig[i] == :(<=)
+            if !(eval_rhs[i] <= m.u_constr_orig[i] + m.tol)
+                m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.u_constr_orig[i])")
+                m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+                return false
+            end
+        end
+    end
+
+    return feasible
+end
+
+function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
+
+    isempty(override) ? solverstring = string(m.mip_solver) : solverstring=override
+
+    # Higher-level solvers: that can use sub-solvers
+    if contains(solverstring,"Pajarito")
+        m.mip_solver_id = "Pajarito"
+        return
+    end
+
+    # Lower level solvers
+    if contains(solverstring,"Gurobi")
+        m.mip_solver_id = "Gurobi"
+    elseif contains(solverstring,"CPLEX")
+        m.mip_solver_id = "CPLEX"
+    elseif contains(solverstring,"Cbc")
+        m.mip_solver_id = "Cbc"
+    elseif contains(solverstring,"GLPK")
+        m.mip_solver_id = "GLPK"
+    else
+        error("Unsupported mip solver name. Using blank")
+    end
+
+    return
+end
+
+function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
+
+    isempty(override) ? solverstring = string(m.nlp_solver) : solverstring=override
+
+    # Higher-level solver
+    if contains(solverstring, "Pajarito")
+        m.nlp_solver_id = "Pajarito"
+        return
+    end
+
+    # Lower-level solver
+    if contains(solverstring, "Ipopt")
+        m.nlp_solver_id = "Ipopt"
+    elseif contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+        m.nlp_solver_id = "Bonmin"
+    elseif contains(solverstring, "KNITRO")
+        m.nlp_solver_id = "Knitro"
+    elseif contains(solverstring, "NLopt")
+        m.nlp_solver_id = "NLopt"
+    else
+        error("Unsupported nlp solver name. Using blank")
+    end
+
+    return
+end
+
+function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
+
+    (m.minlp_solver == UnsetSolver()) && return
+
+    isempty(override) ? solverstring = string(m.minlp_solver) : solverstring=override
+
+    # Higher-level solver
+    if contains(solverstring, "Pajarito")
+        m.minlp_solver_id = "Pajarito"
+        return
+    end
+
+    # Lower-level Solver
+    if contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+        m.minlp_solver_id = "Bonmin"
+    elseif contains(solverstring, "KNITRO")
+        m.minlp_solver_id = "Knitro"
+    elseif contains(solverstring, "NLopt")
+        m.minlp_solver_id = "NLopt"
+    elseif contains(solverstring, "CoinOptServices.OsilSolver(\"bonmin\"")
+        m.minlp_solver_id = "Bonmin"
+    else
+        error("Unsupported nlp solver name. Using blank")
+    end
+
+    return
+end
+
+"""
+
+    update_mip_time_limit(m::PODNonlinearModel)
+
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+"""
+function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.mip_solver_id == "CPLEX"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.mip_solver_id == "Gurobi"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
+    elseif m.mip_solver_id == "Cbc"
+        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
+    elseif m.mip_solver_id == "GLPK"
+        insert_timeleft_symbol(m.mip_solver.opts, timelimit,:tm_lim,m.timeout)
+    elseif m.mip_solver_id == "Pajarito"
+        (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
+    else
+        error("Needs support for this MIP solver")
+    end
+
+    return
+end
+
+"""
+
+    update_mip_time_limit(m::PODNonlinearModel)
+
+An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+"""
+function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.nlp_solver_id == "Ipopt"
+        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.nlp_solver_id == "Pajarito"
+        (timelimit < Inf) && (m.nlp_solver.timeout = timelimit)
+    elseif m.nlp_solver_id == "AmplNL"
+        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
+    elseif m.nlp_solver_id == "Knitro"
+        error("You never tell me anything about knitro. Probably because they have a very short trail length.")
+    elseif m.nlp_solver_id == "NLopt"
+        m.nlp_solver.maxtime = timelimit
+    else
+        error("Needs support for this MIP solver")
+    end
+
+    return
+end
+
+"""
+
+    update_mip_time_limit(m::PODNonlinearModel)
+
+    An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+"""
+function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
+
+    options = Dict(kwargs)
+    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    if m.minlp_solver_id == "Pajarito"
+        (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
+    elseif m.minlp_solver_id == "AmplNL"
+        insert_timeleft_symbol(m.minlp_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
+    elseif m.minlp_solver_id == "Knitro"
+        error("You never tell me anything about knitro. Probably because they charge everything they own.")
+    elseif m.minlp_solver_id == "NLopt"
+        m.minlp_solver.maxtime = timelimit
+    else
+        error("Needs support for this MIP solver")
+    end
 
     return
 end

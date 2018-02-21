@@ -60,7 +60,7 @@ function logging_summary(m::PODNonlinearModel)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
         println("default tolerance = ", m.tol)
         m.recognize_convex && println("actively recognize convex patterns = ")
-        println("basic bound propagation ", m.presolve_bp)
+        println("basic bound propagation = ", m.presolve_bp)
         println("use piece-wise relaxation formulation on integer variables = ", m.int_enable)
         println("piece-wise relaxation formulation = $(m.convhull_formulation) formulation")
         println("method for picking discretization variable = $(m.disc_var_pick)")
@@ -107,7 +107,12 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     else
         UB_block = string(" ", string(m.logs[:obj][end]), " " ^ (b_len - length(string(m.logs[:obj][end]))))
     end
-    LB_block = string(" ", round(m.logs[:bound][end],4), " " ^ (b_len - length(string(round(m.logs[:bound][end], 4)))))
+    if isa(m.logs[:bound][end], Float64)
+        bdval = m.logs[:bound][end]
+        LB_block = string(" ", round(m.logs[:bound][end],4), " " ^ (b_len - length(string(round(m.logs[:bound][end], 4)))))
+    else
+        LB_block = string(" ", string(m.logs[:bound][end]), " " ^ (b_len - length(string(m.logs[:bound][end]))))
+    end
     incumb_UB_block = string(" ", round(m.best_obj,4), " " ^ (b_len - length(string(round(m.best_obj, 4)))))
     incumb_LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))
     GAP_block = string(" ", round(m.best_rel_gap*100,5), " " ^ (b_len - length(string(round(m.best_rel_gap*100,5)))))

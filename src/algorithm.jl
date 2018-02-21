@@ -25,6 +25,7 @@ function global_solve(m::PODNonlinearModel)
 
     m.loglevel > 0 && logging_head(m)
     m.presolve_track_time || reset_timer(m)
+
     while !check_exit(m)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)                  # Build the relaxation model
@@ -33,8 +34,9 @@ function global_solve(m::PODNonlinearModel)
         check_exit(m) && break                  # Feasibility check
         m.loglevel > 0 && logging_row_entry(m)  # Logging
         local_solve(m)                          # Solve local model for feasible solution
+        update_opt_gap(m)                       # Update optimality gap
         check_exit(m) && break                  # Detect optimality termination
-        auto_adjustments(m)                     # Automated adjustments
+        algorithm_automation(m)                 # Automated adjustments
         add_partition(m)                        # Add extra discretizations
     end
 
@@ -96,9 +98,10 @@ end
 """
     A wrapper function that collects some automated solver adjustments within the main while loop.
 """
-function auto_adjustments(m::PODNonlinearModel)
+function algorithm_automation(m::PODNonlinearModel)
 
-    m.disc_var_pick == 3 && update_discretization_var_set(m)
+    m.disc_var_pick == 3 && update_disc_cont_var(m)
+    m.int_cumulative_disc && update_disc_int_var(m)
 
     if m.disc_ratio_branch
         m.disc_ratio = update_disc_ratio(m)    # Only perform for a maximum three times
@@ -141,25 +144,21 @@ Otherwise, the function is invoked from [`bounding_solve`](@ref).
 function local_solve(m::PODNonlinearModel; presolve = false)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
+    local_nlp_status = :Unknown
+    do_heuristic = false
 
     var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
 
     if presolve
         if !isempty(var_type_screener) && m.minlp_solver != UnsetSolver()
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_solver)
-        elseif !isempty(var_type_screener) && m.minlp_solver == UnsetSolver()
-            warn("Discrete variable detected with no minlp_solver indicated. Error can be caused with nlp_solver not handling discrete variables.")
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_solver)
+            local_solve_model = MathProgBase.NonlinearModel(m.minlp_solver)
+        elseif !isempty(var_type_screener)
+            local_solve_model = MathProgBase.NonlinearModel(m.nlp_solver)
         else
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_solver)
+            local_solve_model = MathProgBase.NonlinearModel(m.nlp_solver)
         end
     else
-        if m.nlp_solver != UnsetSolver()
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.nlp_solver)
-        else
-            warn("Handling NLP problem using minlp solver, could result in error due to MINLP solver.")
-            local_solve_nlp_model = MathProgBase.NonlinearModel(m.minlp_solver)
-        end
+        local_solve_model = MathProgBase.NonlinearModel(m.nlp_solver)
     end
 
     if presolve == false
@@ -168,66 +167,62 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         l_var, u_var = m.l_var_orig, m.u_var_orig
     end
 
-    MathProgBase.loadproblem!(local_solve_nlp_model, m.num_var_orig,
-                                                     m.num_constr_orig,
-                                                     l_var,
-                                                     u_var,
-                                                     m.l_constr_orig,
-                                                     m.u_constr_orig,
-                                                     m.sense_orig,
-                                                     m.d_orig)
+    start_local_solve = time()
+    MathProgBase.loadproblem!(local_solve_model, m.num_var_orig,
+                                                 m.num_constr_orig,
+                                                 l_var,
+                                                 u_var,
+                                                 m.l_constr_orig,
+                                                 m.u_constr_orig,
+                                                 m.sense_orig,
+                                                 m.d_orig)
 
     (!m.d_orig.want_hess) && MathProgBase.initialize(m.d_orig,[:Grad,:Jac,:Hess,:HessVec,:ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
-    presolve && !isempty(var_type_screener) && MathProgBase.setvartype!(local_solve_nlp_model, m.var_type_orig)
-    MathProgBase.setwarmstart!(local_solve_nlp_model, m.best_sol[1:m.num_var_orig])
+    MathProgBase.setwarmstart!(local_solve_model, m.best_sol[1:m.num_var_orig])
 
-    start_local_solve = time()
-    MathProgBase.optimize!(local_solve_nlp_model)
+    # The only case when MINLP solver is actually used
+    if presolve && !isempty(var_type_screener)
+        m.minlp_solver == UnsetSolver() || MathProgBase.setvartype!(local_solve_model, m.var_type_orig)
+        MathProgBase.optimize!(local_solve_model)
+        if m.minlp_solver == UnsetSolver()
+            do_heuristic = true
+            local_nlp_status = :Heuristics
+        else
+            local_nlp_status = MathProgBase.status(local_solve_model)
+            do_heuristic = false
+        end
+    else
+        MathProgBase.optimize!(local_solve_model)
+        local_nlp_status = MathProgBase.status(local_solve_model)
+    end
+
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
     # Symbol Definition
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
-    status_secondpass = [:RoundedFeasible]
+    status_heuristic = [:Heuristics]
     status_reroute = [:Infeasible]
 
-    # Collect solver status
-    local_solve_nlp_status = MathProgBase.status(local_solve_nlp_model)
-
-    # Correct status for integer problems :: post feasible solution heuristics heres
-    if false
-        rounded_sol = round_sol(m, local_solve_nlp_model)
-        if eval_feasibility(m, rounded_sol)
-            m.loglevel >= 100 && println("Feasible solution obtained by rounding local nlp solution.")
-            local_solve_nlp_status = :RoundedFeasible
-        end
-    end
-
-    if local_solve_nlp_status in status_pass
-        candidate_obj = MathProgBase.getobjval(local_solve_nlp_model)
+    if local_nlp_status in status_pass
+        candidate_obj = MathProgBase.getobjval(local_solve_model)
         push!(m.logs[:obj], candidate_obj)
         if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
             m.best_obj = candidate_obj
-            m.best_sol = round.(MathProgBase.getsolution(local_solve_nlp_model), 5)
+            m.best_sol = round.(MathProgBase.getsolution(local_solve_model), 5)
             m.status[:feasible_solution] = :Detected
         end
-        m.status[:local_solve] = local_solve_nlp_status
+        m.status[:local_solve] = local_nlp_status
         return
-    elseif local_solve_nlp_status == :RoundedFeasible
-        candidate_obj = MathProgBase.eval_f(m.d_orig, rounded_sol) # Re-obtain the objective value
-        if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
-            m.best_obj = candidate_obj
-            m.best_sol = round.(rounded, 6)
-            m.status[:feasible_solution] = :Detected
-        end
-        m.status[:local_solve] = local_solve_nlp_status
+    elseif local_nlp_status in status_heuristic && do_heuristic
+        m.status[:local_solve] = heu_basic_rounding(m, local_solve_model)
         return
-    elseif local_solve_nlp_status == :Infeasible
+    elseif local_nlp_status == :Infeasible
         push!(m.logs[:obj], "-")
         m.status[:local_solve] = :Infeasible
         return
-    elseif local_solve_nlp_status == :Unbounded
+    elseif local_nlp_status == :Unbounded
         push!(m.logs[:obj], "-")
         m.status[:local_solve] = :Unbounded
         presolve == true ? warn("[PRESOLVE] NLP local solve is unbounded.") : warn("[LOCAL SOLVE] NLP local solve is unbounded.")
@@ -235,12 +230,14 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     else
         push!(m.logs[:obj], "-")
         m.status[:local_solve] = :Error
-		presolve == true ? warn("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).") : warn("[LOCAL SOLVE] NLP local solve failure.")
+		presolve == true ? warn("[PRESOLVE] NLP solve failure $(local_nlp_status).") : warn("[LOCAL SOLVE] NLP local solve failure.")
         return
     end
 
     return
 end
+
+
 
 """
 
@@ -271,7 +268,7 @@ function bounding_solve(m::PODNonlinearModel)
 
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
-    status_infeasible = [:Infeasible]
+    status_infeasible = [:Infeasible, :InfeasibleOrUnbounded]
 
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
@@ -296,6 +293,44 @@ function bounding_solve(m::PODNonlinearModel)
         warn("[UNBOUNDED] MIP solver return unbounded")
     else
         error("[EXCEPTION] MIP solver failure $(status)")
+    end
+
+    return
+end
+
+"""
+    pick_disc_vars(m::PODNonlinearModel)
+
+This function helps pick the variables for discretization. The method chosen depends on user-inputs.
+In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
+there exist two built-in method:
+
+    * `max-cover(m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover(m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+
+For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
+For more information, read more details at [Hacking Solver](@ref).
+
+"""
+function pick_disc_vars(m::PODNonlinearModel)
+
+    if isa(m.disc_var_pick, Function)
+        eval(m.disc_var_pick)(m)
+        length(m.disc_vars) == 0 && length(m.nonconvex_terms) > 0 && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+    elseif isa(m.disc_var_pick, Int)
+        if m.disc_var_pick == 0
+            ncvar_collect_nodes(m)
+        elseif m.disc_var_pick == 1
+            min_vertex_cover(m)
+        elseif m.disc_var_pick == 2
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
+        elseif m.disc_var_pick == 3 # Initial
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
+        else
+            error("Unsupported default indicator for picking variables for discretization")
+        end
+    else
+        error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
     end
 
     return
