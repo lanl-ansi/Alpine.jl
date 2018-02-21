@@ -5,8 +5,8 @@ Initial tight bound vectors for later operations
 """
 function init_tight_bound(m::PODNonlinearModel)
 
-    m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
-    m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
+    m.l_var_tight = [m.l_var_orig, fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
+    m.u_var_tight = [m.u_var_orig, fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
@@ -18,6 +18,85 @@ function init_tight_bound(m::PODNonlinearModel)
     end
 
     return
+end
+
+"""
+    init_disc(m::PODNonlinearModel)
+
+This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
+The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
+"""
+function init_disc(m::PODNonlinearModel)
+
+    for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+        if m.var_type[var] in [:Bin, :Cont]
+            lb = m.l_var_tight[var]
+            ub = m.u_var_tight[var]
+            m.discretization[var] = [lb, ub]
+        elseif m.var_type[var] in [:Int]
+            m.int_enable ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
+            m.int_enable ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
+            m.discretization[var] = [lb, ub]
+        else
+            error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
+        end
+    end
+
+    return
+end
+
+"""
+
+    to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+
+Utility functions to convert bounds vectors to Dictionary based structures that is more suitable for
+partition operations.
+
+"""
+function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+
+    @assert length(lbs) == length(ubs)
+    var_discretization = Dict()
+    for var in 1:m.num_var_orig
+        lb = lbs[var]
+        ub = ubs[var]
+        var_discretization[var] = [lb, ub]
+    end
+
+    total_var_cnt = m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip
+    orig_var_cnt = m.num_var_orig
+
+    if length(lbs) == total_var_cnt
+        for var in (1+orig_var_cnt):total_var_cnt
+            lb = lbs[var]
+            ub = ubs[var]
+            var_discretization[var] = [lb, ub]
+        end
+    else
+        for var in (1+orig_var_cnt):total_var_cnt
+            lb = -Inf
+            ub = Inf
+            var_discretization[var] = [lb, ub]
+        end
+    end
+
+    return var_discretization
+end
+
+"""
+    flatten_discretization(discretization::Dict)
+
+Utility functions to eliminate all partition on discretizing variable and keep the loose bounds.
+
+"""
+function flatten_discretization(discretization::Dict; kwargs...)
+
+    flatten_discretization = Dict()
+    for var in keys(discretization)
+        flatten_discretization[var] = [discretization[var][1],discretization[var][end]]
+    end
+
+    return flatten_discretization
 end
 
 
@@ -155,6 +234,9 @@ in known or trivial bounds information to reason lifted variable bound to avoid 
 """
 function resolve_var_bounds(m::PODNonlinearModel)
 
+    # First resolve infinity bounds with assumptions
+    # resolve_inf_bounds(m) # Temporarily disabled
+
     # Basic Bound propagation
     m.presolve_bp && bounds_propagation(m) # Fetch bounds from constraints
 
@@ -172,79 +254,73 @@ function resolve_var_bounds(m::PODNonlinearModel)
         end
     end
 
-    # Resolve still infinite bound
-    resolve_inf_bounds(m)
-
     return
 end
 
+"""
+    Critically assumed since POD relies on finite bound to work
+"""
 function resolve_inf_bounds(m::PODNonlinearModel)
-    # Primarily detect if any variable is unbounded
+    warnuser = false
     for i in 1:m.num_var_orig
-
+        if m.l_var_tight[i] == -Inf
+            warnuser = true
+            m.l_var_tight[i] = -10e9
+        end
+        if m.u_var_tight[i] == Inf
+            warnuser = true
+            m.u_var_tight[i] = 10e9
+        end
     end
+
+    warnuser && warn("Inf bound detected on some variables. Initialize with value -10e9/10e9.")
+
     return
 end
 
 """
     resolve_var_bounds(nonconvex_terms::Dict, discretization::Dict)
 
-For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
-The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
-can help speed up the subsequent solve in subsequent iterations.
-"""
-function resolve_var_bounds(nonconvex_terms::Dict, linear_terms::Dict, term_seq::Dict, discretization::Dict; kwargs...)
+    For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
+    The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
+    can help speed up the subsequent solve in subsequent iterations.
 
-    # TODO this sequence need to be changed
+    Only used in presolve bound tightening
+"""
+function resolve_var_bounds(m::PODNonlinearModel, d::Dict; kwargs...)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
-    for i in 1:length(term_seq)
-        k = term_seq[i]
-        if haskey(nonconvex_terms, k)
+    for i in 1:length(m.term_seq)
+        k = m.term_seq[i]
+        if haskey(m.nonconvex_terms, k)
             nlk = k
-            if nonconvex_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
-                lifted_idx = nonconvex_terms[nlk][:lifted_var_ref].args[2]
-                cnt = 0
-                bound = []
-                for var in nlk
-                    cnt += 1
-                    var_idx = var.args[2]
-                    var_bounds = [discretization[var_idx][1], discretization[var_idx][end]]
-                    if cnt == 1
-                        bound = copy(var_bounds)
-                    elseif cnt == 2
-                        bound = bound * var_bounds'
-                    else
-                        bound = diag(bound) * var_bounds'
-                    end
-                end
-                if minimum(bound) > discretization[lifted_idx][1]
-                    discretization[lifted_idx][1] = minimum(bound)
-                end
-                if maximum(bound) < discretization[lifted_idx][end]
-                    discretization[lifted_idx][end] = maximum(bound)
-                end
-            elseif nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
-                basic_binprod_bounds(m, k)
-            elseif nonconvex_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
-                basic_sincos_bounds(m, k)
-            elseif nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
-                basic_binlin_bounds(m, k)
-            elseif nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
-                basic_intlin_bounds(m, k)
+            if m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
+                d = basic_monomial_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BININT]
+                d = basic_binint_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
+                d = basic_binprod_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
+                d = basic_sincos_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
+                d = basic_binlin_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
+                d = basic_intlin_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTPROD]
+                d = basic_intprod_bounds(m, nlk, d)
             else
                 error("EXPECTED ERROR : NEED IMPLEMENTATION")
             end
-        elseif haskey(slinear_terms, k)
-            basic_linear_bounds(m, k, linear_terms)
+        elseif haskey(m.linear_terms, k)
+            d = basic_linear_bounds(m, k, d)
         else
             error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
     end
 
-    return discretization
+    return d
 end
 
 """
