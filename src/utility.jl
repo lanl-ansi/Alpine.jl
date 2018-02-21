@@ -400,8 +400,20 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
 end
 
 function round_sol(m::PODNonlinearModel, nlp_model)
+
     relaxed_sol = MathProgBase.getsolution(nlp_model)
-    return [m.var_type_orig[i] in [:Bin, :Int] ? round(relaxed_sol[i]) : relaxed_sol[i] for i in 1:m.num_var_orig]
+    rounded_sol = copy(relaxed_sol)
+    for i in 1:m.num_var_orig
+        if m.var_type_orig[i] == :Bin
+            relaxed_sol[i] >= 0.5 ? rounded_sol[i] = 1 : rounded_sol[i] = 0
+        elseif m.var_type_orig[i] == :Int
+            rounded_sol[i] = round(relaxed_sol[i])
+        else
+            rounded_sol[i] = relaxed_sol[i]
+        end
+    end
+
+    return rounded_sol
 end
 
 """

@@ -85,6 +85,7 @@ function heu_basic_rounding(m::PODNonlinearModel, local_model)
                                                m.d_orig)
     MathProgBase.optimize!(heuristic_model)
     heuristic_model_status = MathProgBase.status(heuristic_model)
+
     if heuristic_model_status in [:Infeasible, :Error]
         println("Rounding obtained an Infeasible point.")
         push!(m.logs[:obj], "-")

@@ -34,8 +34,9 @@ function global_solve(m::PODNonlinearModel)
         check_exit(m) && break                  # Feasibility check
         m.loglevel > 0 && logging_row_entry(m)  # Logging
         local_solve(m)                          # Solve local model for feasible solution
+        update_opt_gap(m)                       # Update optimality gap
         check_exit(m) && break                  # Detect optimality termination
-        algorithm_automation(m)                     # Automated adjustments
+        algorithm_automation(m)                 # Automated adjustments
         add_partition(m)                        # Add extra discretizations
     end
 
@@ -267,7 +268,7 @@ function bounding_solve(m::PODNonlinearModel)
 
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
-    status_infeasible = [:Infeasible]
+    status_infeasible = [:Infeasible, :InfeasibleOrUnbounded]
 
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound

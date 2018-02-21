@@ -694,7 +694,8 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
 
     bound = []
-    for (cnt,var) in enumerate(m.nonconvex_terms[k][:var_idxs])
+    for (cnt,varexpr) in enumerate(k)
+        var = varexpr.args[2]
         var_bounds = [m.l_var_tight[var], m.u_var_tight[var]]
         if cnt == 1
             bound = copy(var_bounds)
@@ -704,6 +705,7 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
             bound = diag(bound) * var_bounds'
         end
     end
+
     if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
         m.l_var_tight[lifted_idx] = minimum(bound)
     end
@@ -719,8 +721,9 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any, d::Dict)
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
 
     bound = []
-    for (cnt,var) in enumerate(m.nonconvex_terms[k][:var_idxs])
-        var_bounds = [m.l_var_tight[var], m.u_var_tight[var]]
+    for (cnt,varexpr) in enumerate(k)
+        var = varexpr.args[2]
+        var_bounds = [d[var][1], d[var][end]]
         if cnt == 1
             bound = copy(var_bounds)
         elseif cnt == 2

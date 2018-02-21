@@ -108,6 +108,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
         UB_block = string(" ", string(m.logs[:obj][end]), " " ^ (b_len - length(string(m.logs[:obj][end]))))
     end
     if isa(m.logs[:bound][end], Float64)
+        bdval = m.logs[:bound][end]
         LB_block = string(" ", round(m.logs[:bound][end],4), " " ^ (b_len - length(string(round(m.logs[:bound][end], 4)))))
     else
         LB_block = string(" ", string(m.logs[:bound][end]), " " ^ (b_len - length(string(m.logs[:bound][end]))))
