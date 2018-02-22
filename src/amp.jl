@@ -249,9 +249,10 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
 
         # @show i, point, discretization[i] # Debugger
         # Apply special and user methods
-        for injector in m.method_partition_injection
-            injector(m, i, discretization[i], point, ratio, processed)
-        end
+        # Disabled for testing performance
+        # for injector in m.method_partition_injection
+        #     injector(m, i, discretization[i], point, ratio, processed)
+        # end
 
         # Built-in method based-on variable type
         if m.var_type[i] == :Cont

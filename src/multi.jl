@@ -56,7 +56,7 @@ function amp_convexify_integer(m::PODNonlinearModel, idx::Int, λ::Dict, α::Dic
     # Easy way to check whether integer variable idx has been discretized already
     haskey(α, idx) && return
 
-    println("Resolving SOLE integer VAR$(idx) ..")
+    # println("Resolving SOLE integer VAR$(idx) ..")
     # Main Convexification Steps
     indices, dim, ext_cnt = amp_convhull_prepare(m, d, idx)
     λ = amp_convhull_λ(m, idx, λ, ext_cnt, dim)
@@ -783,16 +783,16 @@ function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
     @assert length(sol_vec) == m.num_var_orig
     sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
 
-    for i in 1:length(m.nonconvex_terms)
-        for bi in keys(m.nonconvex_terms)
-            if m.nonconvex_terms[bi][:id] == i
-                lvar_idx = m.num_var_orig + i
-                if haskey(m.nonconvex_terms[bi], :evaluator)
-                    sol_vec[lvar_idx] = m.nonconvex_terms[bi][:evaluator](m.nonconvex_terms[bi], sol_vec)
-                else
-                    sol_vec[lvar_idx] = 0.5*m.discretization[lvar_idx][1] + 0.5*m.discretization[lvar_idx][end]
-                end
-            end
+    for i in 1:length(m.term_seq)
+        k = m.term_seq[i]
+        if haskey(m.nonconvex_terms, k)
+            lvar_idx = m.nonconvex_terms[k][:y_idx]
+            sol_vec[lvar_idx] = m.nonconvex_terms[k][:evaluator](m.nonconvex_terms[k], sol_vec)
+        elseif haskey(m.linear_terms, k)
+            lvar_idx = m.linear_terms[k][:y_idx]
+            sol_vec[lvar_idx] = m.linear_terms[k][:evaluator](m.linear_terms[k], sol_vec)
+        else
+            error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
     end
 

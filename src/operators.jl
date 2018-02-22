@@ -870,6 +870,7 @@ function detect_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 continue
             end
         end
+
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && length(Set(var_idxs)) == 2
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
@@ -986,7 +987,13 @@ function detect_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
             !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
-            (expr.args[i].head == :call) && return false, expr
+            if (expr.args[i].head == :call)
+                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+                !down_check && return false, expr
+                push!(var_idxs, linear_lift_var.args[2])
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+                continue
+            end
         end
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
