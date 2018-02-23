@@ -107,7 +107,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
         objstr = string(round(m.logs[:obj][end],4))
         spc = max(0, b_len - length(objstr))
     else
-        objstr = string(m.logs[:bound][end])
+        objstr = string(m.logs[:obj][end])
         spc = max(0, b_len - length(objstr))
     end
     UB_block = string(" ", objstr, " " ^ spc)

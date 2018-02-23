@@ -1025,6 +1025,9 @@ function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
     end
     if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
         m.l_var_tight[lifted_idx] = minimum(bound)
+        if m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
+            m.l_var_tight[lifted_idx] = 0.0
+        end
     end
     if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
         m.u_var_tight[lifted_idx] = maximum(bound)

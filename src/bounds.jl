@@ -132,12 +132,12 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_l_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
                     end
                     if eval_u_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif aff[:sense] == :(>=) && var_coef > 0.0  # a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
@@ -152,9 +152,9 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
                     end
-                elseif var_coef < 0.0 && aff[:sense] == :(>=) # -a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
+                elseif aff[:sense] == :(>=) && var_coef < 0.0  # -a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
                     for j in 1:length(aff[:vars])
                         if j != i && aff[:coefs][j] > 0.0
@@ -167,7 +167,7 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif (aff[:sense] == :(<=) && aff[:coefs][i] > 0.0) # a($) - by + cz <= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
@@ -182,7 +182,7 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif (aff[:sense] == :(<=) && aff[:coefs][i] < 0.0) # -a($) - by + cz <= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
@@ -197,7 +197,7 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
                     end
                 end
             end
@@ -234,11 +234,11 @@ in known or trivial bounds information to reason lifted variable bound to avoid 
 """
 function resolve_var_bounds(m::PODNonlinearModel)
 
-    # First resolve infinity bounds with assumptions
-    # resolve_inf_bounds(m) # Temporarily disabled
-
     # Basic Bound propagation
     m.presolve_bp && bounds_propagation(m) # Fetch bounds from constraints
+
+    # First resolve infinity bounds with assumptions
+    resolve_inf_bounds(m) # Temporarily disabled
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
@@ -263,17 +263,17 @@ end
 function resolve_inf_bounds(m::PODNonlinearModel)
     warnuser = false
     for i in 1:m.num_var_orig
-        if m.l_var_tight[i] == -Inf
+        if i in m.candidate_disc_vars && m.l_var_tight[i] == -Inf
             warnuser = true
-            m.l_var_tight[i] = -10e9
+            m.l_var_tight[i] = -10e7
         end
-        if m.u_var_tight[i] == Inf
+        if i in m.candidate_disc_vars && m.u_var_tight[i] == Inf
             warnuser = true
-            m.u_var_tight[i] = 10e9
+            m.u_var_tight[i] = 10e7
         end
     end
 
-    warnuser && warn("Inf bound detected on some variables. Initialize with value -10e9/10e9.")
+    warnuser && warn("Inf bound detected on some variables. Initialize with value -10e7/10e7. This may affect global optimality.")
 
     return
 end

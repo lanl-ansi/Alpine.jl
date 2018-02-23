@@ -42,7 +42,6 @@ function update_disc_cont_var(m::PODNonlinearModel)
     return
 end
 
-
 function update_disc_int_var(m::PODNonlinearModel)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
@@ -70,39 +69,37 @@ function heu_basic_rounding(m::PODNonlinearModel, local_model)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
 
-    relaxed_obj = MathProgBase.getobjval(local_model)
     rounded_sol = round_sol(m, local_model)
     l_var, u_var = fix_domains(m, discrete_sol = rounded_sol)
 
-    heuristic_model = MathProgBase.NonlinearModel(m.nlp_solver)
-    MathProgBase.loadproblem!(heuristic_model, m.num_var_orig,
-                                               m.num_constr_orig,
-                                               l_var,
-                                               u_var,
-                                               m.l_constr_orig,
-                                               m.u_constr_orig,
-                                               m.sense_orig,
-                                               m.d_orig)
-    MathProgBase.optimize!(heuristic_model)
-    heuristic_model_status = MathProgBase.status(heuristic_model)
+    heuristic_model = interface_init_nonlinear_model(m.nlp_solver)
+    interface_load_nonlinear_model(m, heuristic_model, l_var, u_var)
+    interface_optimize(heuristic_model)
+    heuristic_model_status = interface_get_status(heuristic_model)
 
     if heuristic_model_status in [:Infeasible, :Error]
         println("Rounding obtained an Infeasible point.")
         push!(m.logs[:obj], "-")
-        return :Infeasible
+        return :Infeasibles
     elseif heuristic_model_status in [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
-        candidate_obj = MathProgBase.getobjval(heuristic_model)
-        push!(m.logs[:obj], candidate_obj)
-        println("Rounding obtained a feasible solution OBJ = $(candidate_obj)")
-        if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
-            m.best_obj = candidate_obj
-            m.best_sol = round.(MathProgBase.getsolution(heuristic_model), 5)
-            m.status[:feasible_solution] = :Detected
-        end
+        candidate_obj = interface_get_objval(heuristic_model)
+        candidate_sol = round.(interface_get_solution(heuristic_model), 5)
+        update_incumb_objective(m, candidate_obj, candidate_sol)
+        println("Rounding obtained a feasible solution OBJ = $(m.best_obj)")
         return :LocalOptimal
     else
         error("[EXCEPTION] Unknown NLP solver status.")
     end
 
-    return :Infeasible
+    return
+end
+
+function heu_pool_boosting(m::PODNonlinearModel, local_model)
+
+    println("Heuristic Local Search : LB pool-based multi-search")
+
+    convertor = Dict(:Max=>:>, :Min=>:<)
+
+
+    return
 end

@@ -146,8 +146,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     best_sol::Vector{Float64}                                   # Best feasible solution
     best_bound_sol::Vector{Float64}                             # Best bound solution
     best_rel_gap::Float64                                       # Relative optimality gap = |best_bound - best_obj|/|best_obj|
+    best_abs_gap::Float64                                       # Absolute gap = |best_bound - best_obj|
     bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by parameter disc_consecutive_forbid
-    bound_sol_pool::Dict{Any, Any}                                 # A pool of solutions from solving model_mip
+    bound_sol_pool::Dict{Any, Any}                              # A pool of solutions from solving model_mip
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
@@ -292,6 +293,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.best_obj = Inf
         m.best_bound = -Inf
         m.best_rel_gap = Inf
+        m.best_abs_gap = Inf
         m.pod_status = :NotLoaded
 
         create_status!(m)
@@ -486,6 +488,7 @@ function PODSolver(;
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
 function MathProgBase.NonlinearModel(s::PODSolver)
+
     if !applicable(MathProgBase.NonlinearModel, s.nlp_solver)
         error("NLP local solver $(s.nlp_solver) specified is not a NLP solver recognized by POD\n")
     end
@@ -590,10 +593,14 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 end
 
 function MathProgBase.loadproblem!(m::PODNonlinearModel,
-                                    num_var::Int, num_constr::Int,
-                                    l_var::Vector{Float64}, u_var::Vector{Float64},
-                                    l_constr::Vector{Float64}, u_constr::Vector{Float64},
-                                    sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
+                                   num_var::Int,
+                                   num_constr::Int,
+                                   l_var::Vector{Float64},
+                                   u_var::Vector{Float64},
+                                   l_constr::Vector{Float64},
+                                   u_constr::Vector{Float64},
+                                   sense::Symbol,
+                                   d::MathProgBase.AbstractNLPEvaluator)
 
     # Basic Problem Dimensions
     m.num_var_orig = num_var
@@ -613,12 +620,12 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.d_orig = d
 
     # Initialize NLP interface
-    MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess,:ExprGraph])
+    interface_init_nonlinear_data(m.d_orig)
 
     # Collect objective & constraints expressions
-    m.obj_expr_orig = MathProgBase.obj_expr(d)
+    m.obj_expr_orig = interface_get_obj_expr(m.d_orig)
     for i in 1:m.num_constr_orig
-        push!(m.constr_expr_orig, MathProgBase.constr_expr(d, i))
+        push!(m.constr_expr_orig, interface_get_constr_expr(m.d_orig, i))
     end
 
     # Collect original variable type and build dynamic variable type space
@@ -644,7 +651,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.obj_structure = :none
     m.constr_structure = [:none for i in 1:m.num_constr_orig]
     for i = 1:m.num_constr_orig
-        if MathProgBase.isconstrlinear(m.d_orig, i)
+        if interface_is_constr_linear(m.d_orig, i)
             m.num_lconstr_orig += 1
             m.constr_structure[i] = :generic_linear
         else
@@ -654,7 +661,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
 
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
-    m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
+    m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
     # Preload Built-in Special Functions (append special functions to user-functions)
@@ -701,11 +708,3 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     return
 end
-
-MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.var_start_orig = x)
-MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
-MathProgBase.status(m::PODNonlinearModel) = m.pod_status
-MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
-MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
-MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
-MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]

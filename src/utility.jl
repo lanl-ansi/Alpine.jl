@@ -20,17 +20,17 @@ function update_opt_gap(m::PODNonlinearModel)
         m.best_rel_gap = Inf
         return
     else
-        p = round(abs(log(10,m.relgap)))
-        n = round(abs(m.best_obj-m.best_bound), Int(p))
-        dn = round(abs(1e-12+abs(m.best_obj)), Int(p))
-        if (n == 0.0) && (dn == 0.0)
+        p = convert(Int, round(abs(log(10,m.relgap))))
+        n = round(abs(m.best_obj-m.best_bound), p)
+        dn = round(abs(1e-12+abs(m.best_obj)), p)
+        if isapprox(n, 0.0;atol=m.tol) && isapprox(m.best_obj,0.0;atol=m.tol)
             m.best_rel_gap = 0.0
             return
         end
         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
     end
 
-    # absoluate or any other bound calculation shows here..
+    m.best_abs_gap = abs(m.best_obj - m.best_bound)
     return
 end
 
@@ -41,6 +41,21 @@ Same as [`update_var_bounds`](@ref)
 """
 discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 
+"""
+    Update the data structure with feasible solution and its associated objective (if better)
+"""
+function update_incumb_objective(m::PODNonlinearModel, objval::Float64, sol::Vector)
+
+    convertor = Dict(:Max=>:>, :Min=>:<)
+    push!(m.logs[:obj], objval)
+    if eval(convertor[m.sense_orig])(objval, m.best_obj + 1e-5)
+        m.best_obj = objval
+        m.best_sol = sol
+        m.status[:feasible_solution] = :Detected
+    end
+
+    return
+end
 
 """
     Utility function for debugging.
@@ -480,7 +495,7 @@ end
 """
 function print_iis_gurobi(m::JuMP.Model)
 
-    grb = MathProgBase.getrawsolver(internalmodel(m))
+    grb = interface_get_rawsolver(m)
     Gurobi.computeIIS(grb)
     numconstr = Gurobi.num_constrs(grb)
     numvar = Gurobi.num_vars(grb)
@@ -593,7 +608,7 @@ end
 
 function round_sol(m::PODNonlinearModel, nlp_model)
 
-    relaxed_sol = MathProgBase.getsolution(nlp_model)
+    relaxed_sol = interface_get_solution(nlp_model)
     rounded_sol = copy(relaxed_sol)
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
@@ -630,7 +645,7 @@ function eval_feasibility(m::PODNonlinearModel, sol::Vector)
 
     # Check constraint violation
     eval_rhs = zeros(m.num_constr_orig)
-    MathProgBase.eval_g(m.d_orig, eval_rhs, rounded_sol)
+    interface_eval_g(m.d_orig, eval_rhs, rounded_sol)
     feasible = true
     for i in 1:m.num_constr_orig
         if m.constr_type_orig[i] == :(==)
