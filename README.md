@@ -7,13 +7,11 @@ Dev: [![Build Status](https://travis-ci.org/lanl-ansi/POD.jl.svg?branch=master)]
 
 Unlike many other state-of-the-art MINLP solvers, POD is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
 
-POD solves MINLP by:
+POD globally solves a given MINLP by:
 
-* analyzing the problem expressions (objective & constraints) to obtain a convexifyable formulation
+* Analyzing the problem's expressions (objective & constraints) and applies approporite convex relaxations
 
-* performing bound tightening to contract variables' feasible domains
-
-* performing adaptive partitioning-based convexification to improve problem bounds for global convergence
+* Performing novel adaptive/dynamic partitioning methods to create piecewise relaxations, bound tightening and polyhedral outer-approximations to guarantee global convergence
 
 
 # Installation
@@ -41,7 +39,7 @@ As the development of POD continues, supports fo [Mosek](http://www.mosek.com/),
 
 # Citation
 
-If you find POD useful in your work, please cite the following:
+If you find POD useful in your work, we kindly request that you cite the following papers
 ```
 @article{nagarajan2017adaptive,
   title={An Adaptive, Multivariate Partitioning Algorithm for Global Optimization of Nonconvex Programs},
@@ -57,12 +55,5 @@ If you find POD useful in your work, please cite the following:
   pages={369--387},
   year={2016},
   organization={Springer}
-}
-
-@techreport{bent2017polyhedral,
-  title={A Polyhedral Outer-approximation, Dynamic-discretization optimization solver, 1. x},
-  author={Bent, Rusell and Nagarajan, Harsha and Sundar, Kaarthik and Wang, Site and Hijazi, Hassan},
-  year={2017},
-  institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
 }
 ```
