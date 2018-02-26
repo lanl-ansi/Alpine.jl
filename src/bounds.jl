@@ -261,19 +261,23 @@ end
     Critically assumed since POD relies on finite bound to work
 """
 function resolve_inf_bounds(m::PODNonlinearModel)
+
     warnuser = false
+    infcount = 0
     for i in 1:m.num_var_orig
         if i in m.candidate_disc_vars && m.l_var_tight[i] == -Inf
             warnuser = true
             m.l_var_tight[i] = -10e7
+            infcount += 1
         end
         if i in m.candidate_disc_vars && m.u_var_tight[i] == Inf
             warnuser = true
             m.u_var_tight[i] = 10e7
+            infcount +=1
         end
     end
 
-    warnuser && warn("Inf bound detected on some variables. Initialize with value -10e7/10e7. This may affect global optimality.")
+    warnuser && warn("Inf bound detected on $(infcount) variables. Initialize with value -10e7/10e7. This may affect global optimality.")
 
     return
 end

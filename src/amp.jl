@@ -257,7 +257,7 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
         # Built-in method based-on variable type
         if m.var_type[i] == :Cont
             i in processed && continue
-            point = correct_point(m, discretization[i], point)
+            point = correct_point(m, discretization[i], point, i)
             for j in 1:λCnt
                 if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
                     radius = calculate_radius(discretization[i], j, ratio)
@@ -288,10 +288,10 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
     return discretization
 end
 
-function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64)
+function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - m.tol || point > partvec[end] + m.tol
-        warn("Soluiton SOL=$(point) out of bounds [$(partvec[1]),$(partvec[end])]. Taking middle point...")
+        warn("VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point...")
         return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
     end
 

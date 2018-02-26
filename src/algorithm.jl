@@ -51,19 +51,20 @@ function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
     (m.loglevel > 0) && println("\nPOD algorithm presolver started.")
-    (m.loglevel > 0) && println("Performing local solve to obtain a feasible solution.")
+    (m.loglevel > 0) && println("performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
-    # Regarding upcoming changes in status
+    # Possible solver status, return error when see different
     status_pass = [:Optimal, :Suboptimal, :UserLimit]
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass
-        bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
-        (m.presolve_bt) && init_disc(m)      # Reinitialize discretization dictionary on tight bounds
+        m.loglevel > 0 && println("local solver returns feasible point")
+        bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
+        (m.presolve_bt) && init_disc(m)          # Reinitialize discretization dictionary on tight bounds
         (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
-        m.loglevel > 0 && println("Presolve ended.")
+        m.loglevel > 0 && println("presolve ended.")
     elseif m.status[:local_solve] in status_reroute
         (m.loglevel > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
@@ -165,7 +166,8 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     if presolve == false
         l_var, u_var = fix_domains(m)
     else
-        l_var, u_var = m.l_var_orig, m.u_var_orig
+        # l_var, u_var = m.l_var_orig, m.u_var_orig  # change to l_var_tight/u_var_tight ?
+        l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
     end
 
     start_local_solve = time()

@@ -187,7 +187,7 @@ function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 length(sub_vars) != 1 && return false, expr
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
             else
-                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)  # Recursive detection
                 down_check ? expr.args[i] = linear_lift_var : return false, expr
                 push!(coef_var, (1.0, expr.args[i].args[2]))
             end
@@ -274,7 +274,7 @@ bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
 sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
-linear(k, vec) = sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
+linear(k, vec) = sum(k[:ref][:scalar] + [i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
 """
     Recognize prodcuts of binary variables and multilinear products

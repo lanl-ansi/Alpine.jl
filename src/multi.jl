@@ -777,24 +777,3 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
 
 	return indices
 end
-
-function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
-
-    @assert length(sol_vec) == m.num_var_orig
-    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
-
-    for i in 1:length(m.term_seq)
-        k = m.term_seq[i]
-        if haskey(m.nonconvex_terms, k)
-            lvar_idx = m.nonconvex_terms[k][:y_idx]
-            sol_vec[lvar_idx] = m.nonconvex_terms[k][:evaluator](m.nonconvex_terms[k], sol_vec)
-        elseif haskey(m.linear_terms, k)
-            lvar_idx = m.linear_terms[k][:y_idx]
-            sol_vec[lvar_idx] = m.linear_terms[k][:evaluator](m.linear_terms[k], sol_vec)
-        else
-            error("[RARE] Found homeless term key $(k) during bound resolution.")
-        end
-    end
-
-    return sol_vec
-end

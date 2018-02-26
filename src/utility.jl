@@ -37,7 +37,7 @@ end
 """
     discretization_to_bounds(d::Dict, l::Int)
 
-Same as [`update_var_bounds`](@ref)
+    Same as [`update_var_bounds`](@ref)
 """
 discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 
@@ -833,4 +833,28 @@ function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
     end
 
     return
+end
+
+"""
+    Follow the definition of terms to calculate the value of lifted terms
+"""
+function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
+
+    @assert length(sol_vec) == m.num_var_orig
+    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+
+    for i in 1:length(m.term_seq)
+        k = m.term_seq[i]
+        if haskey(m.nonconvex_terms, k)
+            lvar_idx = m.nonconvex_terms[k][:y_idx]
+            sol_vec[lvar_idx] = m.nonconvex_terms[k][:evaluator](m.nonconvex_terms[k], sol_vec)
+        elseif haskey(m.linear_terms, k)
+            lvar_idx = m.linear_terms[k][:y_idx]
+            sol_vec[lvar_idx] = m.linear_terms[k][:evaluator](m.linear_terms[k], sol_vec)
+        else
+            error("[RARE] Found homeless term key $(k) during bound resolution.")
+        end
+    end
+
+    return sol_vec
 end
