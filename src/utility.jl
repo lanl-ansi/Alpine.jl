@@ -48,7 +48,7 @@ function update_incumb_objective(m::PODNonlinearModel, objval::Float64, sol::Vec
 
     convertor = Dict(:Max=>:>, :Min=>:<)
     push!(m.logs[:obj], objval)
-    if eval(convertor[m.sense_orig])(objval, m.best_obj + 1e-5)
+    if eval(convertor[m.sense_orig])(objval, m.best_obj)
         m.best_obj = objval
         m.best_sol = sol
         m.status[:feasible_solution] = :Detected
@@ -305,6 +305,7 @@ function merge_solution_pool(m::PODNonlinearModel, s::Dict)
         push!(m.bound_sol_pool[:disc], s[:disc][i])
         push!(m.bound_sol_pool[:stat], s[:stat][i])
         push!(m.bound_sol_pool[:iter], s[:iter][i])
+        push!(m.bound_sol_pool[:ubstart], s[:ubstart][i])
     end
 
     # Update dimensional parameters
@@ -420,7 +421,8 @@ function initialize_solution_pool(m::PODNonlinearModel, cnt::Int)
     s[:obj] = Vector{Float64}(cnt)                  # Objecitve value
     s[:disc] = Vector{Dict}(cnt)                    # Discretization
     s[:stat] = [:Alive for i in 1:cnt]              # Solution status
-    s[:iter] = [m.logs[:n_iter] for i in 1:cnt]      # Iteration collected
+    s[:iter] = [m.logs[:n_iter] for i in 1:cnt]     # Iteration collected
+    s[:ubstart] = [false for i in 1:cnt]           # Solution used for ub multistart
 
     return s
 end
@@ -606,9 +608,20 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     return
 end
 
-function round_sol(m::PODNonlinearModel, nlp_model)
+function round_sol(m::PODNonlinearModel;nlp_model=nothing, nlp_sol=[])
 
-    relaxed_sol = interface_get_solution(nlp_model)
+    if nlp_model != nothing
+        relaxed_sol = interface_get_solution(nlp_model)
+    end
+
+    if !isempty(nlp_sol)
+        relaxed_sol = nlp_sol
+    end
+
+    if nlp_model != nothing && !isempty(nlp_sol)
+        error("In function collision. Special usage")
+    end
+
     rounded_sol = copy(relaxed_sol)
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin

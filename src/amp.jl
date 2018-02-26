@@ -138,6 +138,8 @@ function amp_post_affine_constraint(model_mip::JuMP.Model, affine::Dict)
     elseif affine[:sense] == :(==)
         @constraint(model_mip,
             sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) == affine[:rhs])
+    else
+        error("Unkown sense.")
     end
 
     return

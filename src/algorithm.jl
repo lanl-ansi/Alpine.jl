@@ -209,6 +209,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         m.status[:local_solve] = heu_basic_rounding(m, local_solve_model)
         return
     elseif local_nlp_status == :Infeasible
+        heu_pool_multistart(m) == :LocalOptimal && return
         push!(m.logs[:obj], "INF")
         m.status[:local_solve] = :Infeasible
         return
@@ -258,7 +259,6 @@ function bounding_solve(m::PODNonlinearModel)
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
     status_infeasible = [:Infeasible, :InfeasibleOrUnbounded]
-
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
         candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
@@ -266,7 +266,7 @@ function bounding_solve(m::PODNonlinearModel)
             m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol) # Requires proper offseting
         end
         push!(m.logs[:bound], candidate_bound)
-        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
+        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound)
             m.best_bound = candidate_bound
             m.best_bound_sol = copy(candidate_bound_sol)
             m.status[:bounding_solve] = status
