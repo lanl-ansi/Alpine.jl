@@ -51,19 +51,20 @@ function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
     (m.loglevel > 0) && println("\nPOD algorithm presolver started.")
-    (m.loglevel > 0) && println("Performing local solve to obtain a feasible solution.")
+    (m.loglevel > 0) && println("performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
-    # Regarding upcoming changes in status
+    # Possible solver status, return error when see different
     status_pass = [:Optimal, :Suboptimal, :UserLimit]
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass
-        bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
-        (m.presolve_bt) && init_disc(m)      # Reinitialize discretization dictionary on tight bounds
+        m.loglevel > 0 && println("local solver returns feasible point")
+        bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
+        (m.presolve_bt) && init_disc(m)          # Reinitialize discretization dictionary on tight bounds
         (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
-        m.loglevel > 0 && println("Presolve ended.")
+        m.loglevel > 0 && println("presolve ended.")
     elseif m.status[:local_solve] in status_reroute
         (m.loglevel > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
@@ -124,6 +125,7 @@ function check_exit(m::PODNonlinearModel)
     # Optimality check
     m.best_rel_gap <= m.relgap && return true
     m.logs[:n_iter] >= m.maxiter && return true
+    m.best_abs_gap <= m.tol && return true
 
     # Userlimits check
     m.logs[:time_left] < m.tol && return true
@@ -151,84 +153,73 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     if presolve
         if !isempty(var_type_screener) && m.minlp_solver != UnsetSolver()
-            local_solve_model = MathProgBase.NonlinearModel(m.minlp_solver)
+            local_solve_model = interface_init_nonlinear_model(m.minlp_solver)
         elseif !isempty(var_type_screener)
-            local_solve_model = MathProgBase.NonlinearModel(m.nlp_solver)
+            local_solve_model = interface_init_nonlinear_model(m.nlp_solver)
         else
-            local_solve_model = MathProgBase.NonlinearModel(m.nlp_solver)
+            local_solve_model = interface_init_nonlinear_model(m.nlp_solver)
         end
     else
-        local_solve_model = MathProgBase.NonlinearModel(m.nlp_solver)
+        local_solve_model = interface_init_nonlinear_model(m.nlp_solver)
     end
 
     if presolve == false
         l_var, u_var = fix_domains(m)
     else
-        l_var, u_var = m.l_var_orig, m.u_var_orig
+        # l_var, u_var = m.l_var_orig, m.u_var_orig  # change to l_var_tight/u_var_tight ?
+        l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
     end
 
     start_local_solve = time()
-    MathProgBase.loadproblem!(local_solve_model, m.num_var_orig,
-                                                 m.num_constr_orig,
-                                                 l_var,
-                                                 u_var,
-                                                 m.l_constr_orig,
-                                                 m.u_constr_orig,
-                                                 m.sense_orig,
-                                                 m.d_orig)
-
-    (!m.d_orig.want_hess) && MathProgBase.initialize(m.d_orig,[:Grad,:Jac,:Hess,:HessVec,:ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
-    MathProgBase.setwarmstart!(local_solve_model, m.best_sol[1:m.num_var_orig])
+    interface_load_nonlinear_model(m, local_solve_model, l_var, u_var)
+    (!m.d_orig.want_hess) && interface_init_nonlinear_data(m)
+    interface_set_warmstart(local_solve_model, m.best_sol[1:m.num_var_orig])
 
     # The only case when MINLP solver is actually used
     if presolve && !isempty(var_type_screener)
-        m.minlp_solver == UnsetSolver() || MathProgBase.setvartype!(local_solve_model, m.var_type_orig)
-        MathProgBase.optimize!(local_solve_model)
+        m.minlp_solver == UnsetSolver() || interface_set_vartype(local_solve_model, m.var_type_orig)
+        interface_optimize(local_solve_model)
         if m.minlp_solver == UnsetSolver()
             do_heuristic = true
             local_nlp_status = :Heuristics
         else
-            local_nlp_status = MathProgBase.status(local_solve_model)
+            local_nlp_status = interface_get_status(local_solve_model)
             do_heuristic = false
         end
     else
-        MathProgBase.optimize!(local_solve_model)
-        local_nlp_status = MathProgBase.status(local_solve_model)
+        interface_optimize(local_solve_model)
+        local_nlp_status = interface_get_status(local_solve_model)
     end
 
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
 
-    # Symbol Definition
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_heuristic = [:Heuristics]
     status_reroute = [:Infeasible]
 
     if local_nlp_status in status_pass
-        candidate_obj = MathProgBase.getobjval(local_solve_model)
-        push!(m.logs[:obj], candidate_obj)
-        if eval(convertor[m.sense_orig])(candidate_obj, m.best_obj + 1e-5)
-            m.best_obj = candidate_obj
-            m.best_sol = round.(MathProgBase.getsolution(local_solve_model), 5)
-            m.status[:feasible_solution] = :Detected
-        end
+        candidate_obj = interface_get_objval(local_solve_model)
+        candidate_sol = round.(interface_get_solution(local_solve_model), 5)
+        update_incumb_objective(m, candidate_obj, candidate_sol)
         m.status[:local_solve] = local_nlp_status
         return
     elseif local_nlp_status in status_heuristic && do_heuristic
         m.status[:local_solve] = heu_basic_rounding(m, local_solve_model)
         return
     elseif local_nlp_status == :Infeasible
-        push!(m.logs[:obj], "-")
+        heu_pool_multistart(m) == :LocalOptimal && return
+        push!(m.logs[:obj], "INF")
         m.status[:local_solve] = :Infeasible
         return
     elseif local_nlp_status == :Unbounded
-        push!(m.logs[:obj], "-")
+        push!(m.logs[:obj], "U")
         m.status[:local_solve] = :Unbounded
         presolve == true ? warn("[PRESOLVE] NLP local solve is unbounded.") : warn("[LOCAL SOLVE] NLP local solve is unbounded.")
         return
     else
-        push!(m.logs[:obj], "-")
+        push!(m.logs[:obj], "E")
         m.status[:local_solve] = :Error
 		presolve == true ? warn("[PRESOLVE] NLP solve failure $(local_nlp_status).") : warn("[LOCAL SOLVE] NLP local solve failure.")
         return
@@ -236,7 +227,6 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     return
 end
-
 
 
 """
@@ -269,7 +259,6 @@ function bounding_solve(m::PODNonlinearModel)
     status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
     status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
     status_infeasible = [:Infeasible, :InfeasibleOrUnbounded]
-
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
         candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
@@ -277,12 +266,13 @@ function bounding_solve(m::PODNonlinearModel)
             m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol) # Requires proper offseting
         end
         push!(m.logs[:bound], candidate_bound)
-        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound + 1e-10)
+        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound)
             m.best_bound = candidate_bound
             m.best_bound_sol = copy(candidate_bound_sol)
             m.status[:bounding_solve] = status
             m.status[:bound] = :Detected
         end
+        collect_lb_pool(m)    # Always collect details sub-optimal solution
     elseif status in status_infeasible
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = :Infeasible

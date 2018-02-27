@@ -32,12 +32,15 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
         end
     end
 
-    # Experimental Code
+    # Experimental Code for Integer Problems
     if m.int_enable
         for i in 1:m.num_var_orig
             m.var_type[i] == :Int && amp_convexify_integer(m, i, λ, α, d)
         end
     end
+
+    # Experimental code for Warm starting
+    m.convhull_warmstart && !isempty(m.best_bound_sol) && amp_warmstart_α(m, α)
 
     return
 end
@@ -53,7 +56,7 @@ function amp_convexify_integer(m::PODNonlinearModel, idx::Int, λ::Dict, α::Dic
     # Easy way to check whether integer variable idx has been discretized already
     haskey(α, idx) && return
 
-    println("Resolving SOLE integer VAR$(idx) ..")
+    # println("Resolving SOLE integer VAR$(idx) ..")
     # Main Convexification Steps
     indices, dim, ext_cnt = amp_convhull_prepare(m, d, idx)
     λ = amp_convhull_λ(m, idx, λ, ext_cnt, dim)
@@ -349,6 +352,58 @@ function amp_convhull_α(m::PODNonlinearModel, indices::Any, α::Dict, dim::Tupl
 end
 
 amp_convhull_α(m::PODNonlinearModel, idx::Int, α::Dict, dim, d::Dict) = amp_convhull_α(m, [idx], α, dim, d)
+
+function amp_no_good_cut_α(m::PODNonlinearModel, α::Dict)
+
+    println("Global Incumbent solution objective = $(m.best_obj)")
+
+    for i in 1:m.bound_sol_pool[:cnt]
+        (m.bound_sol_pool[:stat][i] == :Cutoff) && (m.bound_sol_pool[:stat][i] = :Alive)
+        if m.best_obj < m.bound_sol_pool[:obj][i] && m.bound_sol_pool[:stat][i] == :Alive
+            no_good_idxs = keys(m.bound_sol_pool[:disc][i])
+            no_good_size = length(no_good_idxs) - 1
+            @constraint(m.model_mip, sum(α[v][m.bound_sol_pool[:disc][i][v]] for v in no_good_idxs) <= no_good_size)
+            println("!! GLOBAL cuts off POOL_SOL-$(i) POOL_OBJ=$(m.bound_sol_pool[:obj][i])!")
+            m.bound_sol_pool[:stat][i] = :Cutoff
+        end
+    end
+
+    return
+end
+
+function amp_warmstart_α(m::PODNonlinearModel, α::Dict)
+
+    d = m.discretization
+
+    if m.bound_sol_pool[:cnt] >= 2 # can only warm-start the problem when pool is large enough
+        ws_idx = -1
+        m.sense_orig == :Min ? ws_obj = Inf : ws_obj = -Inf
+        comp_opr = Dict(:Min=>:<, :Max=>:>)
+
+        # Search for the pool for incumbent warm starter
+        for i in 1:m.bound_sol_pool[:cnt]
+            m.bound_sol_pool[:stat][i] == :Warmstarter && (m.bound_sol_pool[:stat][i] = :Alive)   # reset the status if not dead
+            if m.bound_sol_pool[:stat][i] != :Dead && eval(comp_opr[m.sense_orig])(m.bound_sol_pool[:obj][i], ws_obj)
+                ws_idx = i
+                ws_obj = m.bound_sol_pool[:obj][i]
+            end
+        end
+
+        if ws_idx > 0 # If a warm starter is found
+            for v in m.bound_sol_pool[:vars]
+                partition_cnt = length(d[v])-1
+                active_j = get_active_partition_idx(d, m.bound_sol_pool[:sol][ws_idx][v], v)
+                for j = 1:partition_cnt
+                    j == active_j ? setvalue(α[v][j], 1.0) : setvalue(α[v][j], 0.0)
+                end
+            end
+            m.bound_sol_pool[:stat][ws_idx] = :Warmstarter
+            println("!! WARM START bounding MIP using POOL SOL $(ws_idx) OBJ=$(m.bound_sol_pool[:obj][ws_idx])")
+        end
+    end
+
+    return
+end
 
 """
     Method for general multilinear terms with/without integer variables
@@ -721,25 +776,4 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
 	end
 
 	return indices
-end
-
-function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
-
-    @assert length(sol_vec) == m.num_var_orig
-    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
-
-    for i in 1:length(m.nonconvex_terms)
-        for bi in keys(m.nonconvex_terms)
-            if m.nonconvex_terms[bi][:id] == i
-                lvar_idx = m.num_var_orig + i
-                if haskey(m.nonconvex_terms[bi], :evaluator)
-                    sol_vec[lvar_idx] = m.nonconvex_terms[bi][:evaluator](m.nonconvex_terms[bi], sol_vec)
-                else
-                    sol_vec[lvar_idx] = 0.5*m.discretization[lvar_idx][1] + 0.5*m.discretization[lvar_idx][end]
-                end
-            end
-        end
-    end
-
-    return sol_vec
 end

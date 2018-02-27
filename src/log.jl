@@ -102,26 +102,45 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     b_len = 14
+
     if isa(m.logs[:obj][end], Float64)
-        UB_block = string(" ", round(m.logs[:obj][end],4), " " ^ (b_len - length(string(round(m.logs[:obj][end], 4)))))
+        objstr = string(round(m.logs[:obj][end],4))
+        spc = max(0, b_len - length(objstr))
     else
-        UB_block = string(" ", string(m.logs[:obj][end]), " " ^ (b_len - length(string(m.logs[:obj][end]))))
+        objstr = string(m.logs[:obj][end])
+        spc = max(0, b_len - length(objstr))
     end
+    UB_block = string(" ", objstr, " " ^ spc)
+
     if isa(m.logs[:bound][end], Float64)
-        bdval = m.logs[:bound][end]
-        LB_block = string(" ", round(m.logs[:bound][end],4), " " ^ (b_len - length(string(round(m.logs[:bound][end], 4)))))
+        bdstr = string(round(m.logs[:bound][end],4))
+        spc = max(0, b_len - length(bdstr))
     else
-        LB_block = string(" ", string(m.logs[:bound][end]), " " ^ (b_len - length(string(m.logs[:bound][end]))))
+        bdstr = string(m.logs[:bound][end])
+        spc = b_len - length(bdstr)
     end
-    incumb_UB_block = string(" ", round(m.best_obj,4), " " ^ (b_len - length(string(round(m.best_obj, 4)))))
-    incumb_LB_block = string(" ", round(m.best_bound,4), " " ^ (b_len - length(string(round(m.best_bound, 4)))))
-    GAP_block = string(" ", round(m.best_rel_gap*100,5), " " ^ (b_len - length(string(round(m.best_rel_gap*100,5)))))
+    LB_block = string(" ", bdstr, " " ^ spc)
+
+    bobjstr = string(round(m.best_obj,4))
+    spc = max(0, b_len - length(bobjstr))
+    incumb_UB_block = string(" ", bobjstr, " " ^ spc)
+
+    bbdstr = string(round(m.best_bound,4))
+    spc = max(0, b_len - length(bbdstr))
+    incumb_LB_block = string(" ", bbdstr , " " ^ spc)
+
+    rel_gap = round(m.best_rel_gap*100, 5)
+    rel_gap > 999 ? rel_gap = "LARGE" : rel_gap = string(rel_gap)
+    GAP_block = string(" ", rel_gap, " " ^ (b_len - length(rel_gap)))
+
     UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
+
     if m.logs[:time_left] < Inf
 		LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
 	else
 		LTIME_block = " "
 	end
+
     haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish")) : (ITER_block = string(" ", m.logs[:n_iter]))
 
     if m.colorful_pod == "random"

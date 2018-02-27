@@ -217,6 +217,18 @@ end
 
 function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable,lin::JuMP.Variable,lb,ub)
 
+    # TODO think about how to address this issue
+    warnuser = false
+    if ub == Inf
+        ub = 1e4
+        warnuser = true
+    end
+
+    if lb == -Inf
+        lb = -1e4
+        warnuser = true
+    end
+
     if lb >= 0
         @constraint(m, binlin <= ub*bin)
         @constraint(m, binlin <= lin)
@@ -229,6 +241,9 @@ function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable
         @constraint(m, binlin <= lin - (1-bin)*lb)
         @constraint(m, binlin >= lin - (1-bin)*ub)
     end
+
+    # Second position to handle inf bounds
+    warnuser && warn("BINLIN term exception using -1e4/1e4 as lb/ub", once=true)
 
     return
 end

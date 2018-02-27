@@ -130,7 +130,7 @@ function collect_nonconvex_vars(m::PODNonlinearModel)
     end
 
 	# TODO : reconsider how to structure this
-	# NOTE : Walk through all nonconvex variables
+	# NOTE : Walk through all integer variables that didn't apper in any nonconvex terms
 	for i in 1:m.num_var_orig
 		if !(i in m.candidate_disc_vars) && m.var_type[i] == :Int
 			push!(m.candidate_disc_vars, i)

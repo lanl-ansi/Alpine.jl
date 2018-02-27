@@ -14,6 +14,7 @@ include("const.jl")
 
 # Engine for High-level Algorithmic Control and User-interface
 include("solver.jl")
+include("mpb2moi.jl") # Transition file
 
 # Engine for expression handling
 include("nlexpr.jl")

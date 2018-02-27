@@ -138,6 +138,8 @@ function amp_post_affine_constraint(model_mip::JuMP.Model, affine::Dict)
     elseif affine[:sense] == :(==)
         @constraint(model_mip,
             sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) == affine[:rhs])
+    else
+        error("Unkown sense.")
     end
 
     return
@@ -249,14 +251,15 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
 
         # @show i, point, discretization[i] # Debugger
         # Apply special and user methods
-        for injector in m.method_partition_injection
-            injector(m, i, discretization[i], point, ratio, processed)
-        end
+        # Disabled for testing performance
+        # for injector in m.method_partition_injection
+        #     injector(m, i, discretization[i], point, ratio, processed)
+        # end
 
         # Built-in method based-on variable type
         if m.var_type[i] == :Cont
             i in processed && continue
-            point = correct_point(m, discretization[i], point)
+            point = correct_point(m, discretization[i], point, i)
             for j in 1:λCnt
                 if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
                     radius = calculate_radius(discretization[i], j, ratio)
@@ -287,10 +290,10 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
     return discretization
 end
 
-function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64)
+function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - m.tol || point > partvec[end] + m.tol
-        warn("Soluiton SOL=$(point) out of bounds [$(partvec[1]),$(partvec[end])]. Taking middle point...")
+        warn("VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point...")
         return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
     end
 

@@ -33,11 +33,13 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretizations
     disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretizations
     disc_consecutive_forbid::Int                                # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
-    disc_ratio_branch::Bool
+    disc_ratio_branch::Bool                                     # Branching tests for picking fixed disc ratios
 
     # Convexifications Formulation Parameters
     convhull_formulation::String                                # Formulation to used for relaxation
-    convhull_ebd::Bool
+    convhull_warmstart::Bool                                    # Warm start the bounding MIP
+    convhull_no_good_cuts::Bool                                 # Add no good cuts to MIP base on pool solutions
+    convhull_ebd::Bool                                          # Enable embedding formulation
     convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
     convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
     convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
@@ -144,7 +146,9 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     best_sol::Vector{Float64}                                   # Best feasible solution
     best_bound_sol::Vector{Float64}                             # Best bound solution
     best_rel_gap::Float64                                       # Relative optimality gap = |best_bound - best_obj|/|best_obj|
+    best_abs_gap::Float64                                       # Absolute gap = |best_bound - best_obj|
     bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by parameter disc_consecutive_forbid
+    bound_sol_pool::Dict{Any, Any}                              # A pool of solutions from solving model_mip
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
@@ -178,6 +182,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 convhull_ebd_encode,
                                 convhull_ebd_ibs,
                                 convhull_ebd_link,
+                                convhull_warmstart,
+                                convhull_no_good_cuts,
                                 presolve_track_time,
                                 presolve_bt,
                                 presolve_maxiter,
@@ -226,6 +232,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.convhull_ebd_encode = convhull_ebd_encode
         m.convhull_ebd_ibs = convhull_ebd_ibs
         m.convhull_ebd_link = convhull_ebd_link
+        m.convhull_warmstart = convhull_warmstart
+        m.convhull_no_good_cuts = convhull_no_good_cuts
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bt = presolve_bt
@@ -277,6 +285,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.num_var_disc_mip = 0
         m.num_constr_convex = 0
         m.constr_structure = []
+        m.best_bound_sol = []
         m.bound_sol_history = []
 
         m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
@@ -284,6 +293,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.best_obj = Inf
         m.best_bound = -Inf
         m.best_rel_gap = Inf
+        m.best_abs_gap = Inf
         m.pod_status = :NotLoaded
 
         create_status!(m)
@@ -333,6 +343,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     convhull_ebd_encode::Any
     convhull_ebd_ibs::Bool
     convhull_ebd_link::Bool
+    convhull_warmstart::Bool
+    convhull_no_good_cuts::Bool
 
     presolve_track_time::Bool
     presolve_bt::Bool
@@ -390,6 +402,8 @@ function PODSolver(;
     convhull_ebd_encode = "default",
     convhull_ebd_ibs = false,
     convhull_ebd_link = false,
+    convhull_warmstart = true,
+    convhull_no_good_cuts = true,
 
     presolve_track_time = true,
     presolve_maxiter = 9999,
@@ -455,6 +469,8 @@ function PODSolver(;
         convhull_ebd_encode,
         convhull_ebd_ibs,
         convhull_ebd_link,
+        convhull_warmstart,
+        convhull_no_good_cuts,
         presolve_track_time,
         presolve_bt,
         presolve_maxiter,
@@ -472,6 +488,7 @@ function PODSolver(;
 
 # Create POD nonlinear model: can solve with nonlinear algorithm only
 function MathProgBase.NonlinearModel(s::PODSolver)
+
     if !applicable(MathProgBase.NonlinearModel, s.nlp_solver)
         error("NLP local solver $(s.nlp_solver) specified is not a NLP solver recognized by POD\n")
     end
@@ -513,6 +530,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     convhull_ebd_encode = s.convhull_ebd_encode
     convhull_ebd_ibs = s.convhull_ebd_ibs
     convhull_ebd_link = s.convhull_ebd_link
+    convhull_warmstart = s.convhull_warmstart
+    convhull_no_good_cuts = s.convhull_no_good_cuts
 
     presolve_track_time = s.presolve_track_time
     presolve_bt = s.presolve_bt
@@ -556,6 +575,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             convhull_ebd_encode,
                             convhull_ebd_ibs,
                             convhull_ebd_link,
+                            convhull_warmstart,
+                            convhull_no_good_cuts,
                             presolve_track_time,
                             presolve_bt,
                             presolve_maxiter,
@@ -572,10 +593,14 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 end
 
 function MathProgBase.loadproblem!(m::PODNonlinearModel,
-                                    num_var::Int, num_constr::Int,
-                                    l_var::Vector{Float64}, u_var::Vector{Float64},
-                                    l_constr::Vector{Float64}, u_constr::Vector{Float64},
-                                    sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
+                                   num_var::Int,
+                                   num_constr::Int,
+                                   l_var::Vector{Float64},
+                                   u_var::Vector{Float64},
+                                   l_constr::Vector{Float64},
+                                   u_constr::Vector{Float64},
+                                   sense::Symbol,
+                                   d::MathProgBase.AbstractNLPEvaluator)
 
     # Basic Problem Dimensions
     m.num_var_orig = num_var
@@ -595,12 +620,12 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.d_orig = d
 
     # Initialize NLP interface
-    MathProgBase.initialize(m.d_orig, [:Grad,:Jac,:Hess,:ExprGraph])
+    interface_init_nonlinear_data(m.d_orig)
 
     # Collect objective & constraints expressions
-    m.obj_expr_orig = MathProgBase.obj_expr(d)
+    m.obj_expr_orig = interface_get_obj_expr(m.d_orig)
     for i in 1:m.num_constr_orig
-        push!(m.constr_expr_orig, MathProgBase.constr_expr(d, i))
+        push!(m.constr_expr_orig, interface_get_constr_expr(m.d_orig, i))
     end
 
     # Collect original variable type and build dynamic variable type space
@@ -626,7 +651,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.obj_structure = :none
     m.constr_structure = [:none for i in 1:m.num_constr_orig]
     for i = 1:m.num_constr_orig
-        if MathProgBase.isconstrlinear(m.d_orig, i)
+        if interface_is_constr_linear(m.d_orig, i)
             m.num_lconstr_orig += 1
             m.constr_structure[i] = :generic_linear
         else
@@ -636,7 +661,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
 
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
-    m.is_obj_linear_orig = MathProgBase.isobjlinear(m.d_orig)
+    m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
     # Preload Built-in Special Functions (append special functions to user-functions)
@@ -653,12 +678,21 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     fetch_nlp_solver_identifier(m)
     fetch_minlp_solver_identifier(m)
 
+    # Solver Dependent Options
+    if m.mip_solver_id != :Gurobi
+        m.convhull_warmstart == false
+        m.convhull_no_good_cuts == false
+    end
+
     # Main Algorithmic Initialization
     process_expr(m)                 # Compact process of every expression
     init_tight_bound(m)             # Initialize bounds for algorithmic processes
     resolve_var_bounds(m)           # resolve lifted var bounds
     pick_disc_vars(m)               # Picking variables to be discretized
     init_disc(m)                    # Initialize discretization dictionarys
+
+    # Prepare the solution pool
+    m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
 
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
@@ -674,11 +708,3 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     return
 end
-
-MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.var_start_orig = x)
-MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
-MathProgBase.status(m::PODNonlinearModel) = m.pod_status
-MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
-MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
-MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
-MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]

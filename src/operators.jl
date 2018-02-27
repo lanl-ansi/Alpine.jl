@@ -3,7 +3,7 @@
 
 Recognize and process nonlinear terms in an expression
 """
-function expr_term_parsing(expr, constr_id::Int, m::PODNonlinearModel, level=0; options...)
+function expr_term_parsing(expr::Any, constr_id::Int, m::PODNonlinearModel, level=0; options...)
 
     cnt = 0
     for node in expr.args
@@ -32,7 +32,7 @@ Then, go through all built-in structures and perform operatins to convexify the 
 
 Specific structure pattern information will be described formally.
 """
-function detect_nonconvex_terms(expr, constr_id::Int, m::PODNonlinearModel; kwargs...)
+function detect_nonconvex_terms(expr::Any, constr_id::Int, m::PODNonlinearModel; kwargs...)
 
     # First process user-defined structures in-cases of over-ride
     for i in 1:length(m.term_patterns)
@@ -147,7 +147,7 @@ function lift_linear_term(m::PODNonlinearModel, term_key, constr_id::Int)
     return
 end
 
-function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_linear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
     @assert expr.head == :call
     coef_fetch = Dict(:+ => 1.0, :- => -1.0)
@@ -187,7 +187,7 @@ function detect_linear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 length(sub_vars) != 1 && return false, expr
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
             else
-                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)  # Recursive detection
                 down_check ? expr.args[i] = linear_lift_var : return false, expr
                 push!(coef_var, (1.0, expr.args[i].args[2]))
             end
@@ -274,7 +274,7 @@ bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
 sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
-linear(k, vec) = sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
+linear(k, vec) = sum(k[:ref][:scalar] + [i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
 """
     Recognize prodcuts of binary variables and multilinear products
@@ -284,7 +284,7 @@ linear(k, vec) = sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
     Leads to BINLIN terms, with BINPROD, INTPROD, INTLIN if necessary
 """
-function detect_discretemulti_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_discretemulti_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
     # Alwasy construct the binlin term after lifting
     @assert expr.head == :call
@@ -507,7 +507,7 @@ end
 
 	Leads to BININT terms, with BINPROD, INTPROD if necessary
 """
-function detect_binint_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_binint_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
     @assert expr.head == :call
 
@@ -627,7 +627,7 @@ end
 """
     Recognize products of binary variables : x1 * x2 * .. * xN
 """
-function detect_intprod_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_intprod_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
 	@assert expr.head == :call
     if (expr.args[1] == :*)
@@ -757,7 +757,7 @@ end
 """
     Recognize products of binary variables : x1 * x2 * .. * xN
 """
-function detect_binprod_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_binprod_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
 	@assert expr.head == :call
     if (expr.args[1] == :*)
@@ -846,7 +846,7 @@ end
     Recognize multilinear terms: x1 * x2 * .. * xN, where all x are continous variables
     Recognize monomial terms: x^2 or x * x, where x is continuous
 """
-function detect_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_bilinear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
     @assert expr.head == :call
     if (expr.args[1] == :*)  # confirm head (:*)
@@ -870,6 +870,7 @@ function detect_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
                 continue
             end
         end
+
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && length(Set(var_idxs)) == 2
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
@@ -886,7 +887,7 @@ function detect_bilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function detect_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_multilinear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
     @assert expr.head == :call
     if (expr.args[1] == :*) # Pattern: coefficients * x * y * z ...
@@ -943,7 +944,7 @@ function detect_multilinear_term(expr, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function detect_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_monomial_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
     if (expr.args[1] == :^) && length(expr.args) == 3
         # Pattern: (x)^(2)
@@ -986,7 +987,13 @@ function detect_monomial_term(expr, constr_id::Int, m::PODNonlinearModel)
             (isa(expr.args[i], Symbol)) && continue
             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
             !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
-            (expr.args[i].head == :call) && return false, expr
+            if (expr.args[i].head == :call)
+                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+                !down_check && return false, expr
+                push!(var_idxs, linear_lift_var.args[2])
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+                continue
+            end
         end
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
@@ -1018,6 +1025,9 @@ function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
     end
     if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
         m.l_var_tight[lifted_idx] = minimum(bound)
+        if m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
+            m.l_var_tight[lifted_idx] = 0.0
+        end
     end
     if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
         m.u_var_tight[lifted_idx] = maximum(bound)
@@ -1071,7 +1081,7 @@ end
     Recognize sin/cos terms: sin(x) / cos(x), where x "should" be continous variables
     # TODO future call detect_TRIGONOMETRIC_term
 """
-function detect_sincos_term(expr, constr_id::Int, m::PODNonlinearModel)
+function detect_sincos_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
 
     @assert expr.head == :call
     if expr.args[1] in [:sin, :cos]
@@ -1138,7 +1148,7 @@ end
     Recognize convex constraints
     A scatch for type-A convex constraint expression
 """
-function resolve_convex_constr(expr, m::PODNonlinearModel=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
+function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
 
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
