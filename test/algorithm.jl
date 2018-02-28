@@ -416,7 +416,7 @@ end
     solve(m)
 
     @test m.internalModel.logs[:n_iter] == 1
-    @test m.internalModel.disc_ratio == 17
+    @test m.internalModel.disc_ratio == 16
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi3N.jl exprmode=2" begin
@@ -448,7 +448,7 @@ end
     solve(m)
 
     @test m.internalModel.logs[:n_iter] == 1
-    @test m.internalModel.disc_ratio == 13
+    @test m.internalModel.disc_ratio == 12
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=2" begin
