@@ -13,6 +13,8 @@ POD globally solves a given MINLP by:
 
 * Performing novel adaptive/dynamic partitioning methods to create piecewise relaxations, bound tightening and polyhedral outer-approximations to guarantee global convergence
 
+ **Illustration of POD's dynamic partitioning and outer-approximation on simple functions** ([Source](https://arxiv.org/abs/1707.02514))
+<img src="https://github.com/lanl-ansi/POD.jl/blob/master/Dynamic_partitions_github.png" width="500">
 
 ## Installation
 
