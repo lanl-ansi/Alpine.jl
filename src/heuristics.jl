@@ -79,7 +79,7 @@ function heu_basic_rounding(m::PODNonlinearModel, local_model)
     heuristic_model_status = interface_get_status(heuristic_model)
 
     if heuristic_model_status in [:Infeasible, :Error]
-        println("Rounding obtained an Infeasible point.")
+        m.loglevel > 0 && println("Rounding obtained an Infeasible point.")
         push!(m.logs[:obj], "INF")
         return :Infeasibles
     elseif heuristic_model_status in [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
@@ -100,7 +100,6 @@ end
 """
 function heu_pool_multistart(m::PODNonlinearModel)
 
-    println("Heuristic Local Search : LB pool-based multi-search")
     convertor = Dict(:Max=>:>, :Min=>:<)
     m.sense_orig == :Min ? incumb_obj = Inf : incumb_obj = -Inf
     incumb_sol = []

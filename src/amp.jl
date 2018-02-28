@@ -378,8 +378,9 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
 
-    ratio_pool = [3:1:24;]  # Built-in try range
+    ratio_pool = [4:2:24;]  # Built-in try range
     convertor = Dict(:Max=>:<, :Min=>:>)
+    revconvertor = Dict(:Max=>:>, :Min=>:<)
 
     incumb_ratio = ratio_pool[1]
     m.sense_orig == :Min ? incumb_res = -Inf : incumb_res = Inf
@@ -398,16 +399,17 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
         if eval(convertor[m.sense_orig])(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
             incumb_res = res
             incumb_ratio = r
+        # elseif collector[end]
         end
-        println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
+        m.loglevel > 0 && println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
     if std(res_collector) >= 1e-2    # Detect if all solution are similar to each other
-        println("RATIO BRANCHING OFF due to solution variance test passed.")
+        m.loglevel > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
         m.disc_ratio_branch = false # If a ratio is selected, then stop the branching scheme
     end
 
-    println("INCUMB_RATIO = $(incumb_ratio)")
+    m.loglevel > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
 
     return incumb_ratio
 end
