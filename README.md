@@ -14,7 +14,7 @@ POD globally solves a given MINLP by:
 * Performing novel adaptive/dynamic partitioning methods to create piecewise relaxations, bound tightening and polyhedral outer-approximations to guarantee global convergence
 
 
-# Installation
+## Installation
 
 POD is a currently a private repository under the LANL-ANSI group, which can be installed through the Julia package manager:
 
@@ -22,9 +22,10 @@ POD is a currently a private repository under the LANL-ANSI group, which can be 
 
 Developers: Any further development of POD can be conducted on a new branch or a forked repo.
 
-# Usage
+## Underlying solvers
 
-The design of the POD solver requires a variety of programming problems to be solved under the hood. For algorithmic performance, it is recommended that dedicated solvers be used. The design of POD takes advantage of MathProgBase to allow a majority of optimization softwares to be utilized easily with simple development. Currently, the following solvers with Julia Interface are supported by POD:
+Though the algorithm implemented in POD is quite involved, most of the hard work and computational bottle-neck would arise in the underlying solvers. Since every iteration of POD solves a subproblem to optimality, which is typically a convex MILP/MIQCQP and solves a nonconvex NLP/MINLP to local optimality, POD's run time heavily depends on the quality of these solvers. For best performance of POD, use commercial solvers such as CPLEX/Gurobi. However, due to the flexibility offered by JuMP/MathProgBase, the following solvers are supported in POD: 
+
 
 | Solver                                                                         | Julia Package                                                |
 |--------------------------------------------------------------------------------|--------------------------------------------------------------|
@@ -35,7 +36,7 @@ The design of the POD solver requires a variety of programming problems to be so
 | [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/JackDunnNZ/PODlNLWriter.jl)   |
 | [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/JuliaOpt/KNITRO.jl)           |
 
-As the development of POD continues, supports fo [Mosek](http://www.mosek.com/), [Pajarito](https://github.com/JuliaOpt/Pajarito.jl), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt), [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) are already scheduled on the roadmap.
+As the development of POD continues, support for solvers like [Mosek](http://www.mosek.com/), [Pajarito](https://github.com/JuliaOpt/Pajarito.jl), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt), [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) is in the roadmap.
 
 ## Bug reports and support
 Please report any issues via the Github **[issue tracker]**. All types of issues are welcome and encouraged; this includes bug reports, documentation typos, feature requests, etc. 
@@ -43,7 +44,7 @@ Please report any issues via the Github **[issue tracker]**. All types of issues
 [issue tracker]: https://github.com/lanl-ansi/POD.jl/issues
 
 
-# Citing POD
+## Citing POD
 
 If you find POD useful in your work, we kindly request that you cite the following papers
 ```
