@@ -16,11 +16,11 @@ POD globally solves a given MINLP by:
 
 # Installation
 
-Currently, POD is a private repository that is used by the LANL-ANSI group, the proposed publication is unknown given the upcoming changes in JuMP and MathProgBase that POD needs to adapt to. To install POD,
+POD is a currently a private repository under the LANL-ANSI group, which can be installed through the Julia package manager:
 
 `Pkg.clone("https://github.com/lanl-ansi/POD.git")`
 
-For developers, it is highly recommended that any further development on POD is conducted on a new branch or a forked repo.
+Developers: Any further development of POD can be conducted on a new branch or a forked repo.
 
 # Usage
 
@@ -37,7 +37,13 @@ The design of the POD solver requires a variety of programming problems to be so
 
 As the development of POD continues, supports fo [Mosek](http://www.mosek.com/), [Pajarito](https://github.com/JuliaOpt/Pajarito.jl), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt), [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) are already scheduled on the roadmap.
 
-# Citation
+## Bug reports and support
+Please report any issues via the Github **[issue tracker]**. All types of issues are welcome and encouraged; this includes bug reports, documentation typos, feature requests, etc. 
+
+[issue tracker]: https://github.com/lanl-ansi/POD.jl/issues
+
+
+# Citing POD
 
 If you find POD useful in your work, we kindly request that you cite the following papers
 ```
