@@ -28,7 +28,7 @@ Developers: Any further development of POD can be conducted on a new branch or a
 
 ## Underlying solvers
 
-Though the algorithm implemented in POD is quite involved, most of the hard work and computational bottle-neck would arise in the underlying solvers. Since every iteration of POD solves a subproblem to optimality, which is typically a convex MILP/MIQCQP and solves a nonconvex NLP/MINLP to local optimality, POD's run time heavily depends on the quality of these solvers. For best performance of POD, use commercial solvers such as CPLEX/Gurobi. However, due to the flexibility offered by JuMP/MathProgBase, the following solvers are supported in POD: 
+Though the algorithm implemented in POD is quite involved, most of the hard work and computational bottleneck would arise in the underlying solvers. Since every iteration of POD solves a subproblem to optimality, which is typically a convex MILP/MIQCQP and solves a nonconvex NLP/MINLP to local optimality, POD's run time heavily depends on the quality of these solvers. For best performance of POD, use commercial solvers such as CPLEX/Gurobi. However, due to the flexibility offered by JuMP/MathProgBase, the following solvers are supported in POD: 
 
 
 | Solver                                                                         | Julia Package                                                |
