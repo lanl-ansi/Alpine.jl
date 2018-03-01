@@ -269,12 +269,12 @@ function resolve_inf_bounds(m::PODNonlinearModel)
     for i in m.candidate_disc_vars
         if m.l_var_tight[i] == -Inf
             warnuser = true
-            m.l_var_tight[i] = -10e3
+            m.l_var_tight[i] = -10e4
             infcount += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
-            m.u_var_tight[i] = 10e3
+            m.u_var_tight[i] = 10e4
             infcount +=1
         end
     end

@@ -389,7 +389,7 @@ function PODSolver(;
     constr_patterns = Array{Function}(0),
 
     disc_var_pick = 2,                     # By default use the 15-variable selective rule
-    disc_ratio = 4,
+    disc_ratio = 12,
     disc_uniform_rate = 2,
     disc_add_partition_method = "adaptive",
     disc_abs_width_tol = 1e-4,

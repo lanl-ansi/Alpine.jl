@@ -399,14 +399,18 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
         if eval(convertor[m.sense_orig])(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
             incumb_res = res
             incumb_ratio = r
-        # elseif collector[end]
+        end
+        et = time() - st
+        if et > 300  # 5 minutes limitation
+            println("Expensive disc branching pass... Fixed at 8")
+            return 8
         end
         m.loglevel > 0 && println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
     if std(res_collector) >= 1e-2    # Detect if all solution are similar to each other
         m.loglevel > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
-        m.disc_ratio_branch = false # If a ratio is selected, then stop the branching scheme
+        m.disc_ratio_branch = false # If an incumbent ratio is selected, then stop the branching scheme
     end
 
     m.loglevel > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
