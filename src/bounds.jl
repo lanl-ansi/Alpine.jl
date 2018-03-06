@@ -266,20 +266,20 @@ function resolve_inf_bounds(m::PODNonlinearModel)
     infcount = 0
 
     # Only specify necessary bounds
-    for i in m.candidate_disc_vars
+    for i in m.disc_vars
         if m.l_var_tight[i] == -Inf
             warnuser = true
-            m.l_var_tight[i] = -10e4
+            m.l_var_tight[i] = -m.largebound
             infcount += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
-            m.u_var_tight[i] = 10e4
+            m.u_var_tight[i] = m.largebound
             infcount +=1
         end
     end
 
-    warnuser && println("Inf bound detected on $(infcount) variables. Initialize with value -10e4/10e4. This may affect global optimality and performance.")
+    warnuser && println("Inf bound detected on $(infcount) variables. Initialize with value -/+$(m.largebound). This may affect global optimality and performance.")
 
     return
 end

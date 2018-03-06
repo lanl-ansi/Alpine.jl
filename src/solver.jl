@@ -12,6 +12,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     relgap::Float64                                             # Relative optimality gap termination condition
     absgap::Float64                                             # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
+    largebound::Float64                                          # Presumed large bound for problems with unbounded variables
 
     # convexification method tuning
     recognize_convex::Bool                                      # recognize convex expressions in parsing objective functions and constraints
@@ -157,7 +158,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # constructor
     function PODNonlinearModel(colorful_pod,
-                                loglevel, timeout, maxiter, relgap, tol,
+                                loglevel, timeout, maxiter, relgap, tol, largebound,
                                 nlp_solver,
                                 minlp_solver,
                                 mip_solver,
@@ -207,6 +208,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.maxiter = maxiter
         m.relgap = relgap
         m.tol = tol
+        m.largebound = largebound
 
         m.recognize_convex = recognize_convex
         m.bilinear_mccormick = bilinear_mccormick
@@ -314,6 +316,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     maxiter::Int
     relgap::Float64
     tol::Float64
+    largebound::Float64
 
     nlp_solver::MathProgBase.AbstractMathProgSolver
     minlp_solver::MathProgBase.AbstractMathProgSolver
@@ -373,6 +376,7 @@ function PODSolver(;
     maxiter = 99,
     relgap = 1e-4,
     tol = 1e-6,
+    largebound = 1e4,
 
     nlp_solver = UnsetSolver(),
     minlp_solver = UnsetSolver(),
@@ -444,7 +448,7 @@ function PODSolver(;
 
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(colorful_pod,
-        loglevel, timeout, maxiter, relgap, tol,
+        loglevel, timeout, maxiter, relgap, tol, largebound,
         deepcopy(nlp_solver),
         deepcopy(minlp_solver),
         deepcopy(mip_solver),
@@ -501,6 +505,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     maxiter = s.maxiter
     relgap = s.relgap
     tol = s.tol
+    largebound = s.largebound
 
     recognize_convex = s.recognize_convex
     bilinear_mccormick = s.bilinear_mccormick
@@ -550,7 +555,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     int_fully_disc = s.int_fully_disc
 
     return PODNonlinearModel(colorful_pod,
-                            loglevel, timeout, maxiter, relgap, tol,
+                            loglevel, timeout, maxiter, relgap, tol, largebound,
                             nlp_solver,
                             minlp_solver,
                             mip_solver,
