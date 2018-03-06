@@ -220,12 +220,12 @@ function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable
     # TODO think about how to address this issue
     warnuser = false
     if ub == Inf
-        ub = 1e6
+        ub = 1e4
         warnuser = true
     end
 
     if lb == -Inf
-        lb = -1e6
+        lb = -1e4
         warnuser = true
     end
 

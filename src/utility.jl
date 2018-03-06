@@ -295,11 +295,15 @@ function merge_solution_pool(m::PODNonlinearModel, s::Dict)
     end
 
     for i in 1:s[:cnt] # Now perform the merge
-        act = true # Then check if the update pool solution active partition idex is within the deactivated region
+        act = true # Then check if the update pool solution active partition index is within the deactivated region
         for v in var_idxs
             (s[:disc][i][v] in lbv2p[v]) || (act = false)
             act || (s[:stat][i] = :Dead)
             act || break
+        end
+        # Reject solutions that is around best bound to avoid traps
+        if isapprox(s[:obj][i], m.best_bound;atol=m.tol)
+            s[:stat][i] = :Dead
         end
         push!(m.bound_sol_pool[:sol], s[:sol][i])
         push!(m.bound_sol_pool[:obj], s[:obj][i])
@@ -314,9 +318,9 @@ function merge_solution_pool(m::PODNonlinearModel, s::Dict)
     m.bound_sol_pool[:vars] = var_idxs
 
     # Show the summary
-    m.loglevel > 0 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
+    m.loglevel > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
     for i in 1:m.bound_sol_pool[:cnt]
-        m.loglevel > 0 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
+        m.loglevel > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
     end
 
     return

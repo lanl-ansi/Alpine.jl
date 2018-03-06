@@ -347,10 +347,10 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::N
         ub_local = partvec[pos+1]
         chunk = (ub_local - lb_local)/2
         point = lb_local + (ub_local - lb_local) / 2
-        insert!(partvec, pos, lb_local + chunk)
+        insert!(partvec, pos+1, lb_local + chunk)
         (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(round(point,4)) |$(round(lb_local,4)) | 2 SEGMENTS | $(round(ub_local,4))|")
     else
-        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(round(radius,4)), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
     end
 
     return
