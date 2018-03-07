@@ -266,7 +266,7 @@ function resolve_inf_bounds(m::PODNonlinearModel)
     infcount = 0
 
     # Only specify necessary bounds
-    for i in m.disc_vars
+    for i in m.candidate_disc_vars
         if m.l_var_tight[i] == -Inf
             warnuser = true
             m.l_var_tight[i] = -m.largebound
