@@ -8,7 +8,11 @@ using JuMP
 using MathProgBase
 using Compat
 
-PODDEBUG && using Gurobi
+using Requires: @require
+
+@require Gurobi begin
+    import Gurobi
+end
 
 include("const.jl")
 
