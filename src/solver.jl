@@ -10,9 +10,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     maxiter::Int                                                # Target Maximum Iterations
     relgap::Float64                                             # Relative optimality gap termination condition
+    gapref::AbstractString                                      # Relative gap reference point
     absgap::Float64                                             # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
-    largebound::Float64                                          # Presumed large bound for problems with unbounded variables
+    largebound::Float64                                         # Presumed large bound for problems with unbounded variables
 
     # convexification method tuning
     recognize_convex::Bool                                      # recognize convex expressions in parsing objective functions and constraints
@@ -158,7 +159,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # constructor
     function PODNonlinearModel(colorful_pod,
-                                loglevel, timeout, maxiter, relgap, tol, largebound,
+                                loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                                 nlp_solver,
                                 minlp_solver,
                                 mip_solver,
@@ -207,6 +208,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.timeout = timeout
         m.maxiter = maxiter
         m.relgap = relgap
+        m.gapref = gapref
+        m.absgap = absgap
         m.tol = tol
         m.largebound = largebound
 
@@ -315,6 +318,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     timeout::Float64
     maxiter::Int
     relgap::Float64
+    gapref::AbstractString
+    absgap::Float64
     tol::Float64
     largebound::Float64
 
@@ -375,6 +380,8 @@ function PODSolver(;
     timeout = Inf,
     maxiter = 99,
     relgap = 1e-4,
+    gapref = "ub",
+    absgap = 1e-6,
     tol = 1e-6,
     largebound = 1e4,
 
@@ -393,7 +400,7 @@ function PODSolver(;
     constr_patterns = Array{Function}(0),
 
     disc_var_pick = 2,                     # By default use the 15-variable selective rule
-    disc_ratio = 12,
+    disc_ratio = 4,
     disc_uniform_rate = 2,
     disc_add_partition_method = "adaptive",
     disc_abs_width_tol = 1e-4,
@@ -435,6 +442,8 @@ function PODSolver(;
     nlp_solver == UnsetSolver() && error("No NLP local solver specified (set nlp_solver)\n")
     mip_solver == UnsetSolver() && error("NO MIP solver specififed (set mip_solver)\n")
 
+    gapref in ["ub", "lb"] || error("Gap calculation only takes 'ub' pr 'lb'")
+
     # String Code Conversion
     if disc_var_pick in ["ncvar_collect_nodes", "all", "max"]
         disc_var_pick = 0
@@ -448,7 +457,7 @@ function PODSolver(;
 
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(colorful_pod,
-        loglevel, timeout, maxiter, relgap, tol, largebound,
+        loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
         deepcopy(minlp_solver),
         deepcopy(mip_solver),
@@ -504,6 +513,8 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     timeout = s.timeout
     maxiter = s.maxiter
     relgap = s.relgap
+    gapref = s.gapref
+    absgap = s.absgap
     tol = s.tol
     largebound = s.largebound
 
@@ -555,7 +566,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     int_fully_disc = s.int_fully_disc
 
     return PODNonlinearModel(colorful_pod,
-                            loglevel, timeout, maxiter, relgap, tol, largebound,
+                            loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                             nlp_solver,
                             minlp_solver,
                             mip_solver,

@@ -125,7 +125,7 @@ function check_exit(m::PODNonlinearModel)
     # Optimality check
     m.best_rel_gap <= m.relgap && return true
     m.logs[:n_iter] >= m.maxiter && return true
-    m.best_abs_gap <= m.tol && return true
+    m.best_abs_gap <= m.absgap && return true
 
     # Userlimits check
     m.logs[:time_left] < m.tol && return true

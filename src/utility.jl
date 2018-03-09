@@ -27,8 +27,11 @@ function update_opt_gap(m::PODNonlinearModel)
             m.best_rel_gap = 0.0
             return
         end
-        # m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
-        m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_bound))
+        if m.gapref == "ub"
+            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+        else
+            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_bound))
+        end
     end
 
     m.best_abs_gap = abs(m.best_obj - m.best_bound)
@@ -134,9 +137,9 @@ function update_boundstop_options(m::PODNonlinearModel)
     if m.mip_solver_id == "Gurobi"
         # Calculation of the bound
         if m.sense_orig == :Min
-            stopbound = (1-m.relgap+m.tol) * m.best_obj
+            m.gapref == "ub" ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
         elseif m.sense_orig == :Max
-            stopbound = (1+m.relgap-m.tol) * m.best_obj
+            m.gapref == "ub" ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
         end
 
         for i in 1:length(m.mip_solver.options)
@@ -240,8 +243,8 @@ function collect_lb_pool(m::PODNonlinearModel)
     # Always stick to the structural .discretization for algorithm consideration info
     # If in need, the scheme need to be refreshed with customized discretization info
 
-    if !(m.mip_solver_id == "Gurobi")
-        warn("Unsupported MILP solver for collecting solution pool") # Only feaible with Gurobi solver
+    if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex
+        warn("Unsupported condition for collecting solution pool", once=true) # Only feaible with Gurobi solver
         return
     end
 

@@ -240,7 +240,7 @@ end
 
 @testset " Validation Test || AMP || multi4N || N = 2 || exprmode=1:11" begin
 
-    objBoundVec = Any[4.68059, 12.0917, 8.94604, 10.0278, 8.10006, 6.6384, 12.5265, 7.39747, 6.02928, 7.91467, 7.88307]
+    objBoundVec = Any[4.68059, 12.0917, 8.94604, 10.0278, 8.5228, 6.0773, 11.496, 7.3975, 6.1006, 8.9767, 7.451]
     objValVec = Any[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
     for i in 1:11
         test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),

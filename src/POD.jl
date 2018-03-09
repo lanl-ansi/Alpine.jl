@@ -2,7 +2,7 @@ __precompile__()
 
 module POD
 
-PODDEBUG = false
+PODDEBUG = true
 
 using JuMP
 using MathProgBase
