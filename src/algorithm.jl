@@ -50,8 +50,8 @@ end
 function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
-    (m.loglevel > 0) && println("\nPOD algorithm presolver started.")
-    (m.loglevel > 0) && println("performing local solve to obtain a feasible solution.")
+    m.loglevel > 0 && println("\nPOD algorithm presolver started.")
+    m.loglevel > 0 && println("performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
     # Possible solver status, return error when see different
@@ -61,8 +61,8 @@ function presolve(m::PODNonlinearModel)
     if m.status[:local_solve] in status_pass
         m.loglevel > 0 && println("local solver returns feasible point")
         bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-        (m.presolve_bt) && init_disc(m)          # Reinitialize discretization dictionary on tight bounds
-        (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
+        m.presolve_bt && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
+        m.disc_ratio_branch && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
         m.loglevel > 0 && println("presolve ended.")
     elseif m.status[:local_solve] in status_reroute

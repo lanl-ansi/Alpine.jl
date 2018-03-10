@@ -52,7 +52,7 @@ function update_incumb_objective(m::PODNonlinearModel, objval::Float64, sol::Vec
 
     convertor = Dict(:Max=>:>, :Min=>:<)
     push!(m.logs[:obj], objval)
-    if eval(convertor[m.sense_orig])(objval, m.best_obj) && !eval(convertor[m.sense_orig])(objval, m.best_bound)
+    if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
         m.best_obj = objval
         m.best_sol = sol
         m.status[:feasible_solution] = :Detected

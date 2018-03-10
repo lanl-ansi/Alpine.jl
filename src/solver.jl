@@ -399,7 +399,7 @@ function PODSolver(;
     term_patterns = Array{Function}(0),
     constr_patterns = Array{Function}(0),
 
-    disc_var_pick = 2,                     # By default use the 15-variable selective rule
+    disc_var_pick = 2,                      # By default use the 15-variable selective rule
     disc_ratio = 4,
     disc_uniform_rate = 2,
     disc_add_partition_method = "adaptive",
@@ -417,8 +417,8 @@ function PODSolver(;
     convhull_no_good_cuts = true,
 
     presolve_track_time = true,
-    presolve_maxiter = 9999,
-    presolve_bt = false,
+    presolve_maxiter = 99,
+    presolve_bt = nothing,
     presolve_bt_width_tol = 1e-3,
     presolve_bt_output_tol = 1e-5,
     presolve_bt_algo = 1,
@@ -650,6 +650,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
+    # Turn-on bt presolver if not discrete variables
+    if isempty(m.int_vars) && isempty(m.bin_vars) && m.presolve_bt == nothing
+        m.presolve_bt = true
+        m.presolve_bt_algo = 1
+        println("Automatically turning on bound-tightening presolver...")
+    end
+
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
 
@@ -701,13 +708,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
 
     # Main Algorithmic Initialization
-    process_expr(m)                 # Compact process of every expression
-    init_tight_bound(m)             # Initialize bounds for algorithmic processes
-    resolve_var_bounds(m)           # resolve lifted var bounds
-    pick_disc_vars(m)               # Picking variables to be discretized
-    init_disc(m)                    # Initialize discretization dictionarys
+    process_expr(m)                  # Compact process of every expression
+    init_tight_bound(m)              # Initialize bounds for algorithmic processes
+    resolve_var_bounds(m)            # resolve lifted var bounds
+    pick_disc_vars(m)                # Picking variables to be discretized
+    init_disc(m)                     # Initialize discretization dictionarys
 
-    # Prepare the solution pool
+    # Initialize the solution pool
     m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
 
     # Record the initial solution from the warmstarting value, if any

@@ -63,6 +63,9 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
     # Regulating Special Input Conditions: default use best feasible solution objective value
     (use_bound == true) ? bound = m.best_obj : bound = Inf
+    l_var_orig = copy(m.l_var_tight)
+    u_var_orig = copy(m.u_var_tight)
+
     discretization = to_discretization(m, m.l_var_tight, m.u_var_tight)
     if use_bound == false && haskey(options, :use_tmc)
         (m.loglevel > 0) && warn("[BOUND TIGHTENING ALGO] TMC chosen by the user, but local solve infeasible; defaulting to doing bound-tightening without TMC.")
@@ -73,7 +76,6 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     discretization = resolve_var_bounds(m, discretization) # recomputation of bounds for lifted_variables
 
     (m.loglevel > 0) && println("starting the bound-tightening algorithm ...")
-    (m.loglevel > 99) && [println("[DEBUG] VAR $(var_idx) Original Bound [$(round(m.l_var_tight[var_idx],4)) < - > $(round(m.u_var_tight[var_idx],4))]") for var_idx in m.candidate_disc_vars]
 
     # start of the solve
     keeptightening = true
@@ -100,37 +102,35 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                         print("!")
                         temp_bounds[var_idx][tell_side[sense]] = temp_bounds[var_idx][tell_side[sense]]
                     end
-                    m.loglevel > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
+                    m.loglevel > 199 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
             end
         end
 
         # Updates the discretization structure
         for var_idx in m.candidate_disc_vars
-            if abs((temp_bounds[var_idx][1] - discretization[var_idx][1])/discretization[var_idx][1]) > m.presolve_bt_width_tol
-                (m.loglevel > 0) && print("+")
+            if temp_bounds[var_idx][1] >= discretization[var_idx][1] + m.presolve_bt_width_tol
+                (m.loglevel > 99) && print("+")
                 keeptightening = true # Continue to perform the next iteration
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
             end
-            if abs((discretization[var_idx][end]-temp_bounds[var_idx][end])/discretization[var_idx][end]) > m.presolve_bt_width_tol
-                (m.loglevel > 0) && print("+")
+            if discretization[var_idx][end] <= temp_bounds[var_idx][end] - m.presolve_bt_width_tol
+                (m.loglevel > 99) && print("+")
                 keeptightening = true
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
             end
         end
-
+        (m.loglevel > 0) && print("\n")
         discretization = resolve_var_bounds(m, discretization)
         haskey(options, :use_tmc) ? discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization)) : discretization = discretization
     end
 
     (m.loglevel > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
 
-    # Update the bounds with the tightened ones
-    # @show discretization
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
-    (m.loglevel > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
+    (m.loglevel > 0)  && [println("[DEBUG] VAR $(i) BOUND contracted $(round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]),2)*100)% |$(round(l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
     (m.loglevel > 0) && print("\n")
     return
 end
