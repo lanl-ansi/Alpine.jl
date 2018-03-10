@@ -48,7 +48,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_bt::Bool                                           # Perform bound tightening procedure before main algorithm
+    presolve_bt::Any                                            # Perform bound tightening procedure before main algorithm
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
@@ -312,6 +312,7 @@ type UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 type PODSolver <: MathProgBase.AbstractMathProgSolver
+
     colorful_pod::Any
 
     loglevel::Int
@@ -355,7 +356,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     convhull_no_good_cuts::Bool
 
     presolve_track_time::Bool
-    presolve_bt::Bool
+    presolve_bt::Any
     presolve_maxiter::Int
     presolve_bt_width_tol::Float64
     presolve_bt_output_tol::Float64
@@ -651,10 +652,12 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
     # Turn-on bt presolver if not discrete variables
-    if isempty(m.int_vars) && isempty(m.bin_vars) && m.presolve_bt == nothing
+    if isempty(m.int_vars) && isempty(m.bin_vars) && m.presolve_bt == nothing # Special case of no user indication
         m.presolve_bt = true
         m.presolve_bt_algo = 1
         println("Automatically turning on bound-tightening presolver...")
+    elseif m.presolve_bt == nothing  # If no use indication
+        m.presolve_bt = false
     end
 
     # Summarize constraints information in original model
