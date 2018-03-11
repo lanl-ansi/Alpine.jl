@@ -338,17 +338,20 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::N
         lb_touch = false
     end
 
-    if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
+    if (ub_touch && lb_touch) || check_solution_history(m, var)
         distvec = [(j, partvec[j+1]-partvec[j]) for j in 1:length(partvec)-1]
         sort!(distvec, by=x->x[2])
         point_orig = point
         pos = distvec[end][1]
         lb_local = partvec[pos]
         ub_local = partvec[pos+1]
-        chunk = (ub_local - lb_local)/2
-        point = lb_local + (ub_local - lb_local) / 2
-        insert!(partvec, pos+1, lb_local + chunk)
-        (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(round(point,4)) |$(round(lb_local,4)) | 2 SEGMENTS | $(round(ub_local,4))|")
+        isapprox(lb_local, ub_local;atol=m.tol) && return
+        chunk = (ub_local - lb_local) / m.disc_divert_chunks
+        point = lb_local + (ub_local - lb_local) / m.disc_divert_chunks
+        for i in 2:m.disc_divert_chunks
+            insert!(partvec, pos+1, lb_local + chunk * (m.disc_divert_chunks-(i-1)))
+        end
+        (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(round(point,4)) |$(round(lb_local,4)) | $(m.disc_divert_chunks) SEGMENTS | $(round(ub_local,4))|")
     else
         (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(round(radius,4)), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
     end

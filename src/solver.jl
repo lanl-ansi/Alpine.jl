@@ -31,6 +31,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_ratio::Any                                             # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
+    disc_divert_chunks::Int                                     # How many uniform partitions to construct
     disc_add_partition_method::Any                              # Additional methods to add discretization
     disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretizations
     disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretizations
@@ -175,6 +176,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 disc_ratio,
                                 disc_uniform_rate,
                                 disc_add_partition_method,
+                                disc_divert_chunks,
                                 disc_abs_width_tol,
                                 disc_rel_width_tol,
                                 disc_consecutive_forbid,
@@ -227,6 +229,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.disc_ratio = disc_ratio
         m.disc_uniform_rate = disc_uniform_rate
         m.disc_add_partition_method = disc_add_partition_method
+        m.disc_divert_chunks = disc_divert_chunks
         m.disc_abs_width_tol = disc_abs_width_tol
         m.disc_rel_width_tol = disc_rel_width_tol
         m.disc_consecutive_forbid = disc_consecutive_forbid
@@ -342,6 +345,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     disc_ratio::Any
     disc_uniform_rate::Int
     disc_add_partition_method::Any
+    disc_divert_chunks::Int
     disc_abs_width_tol::Float64
     disc_rel_width_tol::Float64
     disc_consecutive_forbid::Int
@@ -404,6 +408,7 @@ function PODSolver(;
     disc_ratio = 4,
     disc_uniform_rate = 2,
     disc_add_partition_method = "adaptive",
+    disc_divert_chunks = 5,
     disc_abs_width_tol = 1e-4,
     disc_rel_width_tol = 1e-6,
     disc_consecutive_forbid = 0,
@@ -474,6 +479,7 @@ function PODSolver(;
         disc_ratio,
         disc_uniform_rate,
         disc_add_partition_method,
+        disc_divert_chunks,
         disc_abs_width_tol,
         disc_rel_width_tol,
         disc_consecutive_forbid,
@@ -537,6 +543,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     disc_ratio = s.disc_ratio
     disc_uniform_rate = s.disc_uniform_rate
     disc_add_partition_method = s.disc_add_partition_method
+    disc_divert_chunks = s.disc_divert_chunks
     disc_abs_width_tol = s.disc_abs_width_tol
     disc_rel_width_tol = s.disc_rel_width_tol
     disc_consecutive_forbid = s.disc_consecutive_forbid
@@ -583,6 +590,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             disc_ratio,
                             disc_uniform_rate,
                             disc_add_partition_method,
+                            disc_divert_chunks,
                             disc_abs_width_tol,
                             disc_rel_width_tol,
                             disc_consecutive_forbid,
@@ -653,6 +661,10 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
 
     # Turn-on bt presolver if not discrete variables
     if isempty(m.int_vars) && isempty(m.bin_vars) && m.presolve_bt == nothing # Special case of no user indication
+        m.presolve_bt = true
+        m.presolve_bt_algo = 1
+        println("Automatically turning on bound-tightening presolver...")
+    elseif isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.presolve_bt == nothing
         m.presolve_bt = true
         m.presolve_bt_algo = 1
         println("Automatically turning on bound-tightening presolver...")

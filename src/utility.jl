@@ -165,6 +165,7 @@ Check if the solution is alwasy the same within the last disc_consecutive_forbid
 """
 function check_solution_history(m::PODNonlinearModel, ind::Int)
 
+    m.disc_consecutive_forbid == 0 && return false
     (m.logs[:n_iter] < m.disc_consecutive_forbid) && return false
 
     sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1][ind]
@@ -172,6 +173,8 @@ function check_solution_history(m::PODNonlinearModel, ind::Int)
         search_pos = mod(m.logs[:n_iter]-1-i, m.disc_consecutive_forbid)+1
         !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=m.disc_rel_width_tol) && return false
     end
+
+    m.loglevel > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
     return true
 end
 
@@ -183,7 +186,7 @@ This function is used to fix variables to certain domains during the local solve
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
 """
-function fix_domains(m::PODNonlinearModel;discrete_sol=nothing)
+function fix_domains(m::PODNonlinearModel;discrete_sol=nothing,use_orig=false)
 
     discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
 
@@ -197,8 +200,8 @@ function fix_domains(m::PODNonlinearModel;discrete_sol=nothing)
             for j in 1:PCnt
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
                     @assert j < length(m.discretization[i])
-                    l_var[i] = m.discretization[i][j]
-                    u_var[i] = m.discretization[i][j+1]
+                    use_orig ? l_var[i] = m.discretization[i][1] : l_var[i] = m.discretization[i][j]
+                    use_orig ? u_var[i] = m.discretization[i][end] : u_var[i] = m.discretization[i][j+1]
                     break
                 end
             end

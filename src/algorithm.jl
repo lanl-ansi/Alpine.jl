@@ -55,7 +55,7 @@ function presolve(m::PODNonlinearModel)
     local_solve(m, presolve = true)
 
     # Possible solver status, return error when see different
-    status_pass = [:Optimal, :Suboptimal, :UserLimit]
+    status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_reroute = [:Infeasible]
 
     if m.status[:local_solve] in status_pass

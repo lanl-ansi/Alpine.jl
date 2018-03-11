@@ -14,9 +14,7 @@ Currently, two bounding tightening method is implemented [`minmax_bound_tighteni
 """
 function bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
 
-    if m.presolve_bt == false # User choose not to do bound tightening
-        return
-    end
+    m.presolve_bt || return
 
     if m.presolve_bt_algo == 1
         minmax_bound_tightening(m, use_bound=use_bound)
@@ -109,12 +107,12 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         # Updates the discretization structure
         for var_idx in m.candidate_disc_vars
-            if temp_bounds[var_idx][1] >= discretization[var_idx][1] + m.presolve_bt_width_tol
+            if abs(temp_bounds[var_idx][1] - discretization[var_idx][1])/(m.tol+abs(discretization[var_idx][1])) >= m.presolve_bt_width_tol
                 (m.loglevel > 99) && print("+")
                 keeptightening = true # Continue to perform the next iteration
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
             end
-            if discretization[var_idx][end] <= temp_bounds[var_idx][end] - m.presolve_bt_width_tol
+            if abs(discretization[var_idx][end] - temp_bounds[var_idx][end])/(m.tol+abs(temp_bounds[var_idx][end])) >= m.presolve_bt_width_tol
                 (m.loglevel > 99) && print("+")
                 keeptightening = true
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
