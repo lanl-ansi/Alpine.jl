@@ -186,7 +186,7 @@ This function is used to fix variables to certain domains during the local solve
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
 """
-function fix_domains(m::PODNonlinearModel;discrete_sol=nothing,use_orig=false)
+function fix_domains(m::PODNonlinearModel;discrete_sol=nothing, use_orig=false)
 
     discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
 
@@ -478,6 +478,9 @@ function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
                         push!(arcs, sort([varidxs[i], varidxs[j];]))
                     end
                 end
+            end
+            if length(varidxs) == 1
+                push!(arcs, sort([varidxs[1], varidxs[1];]))
             end
         elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
             var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
@@ -863,7 +866,7 @@ end
     Follow the definition of terms to calculate the value of lifted terms
 """
 function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
-
+    
     @assert length(sol_vec) == m.num_var_orig
     sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
 

@@ -102,12 +102,11 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     b_len = 14
-
-    if isa(m.logs[:obj][end], Float64)
+    if !isempty(m.logs[:obj]) && isa(m.logs[:obj][end], Float64)
         objstr = string(round(m.logs[:obj][end],4))
         spc = max(0, b_len - length(objstr))
     else
-        objstr = string(m.logs[:obj][end])
+        objstr = string("-")
         spc = max(0, b_len - length(objstr))
     end
     UB_block = string(" ", objstr, " " ^ spc)

@@ -86,6 +86,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         # Perform Bound Contraction
         for var_idx in m.candidate_disc_vars # why only all nonlinear vars?
+        #for var_idx in 1:m.num_var_orig
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
             if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tol
                 create_bound_tightening_model(m, discretization, bound)
@@ -103,8 +104,9 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                     m.loglevel > 199 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
             end
-        end
 
+       end
+        
         # Updates the discretization structure
         for var_idx in m.candidate_disc_vars
             if abs(temp_bounds[var_idx][1] - discretization[var_idx][1])/(m.tol+abs(discretization[var_idx][1])) >= m.presolve_bt_width_tol

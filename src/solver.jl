@@ -423,7 +423,7 @@ function PODSolver(;
     convhull_no_good_cuts = true,
 
     presolve_track_time = true,
-    presolve_maxiter = 99,
+    presolve_maxiter = 10,
     presolve_bt = nothing,
     presolve_bt_width_tol = 1e-3,
     presolve_bt_output_tol = 1e-5,
@@ -659,19 +659,6 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
-    # Turn-on bt presolver if not discrete variables
-    if isempty(m.int_vars) && isempty(m.bin_vars) && m.presolve_bt == nothing # Special case of no user indication
-        m.presolve_bt = true
-        m.presolve_bt_algo = 1
-        println("Automatically turning on bound-tightening presolver...")
-    elseif isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.presolve_bt == nothing
-        m.presolve_bt = true
-        m.presolve_bt_algo = 1
-        println("Automatically turning on bound-tightening presolver...")
-    elseif m.presolve_bt == nothing  # If no use indication
-        m.presolve_bt = false
-    end
-
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
 
@@ -728,6 +715,19 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     resolve_var_bounds(m)            # resolve lifted var bounds
     pick_disc_vars(m)                # Picking variables to be discretized
     init_disc(m)                     # Initialize discretization dictionarys
+
+    # Turn-on bt presolver if not discrete variables
+    if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && m.presolve_bt == nothing
+        m.presolve_bt = true
+        println("Automatically turning on bound-tightening presolver...")
+    elseif m.presolve_bt == nothing  # If no use indication
+        m.presolve_bt = false
+    end
+
+    if length(m.bin_vars) > 200 || m.num_var_orig > 2000
+        println("Automatically turning OFF ratio branching due to the size of the problem")
+        m.disc_ratio_branch=false
+    end
 
     # Initialize the solution pool
     m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool

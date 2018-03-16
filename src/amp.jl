@@ -351,9 +351,9 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::N
         for i in 2:m.disc_divert_chunks
             insert!(partvec, pos+1, lb_local + chunk * (m.disc_divert_chunks-(i-1)))
         end
-        (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(round(point,4)) |$(round(lb_local,4)) | $(m.disc_divert_chunks) SEGMENTS | $(round(ub_local,4))|")
+        (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(point) |$(round(lb_local,4)) | $(m.disc_divert_chunks) SEGMENTS | $(round(ub_local,4))|")
     else
-        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(round(radius,4)), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
     end
 
     return
@@ -381,7 +381,7 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
 
-    ratio_pool = [4:2:24;]  # Built-in try range
+    ratio_pool = [8:2:20;]  # Built-in try range
     convertor = Dict(:Max=>:<, :Min=>:>)
     revconvertor = Dict(:Max=>:>, :Min=>:<)
 
@@ -391,7 +391,7 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     for r in ratio_pool
         st = time()
-        if presolve
+        if !isempty(m.best_sol)
             branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r, use_solution=m.best_sol)
         else
             branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r)
@@ -414,6 +414,12 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
     if std(res_collector) >= 1e-2    # Detect if all solution are similar to each other
         m.loglevel > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
         m.disc_ratio_branch = false # If an incumbent ratio is selected, then stop the branching scheme
+    end
+    
+    if !isempty(m.best_sol)
+        m.discretization = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio, use_solution=m.best_sol)
+    else
+        m.discretization = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio)
     end
 
     m.loglevel > 0 && println("INCUMB_RATIO = $(incumb_ratio)")

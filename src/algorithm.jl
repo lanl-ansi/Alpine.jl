@@ -56,7 +56,7 @@ function presolve(m::PODNonlinearModel)
 
     # Possible solver status, return error when see different
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
-    status_reroute = [:Infeasible]
+    status_reroute = [:Infeasible, :Infeasibles]
 
     if m.status[:local_solve] in status_pass
         m.loglevel > 0 && println("local solver returns feasible point")
@@ -66,20 +66,9 @@ function presolve(m::PODNonlinearModel)
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
         m.loglevel > 0 && println("presolve ended.")
     elseif m.status[:local_solve] in status_reroute
-        (m.loglevel > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
+        (m.loglevel > 0) && println("performing bound tightening without objective bounds...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-        (m.loglevel > 0) && println("second attempt at local solve using tightened bounds...")
-        local_solve(m, presolve = true) # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
-        if m.status in status_pass  # successful second try
-            (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
-            add_partition(m, use_solution=m.best_sol)
-        else    # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
-            (m.loglevel > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
-            create_bounding_mip(m)       # Build the bounding ATMC model
-            bounding_solve(m)            # Solve bounding model
-            (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
-            add_partition(m, use_solution=m.best_bound_sol)
-        end
+        (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
         m.loglevel > 0 && println("Presolve ended.")
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
         warn("Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this.")
