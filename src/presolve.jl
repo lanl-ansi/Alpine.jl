@@ -35,7 +35,7 @@ end
 
 This function implements the bound-tightening algorithm to tighten the variable bounds.
 It utilizes either the basic McCormick relaxation or the Tightened McCormick relaxation (TMC)
-to tighten the bounds. The TMC has additional binary variables for partitioning.
+to tighten the bounds. The TMC has additional binary variablers for partitioning.
 
 The algorithm as two main parameters. The first is the `use_tmc`, which when set to `true`
 invokes the algorithm on the TMC relaxation. The second parameter `use_bound` takes in the
@@ -48,7 +48,7 @@ Several other parameters are available for the presolve algorithm tuning.
 For more details, see [Parameters](@ref).
 
 """
-function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
+function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelimit = Inf, kwargs...)
 
     # Some functinal constants
     both_senses = [:Min, :Max]             # Senses during bound tightening procedures
@@ -58,6 +58,11 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     status_reroute = [:UserLimits]
 
     options = Dict(kwargs)
+
+    st = time() # Track start time
+    if timelimit == Inf
+        timelimit = m.presolve_timeout
+    end
 
     # Regulating Special Input Conditions: default use best feasible solution objective value
     (use_bound == true) ? bound = m.best_obj : bound = Inf
@@ -85,8 +90,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
         temp_bounds = Dict()
 
         # Perform Bound Contraction
-        for var_idx in m.candidate_disc_vars # why only all nonlinear vars?
-        #for var_idx in 1:m.num_var_orig
+        for var_idx in 1:m.num_var_orig
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
             if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tol
                 create_bound_tightening_model(m, discretization, bound)
@@ -101,28 +105,37 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                         print("!")
                         temp_bounds[var_idx][tell_side[sense]] = temp_bounds[var_idx][tell_side[sense]]
                     end
-                    m.loglevel > 199 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
             end
-
+            time() - st > timelimit && break
        end
-        
+
         # Updates the discretization structure
-        for var_idx in m.candidate_disc_vars
+        # for var_idx in m.candidate_disc_vars
+        for var_idx in keys(temp_bounds)
             if abs(temp_bounds[var_idx][1] - discretization[var_idx][1])/(m.tol+abs(discretization[var_idx][1])) >= m.presolve_bt_width_tol
                 (m.loglevel > 99) && print("+")
+                m.loglevel > 99 && println("[DEBUG] VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
                 keeptightening = true # Continue to perform the next iteration
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
             end
             if abs(discretization[var_idx][end] - temp_bounds[var_idx][end])/(m.tol+abs(temp_bounds[var_idx][end])) >= m.presolve_bt_width_tol
                 (m.loglevel > 99) && print("+")
+                m.loglevel > 99 && println("[DEBUG] VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
                 keeptightening = true
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
             end
         end
+
         (m.loglevel > 0) && print("\n")
         discretization = resolve_var_bounds(m, discretization)
-        haskey(options, :use_tmc) ? discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization)) : discretization = discretization
+        if haskey(options, :use_tmc)
+            discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization))
+        else
+            discretization = discretization
+        end
+
+        time() - st > timelimit && break
     end
 
     (m.loglevel > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
@@ -130,8 +143,14 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
-    (m.loglevel > 0)  && [println("[DEBUG] VAR $(i) BOUND contracted $(round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]),2)*100)% |$(round(l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
+    for i in m.disc_vars
+        contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]),2)*100
+        if m.loglevel > 0 && contract_ratio > 0.0001
+            println("[DEBUG] VAR $(i) BOUND contracted $(contract_ratio)% |$(round(l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - $(round(m.u_var_tight[i],4)) | <-- $(round(u_var_orig[i],4)) |")
+        end
+    end
     (m.loglevel > 0) && print("\n")
+
     return
 end
 

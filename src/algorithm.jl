@@ -168,7 +168,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     else
         initial_warmval = []
         for i in 1:m.num_var_orig
-            isnan(m.d_orig.m.colVal[i]) ? push!(initial_warmval, 0.0) : push!(initial_warmval, m.d_orig.m.colVal[i])
+            isnan(m.d_orig.m.colVal[i]) ? push!(initial_warmval, m.l_var_tight[i]) : push!(initial_warmval, m.d_orig.m.colVal[i])
         end
         interface_set_warmstart(local_solve_model, initial_warmval)
     end
@@ -195,7 +195,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_heuristic = [:Heuristics]
-    status_reroute = [:Infeasible]
+    status_reroute = [:Infeasible, :Infeasibles]
 
     if local_nlp_status in status_pass
         candidate_obj = interface_get_objval(local_solve_model)

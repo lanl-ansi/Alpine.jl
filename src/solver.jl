@@ -50,6 +50,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Any                                            # Perform bound tightening procedure before main algorithm
+    presolve_timeout::Float64
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
@@ -191,6 +192,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 presolve_track_time,
                                 presolve_bt,
                                 presolve_maxiter,
+                                presolve_timeout,
                                 presolve_bt_width_tol,
                                 presolve_bt_output_tol,
                                 presolve_bt_algo,
@@ -245,6 +247,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bt = presolve_bt
+        m.presolve_timeout = presolve_timeout
         m.presolve_maxiter = presolve_maxiter
         m.presolve_bt_width_tol = presolve_bt_width_tol
         m.presolve_bt_output_tol = presolve_bt_output_tol
@@ -361,6 +364,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
 
     presolve_track_time::Bool
     presolve_bt::Any
+    presolve_timeout::Float64
     presolve_maxiter::Int
     presolve_bt_width_tol::Float64
     presolve_bt_output_tol::Float64
@@ -425,6 +429,7 @@ function PODSolver(;
     presolve_track_time = true,
     presolve_maxiter = 10,
     presolve_bt = nothing,
+    presolve_timeout = 900,
     presolve_bt_width_tol = 1e-3,
     presolve_bt_output_tol = 1e-5,
     presolve_bt_algo = 1,
@@ -493,6 +498,7 @@ function PODSolver(;
         convhull_no_good_cuts,
         presolve_track_time,
         presolve_bt,
+        presolve_timeout,
         presolve_maxiter,
         presolve_bt_width_tol,
         presolve_bt_output_tol,
@@ -559,6 +565,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     presolve_track_time = s.presolve_track_time
     presolve_bt = s.presolve_bt
+    presolve_timeout = s.presolve_timeout
     presolve_maxiter = s.presolve_maxiter
     presolve_bt_width_tol = s.presolve_bt_width_tol
     presolve_bt_output_tol = s.presolve_bt_output_tol
@@ -604,6 +611,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             convhull_no_good_cuts,
                             presolve_track_time,
                             presolve_bt,
+                            presolve_timeout,
                             presolve_maxiter,
                             presolve_bt_width_tol,
                             presolve_bt_output_tol,

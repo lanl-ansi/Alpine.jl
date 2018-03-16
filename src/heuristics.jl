@@ -118,7 +118,7 @@ function heu_pool_multistart(m::PODNonlinearModel)
                 if eval(convertor[m.sense_orig])(candidate_obj, incumb_obj)
                     incumb_obj = candidate_obj
                     incumb_sol = round.(interface_get_solution(heuristic_model), 5)
-                    m.loglevel > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)]")
+                    m.loglevel > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)] [OBJ=$(incumb_obj)]")
                 end
                 found_feasible = true
             else

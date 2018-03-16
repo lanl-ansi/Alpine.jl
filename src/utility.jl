@@ -866,7 +866,7 @@ end
     Follow the definition of terms to calculate the value of lifted terms
 """
 function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
-    
+
     @assert length(sol_vec) == m.num_var_orig
     sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
 

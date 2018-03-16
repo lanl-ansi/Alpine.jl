@@ -39,7 +39,7 @@ end
 
 @testset " Validation Test || AMP-TMC || minimum-vertex solving || examples/nlp3.jl (3 iterations)" begin
 
-    test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver=PODSolver(nlp_solver=IpoptSolver(print_level=0, max_iter=9999),
                            mip_solver=CbcSolver(logLevel=0),
                            bilinear_convexhull=false,
                            monomial_convexhull=false,
