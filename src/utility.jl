@@ -38,6 +38,29 @@ function update_opt_gap(m::PODNonlinearModel)
     return
 end
 
+function measure_relaxed_deviation(m::PODNonlinearModel;sol=nothing)
+
+    sol == nothing ? sol = m.best_bound_sol : sol = sol
+
+    isempty(sol) && return
+
+    dev = []
+    for k in keys(m.nonconvex_terms)
+        y_idx = m.nonconvex_terms[k][:y_idx]
+        y_hat = sol[y_idx]
+        y_val = m.nonconvex_terms[k][:evaluator](m.nonconvex_terms[k], sol)
+        push!(dev, (y_idx, abs(y_hat-y_val), y_hat, y_val, m.nonconvex_terms[k][:var_idxs]))
+    end
+
+    sort!(dev, by=x->x[2])
+
+    for i in dev
+        m.loglevel > 99 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
+    end
+
+    return
+end
+
 """
     discretization_to_bounds(d::Dict, l::Int)
 

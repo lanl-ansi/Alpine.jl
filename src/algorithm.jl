@@ -260,6 +260,8 @@ function bounding_solve(m::PODNonlinearModel)
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
         candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+        # Experimental code
+        measure_relaxed_deviation(m, sol=candidate_bound_sol)
         if m.disc_consecutive_forbid > 0
             m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol) # Requires proper offseting
         end

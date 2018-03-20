@@ -415,7 +415,7 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
         m.loglevel > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
         m.disc_ratio_branch = false # If an incumbent ratio is selected, then stop the branching scheme
     end
-    
+
     if !isempty(m.best_sol)
         m.discretization = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio, use_solution=m.best_sol)
     else
