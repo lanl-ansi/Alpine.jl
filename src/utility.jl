@@ -269,8 +269,8 @@ function collect_lb_pool(m::PODNonlinearModel)
     # Always stick to the structural .discretization for algorithm consideration info
     # If in need, the scheme need to be refreshed with customized discretization info
 
-    if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex
-        warn("Unsupported condition for collecting solution pool", once=true) # Only feaible with Gurobi solver
+    if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
+        warn("Skipping collecting solution pool procedure", once=true) # Only feaible with Gurobi solver
         return
     end
 

@@ -69,6 +69,7 @@ function presolve(m::PODNonlinearModel)
         (m.loglevel > 0) && println("performing bound tightening without objective bounds...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
         (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
+        m.presolve_bt && init_disc(m)
         m.loglevel > 0 && println("Presolve ended.")
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
         warn("Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this.")
@@ -168,7 +169,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     else
         initial_warmval = []
         for i in 1:m.num_var_orig
-            isnan(m.d_orig.m.colVal[i]) ? push!(initial_warmval, m.l_var_tight[i]) : push!(initial_warmval, m.d_orig.m.colVal[i])
+            isnan(m.d_orig.m.colVal[i]) ? push!(initial_warmval, 0.0) : push!(initial_warmval, m.d_orig.m.colVal[i])
         end
         interface_set_warmstart(local_solve_model, initial_warmval)
     end

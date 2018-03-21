@@ -1259,6 +1259,7 @@ function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int
                                         :expr_orig => :constraints,
                                         :expr_ref => deepcopy(expr),
                                         :convexified => false)
+
         # Recording the un-changed expression
         m.bounding_constr_expr_mip[idx] = expr
 
@@ -1272,6 +1273,7 @@ function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int
                                           :rhs => rhs,
                                           :cnt => length(idxs_bin),
                                           :powers => power_bin)
+        m.loglevel > 99 && println("CONVEX Constraint $(idx): $(expr)")
         return true
 
     elseif expr_orig == :obj
@@ -1321,8 +1323,9 @@ function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int
                                   :cnt => length(idxs_bin),
                                   :powers => power_bin)
 
-
+        m.loglevel > 99 && println("CONVEX Objective: $(expr)")
+        return true
     end
 
-    return true
+    return false
 end
