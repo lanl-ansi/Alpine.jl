@@ -1223,23 +1223,23 @@ function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int
         convex_type = :Unknown
 
         # [BUG FIX | FORK]
-        power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]    # Special case for linear constraints with @NLconstraint
+        power_check = [(i > 1.0) && mod(i, 2) == 0 for i in power_bin]    # Special case for linear constraints with @NLconstraint
         isempty(power_check) && return false
 
         # Convex constraint Type-A
         # sum_i (c_i*x_i^p) <= K (K > 0, p is an even positive integer and x_i \in R)   => Convex
-        power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]
+        power_check = [(i > 1.0) && mod(i, 2) == 0 for i in power_bin]
         (convex_type == :Unknown) && prod(power_check) && (convex_type = :convexA)
 
         # Type-B: Convex constraint
         # sum_i (c_i*x_i^p) <= K (K > 0, p >= 1 and x_i >= 0)                           => Convex
         lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
-        power_check = [(i > 1.0) for i in power_bin]
+        power_check = [i > 1.0 for i in power_bin]
         (convex_type == :Unknown) && prod(lb_check) && prod(power_check) && (convex_type = :convexB)
 
         # Convex constraint Type-C
         # sum_i (c_i*x_i^p) >= K (K > 0, 0 < p < 1 and x_i >= 0)                        => Convex
-        power_check = [((i<1) && (i>0.0)) for i in power_bin]
+        power_check = [i < 1 && i > 0.0 for i in power_bin]
         lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
         (convex_type == :Unknown) && prod(power_check) && prod(power_check) && (convex_type = :convexC)
 
@@ -1267,15 +1267,18 @@ function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int
         m.constr_structure[idx] = :convex
 
         # Recording the function for adding constraints
-        m.bounding_constr_mip[idx] = Dict(:sense => sense,
+        m.bounding_constr_mip[idx] = Dict(:idx => idx,
+                                          :expr => expr,
+                                          :sense => sense,
                                           :coefs => scalar_bin,
                                           :vars => idxs_bin,
                                           :rhs => rhs,
                                           :cnt => length(idxs_bin),
                                           :powers => power_bin)
-        m.loglevel > 99 && println("CONVEX Constraint $(idx): $(expr)")
-        return true
 
+        m.loglevel > 99 && println("CONVEX Constraint $(idx): $(expr)")
+        
+        return true
     elseif expr_orig == :obj
 
         convex_type = :Unknown
@@ -1284,7 +1287,7 @@ function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int
 
         # Type-A: Convex objective function
         # sum_i (c_i*x_i^p) (p is an even positive integer and x_i \in R)   => Convex
-        power_check = [((i > 1.0) && mod(i, 2) == 0) for i in power_bin]
+        power_check = [i > 1.0 && mod(i, 2) == 0 for i in power_bin]
         (convex_type == :Unknown) && prod(power_check) && (convex_type = :convexA)
 
         # Type-B: Convex objective function

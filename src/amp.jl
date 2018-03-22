@@ -147,6 +147,8 @@ end
 
 function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
 
+    !prod([i == 2 for i in convex[:powers]]) && error("No relaxation implementation for convex constraints $(convex[:expr])")
+
     if convex[:sense] == :(<=)
         @constraint(model_mip,
             sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) <= convex[:rhs])
