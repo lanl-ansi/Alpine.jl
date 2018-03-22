@@ -749,7 +749,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     ## Citation
     println("-----------------------------------------------------------------")
     println("If you find POD useful, please cite the following work. Thanks!!!")
-    println("                          CITATION")
+    println("Nagarajan, H., Lu, M., Wang, S., Bent, R. and Sundar, K., 2017. ")
+    println("An Adaptive, Multivariate Partitioning Algorithm for Global ")
+    println("Optimization of Nonconvex Programs. arXiv preprint arXiv:1707.02514.")
     println("-----------------------------------------------------------------")
 
     return
