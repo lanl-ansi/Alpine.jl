@@ -1277,7 +1277,7 @@ function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int
                                           :powers => power_bin)
 
         m.loglevel > 99 && println("CONVEX Constraint $(idx): $(expr)")
-        
+
         return true
     elseif expr_orig == :obj
 
