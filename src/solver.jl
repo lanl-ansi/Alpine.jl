@@ -60,6 +60,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
+    presolve_infeasible::Bool                                   # Presolve Feasibility
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
     # Features for Integer Problems (NOTE: no support for intlin problems)
@@ -298,7 +299,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.constr_structure = []
         m.best_bound_sol = []
         m.bound_sol_history = []
-
+        m.presolve_infeasible = false
         m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
 
         m.best_obj = Inf
@@ -718,11 +719,11 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
 
     # Main Algorithmic Initialization
-    process_expr(m)                  # Compact process of every expression
-    init_tight_bound(m)              # Initialize bounds for algorithmic processes
-    resolve_var_bounds(m)            # resolve lifted var bounds
-    pick_disc_vars(m)                # Picking variables to be discretized
-    init_disc(m)                     # Initialize discretization dictionarys
+    process_expr(m)                         # Compact process of every expression
+    init_tight_bound(m)                     # Initialize bounds for algorithmic processes
+    resolve_var_bounds(m)                   # resolve lifted var bounds
+    pick_disc_vars(m)                       # Picking variables to be discretized
+    init_disc(m)                            # Initialize discretization dictionarys
 
     # Turn-on bt presolver if not discrete variables
     if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && m.presolve_bt == nothing
@@ -743,16 +744,19 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
 
+    # Check if any illegal term exist in the warm-solution
+    any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
+
     # Initialize log
     logging_summary(m)
 
     ## Citation
-    println("-----------------------------------------------------------------")
+    println("----------------------------------------------------------------------")
     println("If you find POD useful, please cite the following work. Thanks!!!")
     println("Nagarajan, H., Lu, M., Wang, S., Bent, R. and Sundar, K., 2017. ")
     println("An Adaptive, Multivariate Partitioning Algorithm for Global ")
     println("Optimization of Nonconvex Programs. arXiv preprint arXiv:1707.02514.")
-    println("-----------------------------------------------------------------")
+    println("----------------------------------------------------------------------")
 
     return
 end

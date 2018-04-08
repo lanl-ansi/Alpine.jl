@@ -2,11 +2,15 @@
     High-level Function
 """
 function MathProgBase.optimize!(m::PODNonlinearModel)
-    any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
+    if m.presolve_infeasible
+        summary_status(m)
+        return
+    end
     presolve(m)
     global_solve(m)
     m.loglevel > 0 && logging_row_entry(m, finsih_entry=true)
     summary_status(m)
+    return
 end
 
 """
