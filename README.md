@@ -1,4 +1,4 @@
-# POD, A Global MINLP Solver <span style="color:black"></span>
+# POD, A Global Solver for Nonconvex MINLPs <span style="color:black"></span>
 
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/POD.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/POD.jl)
 [![codecov](https://codecov.io/gh/lanl-ansi/POD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/POD.jl)
