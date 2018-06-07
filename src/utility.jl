@@ -52,10 +52,10 @@ function measure_relaxed_deviation(m::PODNonlinearModel;sol=nothing)
         push!(dev, (y_idx, abs(y_hat-y_val), y_hat, y_val, m.nonconvex_terms[k][:var_idxs]))
     end
 
-    sort!(dev, by=x->x[2])
+    sort!(dev, by=x->x[1])
 
     for i in dev
-        m.loglevel > 99 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
+        m.loglevel > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
     end
 
     return
@@ -459,23 +459,6 @@ function initialize_solution_pool(m::PODNonlinearModel, cnt::Int)
     s[:ubstart] = [false for i in 1:cnt]           # Solution used for ub multistart
 
     return s
-end
-
-function adjust_branch_priority(m::PODNonlinearModel)
-
-    isempty(m.branch_priority_mip) && return # By default
-    m.mip_solver_id != "Gurobi" && return
-    !m.model_mip.internalModelLoaded && return
-
-    len = length(m.model_mip.colVal)
-    Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, [i in m.branch_priority_mip ? 1 : 0 for i in 1:len])
-
-    return
-end
-
-function reset_branch_priority(m::PODNonlinearModel)
-    m.branch_priority_mip = []
-    return
 end
 
 """
@@ -907,4 +890,29 @@ function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
     end
 
     return sol_vec
+end
+
+function adjust_branch_priority(m::PODNonlinearModel)
+
+    if m.mip_solver_id == "Gurobi"
+        !m.model_mip.internalModelLoaded && return
+        len = length(m.model_mip.colVal)
+        prior = Cint[] # priorities
+        for i=1:len
+            push!(prior, i)
+        end
+        Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
+    elseif m.mip_solver_id == "CPLEX"
+        !m.model_mip.internalModelLoaded && return
+        n = length(m.model_mip.colVal)
+        idxlist = Cint[1:n;] # variable indices
+        prior = Cint[] # priorities
+        for i=1:n
+            push!(prior, i)
+        end
+        CPLEX.set_branching_priority(MathProgBase.getrawsolver(internalmodel(m.model_mip)), idxlist, prior)
+    else
+        return
+    end
+
 end

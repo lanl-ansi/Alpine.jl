@@ -133,18 +133,18 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_l_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
                     elseif eval_l_bound > m.u_var_tight[var_idx] + m.tol
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
                     if eval_u_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     elseif eval_u_bound < m.u_var_tight[var_idx] - m.tol
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -161,9 +161,9 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
                     elseif eval_bound > m.u_var_tight[var_idx] + m.tol
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -180,9 +180,9 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     elseif eval_bound < m.l_var_tight[var_idx] - m.tol
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -199,9 +199,9 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     elseif eval_bound < m.l_var_tight[var_idx] - m.tol
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -218,9 +218,9 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
                     elseif eval_bound > m.u_var_tight[var_idx] + m.tol
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end

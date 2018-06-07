@@ -12,6 +12,10 @@ using Requires: @require
     import Gurobi
 end
 
+@require CPLEX begin
+    import CPLEX
+end
+
 include("const.jl")
 
 # Engine for High-level Algorithmic Control and User-interface
