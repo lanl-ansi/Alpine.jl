@@ -9,7 +9,7 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     # Variable holders
     λ = Dict()  # Extreme points and multipliers
     α = Dict()  # Partitioning Variables
-    β = Dict()  # Lifted variables for further
+    β = Dict()  # Lifted variables for exact formulation
 
     # Construct λ variable space
     for k in keys(m.nonlinear_terms)

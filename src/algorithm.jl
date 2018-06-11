@@ -49,7 +49,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
-    presolve_max_iter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
+    presolve_max_iter::Int                                      # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
     presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
@@ -106,14 +106,14 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # local solution model extra data for each iteration
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
-    var_type::Vector{Symbol}                             # Updated variable type for local solve
+    var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    num_var_linear_lifted_mip::Int                             # Number of linear lifting variables required.
-    num_var_nonlinear_lifted_mip::Int                                     # Number of lifted variables
+    num_var_linear_lifted_mip::Int                              # Number of linear lifting variables required.
+    num_var_nonlinear_lifted_mip::Int                           # Number of lifted variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
     num_constr_convex::Int                                      # Number of structural constraints
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
