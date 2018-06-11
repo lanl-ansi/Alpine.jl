@@ -87,11 +87,13 @@ function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
                     end
 
                     # Error condition
-                    #if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip) 
+                    #if !(idx_a in m.var_discretization_mip) && !(idx_b in m.var_discretization_mip)
                     #    error("Error case. At least one term should show up in discretization choices.")
                     #end
                 end
             end
+        elseif nl_type == :binprod
+
         end
     end
     return
@@ -215,11 +217,9 @@ function mccormick(m,xy,x,y,xˡ,xᵘ,yˡ,yᵘ)
 end
 
 function mccormick_bin(m,xy,x,y)
-
     @constraint(m, xy <= x)
     @constraint(m, xy <= y)
     @constraint(m, xy >= x+y-1)
-
     return
 end
 
@@ -228,8 +228,6 @@ function mccormick_monomial(m,xy,x,xˡ,xᵘ)
     @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
     return
 end
-
-
 
 function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
     if lazy == 1

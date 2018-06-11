@@ -49,7 +49,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
-    presolve_max_iter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
+    presolve_max_iter::Int                                      # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
     presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
@@ -112,8 +112,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    num_var_linear_lifted_mip::Int                             # Number of linear lifting variables required.
-    num_var_nonlinear_lifted_mip::Int                                     # Number of lifted variables
+    num_var_linear_lifted_mip::Int                              # Number of linear lifting variables required.
+    num_var_nonlinear_lifted_mip::Int                           # Number of lifted variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
     num_constr_convex::Int                                      # Number of structural constraints
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
@@ -131,6 +131,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
     u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
+    var_type_lifted::Vector{Symbol}                             # Updated variable type for local solve
 
     # Solution and bound information
     best_bound::Float64                                         # Best bound from MIP
@@ -301,6 +302,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
     m.obj_expr_orig = MathProgBase.obj_expr(d)
     m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
+    m.var_type_lifted = copy(m.var_type_orig)
+
+    (:Int in m.var_type_orig) && error("POD currently don't support integer variables.")
 
     # Summarize constraints information in original model
     @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
