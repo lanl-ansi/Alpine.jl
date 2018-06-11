@@ -112,14 +112,14 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # local solution model extra data for each iteration
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
-    var_type::Vector{Symbol}                             # Updated variable type for local solve
+    var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # mixed-integer convex program bounding model
     model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
     x_int::Vector{JuMP.Variable}                                # JuMP vector of integer variables (:Int, :Bin)
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
-    num_var_linear_lifted_mip::Int                             # Number of linear lifting variables required.
-    num_var_nonlinear_lifted_mip::Int                                     # Number of lifted variables
+    num_var_linear_lifted_mip::Int                              # Number of linear lifting variables required.
+    num_var_nonlinear_lifted_mip::Int                           # Number of lifted variables
     num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
     num_constr_convex::Int                                      # Number of structural constraints
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
