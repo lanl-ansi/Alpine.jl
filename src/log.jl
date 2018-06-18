@@ -38,7 +38,7 @@ function logging_summary(m::PODNonlinearModel)
         @printf "number of linear constraints = %d\n" m.num_lconstr_orig
         @printf "number of variables = %d\n" m.num_var_orig
 
-        println("MINLP local solver = ", split(string(m.minlp_local_solver),".")[1])
+        m.minlp_local_solver != UnsetSolver() && println("MINLP local solver = ", split(string(m.minlp_local_solver),".")[1])
         println("NLP local solver = ", split(string(m.nlp_local_solver),".")[1])
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
 
@@ -52,11 +52,15 @@ function logging_summary(m::PODNonlinearModel)
         m.bilinear_convexhull && println("bilinear treatment = convex hull formulation")
         m.monomial_convexhull && println("monomial treatment = convex hull formulation")
 
-        m.convhull_formulation_facet && println("using convex hull : facet formulation")
-        m.convhull_formulation_sos2 && println("using convex hull : sos2 formulation")
+        m.convhull_formulation_facet && println("using piece-wise convex hull : facet formulation")
+        m.convhull_formulation_sos2 && println("using piece-wise convex hull : sos2 formulation")
+        m.convhull_formulation_sos2aux && println("using piece-wise convex hull : sos2 formulation with generic method addSOS2")
 
         println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
 
+        (m.embedding) && println("using embedding formulation")
+        (m.embedding) && println("encoding method = $(m.embedding_encode)")
+        (m.embedding) && println("independent branching scheme = $(m.embedding_ibs)")
         (m.discretization_add_partition_method == "adaptive") && println("adaptively adding discretization ratio = $(m.discretization_ratio)")
         (m.discretization_add_partition_method == "uniform") && println("uniform discretization rate = $(m.discretization_uniform_rate)")
     end
