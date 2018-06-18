@@ -179,7 +179,7 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
 end
 
 """
-    Extreme value for gneral multilinear terms Efficient implementation
+    Extreme value for general multilinear terms Efficient implementation
 """
 function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::Dict, ml_indices::Any, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
 
@@ -205,7 +205,7 @@ function populate_convhull_extreme_values(m::PODNonlinearModel, discretization::
 end
 
 """
-    Less memeory & time efficiency, but a easier implementation
+    Less memory & time efficiency, but a easier implementation
 """
 function _populate_convhull_extreme_values(discretization::Dict, ml_indices::Any, λ::Dict, extreme_point_cnt::Int)
 
