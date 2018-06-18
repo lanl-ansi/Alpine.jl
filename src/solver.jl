@@ -40,7 +40,6 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     convhull_formulation_sos2::Bool
     convhull_formulation_sos2aux::Bool
     convhull_formulation_facet::Bool
-    convhull_formulation_minib::Bool
 
     presolve_track_time::Bool
     presolve_bound_tightening::Bool
@@ -99,7 +98,6 @@ function PODSolver(;
     convhull_formulation_sos2 = true,
     convhull_formulation_sos2aux = false,
     convhull_formulation_facet = false,
-    convhull_formulation_minib = false,
 
     presolve_track_time = false,
     presolve_bound_tightening = false,
@@ -163,7 +161,6 @@ function PODSolver(;
         convhull_formulation_sos2,
         convhull_formulation_sos2aux,
         convhull_formulation_facet,
-        convhull_formulation_minib,
         presolve_track_time,
         presolve_bound_tightening,
         presolve_max_iter,
@@ -222,7 +219,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     convhull_formulation_sos2 = s.convhull_formulation_sos2
     convhull_formulation_sos2aux = s.convhull_formulation_sos2aux
     convhull_formulation_facet = s.convhull_formulation_facet
-    convhull_formulation_minib = s.convhull_formulation_minib
 
     presolve_track_time = s.presolve_track_time
     presolve_bound_tightening = s.presolve_bound_tightening
@@ -265,7 +261,6 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             convhull_formulation_sos2,
                             convhull_formulation_sos2aux,
                             convhull_formulation_facet,
-                            convhull_formulation_minib,
                             presolve_track_time,
                             presolve_bound_tightening,
                             presolve_max_iter,

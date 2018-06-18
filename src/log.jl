@@ -54,11 +54,10 @@ function logging_summary(m::PODNonlinearModel)
 
         m.convhull_formulation_facet && println("using piece-wise convex hull : facet formulation")
         m.convhull_formulation_sos2 && println("using piece-wise convex hull : sos2 formulation")
-        m.convhull_formulation_minib && println("using piece-wise convex hull : minimum formulation with boundary cuts")
         m.convhull_formulation_sos2aux && println("using piece-wise convex hull : sos2 formulation with generic method addSOS2")
 
         println("using method $(m.discretization_var_pick_algo) for picking discretization variable...")
-        
+
         (m.embedding) && println("using embedding formulation")
         (m.embedding) && println("encoding method = $(m.embedding_encode)")
         (m.embedding) && println("independent branching scheme = $(m.embedding_ibs)")

@@ -44,7 +44,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     convhull_formulation_sos2::Bool                                   # Convex hull formulation with SOS-2 representation (numerically best so far)
     convhull_formulation_sos2aux::Bool                                # Speical SOS-2 formulation that utilized auxilary variables
     convhull_formulation_facet::Bool                                  # Use the facets contraint generated from PORTA
-    convhull_formulation_minib::Bool                                  # Use minimum formulation with boundary cuts
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
@@ -177,7 +176,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 convhull_formulation_sos2,
                                 convhull_formulation_sos2aux,
                                 convhull_formulation_facet,
-                                convhull_formulation_minib,
                                 presolve_track_time,
                                 presolve_bound_tightening,
                                 presolve_max_iter,
@@ -226,7 +224,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.convhull_formulation_sos2 = convhull_formulation_sos2
         m.convhull_formulation_sos2aux = convhull_formulation_sos2aux
         m.convhull_formulation_facet = convhull_formulation_facet
-        m.convhull_formulation_minib = convhull_formulation_minib
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bound_tightening = presolve_bound_tightening
