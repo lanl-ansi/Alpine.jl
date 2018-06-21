@@ -257,8 +257,6 @@
         @test Set(m.internalModel.var_discretization_mip) == Set([124, 114, 101, 26, 102, 103, 123, 116, 118, 117, 113, 115])
         @test m.internalModel.disc_var_pick_algo == 3
     end
-<<<<<<< HEAD
-=======
 end
 
 @testset "Solver Funtion Tests :: Embedding" begin
@@ -293,5 +291,4 @@ end
     @test ebdmap[6] == Set([4,2,3,1])
     @test ebdmap[7] == Set([9,10,2,8,1])
     @test ebdmap[8] == Set([9,5,1])
->>>>>>> 463640be714c3dfa58be2549dcc5aec4de0f96e8
 end
