@@ -20,8 +20,8 @@ function expr_strip_const(expr, subs=[], rhs=0.0)
 end
 
 """
-    This utility function builds a constraint reference with by repating one
-    operator with a vector variable references.
+    This utility function builds a constraint reference by repating one
+    operator with a vector of variable references.
     For example,
     input => y, x[1,2,3], :+
     output => (y = x[1] + x[2] + x[3])::Expr
