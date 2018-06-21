@@ -247,11 +247,11 @@ function blend029_gl(;verbose=false, solver=nothing, convhull=true, exprmode=1, 
                                     presolve_bound_tightening_algo=presolve,
                                     bilinear_convexhull=false,
                                     monomial_convexhull=convhull,
-                                    discretization_var_pick_algo=dynamic,
+                                    disc_var_pick_algo=dynamic,
                                     discretization_var_level=level,
                                     discretization_var_minimum=minimum,
 									convhull_formulation_sos2=sos2,
-                                    discretization_ratio=8,
+                                    disc_ratio=8,
                                     log_level=100,
                                     rel_gap=0.0001))
     else

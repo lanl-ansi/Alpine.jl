@@ -101,7 +101,7 @@ function multi2(;verbose=false,solver=nothing)
 	return m
 end
 
-function multi4N(;verbose=false, solver=nothing, N=1, randomub=true)
+function multi4N(;verbose=false, exprmode=1, solver=nothing, N=1, randomub=true)
 
 	m = Model(solver=solver)
 
@@ -144,7 +144,7 @@ function multi4N(;verbose=false, solver=nothing, N=1, randomub=true)
 	return m
 end
 
-function multi3N(;verbose=false, solver=nothing, exprmode=1, N=1, delta=4)
+function multi3N(;verbose=false, randomub=nothing, solver=nothing, exprmode=1, N=1, delta=4)
 
 	m = Model(solver=solver)
 
