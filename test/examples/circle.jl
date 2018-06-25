@@ -9,17 +9,13 @@ function circle(;solver=nothing)
 	return m
 end
 
-function circleN(;verbose=false, solver=nothing, N=2)
+function circleN(;solver=nothing, N=2)
 
 	m = Model(solver=solver)
 
     @variable(m, 0<=x[1:N]<=N)
     @NLconstraint(m, sum(x[i]^2 for i in 1:N) >= N)
     @objective(m, Min, sum(x))
-
-	if verbose
-		print(m)
-	end
 
 	return m
 end

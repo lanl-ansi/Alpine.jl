@@ -28,15 +28,13 @@ end
 """
 function build_constr_block(y_idx::Int, var_idxs::Vector, operator::Symbol)
 
-    constr_block = "x[$(y_idx)]=="
+    expr_l_block = Expr(:call, :(==), parse("x[$(y_idx)]"))
+    expr_r_block = Expr(:call, operator)
     for j in 1:length(var_idxs)
-        constr_block = string(constr_block, "x[$(var_idxs[j])]")
-        if j < length(var_idxs)
-            constr_block=string(constr_block, operator)
-        end
+        push!(expr_r_block.args, parse("x[$(var_idxs[j])]"))
     end
-
-    return parse(constr_block)
+    push!(expr_l_block.args, expr_r_block)
+    return expr_l_block
 end
 
 
