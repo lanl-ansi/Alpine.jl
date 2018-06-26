@@ -4,7 +4,7 @@
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log_level=100)
+                                loglevel=100)
 
         m=exprstest(solver=test_solver)
 
@@ -119,7 +119,7 @@
     @testset "Expression Test || bilinear || Affine || nlp1.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0)
+                               loglevel=0)
         m=nlp1(solver=test_solver)
 
         JuMP.build(m)
@@ -140,7 +140,7 @@
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
 								   mip_solver=CbcSolver(OutputFlag=0),
-								   log_level=0)
+								   loglevel=0)
 
         m=nlp3(solver=test_solver)
 
@@ -217,7 +217,7 @@
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0)
+                               loglevel=0)
 
         m = operator_c(solver=test_solver)
 
@@ -238,7 +238,7 @@
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0)
+                               loglevel=0)
 
         m = blend029(solver=test_solver)
 
@@ -352,7 +352,7 @@
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0)
+                               loglevel=0)
 
         m = multi3(solver=test_solver, exprmode=1)
 
@@ -652,7 +652,7 @@
     @testset "Expression Test || bilinear || Complex-div || div.jl" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0)
+                               loglevel=0)
 
         m = div(solver=test_solver)
 
@@ -746,7 +746,7 @@ end
     @testset "Expression parsing || part1 " begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
 								   mip_solver=CbcSolver(OutputFlag=0),
-								   log_level=0))
+								   loglevel=0))
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, x[1]^2 >= 1)  					# Basic monomial x[5]=x[1]^2
         @NLconstraint(m, x[1]*x[2] <= 1)				# x[6] <= 1 : x[6] = x[1]*x[2]
@@ -785,7 +785,7 @@ end
     @testset "Expression parsing || part2" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0))
+                               loglevel=0))
 
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, (x[1]*x[2]) * x[3] >= 1)
@@ -841,7 +841,7 @@ end
     @testset "Expression parsing || part3" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0))
+                               loglevel=0))
 
         @variable(m, x[1:4]>=0)
         @NLconstraint(m, ((x[1]*x[2])*x[3])*x[4] >= 1)
@@ -904,7 +904,7 @@ end
     @testset "Expression parsing || part7" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0))
+                               loglevel=0))
         @variable(m, x[1:4]>=0)
 
         @NLconstraint(m, x[1]*x[2]*x[3]*x[4] >= 1)
@@ -953,7 +953,7 @@ end
     @testset "Expression parsing || part8" begin
         m = Model(solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0))
+                               loglevel=0))
         @variable(m, x[1:4]>=0)
 
         @NLconstraint(m, (x[1]*x[2]*x[3])*x[4] >= 1)
@@ -1007,7 +1007,7 @@ end
 
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log_level=0)
+                                loglevel=0)
         m = convex_test(test_solver)
 
         JuMP.build(m)
@@ -1213,9 +1213,9 @@ end
 
     @testset "Linear Lifting : nlp2" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(mip_solver=CbcSolver(),cont_solver=IpoptSolver(print_level=0), log_level=0),
+                               mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
                                disc_ratio=8,
-                               log_level=100)
+                               loglevel=100)
 
         m = nlp2(solver=test_solver)
 
@@ -1263,7 +1263,7 @@ end
     @testset "Linear Lifting : general" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                mip_solver=CbcSolver(OutputFlag=0),
-                               log_level=0)
+                               loglevel=0)
 
         m = basic_linear_lift(solver=test_solver)
 
@@ -1344,7 +1344,7 @@ end
     @testset "Expression Test || complex || Affine || operator_b" begin
         test_solver = PODSolver(nlp_local_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(OutputFlag=0),
-                                log_level=100)
+                                loglevel=100)
 
         m=operator_b(solver=test_solver)
 
@@ -1436,7 +1436,7 @@ end
 
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(),
-                               log_level=100)
+                               loglevel=100)
 
         m = bpml(solver=test_solver)
 
@@ -1488,7 +1488,7 @@ end
     @testset "Operator :: bmpl && linbin && binprod with linear lifting and coefficients" begin
         test_solver=PODSolver(nlp_local_solver=IpoptSolver(),
                                mip_solver=CbcSolver(),
-                               log_level=100)
+                               loglevel=100)
 
         m = bmpl_linearlifting(solver=test_solver)
 
