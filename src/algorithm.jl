@@ -3,20 +3,14 @@ using JuMP
 type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
-    dev_debug::Bool                                             # Turn on the debug mode
-    dev_test::Bool                                              # Turn on for testing new code with
     colorful_pod::Any                                           # Turn on for a color solver
-    mip_license::Any                                            # Granted solver identifier
-
-    # Temporary internal place-holder for testing differnt things
-    dump::Any
 
     # basic solver parameters
-    log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
+    loglevel::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
-    max_iter::Int                                               # Target Maximum Iterations
-    rel_gap::Float64                                            # Relative optimality gap termination condition
-    abs_gap::Float64                                            # Absolute optimality gap termination condition
+    maxiter::Int                                               # Target Maximum Iterations
+    relgap::Float64                                            # Relative optimality gap termination condition
+    absgap::Float64                                            # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
 
     # convexification method tuning
@@ -33,7 +27,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # parameters used in partitioning algorithm
     disc_ratio::Any                                             # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
-    disc_var_pick_algo::Any                                     # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
+    disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     disc_add_partition_method::Any                              # Additional methods to add discretization
     disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretizations
     disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretizations
@@ -41,31 +35,25 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_ratio_branch::Bool
 
     # parameters used to control convhull formulation
-    convexhull_sweep_limit::Int                                 # Contoller for formulation density
-    convhull_formulation_sos2::Bool                                   # Convex hull formulation with SOS-2 representation (numerically best so far)
-    convhull_formulation_sos2aux::Bool                                # Speical SOS-2 formulation that utilized auxilary variables
-    convhull_formulation_facet::Bool                                  # Use the facets contraint generated from PORTA
+    convhull_formulation::String                                # Formulation to used for relaxation
+    convhull_ebd::Bool
+    convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
+    convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
+    convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
 
     # parameters related to presolving
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_bound_tightening::Bool                             # Perform bound tightening procedure before main algorithm
-    presolve_max_iter::Int                                      # Maximum iteration allowed to perform presolve (vague in parallel mode)
+    presolve_bt::Bool                                           # Perform bound tightening procedure before main algorithm
+    presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
-    presolve_bound_tightening_algo::Any                         # Method used for bound tightening procedures, can either be index of default methods or functional inputs
-    presolve_mip_relaxation::Bool                               # Relax the MIP solved in built-in relaxation scheme for time performance
-    presolve_mip_timelimit::Float64                             # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
+    presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be index of default methods or functional inputs
+    presolve_bt_relax::Bool                                     # Relax the MIP solved in built-in relaxation scheme for time performance
+    presolve_bt_mip_timeout::Float64                            # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
 
     # Domain Reduction
-    bound_basic_propagation::Bool                               # Conduct basic bound propagation
+    presolve_bp::Bool                             # Conduct basic bound propagation
 
-    # embedding formulation
-    embedding::Bool
-    embedding_encode::Any                                       # Encoding method used for embedding
-    embedding_ibs::Bool                                         # Enable independent branching scheme
-    embedding_link::Bool                                         # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
-
-    # additional parameters
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
     # add all the solver options
@@ -120,7 +108,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     x_cont::Vector{JuMP.Variable}                               # JuMP vector of continuous variables
     num_var_linear_lifted_mip::Int                              # Number of linear lifting variables required.
     num_var_nonlinear_lifted_mip::Int                           # Number of lifted variables
-    num_var_discretization_mip::Int                             # Number of variables on which discretization is performed
+    num_var_disc_mip::Int                                       # Number of variables on which discretization is performed
     num_constr_convex::Int                                      # Number of structural constraints
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
     nonlinear_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
@@ -133,7 +121,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
     bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
     discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
-    var_discretization_mip::Vector{Any}                         # Variables on which discretization is performed
+    var_disc_mip::Vector{Any}                                   # Variables on which discretization is performed
     sol_incumb_lb::Vector{Float64}                              # Incumbent lower bounding solution
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
     u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
@@ -154,8 +142,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(dev_debug, dev_test,colorful_pod,
-                                log_level, timeout, max_iter, rel_gap, tol,
+    function PODNonlinearModel(colorful_pod,
+                                loglevel, timeout, maxiter, relgap, tol,
                                 nlp_local_solver,
                                 minlp_local_solver,
                                 mip_solver,
@@ -166,7 +154,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 method_convexification,
                                 term_patterns,
                                 constr_patterns,
-                                disc_var_pick_algo,
+                                disc_var_pick,
                                 disc_ratio,
                                 disc_uniform_rate,
                                 disc_add_partition_method,
@@ -174,35 +162,30 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 disc_rel_width_tol,
                                 disc_consecutive_forbid,
                                 disc_ratio_branch,
-                                convexhull_sweep_limit,
-                                convhull_formulation_sos2,
-                                convhull_formulation_sos2aux,
-                                convhull_formulation_facet,
+                                convhull_formulation,
+                                convhull_ebd,
+                                convhull_ebd_encode,
+                                convhull_ebd_ibs,
+                                convhull_ebd_link,
                                 presolve_track_time,
-                                presolve_bound_tightening,
-                                presolve_max_iter,
+                                presolve_bt,
+                                presolve_maxiter,
                                 presolve_bt_width_tol,
                                 presolve_bt_output_tol,
-                                presolve_bound_tightening_algo,
-                                presolve_mip_relaxation,
-                                presolve_mip_timelimit,
-                                bound_basic_propagation,
-                                embedding,
-                                embedding_encode,
-                                embedding_ibs,
-                                embedding_link,
+                                presolve_bt_algo,
+                                presolve_bt_relax,
+                                presolve_bt_mip_timeout,
+                                presolve_bp,
                                 user_parameters)
 
         m = new()
 
         m.colorful_pod = colorful_pod
-        m.dev_debug = dev_debug
-        m.dev_test = dev_test
 
-        m.log_level = log_level
+        m.loglevel = loglevel
         m.timeout = timeout
-        m.max_iter = max_iter
-        m.rel_gap = rel_gap
+        m.maxiter = maxiter
+        m.relgap = relgap
         m.tol = tol
 
         m.recognize_convex = recognize_convex
@@ -214,7 +197,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.term_patterns = term_patterns
         m.constr_patterns = constr_patterns
 
-        m.disc_var_pick_algo = disc_var_pick_algo
+        m.disc_var_pick = disc_var_pick
         m.disc_ratio = disc_ratio
         m.disc_uniform_rate = disc_uniform_rate
         m.disc_add_partition_method = disc_add_partition_method
@@ -223,26 +206,22 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.disc_consecutive_forbid = disc_consecutive_forbid
         m.disc_ratio_branch = disc_ratio_branch
 
-        m.convexhull_sweep_limit = convexhull_sweep_limit
-        m.convhull_formulation_sos2 = convhull_formulation_sos2
-        m.convhull_formulation_sos2aux = convhull_formulation_sos2aux
-        m.convhull_formulation_facet = convhull_formulation_facet
+        m.convhull_formulation = convhull_formulation
+        m.convhull_ebd = convhull_ebd
+        m.convhull_ebd_encode = convhull_ebd_encode
+        m.convhull_ebd_ibs = convhull_ebd_ibs
+        m.convhull_ebd_link = convhull_ebd_link
 
         m.presolve_track_time = presolve_track_time
-        m.presolve_bound_tightening = presolve_bound_tightening
-        m.presolve_max_iter = presolve_max_iter
+        m.presolve_bt = presolve_bt
+        m.presolve_maxiter = presolve_maxiter
         m.presolve_bt_width_tol = presolve_bt_width_tol
         m.presolve_bt_output_tol = presolve_bt_output_tol
-        m.presolve_bound_tightening_algo = presolve_bound_tightening_algo
-        m.presolve_mip_relaxation = presolve_mip_relaxation
-        m.presolve_mip_timelimit = presolve_mip_timelimit
+        m.presolve_bt_algo = presolve_bt_algo
+        m.presolve_bt_relax = presolve_bt_relax
+        m.presolve_bt_mip_timeout = presolve_bt_mip_timeout
 
-        m.bound_basic_propagation = bound_basic_propagation
-
-        m.embedding = embedding
-        m.embedding_encode = embedding_encode
-        m.embedding_ibs = embedding_ibs
-        m.embedding_link = embedding_link
+        m.presolve_bp = presolve_bp
 
         m.nlp_local_solver = nlp_local_solver
         m.minlp_local_solver = minlp_local_solver
@@ -268,11 +247,11 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.all_nonlinear_vars = Int[]
         m.bounding_constr_expr_mip = []
         m.bounding_constr_mip = []
-        m.var_discretization_mip = []
+        m.var_disc_mip = []
         m.discretization = Dict()
         m.num_var_linear_lifted_mip = 0
         m.num_var_nonlinear_lifted_mip = 0
-        m.num_var_discretization_mip = 0
+        m.num_var_disc_mip = 0
         m.num_constr_convex = 0
         m.structural_constr = []
         m.bound_sol_history = []
@@ -283,8 +262,6 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.best_bound = -Inf
         m.best_rel_gap = Inf
         m.pod_status = :NotLoaded
-
-        m.dump = STDOUT
 
         create_status!(m)
         create_logs!(m)
@@ -353,7 +330,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # populate data to create the bounding model
     process_expr(m)                 # Compact process of every expression
     initialize_tight_bounds(m)      # Initialize tightened bound vectors for future usage
-    m.bound_basic_propagation && bounds_propagation(m) # Fetch bounds from constraints
+    m.presolve_bp && bounds_propagation(m) # Fetch bounds from constraints
     resolve_lifted_var_bounds(m)    # resolve lifted var bounds
     pick_vars_discretization(m)     # Picking variables to be discretized
     initialize_discretization(m)    # Initialize discretization dictionary
@@ -377,7 +354,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
     any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
     presolve(m)
     global_solve(m)
-    (m.log_level > 0) && logging_row_entry(m, finsih_entry=true)
+    (m.loglevel > 0) && logging_row_entry(m, finsih_entry=true)
     summary_status(m)
 end
 
@@ -408,8 +385,8 @@ is then used to partition the variables for the subsequent Adaptive Multivariate
 function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
-    (m.log_level > 0) && println("\nPOD algorithm presolver started.")
-    (m.log_level > 0) && println("Performing local solve to obtain a feasible solution.")
+    (m.loglevel > 0) && println("\nPOD algorithm presolver started.")
+    (m.loglevel > 0) && println("Performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
     # Regarding upcoming changes in status
@@ -418,19 +395,19 @@ function presolve(m::PODNonlinearModel)
 
     if m.status[:local_solve] in status_pass
         bound_tightening(m, use_bound = true)                              # performs bound-tightening with the local solve objective value
-        (m.presolve_bound_tightening) && initialize_discretization(m)      # Reinitialize discretization dictionary on tight bounds
+        (m.presolve_bt) && initialize_discretization(m)                    # Reinitialize discretization dictionary on tight bounds
         (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
     elseif m.status[:local_solve] in status_reroute
-        (m.log_level > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
+        (m.loglevel > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-        (m.log_level > 0) && println("second attempt at local solve using tightened bounds...")
+        (m.loglevel > 0) && println("second attempt at local solve using tightened bounds...")
         local_solve(m, presolve = true) # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
         if m.status in status_pass  # successful second try
             (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m, true))
             add_partition(m, use_solution=m.best_sol)
         else    # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
-            (m.log_level > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
+            (m.loglevel > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
             create_bounding_mip(m)       # Build the bounding ATMC model
             bounding_solve(m)            # Solve bounding model
             (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m))
@@ -447,8 +424,8 @@ function presolve(m::PODNonlinearModel)
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
-    (m.log_level > 0) && println("Presolve ended.")
-    (m.log_level > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
+    (m.loglevel > 0) && println("Presolve ended.")
+    (m.loglevel > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
 
     return
 end
@@ -469,17 +446,17 @@ For example, this algorithm can easily be reformed as a uniform-partitioning alg
 """
 function global_solve(m::PODNonlinearModel)
 
-    (m.log_level > 0) && logging_head(m)
+    (m.loglevel > 0) && logging_head(m)
     (!m.presolve_track_time) && reset_timer(m)
-    while (m.best_rel_gap > m.rel_gap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.max_iter)
+    while (m.best_rel_gap > m.relgap) && (m.logs[:time_left] > 0.0001) && (m.logs[:n_iter] < m.maxiter)
         m.logs[:n_iter] += 1
         create_bounding_mip(m)                           # Build the bounding ATMC model
         bounding_solve(m)                                # Solve bounding model
         update_opt_gap(m)
-        (m.log_level > 0) && logging_row_entry(m)
+        (m.loglevel > 0) && logging_row_entry(m)
         local_solve(m)                                   # Solve upper bounding model
-        (m.best_rel_gap <= m.rel_gap || m.logs[:n_iter] >= m.max_iter) && break
-        (m.disc_var_pick_algo == 3) && update_discretization_var_set(m)
+        (m.best_rel_gap <= m.relgap || m.logs[:n_iter] >= m.maxiter) && break
+        (m.disc_var_pick == 3) && update_discretization_var_set(m)
         (m.disc_ratio_branch) && (m.disc_ratio = disc_ratio_branch(m))    # Only perform for a maximum three times
         add_partition(m)                                 # Add extra discretizations
     end
@@ -556,14 +533,14 @@ function local_solve(m::PODNonlinearModel; presolve = false)
         m.status[:local_solve] = :Infeasible
         return
     elseif local_solve_nlp_status == :Unbounded
+        m.status[:local_solve] = :Unbounded
         (presolve == true) && warn("[PRESOLVE] NLP local solve is unbounded.")
         (presolve == false) && warn("[LOCAL SOLVE] NLP local solve is unbounded.")
-        m.status[:local_solve] = :Unbounded
         return
     else
-		(presolve == true) && error("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).")
-        (presolve == false) && warn("[LOCAL SOLVE] NLP local solve failure.")
         m.status[:local_solve] = :Error
+        (presolve == true) && warn("[PRESOLVE] NLP solve failure $(local_solve_nlp_status).")
+        (presolve == false) && warn("[LOCAL SOLVE] NLP local solve failure.")
         return
     end
 
