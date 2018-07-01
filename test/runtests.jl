@@ -14,9 +14,9 @@ end
 # Performe Tests
 include("$(poddir)/test/solver.jl")
 include("$(poddir)/test/expression.jl")
-include("$(poddir)/test/algorithm.jl")
-# include("$(poddir)/test/integer.jl")
 include("$(poddir)/test/utility.jl")
+include("$(poddir)/test/algorithm.jl")
+
 
 # Test Generation Code commented
 # for k in keys(m.internalModel.nonconvex_terms)

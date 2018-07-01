@@ -33,20 +33,20 @@ function logging_summary(m::PODNonlinearModel)
     if m.loglevel > 0
         print_with_color(:light_yellow, "full problem loaded into POD\n")
         println("problen sense $(m.sense_orig)")
-        println("number of constraints = ", m.num_constr_orig)
-        println("number of non-linear constraints = ", m.num_nlconstr_orig)
-        println("number of linear constraints = ", m.num_lconstr_orig)
-        println("number of continuous variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]))
-        println("number of binary variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]))
-        println("number of integer variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
+        println("# of constraints = ", m.num_constr_orig)
+        println("# of non-linear constraints = ", m.num_nlconstr_orig)
+        println("# of linear constraints = ", m.num_lconstr_orig)
+        println("# of continuous variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]))
+        println("# of binary variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]))
+        println("# of integer variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
 
         println("detected nonlinear terms = ", length(m.nonconvex_terms))
         for i in POD_C_NLTERMS
             cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
             cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
         end
-        println("number of variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
-        println("number of selected variables to discretize = ", length(m.disc_vars))
+        println("# of variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
+        println("# of selected variables to discretize = ", length(m.disc_vars))
 
         println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
         println("                        SUB-SOLVERS  ")
@@ -59,7 +59,8 @@ function logging_summary(m::PODNonlinearModel)
         println("maximum iterations =  ", m.maxiter)
         @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
         println("default tolerance = ", m.tol)
-        m.recognize_convex && println("actively recognize convex patterns = ")
+        m.recognize_convex && println("actively recognize convex patterns")
+        m.recognize_convex && println("# of detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
         println("basic bound propagation = ", m.presolve_bp)
         println("use piece-wise relaxation formulation on integer variables = ", m.int_enable)
         println("piece-wise relaxation formulation = $(m.convhull_formulation) formulation")
@@ -102,12 +103,11 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     b_len = 14
-
-    if isa(m.logs[:obj][end], Float64)
+    if !isempty(m.logs[:obj]) && isa(m.logs[:obj][end], Float64)
         objstr = string(round(m.logs[:obj][end],4))
         spc = max(0, b_len - length(objstr))
     else
-        objstr = string(m.logs[:obj][end])
+        objstr = string("-")
         spc = max(0, b_len - length(objstr))
     end
     UB_block = string(" ", objstr, " " ^ spc)

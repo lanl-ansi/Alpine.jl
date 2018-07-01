@@ -284,7 +284,7 @@ end
 This function traverse a left hand side tree to collect affine terms.
 Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled properly
 """
-function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=0.0, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
+function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=nothing, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
 
 	# @show expr, coef, bufferVal
 
@@ -299,10 +299,10 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	end
 
 	if isa(expr, Float64) || isa(expr, Int) # Capture any coefficients or right hand side
-		(bufferVal > 0.0) ? bufferVal *= expr : bufferVal = expr * coef
+		(bufferVal != nothing) ? bufferVal *= expr : bufferVal = expr * coef
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	elseif expr in [:+, :-]    # TODO: what is this condition?
-		if bufferVal != 0.0 && bufferVar != nothing
+		if bufferVal != nothing && bufferVar != nothing
 			push!(lhscoeffs, bufferVal)
 			push!(lhsvars, bufferVar)
 			bufferVal = 0.0
@@ -334,22 +334,22 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	for i in start_pos:length(expr.args)
 		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_linear_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
-			if bufferVal != 0.0 && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
+			if bufferVal != nothing && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
 				push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)
 				push!(lhsvars, bufferVar)
-				bufferVal = 0.0
+				bufferVal = nothing
 				bufferVar = nothing
 			end
-			if bufferVal != 0.0 && bufferVar == nothing  # (sign) * (coef) => right-hand-side term
+			if bufferVal != nothing && bufferVar == nothing  # (sign) * (coef) => right-hand-side term
 				rhs += sign*sign_convertor(expr, i)*bufferVal
-				bufferVal = 0.0
+				bufferVal = nothing
 			end
-			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :+
+			if bufferVal == nothing && bufferVar != nothing && expr.args[1] == :+
 				push!(lhscoeffs, sign*1.0*coef)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
 			end
-			if bufferVal == 0.0 && bufferVar != nothing && expr.args[1] == :-
+			if bufferVal == nothing && bufferVar != nothing && expr.args[1] == :-
 				push!(lhscoeffs, sign*sign_convertor(expr, i)*coef)
 				push!(lhsvars, bufferVar)
 				bufferVar = nothing
@@ -360,10 +360,10 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	end
 
 	if level == 0
-		if bufferVal != 0.0 && bufferVar != nothing
+		if bufferVal != nothing && bufferVar != nothing
 			push!(lhscoeffs, bufferVal)
 			push!(lhsvars, bufferVar)
-			bufferVal = 0.0
+			bufferVal = nothing
 			bufferVar = nothing
 		end
 	end

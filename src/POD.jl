@@ -1,5 +1,3 @@
-__precompile__()
-
 module POD
 
 PODDEBUG = false
@@ -12,6 +10,10 @@ using Requires: @require
 
 @require Gurobi begin
     import Gurobi
+end
+
+@require CPLEX begin
+    import CPLEX
 end
 
 include("const.jl")

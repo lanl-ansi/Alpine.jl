@@ -27,10 +27,37 @@ function update_opt_gap(m::PODNonlinearModel)
             m.best_rel_gap = 0.0
             return
         end
-        m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+        if m.gapref == "ub"
+            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+        else
+            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_bound))
+        end
     end
 
     m.best_abs_gap = abs(m.best_obj - m.best_bound)
+    return
+end
+
+function measure_relaxed_deviation(m::PODNonlinearModel;sol=nothing)
+
+    sol == nothing ? sol = m.best_bound_sol : sol = sol
+
+    isempty(sol) && return
+
+    dev = []
+    for k in keys(m.nonconvex_terms)
+        y_idx = m.nonconvex_terms[k][:y_idx]
+        y_hat = sol[y_idx]
+        y_val = m.nonconvex_terms[k][:evaluator](m.nonconvex_terms[k], sol)
+        push!(dev, (y_idx, abs(y_hat-y_val), y_hat, y_val, m.nonconvex_terms[k][:var_idxs]))
+    end
+
+    sort!(dev, by=x->x[1])
+
+    for i in dev
+        m.loglevel > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
+    end
+
     return
 end
 
@@ -48,7 +75,7 @@ function update_incumb_objective(m::PODNonlinearModel, objval::Float64, sol::Vec
 
     convertor = Dict(:Max=>:>, :Min=>:<)
     push!(m.logs[:obj], objval)
-    if eval(convertor[m.sense_orig])(objval, m.best_obj)
+    if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
         m.best_obj = objval
         m.best_sol = sol
         m.status[:feasible_solution] = :Detected
@@ -133,9 +160,9 @@ function update_boundstop_options(m::PODNonlinearModel)
     if m.mip_solver_id == "Gurobi"
         # Calculation of the bound
         if m.sense_orig == :Min
-            stopbound = (1-m.relgap+m.tol) * m.best_obj
+            m.gapref == "ub" ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
         elseif m.sense_orig == :Max
-            stopbound = (1+m.relgap-m.tol) * m.best_obj
+            m.gapref == "ub" ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
         end
 
         for i in 1:length(m.mip_solver.options)
@@ -161,6 +188,7 @@ Check if the solution is alwasy the same within the last disc_consecutive_forbid
 """
 function check_solution_history(m::PODNonlinearModel, ind::Int)
 
+    m.disc_consecutive_forbid == 0 && return false
     (m.logs[:n_iter] < m.disc_consecutive_forbid) && return false
 
     sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1][ind]
@@ -168,6 +196,8 @@ function check_solution_history(m::PODNonlinearModel, ind::Int)
         search_pos = mod(m.logs[:n_iter]-1-i, m.disc_consecutive_forbid)+1
         !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=m.disc_rel_width_tol) && return false
     end
+
+    m.loglevel > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
     return true
 end
 
@@ -179,7 +209,7 @@ This function is used to fix variables to certain domains during the local solve
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
 """
-function fix_domains(m::PODNonlinearModel;discrete_sol=nothing)
+function fix_domains(m::PODNonlinearModel;discrete_sol=nothing, use_orig=false)
 
     discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
 
@@ -193,8 +223,8 @@ function fix_domains(m::PODNonlinearModel;discrete_sol=nothing)
             for j in 1:PCnt
                 if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
                     @assert j < length(m.discretization[i])
-                    l_var[i] = m.discretization[i][j]
-                    u_var[i] = m.discretization[i][j+1]
+                    use_orig ? l_var[i] = m.discretization[i][1] : l_var[i] = m.discretization[i][j]
+                    use_orig ? u_var[i] = m.discretization[i][end] : u_var[i] = m.discretization[i][j+1]
                     break
                 end
             end
@@ -239,8 +269,8 @@ function collect_lb_pool(m::PODNonlinearModel)
     # Always stick to the structural .discretization for algorithm consideration info
     # If in need, the scheme need to be refreshed with customized discretization info
 
-    if !(m.mip_solver_id == "Gurobi")
-        warn("Unsupported MILP solver for collecting solution pool") # Only feaible with Gurobi solver
+    if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
+        warn("Skipping collecting solution pool procedure", once=true) # Only feaible with Gurobi solver
         return
     end
 
@@ -294,11 +324,15 @@ function merge_solution_pool(m::PODNonlinearModel, s::Dict)
     end
 
     for i in 1:s[:cnt] # Now perform the merge
-        act = true # Then check if the update pool solution active partition idex is within the deactivated region
+        act = true # Then check if the update pool solution active partition index is within the deactivated region
         for v in var_idxs
             (s[:disc][i][v] in lbv2p[v]) || (act = false)
             act || (s[:stat][i] = :Dead)
             act || break
+        end
+        # Reject solutions that is around best bound to avoid traps
+        if isapprox(s[:obj][i], m.best_bound;atol=m.tol)
+            s[:stat][i] = :Dead
         end
         push!(m.bound_sol_pool[:sol], s[:sol][i])
         push!(m.bound_sol_pool[:obj], s[:obj][i])
@@ -313,9 +347,9 @@ function merge_solution_pool(m::PODNonlinearModel, s::Dict)
     m.bound_sol_pool[:vars] = var_idxs
 
     # Show the summary
-    println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
+    m.loglevel > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
     for i in 1:m.bound_sol_pool[:cnt]
-        m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
+        m.loglevel > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
     end
 
     return
@@ -427,23 +461,6 @@ function initialize_solution_pool(m::PODNonlinearModel, cnt::Int)
     return s
 end
 
-function adjust_branch_priority(m::PODNonlinearModel)
-
-    isempty(m.branch_priority_mip) && return # By default
-    m.mip_solver_id != "Gurobi" && return
-    !m.model_mip.internalModelLoaded && return
-
-    len = length(m.model_mip.colVal)
-    Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, [i in m.branch_priority_mip ? 1 : 0 for i in 1:len])
-
-    return
-end
-
-function reset_branch_priority(m::PODNonlinearModel)
-    m.branch_priority_mip = []
-    return
-end
-
 """
     Reconsideration required
 """
@@ -467,6 +484,9 @@ function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
                         push!(arcs, sort([varidxs[i], varidxs[j];]))
                     end
                 end
+            end
+            if length(varidxs) == 1
+                push!(arcs, sort([varidxs[1], varidxs[1];]))
             end
         elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
             var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
@@ -870,4 +890,29 @@ function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
     end
 
     return sol_vec
+end
+
+function adjust_branch_priority(m::PODNonlinearModel)
+
+    if m.mip_solver_id == "Gurobi"
+        !m.model_mip.internalModelLoaded && return
+        len = length(m.model_mip.colVal)
+        prior = Cint[] # priorities
+        for i=1:len
+            push!(prior, i)
+        end
+        Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
+    elseif m.mip_solver_id == "CPLEX"
+        !m.model_mip.internalModelLoaded && return
+        n = length(m.model_mip.colVal)
+        idxlist = Cint[1:n;] # variable indices
+        prior = Cint[] # priorities
+        for i=1:n
+            push!(prior, i)
+        end
+        CPLEX.set_branching_priority(MathProgBase.getrawsolver(internalmodel(m.model_mip)), idxlist, prior)
+    else
+        return
+    end
+
 end
