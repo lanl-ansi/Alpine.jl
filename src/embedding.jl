@@ -1,7 +1,4 @@
-"""
-	This function creates a mapping dictionary to link the right λ to the right bineary variables
-	based on how many partitions are required and a given encoding method.
-"""
+# Make sure two things :: correct setup & compatible mapping function
 function embedding_map(λCnt::Int, encoding::Any=ebd_gray, ibs::Bool=false)
 
 	map = Dict()
@@ -43,44 +40,27 @@ function embedding_map(λCnt::Int, encoding::Any=ebd_gray, ibs::Bool=false)
 	return map
 end
 
-"""
-	This function parse the encoding key string and return the built-in encoding function.
-"""
 function resolve_encoding_key(encoding::Any)
 	isa(encoding, Function) && return encoding
 	encoding == "default" && return ebd_gray
-	encoding == "gray" && return ebd_gray
-	encoding == "binary" && return ebd_binary
-	error("Must specify a encoding method when using embedding formulation")
+	error("Must specify a encoding method when using convhull_ebd formulation")
 end
 
 
-"""
-	This function is the same σ() function described in Vielma and Nemhauser 2011.
-"""
 function ebd_σ(b::String)
 	sv = ebd_support_bool_vec(b)
 	return [i for i in 1:length(sv) if sv[i]]
 end
 
-"""
-	This function is the same I() function described in Vielma and Nemhauser 2011.
-"""
 function ebd_I(j, λCnt)
 	return [i for i in collect(1:Int((λCnt-1))) if j in [i-1, i]] #Page 52
 end
 
-"""
-	This function is the same S() function described in Vielma and Nemhauser 2011.
-"""
 function ebd_S(i)
 	(i <= 0) && error("Embedding utility S_[i] doesn't take i<=0")
 	return [i, i-1]
 end
 
-"""
-	This function checks whether the encoding method is compatible or not to obtain a valid mapping.
-"""
 function is_compatible_encoding(code_seq::Vector)
 	for i in 1:(length(code_seq)-1)
 		sum(abs.(ebd_support_bool_vec(code_seq[i])-ebd_support_bool_vec(code_seq[i+1]))) != 1 && return false
@@ -88,9 +68,6 @@ function is_compatible_encoding(code_seq::Vector)
 	return true
 end
 
-"""
-	This is a utility function that convert the binary string into bool vector
-"""
 function ebd_support_bool_vec(s::String)
    v = Vector{Bool}(length(s))
    for i in 1:length(s)
@@ -99,9 +76,6 @@ function ebd_support_bool_vec(s::String)
    return v
 end
 
-"""
-	This is a utility function that convert the binary string into 0/1 vector
-"""
 function ebd_support_binary_vec(s::String)
    v = Vector{Int}(length(s))
    for i in 1:length(s)
@@ -110,10 +84,7 @@ function ebd_support_binary_vec(s::String)
    return v
 end
 
-"""
-	This is the function that translate the bounding constraints (α¹b⁰+α²b¹ <= x <= α¹b¹+α²b²)
-	with log # of binary variables, i.e., generate these constraints using log # of binary variables.
-"""
+# Version 3
 function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
 
 	lifters = Dict()
@@ -146,10 +117,6 @@ function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Ve
 	return
 end
 
-"""
-	This is a utility function used in ebd_link_xα() that constructing the mapping that links partitions with
-	combinations of binary variables.
-"""
 function ebd_link_expression(code::Vector, lift_dict::Dict, link_dict::Dict, p_idx::Int)
 
     L =  length(code)
@@ -188,18 +155,13 @@ function ebd_link_expression(code::Vector, lift_dict::Dict, link_dict::Dict, p_i
     return lift_dict, link_dict
 end
 
-"""
-	Built-in Encoding methods: binary encoding
-	This is a compatible encoding
-"""
+# ============================= #
+#   Built-in Encoding methods   #
+# ============================= #
 function ebd_binary(n, idx)
     return bin(n, idx)
 end
 
-"""
-	Built-in Encoding methods: gray encoding
-	This is a compatible encoding
-"""
 function ebd_gray(n, idx)
 	code_decimal = xor(n, n >> 1)
 	return bin(code_decimal, idx)

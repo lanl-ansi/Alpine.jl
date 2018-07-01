@@ -1,20 +1,102 @@
 """
-    initialize_tight_bounds(m::PODNonlinearModel)
+    init_tight_bound(m::PODNonlinearModel)
 
 Initial tight bound vectors for later operations
 """
-function initialize_tight_bounds(m::PODNonlinearModel)
+function init_tight_bound(m::PODNonlinearModel)
 
-    m.l_var_tight = [m.l_var_orig,fill(-Inf, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip);]
-    m.u_var_tight = [m.u_var_orig,fill(Inf, m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip);]
+    m.l_var_tight = [m.l_var_orig, fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
+    m.u_var_tight = [m.u_var_orig, fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
             m.u_var_tight[i] = 1.0
+        elseif m.var_type_orig[i] == :Int
+            m.l_var_tight[i] = floor(m.l_var_tight[i])
+            m.u_var_tight[i] = ceil(m.u_var_tight[i])
         end
     end
 
     return
+end
+
+"""
+    init_disc(m::PODNonlinearModel)
+
+This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
+The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
+"""
+function init_disc(m::PODNonlinearModel)
+
+    for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+        if m.var_type[var] in [:Bin, :Cont]
+            lb = m.l_var_tight[var]
+            ub = m.u_var_tight[var]
+            m.discretization[var] = [lb, ub]
+        elseif m.var_type[var] in [:Int]
+            m.int_enable ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
+            m.int_enable ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
+            m.discretization[var] = [lb, ub]
+        else
+            error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
+        end
+    end
+
+    return
+end
+
+"""
+
+    to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+
+Utility functions to convert bounds vectors to Dictionary based structures that is more suitable for
+partition operations.
+
+"""
+function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+
+    @assert length(lbs) == length(ubs)
+    var_discretization = Dict()
+    for var in 1:m.num_var_orig
+        lb = lbs[var]
+        ub = ubs[var]
+        var_discretization[var] = [lb, ub]
+    end
+
+    total_var_cnt = m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip
+    orig_var_cnt = m.num_var_orig
+
+    if length(lbs) == total_var_cnt
+        for var in (1+orig_var_cnt):total_var_cnt
+            lb = lbs[var]
+            ub = ubs[var]
+            var_discretization[var] = [lb, ub]
+        end
+    else
+        for var in (1+orig_var_cnt):total_var_cnt
+            lb = -Inf
+            ub = Inf
+            var_discretization[var] = [lb, ub]
+        end
+    end
+
+    return var_discretization
+end
+
+"""
+    flatten_discretization(discretization::Dict)
+
+Utility functions to eliminate all partition on discretizing variable and keep the loose bounds.
+
+"""
+function flatten_discretization(discretization::Dict; kwargs...)
+
+    flatten_discretization = Dict()
+    for var in keys(discretization)
+        flatten_discretization[var] = [discretization[var][1],discretization[var][end]]
+    end
+
+    return flatten_discretization
 end
 
 
@@ -50,12 +132,12 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_l_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
                     end
                     if eval_u_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif aff[:sense] == :(>=) && var_coef > 0.0  # a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
@@ -70,9 +152,9 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
                     end
-                elseif var_coef < 0.0 && aff[:sense] == :(>=) # -a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
+                elseif aff[:sense] == :(>=) && var_coef < 0.0  # -a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
                     for j in 1:length(aff[:vars])
                         if j != i && aff[:coefs][j] > 0.0
@@ -85,7 +167,7 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif (aff[:sense] == :(<=) && aff[:coefs][i] > 0.0) # a($) - by + cz <= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
@@ -100,7 +182,7 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound < m.u_var_tight[var_idx] - m.tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Upper bound $(m.u_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
                     end
                 elseif (aff[:sense] == :(<=) && aff[:coefs][i] < 0.0) # -a($) - by + cz <= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
@@ -115,7 +197,7 @@ function bounds_propagation(m::PODNonlinearModel)
                     if eval_bound > m.l_var_tight[var_idx] + m.tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 99) && println("[VAR$(var_idx)] Lower bound $(m.l_var_tight[var_idx]) evaluated from constraints")
+                        (m.loglevel > 99) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
                     end
                 end
             end
@@ -123,126 +205,128 @@ function bounds_propagation(m::PODNonlinearModel)
         (exhausted == true && m.loglevel > 99) && println("Initial constraint-based bound evaluation exhausted...")
     end
 
+
+
     return
 end
 
+"""
+    Categorize variable based on variable bounds
+"""
+function recategorize_var(m::PODNonlinearModel)
+
+    for i in 1:m.num_var_orig
+        if m.var_type_orig[i] == :Int && m.l_var_orig[i] == 0.0 && m.u_var_orig[i] == 1.0
+            m.var_type_orig[i] = :Bin
+            m.var_type[i] = :Bin
+            println("Converting VAR$(i) to binary variable")
+        end
+    end
+
+    return
+end
 
 """
-    resolve_lifted_var_bounds(m::PODNonlinearModel)
+    resolve_var_bounds(m::PODNonlinearModel)
 
 Resolve the bounds of the lifted variable using the information in l_var_tight and u_var_tight. This method only takes
 in known or trivial bounds information to reason lifted variable bound to avoid the cases of infinity bounds.
 """
-function resolve_lifted_var_bounds(m::PODNonlinearModel)
+function resolve_var_bounds(m::PODNonlinearModel)
+
+    # Basic Bound propagation
+    m.presolve_bp && bounds_propagation(m) # Fetch bounds from constraints
+
+    # First resolve infinity bounds with assumptions
+    resolve_inf_bounds(m) # Temporarily disabled
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
-    # TODO: need to consider negative values
-    for i in 1:length(m.nonlinear_terms)
-        for bi in keys(m.nonlinear_terms)
-            if (m.nonlinear_terms[bi][:id]) == i && (m.nonlinear_terms[bi][:nonlinear_type] in [:bilinear, :monomial, :multilinear])
-                lifted_idx = m.nonlinear_terms[bi][:lifted_var_ref].args[2]
-                cnt = 0
-                bound = []
-                for var in bi
-                    cnt += 1
-                    var_idx = var.args[2]
-                    var_bounds = [m.l_var_tight[var_idx], m.u_var_tight[var_idx]]
-                    if cnt == 1
-                        bound = copy(var_bounds)
-                    elseif cnt == 2
-                        bound = bound * var_bounds'
-                    else
-                        bound = diag(bound) * var_bounds'
-                    end
-                end
-                if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
-                    m.l_var_tight[lifted_idx] = minimum(bound)
-                end
-                if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
-                    m.u_var_tight[lifted_idx] = maximum(bound)
-                end
-            end
+    for i in 1:length(m.term_seq)
+        k = m.term_seq[i]
+        if haskey(m.nonconvex_terms, k)
+            m.nonconvex_terms[k][:bound_resolver](m, k)
+        elseif haskey(m.linear_terms, k)
+            basic_linear_bounds(m, k)
+        else
+            error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
-    end
-
-    # Resolve bounds for lifted linear terms
-    for i in keys(m.linear_terms)
-        lifted_idx = m.linear_terms[i][:y_idx]
-        ub = 0.0
-        lb = 0.0
-        for j in m.linear_terms[i][:ref][:coef_var]
-            (j[1] > 0.0) ? ub += abs(j[1])*m.u_var_tight[j[2]] : ub -= abs(j[1])*m.l_var_tight[j[2]]
-            (j[1] > 0.0) ? lb += abs(j[1])*m.l_var_tight[j[2]] : lb -= abs(j[1])*m.u_var_tight[j[2]]
-        end
-        lb += m.linear_terms[i][:ref][:scalar]
-        ub += m.linear_terms[i][:ref][:scalar]
-        (lb > m.l_var_tight[lifted_idx] + m.tol) && (m.l_var_tight[lifted_idx] = lb)
-        (ub < m.u_var_tight[lifted_idx] - m.tol) && (m.u_var_tight[lifted_idx] = ub)
     end
 
     return
 end
 
 """
-    resolve_lifted_var_bounds(nonlinear_terms::Dict, discretization::Dict)
-
-For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
-The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
-can help speed up the subsequent solve in subsequent iterations.
+    Critically assumed since POD relies on finite bound to work
 """
-function resolve_lifted_var_bounds(nonlinear_terms::Dict, linear_terms::Dict, discretization::Dict; kwargs...)
+function resolve_inf_bounds(m::PODNonlinearModel)
 
-    # TODO this sequence need to be changed
+    warnuser = false
+    infcount = 0
+
+    # Only specify necessary bounds
+    for i in m.candidate_disc_vars
+        if m.l_var_tight[i] == -Inf
+            warnuser = true
+            m.l_var_tight[i] = -10e4
+            infcount += 1
+        end
+        if m.u_var_tight[i] == Inf
+            warnuser = true
+            m.u_var_tight[i] = 10e4
+            infcount +=1
+        end
+    end
+
+    warnuser && println("Inf bound detected on $(infcount) variables. Initialize with value -10e4/10e4. This may affect global optimality and performance.")
+
+    return
+end
+
+"""
+    resolve_var_bounds(nonconvex_terms::Dict, discretization::Dict)
+
+    For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
+    The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
+    can help speed up the subsequent solve in subsequent iterations.
+
+    Only used in presolve bound tightening
+"""
+function resolve_var_bounds(m::PODNonlinearModel, d::Dict; kwargs...)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
-    for i in 1:length(nonlinear_terms)
-        for bi in keys(nonlinear_terms)
-            if (nonlinear_terms[bi][:id] == i) && (nonlinear_terms[bi][:nonlinear_type] in [:bilinear, :monomial, :multilinear])
-                lifted_idx = nonlinear_terms[bi][:lifted_var_ref].args[2]
-                cnt = 0
-                bound = []
-                for var in bi
-                    cnt += 1
-                    var_idx = var.args[2]
-                    var_bounds = [discretization[var_idx][1], discretization[var_idx][end]]
-                    if cnt == 1
-                        bound = copy(var_bounds)
-                    elseif cnt == 2
-                        bound = bound * var_bounds'
-                    else
-                        bound = diag(bound) * var_bounds'
-                    end
-                end
-                if minimum(bound) > discretization[lifted_idx][1]
-                    discretization[lifted_idx][1] = minimum(bound)
-                end
-                if maximum(bound) < discretization[lifted_idx][end]
-                    discretization[lifted_idx][end] = maximum(bound)
-                end
+    for i in 1:length(m.term_seq)
+        k = m.term_seq[i]
+        if haskey(m.nonconvex_terms, k)
+            nlk = k
+            if m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
+                d = basic_monomial_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BININT]
+                d = basic_binint_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
+                d = basic_binprod_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
+                d = basic_sincos_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
+                d = basic_binlin_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
+                d = basic_intlin_bounds(m, nlk, d)
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTPROD]
+                d = basic_intprod_bounds(m, nlk, d)
+            else
+                error("EXPECTED ERROR : NEED IMPLEMENTATION")
             end
+        elseif haskey(m.linear_terms, k)
+            d = basic_linear_bounds(m, k, d)
+        else
+            error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
     end
 
-    # Resolve bounds for lifted linear terms
-    for i in keys(linear_terms)
-        lifted_idx = linear_terms[i][:y_idx]
-        ub = 0.0
-        lb = 0.0
-        for j in linear_terms[i][:ref][:coef_var]
-            (j[1] > 0.0) ? ub += abs(j[1])*discretization[j[2]][end] : ub -= abs(j[1])*discretization[j[2]][1]
-            (j[1] > 0.0) ? lb += abs(j[1])*discretization[j[2]][1] : lb -= abs(j[1])*discretization[j[2]][end]
-        end
-        lb += linear_terms[i][:ref][:scalar]
-        ub += linear_terms[i][:ref][:scalar]
-        (lb > discretization[lifted_idx][1] + m.tol) && (discretization[lifted_idx][1] = lb)
-        (ub < discretization[lifted_idx][end] - m.tol) && (discretization[lifted_idx][end] = ub)
-    end
-
-    return discretization
+    return d
 end
 
 """
@@ -255,9 +339,9 @@ and the .discretization will be cleared with the tight bounds for basic McCormic
 """
 function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
 
-    for var in m.all_nonlinear_vars
+    for var in m.candidate_disc_vars
         if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
-            deleteat!(m.var_disc_mip, findfirst(m.var_disc_mip, var)) # Clean nonlinear_terms by deleting the info
+            deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonconvex_terms by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end
     end
