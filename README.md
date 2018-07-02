@@ -20,7 +20,7 @@ POD globally solves a given MINLP by:
 
 ## Installation
 
-POD is a currently a private repository under the LANL-ANSI group, which can be installed through the Julia package manager:
+POD is a currently a unregistered package, with it's repository under the LANL-ANSI group, which can be installed through the Julia package manager:
 
 `Pkg.clone("https://github.com/lanl-ansi/POD.git")`
 
