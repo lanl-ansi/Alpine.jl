@@ -64,7 +64,7 @@ function logging_summary(m::PODNonlinearModel)
         println("use piece-wise relaxation formulation on integer variables = ", m.int_enable)
         println("piece-wise relaxation formulation = $(m.convhull_formulation) formulation")
         println("method for picking discretization variable = $(m.disc_var_pick)")
-        println("conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
+        println("consecutive solution rejection = after ", m.disc_consecutive_forbid, " times")
         if m.disc_ratio_branch
             println("discretization ratio branch activated")
         else

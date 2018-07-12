@@ -1,7 +1,8 @@
 """
     init_tight_bound(m::PODNonlinearModel)
 
-Initial tight bound vectors for later operations
+Initialize internal bound vectors (placeholders) to be used in other places.
+In this case, we don't have to mess with the original bound information.
 """
 function init_tight_bound(m::PODNonlinearModel)
 

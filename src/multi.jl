@@ -45,6 +45,9 @@ function amp_post_convhull(m::PODNonlinearModel; kwargs...)
     return
 end
 
+"""
+    Experimental function that used to address integer problems.
+"""
 function amp_convexify_integer(m::PODNonlinearModel, idx::Int, λ::Dict, α::Dict, d::Dict)
 
     # Check if VAR idx exist in any Complex Nonlinear Terms
@@ -511,7 +514,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, mon
 end
 
 """
-    Method for regular multilinear terms
+    Method for regular multilinear terms (terms that only has continuous variables)
 """
 function amp_post_inequalities_cont(m::PODNonlinearModel, discretization::Dict, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
 
@@ -578,6 +581,7 @@ function amp_post_inequalities_cont(m::PODNonlinearModel, discretization::Dict, 
 end
 
 """
+    [Experimental Function]
     Method for multilinear terms with discrete variables
 """
 function amp_post_inequalities_int(m::PODNonlinearModel, d::Dict, λ::Dict, α::Dict, indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
@@ -610,6 +614,10 @@ function amp_post_inequalities_int(m::PODNonlinearModel, d::Dict, λ::Dict, α::
     return
 end
 
+"""
+    [Experimental Function]
+    This is a utility function that used to measure the coefficients for formulations that convexify terms with integer variables.
+"""
 function amp_pick_ratevec(partvec::Vector, i::Int)
 
     λCnt = length(partvec)

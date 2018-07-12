@@ -290,6 +290,9 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
     return discretization
 end
 
+"""
+    This function targets to address unexpected numerical issues when adding partitions to tight regions.
+"""
 function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - m.tol || point > partvec[end] + m.tol

@@ -1,5 +1,5 @@
 """
-    Find an integer point from solution point. Wrapps discover_else_integer() when rounded solution
+    Find an integer point from solution point. Wraps discover_else_integer() when rounded solution
     step on a integer that has already been discovered.
 """
 function discover_int_point(m::PODNonlinearModel, var::Int, partvec::Vector, point::Float64)
