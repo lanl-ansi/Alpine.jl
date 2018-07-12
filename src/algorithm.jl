@@ -320,7 +320,7 @@ function pick_disc_vars(m::PODNonlinearModel)
             error("Unsupported default indicator for picking variables for discretization")
         end
     else
-        error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
+        error("Input for parameter :disc_var_pick is illegal. Use Integer (0-3) or functions.")
     end
 
     return
