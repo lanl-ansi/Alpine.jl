@@ -46,17 +46,6 @@ function update_disc_int_var(m::PODNonlinearModel)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
-    # If all discretized integer solution have been fully discovered, then include all other integer variables
-    checker = [is_fully_discovered_integer(i, m.discretization[i]) for i in m.disc_vars if m.var_type[i] == :Int]
-    if prod(checker)
-        for i in m.candidate_disc_vars
-            if m.var_type[i] == :Int && !(i in m.disc_vars)
-                m.loglevel > 99 && println("PUMPing Integer VAR$(i) into discretization var set.")
-                push!(m.disc_vars, i)
-            end
-        end
-    end
-
     return
 end
 

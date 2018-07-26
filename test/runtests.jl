@@ -15,7 +15,6 @@ end
 include("$(poddir)/test/solver.jl")
 include("$(poddir)/test/expression.jl")
 include("$(poddir)/test/algorithm.jl")
-# include("$(poddir)/test/integer.jl")
 include("$(poddir)/test/utility.jl")
 
 # Test Generation Code commented
