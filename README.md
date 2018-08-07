@@ -16,8 +16,6 @@ POD globally solves a given MINLP by:
  **Illustration of POD's dynamic partitioning and outer-approximation on simple functions** ([Source](https://arxiv.org/abs/1707.02514))
  
 <p align="center"> <img src="https://github.com/lanl-ansi/POD.jl/blob/master/Dynamic_partitions_github.png" width="580" class="centerImage"> </p>
-
-{{< youtube mwkhiEIS5JA >}}
 	 
 
 
