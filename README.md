@@ -17,13 +17,13 @@ POD globally solves a given MINLP by:
  
 <p align="center"> <img src="https://github.com/lanl-ansi/POD.jl/blob/master/Dynamic_partitions_github.png" width="580" class="centerImage"> </p>
 
-	 <p align="center"> 
-	   <param name="movie" value=" https://www.youtube.com/watch?v=mwkhiEIS5JA" />
-	   <param name="wmode" value="transparent" />
-	   <embed src=" https://www.youtube.com/watch?v=mwkhiEIS5JA"
-	          type="application/x-shockwave-flash"
-	          wmode="transparent" width="425" height="350" />
-	 </p>
+<p align="center"> 
+<param name="movie" value=" https://www.youtube.com/watch?v=mwkhiEIS5JA" />
+<param name="wmode" value="transparent" />
+<embed src=" https://www.youtube.com/watch?v=mwkhiEIS5JA"
+type="application/x-shockwave-flash"
+wmode="transparent" width="425" height="350" />
+</p>
 	 
 
 
