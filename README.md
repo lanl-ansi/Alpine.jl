@@ -17,7 +17,7 @@ POD globally solves a given MINLP by:
  
 <p align="center"> <img src="https://github.com/lanl-ansi/POD.jl/blob/master/Dynamic_partitions_github.png" width="580" class="centerImage"> </p>
 
-{{< youtube https://www.youtube.com/watch?v=mwkhiEIS5JA >}}
+{{< youtube mwkhiEIS5JA >}}
 	 
 
 
