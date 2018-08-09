@@ -18,9 +18,9 @@ POD globally solves a given MINLP by:
  
 <p align="center"> <img src="https://github.com/lanl-ansi/POD.jl/blob/master/Dynamic_partitions_github.png" width="580" class="centerImage"> </p>
 -->
-**Presentation at the [2nd Annual JuMP-dev Workshop](http://www.juliaopt.org/meetings/bordeaux2018/), held at the Institut de Mathématiques de Bordeaux, June 2018** 
+**Presentation on POD.jl at the [2nd Annual JuMP-dev Workshop](http://www.juliaopt.org/meetings/bordeaux2018/), held at the Institut de Mathématiques de Bordeaux, June 2018** 
 
-[<img src="https://github.com/lanl-ansi/POD.jl/blob/master/pod_slide.png" width="700" height="300">](https://www.youtube.com/watch?v=mwkhiEIS5JA)
+[<img src="https://github.com/lanl-ansi/POD.jl/blob/master/pod_slide.jpg" width="700" height="300">](https://www.youtube.com/watch?v=mwkhiEIS5JA)
 
 ## Installation
 
