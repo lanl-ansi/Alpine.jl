@@ -33,11 +33,9 @@ More specifically, the Tightening McCormick used here can be genealized in the f
 ```
 
 """
-function create_bounding_mip(m::PODNonlinearModel; kwargs...)
+function create_bounding_mip(m::PODNonlinearModel; use_disc=nothing)
 
-    options = Dict(kwargs)
-
-    haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
+    use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
     m.model_mip = Model(solver=m.mip_solver) # Construct JuMP Model
     start_build = time()
@@ -45,7 +43,7 @@ function create_bounding_mip(m::PODNonlinearModel; kwargs...)
     amp_post_vars(m)                                                # Post original and lifted variables
     amp_post_lifted_constraints(m)                                  # Post lifted constraints
     amp_post_lifted_objective(m)                                    # Post objective
-    amp_post_convexification(m, use_disc=discretization)  # Convexify problem
+    amp_post_convexification(m, use_disc=discretization)            # Convexify problem
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
@@ -57,23 +55,21 @@ end
 """
     amp_post_convexification(m::PODNonlinearModel; kwargs...)
 
-warpper function to convexify the problem for a bounding model. This function talks to nonlinear_terms and convexification methods
+warpper function to convexify the problem for a bounding model. This function talks to nonconvex_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
-function amp_post_convexification(m::PODNonlinearModel; kwargs...)
+function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)
 
-    options = Dict(kwargs)
+    use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
-    haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
-
-    for i in 1:length(m.method_convexification)                 # Additional user-defined convexification method
+    for i in 1:length(m.method_convexification)             # Additional user-defined convexification method
         eval(m.method_convexification[i])(m)
     end
 
-    amp_post_mccormick(m, use_disc=discretization)    # handles all bi-linear and monomial convexificaitons
-    amp_post_convhull(m, use_disc=discretization)         # convex hull representation
+    amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
+    amp_post_convhull(m, use_disc=discretization)           # convex hull representation
 
-    convexification_exam(m) # Exam to see if all non-linear terms have been convexificed
+    is_fully_convexified(m) # Exam to see if all non-linear terms have been convexificed
 
     return
 end
@@ -83,19 +79,19 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
 
     if haskey(options, :use_disc)
-        l_var = [options[:use_disc][i][1]   for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
-        u_var = [options[:use_disc][i][end] for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)]
+        l_var = [options[:use_disc][i][1]   for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+        u_var = [options[:use_disc][i][end] for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     else
         l_var = m.l_var_tight
         u_var = m.u_var_tight
     end
 
-    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)])
+    @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)])
 
-    for i in 1:(m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip)
-        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
-        (l_var[i] > -Inf) && (setlowerbound(x[i], l_var[i]))    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
-        (u_var[i] < Inf) && (setupperbound(x[i], u_var[i]))     # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+    for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])  # This is a tricky step, not enforcing category of lifted variables is able to improve performance
+        l_var[i] > -Inf && setlowerbound(x[i], l_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
+        u_var[i] < Inf && setupperbound(x[i], u_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
     end
 
     return
@@ -105,12 +101,12 @@ end
 function amp_post_lifted_constraints(m::PODNonlinearModel)
 
     for i in 1:m.num_constr_orig
-        if m.structural_constr[i] == :affine
+        if m.constr_structure[i] == :affine
             amp_post_affine_constraint(m.model_mip, m.bounding_constr_mip[i])
-        elseif m.structural_constr[i] == :convex
+        elseif m.constr_structure[i] == :convex
             amp_post_convex_constraint(m.model_mip, m.bounding_constr_mip[i])
         else
-            error("Unknown structural_constr type $(m.structural_constr[i])")
+            error("Unknown constr_structure type $(m.constr_structure[i])")
         end
     end
 
@@ -132,6 +128,8 @@ function amp_post_affine_constraint(model_mip::JuMP.Model, affine::Dict)
     elseif affine[:sense] == :(==)
         @constraint(model_mip,
             sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) == affine[:rhs])
+    else
+        error("Unkown sense.")
     end
 
     return
@@ -161,12 +159,12 @@ end
 
 function amp_post_lifted_objective(m::PODNonlinearModel)
 
-    if m.structural_obj == :affine
+    if m.obj_structure == :affine
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
-    elseif m.structural_obj == :convex
+    elseif m.obj_structure == :convex
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
-        error("Unknown structural obj type $(m.structural_obj)")
+        error("Unknown structural obj type $(m.obj_structure)")
     end
 
     return
@@ -217,7 +215,7 @@ TODO: also need to document the speical diverted cases when new partition touche
 
 This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
 """
-function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
+function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
 
     options = Dict(kwargs)
 
@@ -226,72 +224,118 @@ function add_adaptive_partition(m::PODNonlinearModel; kwargs...)
     haskey(options, :use_ratio) ? ratio = options[:use_ratio] : ratio = m.disc_ratio
     haskey(options, :branching) ? branching = options[:branching] : branching = false
 
-    (length(point_vec) < m.num_var_orig+m.num_var_linear_lifted_mip+m.num_var_nonlinear_lifted_mip) && (point_vec = resolve_lifted_var_value(m, point_vec))  # Update the solution vector for lifted variable
+    if length(point_vec) < m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
+        point_vec = resolve_lifted_var_value(m, point_vec)  # Update the solution vector for lifted variable
+    end
 
-    branching && (discretization = deepcopy(discretization))
+    if branching
+        discretization = deepcopy(discretization)
+    end
+
+    processed = Set{Int}()
 
     # ? Perform discretization base on type of nonlinear terms ? #
-    for i in m.var_disc_mip
+    for i in m.disc_vars
         point = point_vec[i]                # Original Variable
-        #@show i, point, discretization[i]
-        if (i <= m.num_var_orig) && (m.var_type_orig[i] in [:Bin, :Int])  # DO not add partitions to discrete variables
-            continue
-        end
-        if point < discretization[i][1] - m.tol || point > discretization[i][end] + m.tol
-			warn("Soluiton VAR$(i)=$(point) out of bounds [$(discretization[i][1]),$(discretization[i][end])]. Taking middle point...")
-			point = 0.5*(discretization[i][1]+discretization[i][end])
-		end
-        (abs(point - discretization[i][1]) <= m.tol) && (point = discretization[i][1])
-        (abs(point - discretization[i][end]) <= m.tol) && (point = discretization[i][end])
-        for j in 1:length(discretization[i])
-            if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                @assert j < length(m.discretization[i])
-                lb_local = discretization[i][j]
-                ub_local = discretization[i][j+1]
-                distance = ub_local - lb_local
-                if isa(ratio, Float64) || isa(ratio, Int)
-                    radius = distance / ratio
-                elseif isa(ratio, Function)
-                    radius = distance / ratio(m)
-                else
-                    error("Undetermined discretization ratio")
+        λCnt = length(discretization[i])
+
+        # @show i, point, discretization[i] # Debugger
+        # Apply special and user methods
+        # Disabled for testing performance
+        # for injector in m.method_partition_injection
+        #     injector(m, i, discretization[i], point, ratio, processed)
+        # end
+
+        # Built-in method based-on variable type
+        if m.var_type[i] == :Cont
+            i in processed && continue
+            point = correct_point(m, discretization[i], point, i)
+            for j in 1:λCnt
+                if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
+                    radius = calculate_radius(discretization[i], j, ratio)
+                    insert_partition(m, i, j, point, radius, discretization[i])
+                    push!(processed, i)
+                    break
                 end
-                lb_new = max(point - radius, lb_local)
-                ub_new = min(point + radius, ub_local)
-                ub_touch = true
-                lb_touch = true
-                if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=m.disc_abs_width_tol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > m.disc_rel_width_tol    # Insert new UB-based partition
-                    insert!(discretization[i], j+1, ub_new)
-                    ub_touch = false
-                end
-                if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=m.disc_abs_width_tol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > m.disc_rel_width_tol # Insert new LB-based partition
-                    insert!(discretization[i], j+1, lb_new)
-                    lb_touch = false
-                end
-                if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
-                    distance = -1.0
-                    pos = -1
-                    for j in 2:length(discretization[i])  # it is made sure there should be at least two partitions
-                        if (discretization[i][j] - discretization[i][j-1]) > distance
-                            lb_local = discretization[i][j-1]
-                            ub_local = discretization[i][j]
-                            distance = ub_local - lb_local
-                            point = lb_local + (ub_local - lb_local) / 2   # reset point
-                            pos = j
-                        end
-                    end
-                    chunk = (ub_local - lb_local)/2
-                    insert!(discretization[i], pos, lb_local + chunk)
-                    (m.loglevel > 99) && println("[DEBUG] !DIVERT! VAR$(i): |$(lb_local) | 2 SEGMENTS | $(ub_local)|")
-                else
-                    (m.loglevel > 99) && println("[DEBUG] VAR$(i): SOL=$(round(point,4)) RATIO=$(ratio), PARTITIONS=$(length(discretization[i])-1)  |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
-                end
-                break
             end
+        elseif m.var_type[i] == :Bin # This should never happen
+            warn("Binary variable in m.disc_vars. Check out what is wrong...")
+            continue  # No partition should be added to binary variable unless user specified
+        else
+            error("Unexpected variable types during injecting partitions")
         end
     end
 
     return discretization
+end
+
+"""
+    This function targets to address unexpected numerical issues when adding partitions to tight regions.
+"""
+function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64, var::Int)
+
+    if point < partvec[1] - m.tol || point > partvec[end] + m.tol
+        warn("VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point...")
+        return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
+    end
+
+    isapprox(point, partvec[1];atol=m.tol) && return partvec[1]
+    isapprox(point, partvec[end];atol=m.tol) && return partvec[end]
+
+    return point
+end
+
+function calculate_radius(partvec::Vector, part::Int, ratio::Any)
+
+    lb_local = partvec[part]
+    ub_local = partvec[part+1]
+
+    distance = ub_local - lb_local
+    if isa(ratio, Float64) || isa(ratio, Int)
+        radius = distance / ratio
+    elseif isa(ratio, Function)
+        radius = distance / ratio(m)
+    else
+        error("Undetermined discretization ratio")
+    end
+
+    return radius
+end
+
+function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::Number, radius::Float64, partvec::Vector)
+
+    abstol, reltol = m.disc_abs_width_tol, m.disc_rel_width_tol
+
+    lb_local, ub_local = partvec[partidx], partvec[partidx+1]
+    ub_touch, lb_touch = true, true
+    lb_new, ub_new = max(point - radius, lb_local), min(point + radius, ub_local)
+
+    if ub_new < ub_local && !isapprox(ub_new, ub_local; atol=abstol) && abs(ub_new-ub_local)/(1e-8+abs(ub_local)) > reltol # Insert new UB-based partition
+        insert!(partvec, partidx+1, ub_new)
+        ub_touch = false
+    end
+
+    if lb_new > lb_local && !isapprox(lb_new, lb_local; atol=abstol) && abs(lb_new-lb_local)/(1e-8+abs(lb_local)) > reltol # Insert new LB-based partition
+        insert!(partvec, partidx+1, lb_new)
+        lb_touch = false
+    end
+
+    if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
+        distvec = [(j, partvec[j+1]-partvec[j]) for j in 1:length(partvec)-1]
+        sort!(distvec, by=x->x[2])
+        point_orig = point
+        pos = distvec[end][1]
+        lb_local = partvec[pos]
+        ub_local = partvec[pos+1]
+        chunk = (ub_local - lb_local)/2
+        point = lb_local + (ub_local - lb_local) / 2
+        insert!(partvec, pos, lb_local + chunk)
+        (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(round(point,4)) |$(round(lb_local,4)) | 2 SEGMENTS | $(round(ub_local,4))|")
+    else
+        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+    end
+
+    return
 end
 
 function add_uniform_partition(m::PODNonlinearModel; kwargs...)
@@ -299,7 +343,7 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     options = Dict(kwargs)
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
 
-    for i in m.var_disc_mip  # Only construct when discretized
+    for i in m.disc_vars  # Only construct when discretized
         lb_local = discretization[i][1]
         ub_local = discretization[i][end]
         distance = ub_local - lb_local
@@ -312,11 +356,7 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     return discretization
 end
 
-
-"""
-    TODO: docstring
-"""
-function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
+function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
 
@@ -330,14 +370,9 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
     for r in ratio_pool
         st = time()
         if presolve
-            branch_disc = add_adaptive_partition(m, use_disc=m.discretization,
-                                                    branching=true,
-                                                    use_ratio=r,
-                                                    use_solution=m.best_sol)
+            branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r, use_solution=m.best_sol)
         else
-            branch_disc = add_adaptive_partition(m, use_disc=m.discretization,
-                                                    branching=true,
-                                                    use_ratio=r)
+            branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r)
         end
         create_bounding_mip(m, use_disc=branch_disc)
         res = disc_branch_solve(m)
@@ -355,6 +390,7 @@ function disc_ratio_branch(m::PODNonlinearModel, presolve=false)
     end
 
     println("INCUMB_RATIO = $(incumb_ratio)")
+
     return incumb_ratio
 end
 
@@ -375,6 +411,7 @@ function disc_branch_solve(m::PODNonlinearModel)
         warn("Unexpected solving condition $(status) during disc branching.")
     end
 
+    # Safety scheme
     if m.sense_orig == :Min
         return -Inf
     else

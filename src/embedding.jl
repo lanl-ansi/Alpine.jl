@@ -49,11 +49,8 @@ end
 function resolve_encoding_key(encoding::Any)
 	isa(encoding, Function) && return encoding
 	encoding == "default" && return ebd_gray
-	encoding == "gray" && return ebd_gray
-	encoding == "binary" && return ebd_binary
-	error("Must specify a encoding method when using embedding formulation")
+	error("Must specify a encoding method when using convhull_ebd formulation")
 end
-
 
 """
 	This function is the same σ() function described in Vielma and Nemhauser 2011.
