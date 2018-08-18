@@ -1186,7 +1186,7 @@ end
 @testset "Expression Prasing || Linear Lifting" begin
     @testset "Expression Parsing || Linear Lifting || nlp2" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
+                               mip_solver=CbcSolver(),
                                disc_ratio=8,
                                loglevel=100)
 
@@ -1405,7 +1405,7 @@ end
     @testset "Expression Parsing || Linear Lifting || brainpc3" begin
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
+                            mip_solver=CbcSolver(),
                             disc_ratio=8,
                             loglevel=100)
 
