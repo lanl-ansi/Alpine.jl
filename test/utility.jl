@@ -1,6 +1,6 @@
 @testset "Utility Function Tests: Solver identifier fetch" begin
 
-    test_solver=PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+    test_solver=PODSolver(minlp_solver=pavito_solver,
                           nlp_solver=IpoptSolver(print_level=0),
                           mip_solver=CbcSolver(logLevel=0),
                           presolve_bp=true,

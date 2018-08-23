@@ -3,5 +3,5 @@ JuMP
 MathProgBase
 Ipopt
 Cbc
-Pajarito
+Pavito
 GLPKMathProgInterface

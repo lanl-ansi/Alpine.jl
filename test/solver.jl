@@ -145,7 +145,7 @@ end
 @testset "Partitioning variable selection tests :: blend029" begin
 
     # Select all NL variable
-    test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+    test_solver = PODSolver(minlp_solver=pavito_solver,
                             nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
@@ -162,7 +162,7 @@ end
     @test m.internalModel.disc_var_pick == 0
 
     # Minimum vertex cover
-    test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+    test_solver = PODSolver(minlp_solver=pavito_solver,
                             nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=1,
@@ -180,7 +180,7 @@ end
     @test m.internalModel.disc_var_pick == 1
 
     # Adaptive Scheme vertex cover
-    test_solver = PODSolver(minlp_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+    test_solver = PODSolver(minlp_solver=pavito_solver,
                             nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=2,
