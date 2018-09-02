@@ -1,7 +1,7 @@
 @testset " Validation Test || AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
     test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+                       mip_solver=pavito_solver,
                        bilinear_convexhull=false,
                        monomial_convexhull=false,
                        presolve_bt=false,
@@ -61,7 +61,7 @@ end
 @testset " Validation Test || PBT-AMP-TMC || basic solve || exampls/nlp1.jl" begin
 
     test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-							   mip_solver=PajaritoSolver(cont_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0), log_level=0),
+							   mip_solver=pavito_solver,
                                bilinear_convexhull=false,
                                monomial_convexhull=false,
 							   presolve_bt=true,

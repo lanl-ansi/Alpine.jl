@@ -1,7 +1,8 @@
 """
     init_tight_bound(m::PODNonlinearModel)
 
-Initial tight bound vectors for later operations
+Initialize internal bound vectors (placeholders) to be used in other places.
+In this case, we don't have to mess with the original bound information.
 """
 function init_tight_bound(m::PODNonlinearModel)
 
@@ -299,12 +300,12 @@ function resolve_inf_bounds(m::PODNonlinearModel)
     for i in m.candidate_disc_vars
         if m.l_var_tight[i] == -Inf
             warnuser = true
-#m.l_var_tight[i] = -m.largebound
+            # m.l_var_tight[i] = -m.largebound
             infcount += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
-#m.u_var_tight[i] = m.largebound
+            # m.u_var_tight[i] = m.largebound
             infcount +=1
         end
     end

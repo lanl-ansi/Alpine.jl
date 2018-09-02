@@ -1,6 +1,5 @@
 # This file carries the goal of getting ready to transit from MPB interface to MOI interface
 # We wrap the functions
-
 function interface_init_nonlinear_model(solver::Any)
     return MathProgBase.NonlinearModel(solver)
 end

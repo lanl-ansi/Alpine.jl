@@ -480,6 +480,11 @@ end
     @test m.internalModel.nonconvex_terms[[:(x[1]), :(x[2]), :(x[5])]][:lifted_var_ref] == :(x[6])
     @test m.internalModel.nonconvex_terms[[:(x[1]), :(x[2]), :(x[5])]][:nonlinear_type] == :MULTILINEAR
 
+    @test m.internalModel.bounding_obj_mip[:rhs] == 0
+    @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[6])]
+    @test m.internalModel.bounding_obj_mip[:coefs] == [1.0]
+    @test m.internalModel.bounding_obj_mip[:cnt] == 1
+    @test m.internalModel.bounding_obj_mip[:sense] == nothing
 
     @test m.internalModel.bounding_obj_mip[:rhs] == 0
     @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[6])]
@@ -503,6 +508,11 @@ end
     @test m.internalModel.nonconvex_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[7])
     @test m.internalModel.nonconvex_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
 
+    @test m.internalModel.bounding_obj_mip[:rhs] == 0
+    @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[7])]
+    @test m.internalModel.bounding_obj_mip[:coefs] == [1.0]
+    @test m.internalModel.bounding_obj_mip[:cnt] == 1
+    @test m.internalModel.bounding_obj_mip[:sense] == nothing
 
     @test m.internalModel.bounding_obj_mip[:rhs] == 0
     @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[7])]
@@ -1186,7 +1196,7 @@ end
 @testset "Expression Prasing || Linear Lifting" begin
     @testset "Expression Parsing || Linear Lifting || nlp2" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                               mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
+                               mip_solver=CbcSolver(),
                                disc_ratio=8,
                                loglevel=100)
 
@@ -1405,7 +1415,7 @@ end
     @testset "Expression Parsing || Linear Lifting || brainpc3" begin
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=PajaritoSolver(mip_solver=CbcSolver(logLevel=0),cont_solver=IpoptSolver(print_level=0), log_level=0),
+                            mip_solver=CbcSolver(),
                             disc_ratio=8,
                             loglevel=100)
 

@@ -1,3 +1,5 @@
+__precompile__()
+
 module POD
 
 PODDEBUG = false
@@ -5,7 +7,6 @@ PODDEBUG = false
 using JuMP
 using MathProgBase
 using Compat
-
 using Requires: @require
 
 @require Gurobi begin
