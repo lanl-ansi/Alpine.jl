@@ -714,6 +714,9 @@ function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
     if contains(solverstring,"Pajarito")
         m.mip_solver_id = "Pajarito"
         return
+    elseif contains(solverstring, "Pavito")
+        m.mip_solver_id = "Pavito"
+        return
     end
 
     # Lower level solvers
@@ -739,6 +742,9 @@ function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
     # Higher-level solver
     if contains(solverstring, "Pajarito")
         m.nlp_solver_id = "Pajarito"
+        return
+    elseif contains(solverstring, "Pavito")
+        m.nlp_solver_id = "Pavito"
         return
     end
 
@@ -768,6 +774,9 @@ function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
     if contains(solverstring, "Pajarito")
         m.minlp_solver_id = "Pajarito"
         return
+    elseif contains(solverstring, "Pavito")
+        m.minlp_solver_id = "Pavito"
+        return
     end
 
     # Lower-level Solver
@@ -787,9 +796,7 @@ function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
 end
 
 """
-
     update_mip_time_limit(m::PODNonlinearModel)
-
 An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
 function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
@@ -799,6 +806,8 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
 
     if m.mip_solver_id == "CPLEX"
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+    elseif m.mip_solver_id == "Pavito"
+        (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     elseif m.mip_solver_id == "Gurobi"
         insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
     elseif m.mip_solver_id == "Cbc"
@@ -815,9 +824,7 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
 end
 
 """
-
     update_mip_time_limit(m::PODNonlinearModel)
-
 An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
 function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
@@ -843,9 +850,7 @@ function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
 end
 
 """
-
     update_mip_time_limit(m::PODNonlinearModel)
-
     An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
 function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
@@ -854,6 +859,8 @@ function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
     if m.minlp_solver_id == "Pajarito"
+        (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
+    elseif m.minlp_solver_id == "Pavito"
         (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
     elseif m.minlp_solver_id == "AmplNL"
         insert_timeleft_symbol(m.minlp_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)

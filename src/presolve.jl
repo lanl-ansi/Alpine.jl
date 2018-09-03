@@ -106,8 +106,6 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
                     else
                         warn("!VAR[$(var_idx)]$(status)")
-                        @show temp_bounds[var_idx]
-                        error("STOP")
                         temp_bounds[var_idx][tell_side[sense]] = temp_bounds[var_idx][tell_side[sense]]
                     end
                 end
