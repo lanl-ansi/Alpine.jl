@@ -698,8 +698,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
-    # Preload Built-in Special Functions (append special functions to user-functions)
-    push!(m.method_partition_injection, sincos_partition_injector)
+    # Other preload Built-in Special Functions (append special functions to user-functions)
 
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable recategorization

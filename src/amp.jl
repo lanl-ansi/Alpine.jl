@@ -252,11 +252,6 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
         λCnt = length(discretization[i])
 
         # @show i, point, discretization[i] # Debugger
-        # Apply special and user methods
-        # Disabled for testing performance
-        # for injector in m.method_partition_injection
-        #     injector(m, i, discretization[i], point, ratio, processed)
-        # end
 
         # Built-in method based-on variable type
         if m.var_type[i] == :Cont
@@ -274,16 +269,7 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
             warn("Binary variable in m.disc_vars. Check out what is wrong...")
             continue  # No partition should be added to binary variable unless user specified
         elseif m.var_type[i] == :Int
-            i in processed && continue
-            point = discover_int_point(m, i, discretization[i], point)
-            point == nothing && continue
-            for j in 1:λCnt
-                if point >= discretization[i][j] && point <= discretization[i][j+1]
-                    insert_partition(m, i, j, point, 0.5, discretization[i])
-                    push!(processed, i)
-                    break
-                end
-            end
+            error("Support for general integer problem is current limited...")
         else
             error("Unexpected variable types during injecting partitions")
         end

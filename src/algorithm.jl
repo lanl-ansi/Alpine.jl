@@ -160,7 +160,6 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     if presolve == false
         l_var, u_var = fix_domains(m)
     else
-        # l_var, u_var = m.l_var_orig, m.u_var_orig  # change to l_var_tight/u_var_tight ?
         l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
     end
 
