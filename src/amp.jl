@@ -89,19 +89,14 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)])
 
     for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+        # This is a tricky step, not enforcing category of lifted variables is able to improve performance
+        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
+        # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
+        l_var[i] > -Inf && setlowerbound(x[i], l_var[i])
+        # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+        u_var[i] < Inf && setupperbound(x[i], u_var[i])
 
-        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])  # This is a tricky step, not enforcing category of lifted variables is able to improve performance
-        l_var[i] > -Inf && setlowerbound(x[i], l_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
-        u_var[i] < Inf && setupperbound(x[i], u_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
-
-        #TODO experimental code, make sure it is properly re-structured
-        m.int_enable && m.var_type[i] == :Int && setcategory(x[i], :Cont)
-        if m.int_enable && m.var_type[i] == :Int && i in m.disc_vars
-            setlowerbound(x[i], floor(m.l_var_tight[i]) - 0.5)
-        end
-        if m.int_enable && m.var_type[i] == :Int && i in m.disc_vars
-            setupperbound(x[i], ceil(m.u_var_tight[i]) + 0.5)
-        end
+        m.var_type[i] == :Int && error("Support for general integer problem is current limited...")
     end
 
     return

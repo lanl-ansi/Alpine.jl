@@ -16,11 +16,6 @@ I've forked the master branch hosted by lanl-ansi to my own Github while keeping
 ## New Operators
 * `BINPROD`: product of binary vars
 * `BINLIN`: product of a binary var and continuous var
-* `BININT`: product of a binary var and integer var
-* `INTPROD`: product of integer vars
-* `INTLIN`: product of integer and continuous var
-* `sin`: sine function
-* `cos`: cosine function
 
 ## Data Structure
 * Some refactoring to shorten the attribute names
@@ -40,8 +35,6 @@ I've forked the master branch hosted by lanl-ansi to my own Github while keeping
 * `tmc.jl`: old McCormick-based methods
 * `const.jl`: (experimental) tries to categorize operators for cleaner and safer operations
 * `embedding.jl`: logarithm embedding formulations and utilities
-* `integer.jl`: utilities for convexifying integer domains
-* `trigonometry.jl`: utilites for convexifying `sin` & `cos` functions
 * `nlexpr.jl`: algorithms for expression handling
 * `operators.jl`: operator detection algorithm and associated utilities for bounds, discretization variable selection, etc.
 * `log.jl`: logging utilities
@@ -57,4 +50,4 @@ I've forked the master branch hosted by lanl-ansi to my own Github while keeping
 ## Tests & Coverage
 * Most new features are covered (embedding, `disc_ratio` algorithm, etc.)
 * Stronger expression parsing tests with new operators covered
-* Coverage should be more than `90%` (I reached a maximum in Jan with `96%`)
+* Coverage should be more than `~90%` (I reached a maximum in Jan with `96%`)

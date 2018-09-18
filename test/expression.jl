@@ -741,8 +741,8 @@ end
 @testset "Expression Parsing || part1 " begin
     m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100))
     @variable(m, x[1:4]>=0)
-    @NLconstraint(m, x[1]^2 >= 1)  					# Basic monomial x[5]=x[1]^2
-    @NLconstraint(m, x[1]*x[2] <= 1)				# x[6] <= 1 : x[6] = x[1]*x[2]
+    @NLconstraint(m, x[1]^2 >= 1)  				  # Basic monomial x[5]=x[1]^2
+    @NLconstraint(m, x[1]*x[2] <= 1)				  # x[6] <= 1 : x[6] = x[1]*x[2]
     @NLconstraint(m, x[1]^2 * x[2]^2 <= 1)          # x[5] + x[7] <= 1 : x[7] = x[2]^2
     @NLconstraint(m, x[1]*(x[2]*x[3]) >= 1)         # x[9] >= 1 : x[8] = x[2] * x[3] && x[9] = x[1]*x[8]
     @NLconstraint(m, x[1]^2*(x[2]^2 * x[3]^2) <= 1) # x[12] <= 1 : x[10] = x[3] ^ 2 && x[11] = x[7] * x[10] && x[12] = x[11]*[5]
@@ -2903,6 +2903,30 @@ end
         @test m.internalModel.bounding_constr_mip[1][:coefs] == Any[1.0, -1.0]
         @test m.internalModel.bounding_constr_mip[1][:sense] == :(>=)
         @test m.internalModel.bounding_constr_mip[1][:cnt] == 2
+    end
+
+    @testset "Corner Cases - 2 : full sub-expression" begin
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
+                                mip_solver=CbcSolver(logLevel=0),
+                                loglevel=100)
+
+        m = Model(solver=test_solver)
+        @variable(m, x[1:5]>=0)
+        @NLconstraint(m, (x[1] + 10 + 4 * x[2] + 200) * 5 >= 2 * 5)
+        @constraint(m, x[1] + x[2] + 200 >= 2)
+        @objective(m, Min, x[1]+x[2])
+        JuMP.build(m)
+
+        @test m.internalModel.bounding_constr_mip[1][:rhs] == -198.0
+        @test m.internalModel.bounding_constr_mip[1][:vars] == Any[:(x[1]), :(x[2])]
+        @test m.internalModel.bounding_constr_mip[1][:coefs] == Any[1.0, 1.0]
+        @test m.internalModel.bounding_constr_mip[1][:sense] == :(>=)
+        @test m.internalModel.bounding_constr_mip[1][:cnt] == 2
+        @test m.internalModel.bounding_constr_mip[2][:rhs] == -1040.0
+        @test m.internalModel.bounding_constr_mip[2][:vars] == Any[:(x[1]), :(x[2])]
+        @test m.internalModel.bounding_constr_mip[2][:coefs] == Any[5.0, 20.0]
+        @test m.internalModel.bounding_constr_mip[2][:sense] == :(>=)
+        @test m.internalModel.bounding_constr_mip[2][:cnt] == 2
     end
 
     @testset "Corner Cases - 2 : full sub-expression" begin

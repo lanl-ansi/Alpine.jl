@@ -35,7 +35,7 @@ end
 
 This function implements the bound-tightening algorithm to tighten the variable bounds.
 It utilizes either the basic McCormick relaxation or the Tightened McCormick relaxation (TMC)
-to tighten the bounds. The TMC has additional binary variablers for partitioning.
+to tighten the bounds. The TMC has additional binary variables for partitioning.
 
 The algorithm as two main parameters. The first is the `use_tmc`, which when set to `true`
 invokes the algorithm on the TMC relaxation. The second parameter `use_bound` takes in the

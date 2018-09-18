@@ -108,7 +108,7 @@ Detect bounds from parse affine constraint. This function examines the one varia
 x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_tight.
 This function can potential grow to be smarter.
 """
-function bounds_propagation(m::PODNonlinearModel)
+function bound_propagation(m::PODNonlinearModel)
 
     exhausted = false
     infeasible = false
@@ -265,7 +265,7 @@ function resolve_var_bounds(m::PODNonlinearModel)
 
     # Basic Bound propagation
     if m.presolve_bp
-        m.presolve_infeasible = bounds_propagation(m) # Fetch bounds from constraints
+        m.presolve_infeasible = bound_propagation(m) # Fetch bounds from constraints
     end
 
     # First resolve infinity bounds with assumptions
