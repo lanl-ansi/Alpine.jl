@@ -165,7 +165,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     start_local_solve = time()
     interface_load_nonlinear_model(m, local_solve_model, l_var, u_var)
-    (!m.d_orig.want_hess) && interface_init_nonlinear_data(m)
+    (!m.d_orig.want_hess) && interface_init_nonlinear_data(m.d_orig)
 
     if presolve == false
         interface_set_warmstart(local_solve_model, m.best_sol[1:m.num_var_orig])
