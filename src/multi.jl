@@ -243,7 +243,7 @@ function amp_no_good_cut_α(m::PODNonlinearModel, α::Dict)
             no_good_idxs = keys(m.bound_sol_pool[:disc][i])
             no_good_size = length(no_good_idxs) - 1
             @constraint(m.model_mip, sum(α[v][m.bound_sol_pool[:disc][i][v]] for v in no_good_idxs) <= no_good_size)
-            println("!! GLOBAL cuts off POOL_SOL-$(i) POOL_OBJ=$(m.bound_sol_pool[:obj][i])!")
+            m.loglevel > 0 && println("!! GLOBAL cuts off POOL_SOL-$(i) POOL_OBJ=$(m.bound_sol_pool[:obj][i])!")
             m.bound_sol_pool[:stat][i] = :Cutoff
         end
     end
@@ -278,7 +278,7 @@ function amp_warmstart_α(m::PODNonlinearModel, α::Dict)
                 end
             end
             m.bound_sol_pool[:stat][ws_idx] = :Warmstarter
-            println("!! WARM START bounding MIP using POOL SOL $(ws_idx) OBJ=$(m.bound_sol_pool[:obj][ws_idx])")
+            m.loglevel > 0 && println("!! WARM START bounding MIP using POOL SOL $(ws_idx) OBJ=$(m.bound_sol_pool[:obj][ws_idx])")
         end
     end
 
@@ -429,7 +429,7 @@ function amp_post_inequalities_int(m::PODNonlinearModel, d::Dict, λ::Dict, α::
     p_cnt = l_cnt - 1
 
     # Embedding formulation
-    m.convhull_ebd && warn("Embedding is currently not supported for multilinear terms with discrete variables")
+    m.convhull_ebd && warn("Embedding is currently not supported for multilinear terms with discrete variables", once=true)
 
     # SOS-2 Formulation
     if m.convhull_formulation == "sos2"

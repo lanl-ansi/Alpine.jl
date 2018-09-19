@@ -25,5 +25,5 @@ To use different sub-solvers, here is an example:
     using Gurobi, Ipopt
     m = Model()
     # Here goes the building of your model...
-    setsolver(m, PODSolver(nlp_local_solver=IpoptSolver(print_level=0), mip_solver=GurobiSolver(OutputFlag=0)))
+    setsolver(m, PODSolver(nlp_solver=IpoptSolver(print_level=0), mip_solver=GurobiSolver(OutputFlag=0)))
 ```

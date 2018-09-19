@@ -16,7 +16,7 @@ bounding_solve
 ## Adapative Partitioning Methods
 ```@docs
 create_bounding_mip
-pick_vars_discretization
+pick_disc_vars
 fix_domains
 min_vertex_cover
 max_cover
@@ -28,14 +28,14 @@ bound_tightening
 minmax_bound_tightening
 create_bound_tightening_model
 solve_bound_tightening_model
-resolve_lifted_var_bounds
+resolve_var_bounds
 ```
 
 ## Utility Methods
 ```@docs
 update_var_bounds
 discretization_to_bounds
-initialize_discretization
+init_disc
 to_discretization
 flatten_discretization
 add_adpative_partition

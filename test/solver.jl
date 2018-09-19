@@ -17,10 +17,11 @@ end
 
     # Select all NL variable
     test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=1),
+                            mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
                             disc_uniform_rate=10,
                             presolve_bp = false,
+                            presolve_bt = false,
                             maxiter=1,
                             loglevel=100)
     m = nlp3(solver=test_solver)
@@ -38,6 +39,7 @@ end
                             disc_var_pick=2,
                             disc_uniform_rate=10,
                             presolve_bp = false,
+                            presolve_bt = false,
                             maxiter=1,
                             loglevel=100)
     m = nlp3(solver=test_solver)
@@ -55,6 +57,7 @@ end
                             disc_var_pick=1,
                             disc_uniform_rate=10,
                             presolve_bp = false,
+                            presolve_bt = false,
                             maxiter=1,
                             loglevel=100)
     m = nlp3(solver=test_solver)
@@ -71,6 +74,7 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=3,
                             presolve_bp = false,
+                            presolve_bt = false,
                             maxiter=2,
                             loglevel=100)
     m = nlp3(solver=test_solver)
@@ -90,7 +94,8 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
                             disc_uniform_rate=10,
-                            presolve_bp = false,
+                            presolve_bp=false,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 
@@ -109,7 +114,8 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=1,
                             disc_uniform_rate=10,
-                            presolve_bp = false,
+                            presolve_bp=false,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 
@@ -127,7 +133,8 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=2,
                             disc_uniform_rate=15,
-                            presolve_bp = false,
+                            presolve_bp=false,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 
@@ -150,6 +157,7 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
                             disc_uniform_rate=10,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 
@@ -167,7 +175,8 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=1,
                             disc_uniform_rate=10,
-                            presolve_bp = false,
+                            presolve_bp=false,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 
@@ -185,7 +194,8 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=2,
                             disc_uniform_rate=10,
-                            presolve_bp = false,
+                            presolve_bp=false,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 
@@ -206,6 +216,7 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=3,
                             presolve_bp=true,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 
@@ -217,7 +228,6 @@ end
 
     @test length(m.internalModel.candidate_disc_vars) == 24
     @test length(Set(m.internalModel.candidate_disc_vars)) == 24
-    # TODO provide a check to see if candidate_disc_vars are all covered
     @test length(m.internalModel.disc_vars) == 12
     @test length(Set(m.internalModel.disc_vars)) == 12
     @test m.internalModel.disc_var_pick == 3
@@ -227,6 +237,7 @@ end
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=3,
                             presolve_bp=true,
+                            presolve_bt=false,
                             maxiter=2,
                             loglevel=100)
 
@@ -238,18 +249,18 @@ end
 
     @test length(m.internalModel.candidate_disc_vars) == 24
     @test length(Set(m.internalModel.candidate_disc_vars)) == 24
-    # TODO provide a check to see if candidate_disc_vars are all covered
     @test length(m.internalModel.disc_vars) == 12
     @test length(Set(m.internalModel.disc_vars)) == 12
     @test m.internalModel.disc_var_pick == 3
 end
 
-@testset "Test getsolvetime for time trackikng" begin
+@testset "Test getsolvetime for time tracking" begin
     test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
                             disc_uniform_rate=10,
-                            presolve_bp = false,
+                            presolve_bp=false,
+                            presolve_bt=false,
                             maxiter=1,
                             loglevel=100)
 

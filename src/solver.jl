@@ -10,8 +10,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     maxiter::Int                                                # Target Maximum Iterations
     relgap::Float64                                             # Relative optimality gap termination condition
+    gapref::AbstractString                                      # Relative gap reference point
     absgap::Float64                                             # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
+    largebound::Float64                                         # Presumed large bound for problems with unbounded variables
 
     # convexification method tuning
     recognize_convex::Bool                                      # recognize convex expressions in parsing objective functions and constraints
@@ -29,6 +31,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_ratio::Any                                             # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
+    disc_divert_chunks::Int                                     # How many uniform partitions to construct
     disc_add_partition_method::Any                              # Additional methods to add discretization
     disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretizations
     disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretizations
@@ -46,7 +49,8 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_bt::Bool                                           # Perform bound tightening procedure before main algorithm
+    presolve_bt::Any                                            # Perform bound tightening procedure before main algorithm
+    presolve_timeout::Float64
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
@@ -56,6 +60,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
+    presolve_infeasible::Bool                                   # Presolve Feasibility
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
     # Features for Integer Problems (NOTE: no support for intlin problems)
@@ -157,7 +162,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # constructor
     function PODNonlinearModel(colorful_pod,
-                                loglevel, timeout, maxiter, relgap, tol,
+                                loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                                 nlp_solver,
                                 minlp_solver,
                                 mip_solver,
@@ -173,6 +178,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 disc_ratio,
                                 disc_uniform_rate,
                                 disc_add_partition_method,
+                                disc_divert_chunks,
                                 disc_abs_width_tol,
                                 disc_rel_width_tol,
                                 disc_consecutive_forbid,
@@ -186,6 +192,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 convhull_no_good_cuts,
                                 presolve_track_time,
                                 presolve_bt,
+                                presolve_timeout,
                                 presolve_maxiter,
                                 presolve_bt_width_tol,
                                 presolve_bt_output_tol,
@@ -206,7 +213,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.timeout = timeout
         m.maxiter = maxiter
         m.relgap = relgap
+        m.gapref = gapref
+        m.absgap = absgap
         m.tol = tol
+        m.largebound = largebound
 
         m.recognize_convex = recognize_convex
         m.bilinear_mccormick = bilinear_mccormick
@@ -222,6 +232,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.disc_ratio = disc_ratio
         m.disc_uniform_rate = disc_uniform_rate
         m.disc_add_partition_method = disc_add_partition_method
+        m.disc_divert_chunks = disc_divert_chunks
         m.disc_abs_width_tol = disc_abs_width_tol
         m.disc_rel_width_tol = disc_rel_width_tol
         m.disc_consecutive_forbid = disc_consecutive_forbid
@@ -237,6 +248,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m.presolve_track_time = presolve_track_time
         m.presolve_bt = presolve_bt
+        m.presolve_timeout = presolve_timeout
         m.presolve_maxiter = presolve_maxiter
         m.presolve_bt_width_tol = presolve_bt_width_tol
         m.presolve_bt_output_tol = presolve_bt_output_tol
@@ -287,7 +299,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.constr_structure = []
         m.best_bound_sol = []
         m.bound_sol_history = []
-
+        m.presolve_infeasible = false
         m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
 
         m.best_obj = Inf
@@ -307,13 +319,17 @@ type UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 type PODSolver <: MathProgBase.AbstractMathProgSolver
+
     colorful_pod::Any
 
     loglevel::Int
     timeout::Float64
     maxiter::Int
     relgap::Float64
+    gapref::AbstractString
+    absgap::Float64
     tol::Float64
+    largebound::Float64
 
     nlp_solver::MathProgBase.AbstractMathProgSolver
     minlp_solver::MathProgBase.AbstractMathProgSolver
@@ -333,6 +349,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     disc_ratio::Any
     disc_uniform_rate::Int
     disc_add_partition_method::Any
+    disc_divert_chunks::Int
     disc_abs_width_tol::Float64
     disc_rel_width_tol::Float64
     disc_consecutive_forbid::Int
@@ -347,7 +364,8 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     convhull_no_good_cuts::Bool
 
     presolve_track_time::Bool
-    presolve_bt::Bool
+    presolve_bt::Any
+    presolve_timeout::Float64
     presolve_maxiter::Int
     presolve_bt_width_tol::Float64
     presolve_bt_output_tol::Float64
@@ -372,7 +390,10 @@ function PODSolver(;
     timeout = Inf,
     maxiter = 99,
     relgap = 1e-4,
+    gapref = "ub",
+    absgap = 1e-6,
     tol = 1e-6,
+    largebound = 1e4,
 
     nlp_solver = UnsetSolver(),
     minlp_solver = UnsetSolver(),
@@ -388,10 +409,11 @@ function PODSolver(;
     term_patterns = Array{Function}(0),
     constr_patterns = Array{Function}(0),
 
-    disc_var_pick = 2,                     # By default use the 15-variable selective rule
+    disc_var_pick = 2,                      # By default use the 15-variable selective rule
     disc_ratio = 4,
     disc_uniform_rate = 2,
     disc_add_partition_method = "adaptive",
+    disc_divert_chunks = 5,
     disc_abs_width_tol = 1e-4,
     disc_rel_width_tol = 1e-6,
     disc_consecutive_forbid = 0,
@@ -406,8 +428,9 @@ function PODSolver(;
     convhull_no_good_cuts = true,
 
     presolve_track_time = true,
-    presolve_maxiter = 9999,
-    presolve_bt = false,
+    presolve_maxiter = 10,
+    presolve_bt = nothing,
+    presolve_timeout = 900,
     presolve_bt_width_tol = 1e-3,
     presolve_bt_output_tol = 1e-5,
     presolve_bt_algo = 1,
@@ -431,6 +454,8 @@ function PODSolver(;
     nlp_solver == UnsetSolver() && error("No NLP local solver specified (set nlp_solver)\n")
     mip_solver == UnsetSolver() && error("NO MIP solver specififed (set mip_solver)\n")
 
+    gapref in ["ub", "lb"] || error("Gap calculation only takes 'ub' pr 'lb'")
+
     # String Code Conversion
     if disc_var_pick in ["ncvar_collect_nodes", "all", "max"]
         disc_var_pick = 0
@@ -444,7 +469,7 @@ function PODSolver(;
 
     # Deepcopy the solvers because we may change option values inside POD
     PODSolver(colorful_pod,
-        loglevel, timeout, maxiter, relgap, tol,
+        loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
         deepcopy(minlp_solver),
         deepcopy(mip_solver),
@@ -460,6 +485,7 @@ function PODSolver(;
         disc_ratio,
         disc_uniform_rate,
         disc_add_partition_method,
+        disc_divert_chunks,
         disc_abs_width_tol,
         disc_rel_width_tol,
         disc_consecutive_forbid,
@@ -473,6 +499,7 @@ function PODSolver(;
         convhull_no_good_cuts,
         presolve_track_time,
         presolve_bt,
+        presolve_timeout,
         presolve_maxiter,
         presolve_bt_width_tol,
         presolve_bt_output_tol,
@@ -500,7 +527,10 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     timeout = s.timeout
     maxiter = s.maxiter
     relgap = s.relgap
+    gapref = s.gapref
+    absgap = s.absgap
     tol = s.tol
+    largebound = s.largebound
 
     recognize_convex = s.recognize_convex
     bilinear_mccormick = s.bilinear_mccormick
@@ -520,6 +550,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     disc_ratio = s.disc_ratio
     disc_uniform_rate = s.disc_uniform_rate
     disc_add_partition_method = s.disc_add_partition_method
+    disc_divert_chunks = s.disc_divert_chunks
     disc_abs_width_tol = s.disc_abs_width_tol
     disc_rel_width_tol = s.disc_rel_width_tol
     disc_consecutive_forbid = s.disc_consecutive_forbid
@@ -535,6 +566,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
 
     presolve_track_time = s.presolve_track_time
     presolve_bt = s.presolve_bt
+    presolve_timeout = s.presolve_timeout
     presolve_maxiter = s.presolve_maxiter
     presolve_bt_width_tol = s.presolve_bt_width_tol
     presolve_bt_output_tol = s.presolve_bt_output_tol
@@ -550,7 +582,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     int_fully_disc = s.int_fully_disc
 
     return PODNonlinearModel(colorful_pod,
-                            loglevel, timeout, maxiter, relgap, tol,
+                            loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                             nlp_solver,
                             minlp_solver,
                             mip_solver,
@@ -566,6 +598,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             disc_ratio,
                             disc_uniform_rate,
                             disc_add_partition_method,
+                            disc_divert_chunks,
                             disc_abs_width_tol,
                             disc_rel_width_tol,
                             disc_consecutive_forbid,
@@ -579,6 +612,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             convhull_no_good_cuts,
                             presolve_track_time,
                             presolve_bt,
+                            presolve_timeout,
                             presolve_maxiter,
                             presolve_bt_width_tol,
                             presolve_bt_output_tol,
@@ -664,6 +698,8 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
+    # Other preload Built-in Special Functions (append special functions to user-functions)
+
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable recategorization
 
@@ -682,26 +718,44 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     end
 
     # Main Algorithmic Initialization
-    process_expr(m)                 # Compact process of every expression
-    init_tight_bound(m)             # Initialize bounds for algorithmic processes
-    resolve_var_bounds(m)           # resolve lifted var bounds
-    pick_disc_vars(m)               # Picking variables to be discretized
-    init_disc(m)                    # Initialize discretization dictionarys
+    process_expr(m)                         # Compact process of every expression
+    init_tight_bound(m)                     # Initialize bounds for algorithmic processes
+    resolve_var_bounds(m)                   # resolve lifted var bounds
+    pick_disc_vars(m)                       # Picking variables to be discretized
+    init_disc(m)                            # Initialize discretization dictionarys
 
-    # Prepare the solution pool
+    # Turn-on bt presolver if not discrete variables
+    if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && m.presolve_bt == nothing
+        m.presolve_bt = true
+        println("Automatically turning on bound-tightening presolver...")
+    elseif m.presolve_bt == nothing  # If no use indication
+        m.presolve_bt = false
+    end
+
+    if length(m.bin_vars) > 200 || m.num_var_orig > 2000
+        println("Automatically turning OFF ratio branching due to the size of the problem")
+        m.disc_ratio_branch=false
+    end
+
+    # Initialize the solution pool
     m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
 
     # Record the initial solution from the warmstarting value, if any
     m.best_sol = m.d_orig.m.colVal
 
+    # Check if any illegal term exist in the warm-solution
+    any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
+
     # Initialize log
     logging_summary(m)
 
     ## Citation
-    println("-----------------------------------------------------------------")
+    println("----------------------------------------------------------------------")
     println("If you find POD useful, please cite the following work. Thanks!!!")
-    println("                          CITATION")
-    println("-----------------------------------------------------------------")
+    println("Nagarajan, H., Lu, M., Wang, S., Bent, R. and Sundar, K., 2017. ")
+    println("An Adaptive, Multivariate Partitioning Algorithm for Global ")
+    println("Optimization of Nonconvex Programs. arXiv preprint arXiv:1707.02514.")
+    println("----------------------------------------------------------------------")
 
     return
 end

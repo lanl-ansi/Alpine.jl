@@ -46,6 +46,9 @@ function update_disc_int_var(m::PODNonlinearModel)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
+    # Additional error check scheme
+    :Int in m.var_type && error("Support for general integer problems are limited...")
+
     return
 end
 
@@ -68,7 +71,7 @@ function heu_basic_rounding(m::PODNonlinearModel, local_model)
     heuristic_model_status = interface_get_status(heuristic_model)
 
     if heuristic_model_status in [:Infeasible, :Error]
-        println("Rounding obtained an Infeasible point.")
+        m.loglevel > 0 && println("Rounding obtained an Infeasible point.")
         push!(m.logs[:obj], "INF")
         return :Infeasibles
     elseif heuristic_model_status in [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
@@ -89,7 +92,6 @@ end
 """
 function heu_pool_multistart(m::PODNonlinearModel)
 
-    println("Heuristic Local Search : LB pool-based multi-search")
     convertor = Dict(:Max=>:>, :Min=>:<)
     m.sense_orig == :Min ? incumb_obj = Inf : incumb_obj = -Inf
     incumb_sol = []
@@ -98,7 +100,7 @@ function heu_pool_multistart(m::PODNonlinearModel)
     for i in 1:m.bound_sol_pool[:cnt]
         if !m.bound_sol_pool[:ubstart][i]
             rounded_sol = round_sol(m, nlp_sol=m.bound_sol_pool[:sol][i])
-            l_var, u_var = fix_domains(m, discrete_sol=rounded_sol)
+            l_var, u_var = fix_domains(m, discrete_sol=rounded_sol, use_orig=true)
             heuristic_model = interface_init_nonlinear_model(m.nlp_solver)
             interface_load_nonlinear_model(m, heuristic_model, l_var, u_var)
             interface_optimize(heuristic_model)
@@ -108,9 +110,11 @@ function heu_pool_multistart(m::PODNonlinearModel)
                 if eval(convertor[m.sense_orig])(candidate_obj, incumb_obj)
                     incumb_obj = candidate_obj
                     incumb_sol = round.(interface_get_solution(heuristic_model), 5)
-                    m.loglevel > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)]")
+                    m.loglevel > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)] [OBJ=$(incumb_obj)]")
                 end
                 found_feasible = true
+            else
+                m.loglevel > 99 && println("Multi-start heuristic returns $(heuristic_model_status) [SOL:$(i)]")
             end
             m.bound_sol_pool[:ubstart][i] = true
         end

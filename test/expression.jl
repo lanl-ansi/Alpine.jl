@@ -1,6 +1,6 @@
 @testset "Expression Parsing || bilinear || Affine || exprs.jl" begin
 
-    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(OutputFlag=0),loglevel=100)
+    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
     m=exprstest(solver=test_solver)
 
@@ -114,7 +114,7 @@ end
 
 @testset "Expression Parsing || bilinear || Affine || nlp1.jl" begin
     test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                           mip_solver=CbcSolver(OutputFlag=0),
+                           mip_solver=CbcSolver(logLevel=0),
                            loglevel=100)
     m=nlp1(solver=test_solver)
 
@@ -134,7 +134,7 @@ end
 
 @testset "Expression Parsing || bilinear || Affine || nlp3.jl" begin
 
-    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(OutputFlag=0),loglevel=100)
+    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
     m=nlp3(solver=test_solver)
 
@@ -210,7 +210,7 @@ end
 @testset "Expression Parsing || bilinear || Simple || bi1.jl " begin
 
     test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                           mip_solver=CbcSolver(OutputFlag=0),
+                           mip_solver=CbcSolver(logLevel=0),
                            loglevel=100)
 
     m = operator_c(solver=test_solver)
@@ -230,7 +230,7 @@ end
 
 @testset "Expression Parsing || bilinear || Complex || blend029.jl " begin
 
-    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(OutputFlag=0),loglevel=100)
+    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
     m = blend029(solver=test_solver)
 
@@ -342,7 +342,7 @@ end
 
 @testset "Expression Parsing || multilinear || Simple || multi.jl " begin
 
-    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(OutputFlag=0),loglevel=100)
+    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
     m = multi3(solver=test_solver, exprmode=1)
 
@@ -480,6 +480,11 @@ end
     @test m.internalModel.nonconvex_terms[[:(x[1]), :(x[2]), :(x[5])]][:lifted_var_ref] == :(x[6])
     @test m.internalModel.nonconvex_terms[[:(x[1]), :(x[2]), :(x[5])]][:nonlinear_type] == :MULTILINEAR
 
+    @test m.internalModel.bounding_obj_mip[:rhs] == 0
+    @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[6])]
+    @test m.internalModel.bounding_obj_mip[:coefs] == [1.0]
+    @test m.internalModel.bounding_obj_mip[:cnt] == 1
+    @test m.internalModel.bounding_obj_mip[:sense] == nothing
 
     @test m.internalModel.bounding_obj_mip[:rhs] == 0
     @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[6])]
@@ -503,6 +508,11 @@ end
     @test m.internalModel.nonconvex_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:lifted_var_ref] == :(x[7])
     @test m.internalModel.nonconvex_terms[[Expr(:ref, :x, 6), Expr(:ref, :x, 4)]][:nonlinear_type] == :BILINEAR
 
+    @test m.internalModel.bounding_obj_mip[:rhs] == 0
+    @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[7])]
+    @test m.internalModel.bounding_obj_mip[:coefs] == [1.0]
+    @test m.internalModel.bounding_obj_mip[:cnt] == 1
+    @test m.internalModel.bounding_obj_mip[:sense] == nothing
 
     @test m.internalModel.bounding_obj_mip[:rhs] == 0
     @test m.internalModel.bounding_obj_mip[:vars] == Expr[:(x[7])]
@@ -640,7 +650,7 @@ end
 end
 
 @testset "Expression Parsing || bilinear || Complex-div || div.jl" begin
-    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(OutputFlag=0),loglevel=100)
+    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
     m = div(solver=test_solver)
 
@@ -729,10 +739,10 @@ end
 end
 
 @testset "Expression Parsing || part1 " begin
-    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(OutputFlag=0),loglevel=100))
+    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100))
     @variable(m, x[1:4]>=0)
-    @NLconstraint(m, x[1]^2 >= 1)  					# Basic monomial x[5]=x[1]^2
-    @NLconstraint(m, x[1]*x[2] <= 1)				# x[6] <= 1 : x[6] = x[1]*x[2]
+    @NLconstraint(m, x[1]^2 >= 1)  				  # Basic monomial x[5]=x[1]^2
+    @NLconstraint(m, x[1]*x[2] <= 1)				  # x[6] <= 1 : x[6] = x[1]*x[2]
     @NLconstraint(m, x[1]^2 * x[2]^2 <= 1)          # x[5] + x[7] <= 1 : x[7] = x[2]^2
     @NLconstraint(m, x[1]*(x[2]*x[3]) >= 1)         # x[9] >= 1 : x[8] = x[2] * x[3] && x[9] = x[1]*x[8]
     @NLconstraint(m, x[1]^2*(x[2]^2 * x[3]^2) <= 1) # x[12] <= 1 : x[10] = x[3] ^ 2 && x[11] = x[7] * x[10] && x[12] = x[11]*[5]
@@ -766,7 +776,7 @@ end
 end
 
 @testset "Expression Parsing || part2" begin
-    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(OutputFlag=0),loglevel=100))
+    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100))
 
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, (x[1]*x[2]) * x[3] >= 1)
@@ -820,7 +830,7 @@ end
 end
 
 @testset "Expression Parsing || part3" begin
-    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(OutputFlag=0),loglevel=100))
+    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100))
 
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, ((x[1]*x[2])*x[3])*x[4] >= 1)
@@ -881,7 +891,7 @@ end
 end
 
 @testset "Expression Parsing || part7" begin
-    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(OutputFlag=0),loglevel=100))
+    m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100))
     @variable(m, x[1:4]>=0)
 
     @NLconstraint(m, x[1]*x[2]*x[3]*x[4] >= 1)
@@ -929,7 +939,7 @@ end
 
 @testset "Expression Parsing || part8" begin
     m = Model(solver=PODSolver(nlp_solver=IpoptSolver(),
-           mip_solver=CbcSolver(OutputFlag=0),
+           mip_solver=CbcSolver(logLevel=0),
            loglevel=100))
     @variable(m, x[1:4]>=0)
 
@@ -981,7 +991,7 @@ end
 
     @testset "Convex Parsing :: PART I" begin
 
-        test_solver = PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(OutputFlag=0),loglevel=100)
+        test_solver = PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = convex_test(test_solver)
 
         JuMP.build(m)
@@ -1235,7 +1245,7 @@ end
 
     @testset "Expression Parsing || Linear Lifting || general" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                               mip_solver=CbcSolver(OutputFlag=0),
+                               mip_solver=CbcSolver(logLevel=0),
                                loglevel=100)
 
         m = basic_linear_lift(solver=test_solver)
@@ -1316,7 +1326,7 @@ end
 
     @testset "Expression Parsing || complex || Affine || operator_b" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                                mip_solver=CbcSolver(OutputFlag=0),
+                                mip_solver=CbcSolver(logLevel=0),
                                 loglevel=100)
 
         m=operator_b(solver=test_solver)
@@ -2879,7 +2889,7 @@ end
 @testset "Expression Parsing || corner cases" begin
     @testset "Corner Cases - 1 : sign convertor special case" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                                mip_solver=CbcSolver(OutputFlag=0),
+                                mip_solver=CbcSolver(logLevel=0),
                                 loglevel=100)
 
         m = Model(solver=test_solver)
@@ -2897,7 +2907,31 @@ end
 
     @testset "Corner Cases - 2 : full sub-expression" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                                mip_solver=CbcSolver(OutputFlag=0),
+                                mip_solver=CbcSolver(logLevel=0),
+                                loglevel=100)
+
+        m = Model(solver=test_solver)
+        @variable(m, x[1:5]>=0)
+        @NLconstraint(m, (x[1] + 10 + 4 * x[2] + 200) * 5 >= 2 * 5)
+        @constraint(m, x[1] + x[2] + 200 >= 2)
+        @objective(m, Min, x[1]+x[2])
+        JuMP.build(m)
+
+        @test m.internalModel.bounding_constr_mip[1][:rhs] == -198.0
+        @test m.internalModel.bounding_constr_mip[1][:vars] == Any[:(x[1]), :(x[2])]
+        @test m.internalModel.bounding_constr_mip[1][:coefs] == Any[1.0, 1.0]
+        @test m.internalModel.bounding_constr_mip[1][:sense] == :(>=)
+        @test m.internalModel.bounding_constr_mip[1][:cnt] == 2
+        @test m.internalModel.bounding_constr_mip[2][:rhs] == -1040.0
+        @test m.internalModel.bounding_constr_mip[2][:vars] == Any[:(x[1]), :(x[2])]
+        @test m.internalModel.bounding_constr_mip[2][:coefs] == Any[5.0, 20.0]
+        @test m.internalModel.bounding_constr_mip[2][:sense] == :(>=)
+        @test m.internalModel.bounding_constr_mip[2][:cnt] == 2
+    end
+
+    @testset "Corner Cases - 2 : full sub-expression" begin
+        test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
+                                mip_solver=CbcSolver(logLevel=0),
                                 loglevel=100)
 
         m = Model(solver=test_solver)

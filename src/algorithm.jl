@@ -2,11 +2,15 @@
     High-level Function
 """
 function MathProgBase.optimize!(m::PODNonlinearModel)
-    any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
+    if m.presolve_infeasible
+        summary_status(m)
+        return
+    end
     presolve(m)
     global_solve(m)
     m.loglevel > 0 && logging_row_entry(m, finsih_entry=true)
     summary_status(m)
+    return
 end
 
 """
@@ -50,36 +54,26 @@ end
 function presolve(m::PODNonlinearModel)
 
     start_presolve = time()
-    (m.loglevel > 0) && println("\nPOD algorithm presolver started.")
-    (m.loglevel > 0) && println("performing local solve to obtain a feasible solution.")
+    m.loglevel > 0 && println("\nPOD algorithm presolver started.")
+    m.loglevel > 0 && println("performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
     # Possible solver status, return error when see different
-    status_pass = [:Optimal, :Suboptimal, :UserLimit]
-    status_reroute = [:Infeasible]
+    status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
+    status_reroute = [:Infeasible, :Infeasibles]
 
     if m.status[:local_solve] in status_pass
         m.loglevel > 0 && println("local solver returns feasible point")
         bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-        (m.presolve_bt) && init_disc(m)          # Reinitialize discretization dictionary on tight bounds
-        (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
+        m.presolve_bt && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
+        m.disc_ratio_branch && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
         m.loglevel > 0 && println("presolve ended.")
     elseif m.status[:local_solve] in status_reroute
-        (m.loglevel > 0) && println("first attempt at local solve failed, performing bound tightening without objective value...")
+        (m.loglevel > 0) && println("performing bound tightening without objective bounds...")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-        (m.loglevel > 0) && println("second attempt at local solve using tightened bounds...")
-        local_solve(m, presolve = true) # local_solve(m) to generate a feasible solution which is a starting point for bounding_solve
-        if m.status in status_pass  # successful second try
-            (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m, true))
-            add_partition(m, use_solution=m.best_sol)
-        else    # if this does not produce an feasible solution then solve atmc without discretization and use as a starting point
-            (m.loglevel > 0) && println("reattempt at local solve failed, initialize discretization with lower bound solution... \n local solve remains infeasible...")
-            create_bounding_mip(m)       # Build the bounding ATMC model
-            bounding_solve(m)            # Solve bounding model
-            (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
-            add_partition(m, use_solution=m.best_bound_sol)
-        end
+        (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
+        m.presolve_bt && init_disc(m)
         m.loglevel > 0 && println("Presolve ended.")
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
         warn("Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this.")
@@ -125,7 +119,7 @@ function check_exit(m::PODNonlinearModel)
     # Optimality check
     m.best_rel_gap <= m.relgap && return true
     m.logs[:n_iter] >= m.maxiter && return true
-    m.best_abs_gap <= m.tol && return true
+    m.best_abs_gap <= m.absgap && return true
 
     # Userlimits check
     m.logs[:time_left] < m.tol && return true
@@ -166,14 +160,22 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     if presolve == false
         l_var, u_var = fix_domains(m)
     else
-        # l_var, u_var = m.l_var_orig, m.u_var_orig  # change to l_var_tight/u_var_tight ?
         l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
     end
 
     start_local_solve = time()
     interface_load_nonlinear_model(m, local_solve_model, l_var, u_var)
     (!m.d_orig.want_hess) && interface_init_nonlinear_data(m.d_orig)
-    interface_set_warmstart(local_solve_model, m.best_sol[1:m.num_var_orig])
+
+    if presolve == false
+        interface_set_warmstart(local_solve_model, m.best_sol[1:m.num_var_orig])
+    else
+        initial_warmval = []
+        for i in 1:m.num_var_orig
+            isnan(m.d_orig.m.colVal[i]) ? push!(initial_warmval, 0.0) : push!(initial_warmval, m.d_orig.m.colVal[i])
+        end
+        interface_set_warmstart(local_solve_model, initial_warmval)
+    end
 
     # The only case when MINLP solver is actually used
     if presolve && !isempty(var_type_screener)
@@ -197,7 +199,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_heuristic = [:Heuristics]
-    status_reroute = [:Infeasible]
+    status_reroute = [:Infeasible, :Infeasibles]
 
     if local_nlp_status in status_pass
         candidate_obj = interface_get_objval(local_solve_model)
@@ -262,6 +264,8 @@ function bounding_solve(m::PODNonlinearModel)
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
         candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+        # Experimental code
+        measure_relaxed_deviation(m, sol=candidate_bound_sol)
         if m.disc_consecutive_forbid > 0
             m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol) # Requires proper offseting
         end
@@ -320,7 +324,7 @@ function pick_disc_vars(m::PODNonlinearModel)
             error("Unsupported default indicator for picking variables for discretization")
         end
     else
-        error("Input for parameter :disc_var_pick is illegal. Use Integer (0-3) or functions.")
+        error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
     end
 
     return

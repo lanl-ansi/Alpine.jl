@@ -89,9 +89,14 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
     @variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)])
 
     for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
-        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])  # This is a tricky step, not enforcing category of lifted variables is able to improve performance
-        l_var[i] > -Inf && setlowerbound(x[i], l_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
-        u_var[i] < Inf && setupperbound(x[i], u_var[i])    # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+        # This is a tricky step, not enforcing category of lifted variables is able to improve performance
+        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
+        # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
+        l_var[i] > -Inf && setlowerbound(x[i], l_var[i])
+        # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
+        u_var[i] < Inf && setupperbound(x[i], u_var[i])
+
+        m.var_type[i] == :Int && error("Support for general integer problem is current limited...")
     end
 
     return
@@ -136,6 +141,8 @@ function amp_post_affine_constraint(model_mip::JuMP.Model, affine::Dict)
 end
 
 function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
+
+    !prod([i == 2 for i in convex[:powers]]) && error("No relaxation implementation for convex constraints $(convex[:expr])")
 
     if convex[:sense] == :(<=)
         @constraint(model_mip,
@@ -240,11 +247,6 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
         λCnt = length(discretization[i])
 
         # @show i, point, discretization[i] # Debugger
-        # Apply special and user methods
-        # Disabled for testing performance
-        # for injector in m.method_partition_injection
-        #     injector(m, i, discretization[i], point, ratio, processed)
-        # end
 
         # Built-in method based-on variable type
         if m.var_type[i] == :Cont
@@ -261,6 +263,8 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
         elseif m.var_type[i] == :Bin # This should never happen
             warn("Binary variable in m.disc_vars. Check out what is wrong...")
             continue  # No partition should be added to binary variable unless user specified
+        elseif m.var_type[i] == :Int
+            error("Support for general integer problem is current limited...")
         else
             error("Unexpected variable types during injecting partitions")
         end
@@ -320,19 +324,22 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::N
         lb_touch = false
     end
 
-    if (ub_touch && lb_touch) || (m.disc_consecutive_forbid>0 && check_solution_history(m, i))
+    if (ub_touch && lb_touch) || check_solution_history(m, var)
         distvec = [(j, partvec[j+1]-partvec[j]) for j in 1:length(partvec)-1]
         sort!(distvec, by=x->x[2])
         point_orig = point
         pos = distvec[end][1]
         lb_local = partvec[pos]
         ub_local = partvec[pos+1]
-        chunk = (ub_local - lb_local)/2
-        point = lb_local + (ub_local - lb_local) / 2
-        insert!(partvec, pos, lb_local + chunk)
-        (m.loglevel > 99) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(round(point,4)) |$(round(lb_local,4)) | 2 SEGMENTS | $(round(ub_local,4))|")
+        isapprox(lb_local, ub_local;atol=m.tol) && return
+        chunk = (ub_local - lb_local) / m.disc_divert_chunks
+        point = lb_local + (ub_local - lb_local) / m.disc_divert_chunks
+        for i in 2:m.disc_divert_chunks
+            insert!(partvec, pos+1, lb_local + chunk * (m.disc_divert_chunks-(i-1)))
+        end
+        (m.loglevel > 199) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(point) |$(round(lb_local,4)) | $(m.disc_divert_chunks) SEGMENTS | $(round(ub_local,4))|")
     else
-        (m.loglevel > 99) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+        (m.loglevel > 199) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
     end
 
     return
@@ -350,7 +357,7 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
         chunk = distance / ((m.logs[:n_iter]+1)*m.disc_uniform_rate)
         discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.disc_uniform_rate]
         push!(discretization[i], ub_local)   # Safety Scheme
-        (m.loglevel > 99) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
+        (m.loglevel > 199) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
     end
 
     return discretization
@@ -360,8 +367,9 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
 
-    ratio_pool = [3:1:24;]  # Built-in try range
+    ratio_pool = [8:2:20;]  # Built-in try range
     convertor = Dict(:Max=>:<, :Min=>:>)
+    revconvertor = Dict(:Max=>:>, :Min=>:<)
 
     incumb_ratio = ratio_pool[1]
     m.sense_orig == :Min ? incumb_res = -Inf : incumb_res = Inf
@@ -369,7 +377,7 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
 
     for r in ratio_pool
         st = time()
-        if presolve
+        if !isempty(m.best_sol)
             branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r, use_solution=m.best_sol)
         else
             branch_disc = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r)
@@ -381,15 +389,26 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
             incumb_res = res
             incumb_ratio = r
         end
-        println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
+        et = time() - st
+        if et > 300  # 5 minutes limitation
+            println("Expensive disc branching pass... Fixed at 8")
+            return 8
+        end
+        m.loglevel > 0 && println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
     if std(res_collector) >= 1e-2    # Detect if all solution are similar to each other
-        println("RATIO BRANCHING OFF due to solution variance test passed.")
-        m.disc_ratio_branch = false # If a ratio is selected, then stop the branching scheme
+        m.loglevel > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
+        m.disc_ratio_branch = false # If an incumbent ratio is selected, then stop the branching scheme
     end
 
-    println("INCUMB_RATIO = $(incumb_ratio)")
+    if !isempty(m.best_sol)
+        m.discretization = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio, use_solution=m.best_sol)
+    else
+        m.discretization = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio)
+    end
+
+    m.loglevel > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
 
     return incumb_ratio
 end

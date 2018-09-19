@@ -14,9 +14,7 @@ Currently, two bounding tightening method is implemented [`minmax_bound_tighteni
 """
 function bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
 
-    if m.presolve_bt == false # User choose not to do bound tightening
-        return
-    end
+    m.presolve_bt || return
 
     if m.presolve_bt_algo == 1
         minmax_bound_tightening(m, use_bound=use_bound)
@@ -50,7 +48,7 @@ Several other parameters are available for the presolve algorithm tuning.
 For more details, see [Parameters](@ref).
 
 """
-function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
+function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelimit = Inf, kwargs...)
 
     # Some functinal constants
     both_senses = [:Min, :Max]             # Senses during bound tightening procedures
@@ -61,8 +59,16 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
     options = Dict(kwargs)
 
+    st = time() # Track start time
+    if timelimit == Inf
+        timelimit = m.presolve_timeout
+    end
+
     # Regulating Special Input Conditions: default use best feasible solution objective value
     (use_bound == true) ? bound = m.best_obj : bound = Inf
+    l_var_orig = copy(m.l_var_tight)
+    u_var_orig = copy(m.u_var_tight)
+
     discretization = to_discretization(m, m.l_var_tight, m.u_var_tight)
     if use_bound == false && haskey(options, :use_tmc)
         (m.loglevel > 0) && warn("[BOUND TIGHTENING ALGO] TMC chosen by the user, but local solve infeasible; defaulting to doing bound-tightening without TMC.")
@@ -73,7 +79,6 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
     discretization = resolve_var_bounds(m, discretization) # recomputation of bounds for lifted_variables
 
     (m.loglevel > 0) && println("starting the bound-tightening algorithm ...")
-    (m.loglevel > 99) && [println("[DEBUG] VAR $(var_idx) Original Bound [$(round(m.l_var_tight[var_idx],4)) < - > $(round(m.u_var_tight[var_idx],4))]") for var_idx in m.candidate_disc_vars]
 
     # start of the solve
     keeptightening = true
@@ -81,12 +86,15 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
 
         keeptightening = false
         m.logs[:bt_iter] += 1
-        m.loglevel > 99 && println("[DEBUG] Iteration - $(m.logs[:bt_iter])")
+        m.loglevel > 199 && println("[DEBUG] Iteration - $(m.logs[:bt_iter])")
         temp_bounds = Dict()
 
         # Perform Bound Contraction
-        for var_idx in m.candidate_disc_vars # why only all nonlinear vars?
+        for var_idx in 1:m.num_var_orig
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
+            if discretization[var_idx][1] == -Inf || discretization[var_idx][end] == Inf
+                continue
+            end
             if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tol
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
@@ -97,41 +105,54 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs.
                     elseif status in status_reroute
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
                     else
-                        print("!")
+                        warn("!VAR[$(var_idx)]$(status)")
                         temp_bounds[var_idx][tell_side[sense]] = temp_bounds[var_idx][tell_side[sense]]
                     end
-                    m.loglevel > 99 && println("[DEBUG] contracting VAR $(var_idx) $(sense) problem, results in $(temp_bounds[var_idx][tell_side[sense]])")
                 end
             end
-        end
+            time() - st > timelimit && break
+       end
 
         # Updates the discretization structure
-        for var_idx in m.candidate_disc_vars
-            if abs((temp_bounds[var_idx][1] - discretization[var_idx][1])/discretization[var_idx][1]) > m.presolve_bt_width_tol
-                (m.loglevel > 0) && print("+")
+        # for var_idx in m.candidate_disc_vars
+        for var_idx in keys(temp_bounds)
+            if abs(temp_bounds[var_idx][1] - discretization[var_idx][1])/(m.tol+abs(discretization[var_idx][1])) > m.presolve_bt_width_tol
+                (m.loglevel > 99) && print("+")
+                m.loglevel > 99 && println("[DEBUG] VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
                 keeptightening = true # Continue to perform the next iteration
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
             end
-            if abs((discretization[var_idx][end]-temp_bounds[var_idx][end])/discretization[var_idx][end]) > m.presolve_bt_width_tol
-                (m.loglevel > 0) && print("+")
+            if abs(discretization[var_idx][end] - temp_bounds[var_idx][end])/(m.tol+abs(temp_bounds[var_idx][end])) > m.presolve_bt_width_tol
+                (m.loglevel > 99) && print("+")
+                m.loglevel > 99 && println("[DEBUG] VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
                 keeptightening = true
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
             end
         end
 
+        (m.loglevel > 0) && print("\n")
         discretization = resolve_var_bounds(m, discretization)
-        haskey(options, :use_tmc) ? discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization)) : discretization = discretization
+        if haskey(options, :use_tmc)
+            discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization))
+        else
+            discretization = discretization
+        end
+        time() - st > timelimit && break
     end
 
     (m.loglevel > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
 
-    # Update the bounds with the tightened ones
-    # @show discretization
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
-    (m.loglevel > 99)  && [println("[DEBUG] VAR $(i) BOUND contracted |$(round(m.l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - * - $(round(m.u_var_tight[i],4)) | <-- $(round(m.u_var_orig[i],4)) |") for i in 1:m.num_var_orig]
+    for i in m.disc_vars
+        contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]),2)*100
+        if m.loglevel > 0 && contract_ratio > 0.0001
+            println("[DEBUG] VAR $(i) BOUND contracted $(contract_ratio)% |$(round(l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - $(round(m.u_var_tight[i],4)) | <-- $(round(u_var_orig[i],4)) |")
+        end
+    end
     (m.loglevel > 0) && print("\n")
+
     return
 end
 
