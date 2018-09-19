@@ -94,14 +94,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
         # Perform Bound Contraction
         for var_idx in 1:m.num_var_orig
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
-<<<<<<< HEAD
-            if discretization[var_idx][1] == -Inf || discretization[var_idx][end] == Inf
-                continue
-            end
-            if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tol
-=======
             if (discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tol
->>>>>>> obbt
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
@@ -111,19 +104,10 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
                     elseif status in status_reroute
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
                     else
-<<<<<<< HEAD
-                        warn("!VAR[$(var_idx)]$(status)")
-                        temp_bounds[var_idx][tell_side[sense]] = temp_bounds[var_idx][tell_side[sense]]
-=======
                         print("!")
->>>>>>> obbt
                     end
                 end
             end
-<<<<<<< HEAD
-            time() - st > timelimit && break
-       end
-=======
             if (temp_bounds[var_idx][tell_side[:Min]] > temp_bounds[var_idx][tell_side[:Max]]) 
                 temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
             end
@@ -139,7 +123,6 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
                 # add code
             end
         end
->>>>>>> obbt
 
         # Updates the discretization structure
         # for var_idx in m.candidate_disc_vars
