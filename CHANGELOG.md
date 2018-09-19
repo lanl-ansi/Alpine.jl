@@ -7,8 +7,7 @@ I've forked the master branch hosted by lanl-ansi to my own Github while keeping
 * logarithm embedding formulation
 * bounding model warm starting and no-good-cuts using solution pool
 * `disc_vars` selection algorithm based on weighted minimum vertex cover
-* support for binary/integer problem
-* support for `sin` and `cos` functions
+* more support for binary problem
 * rounding heuristic and multi-start heuristic for feasible solutions
 * recursive linear lifting
 * some attempts to reason bounds for variables with infinite bounds
@@ -50,4 +49,4 @@ I've forked the master branch hosted by lanl-ansi to my own Github while keeping
 ## Tests & Coverage
 * Most new features are covered (embedding, `disc_ratio` algorithm, etc.)
 * Stronger expression parsing tests with new operators covered
-* Coverage should be more than `~90%` (I reached a maximum in Jan with `96%`)
+* Coverage should be more than `~90%`

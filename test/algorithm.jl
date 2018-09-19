@@ -320,7 +320,7 @@ end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
     test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=GLPKSolverMIP(msg_lev=0),
+                       mip_solver=CbcSolver(logLevel=0),
                        bilinear_convexhull=true,
                        monomial_convexhull=true,
                        presolve_bt=false,

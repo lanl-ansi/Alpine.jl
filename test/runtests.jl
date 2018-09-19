@@ -4,6 +4,8 @@ using Ipopt, Cbc, Pavito
 using GLPKMathProgInterface
 using POD
 
+Pkg.pin("Cbc", v"0.3.2")
+
 poddir = Pkg.dir("POD")
 
 examples = readdir(joinpath(Pkg.dir("POD"), "test", "examples"))
