@@ -82,6 +82,8 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
 
     # start of the solve
     keeptightening = true
+    avg_reduction = Inf
+    total_reduction = 0.0
     while keeptightening && (m.logs[:time_left] > m.tol) && (m.logs[:bt_iter] < m.presolve_maxiter) # Stopping criteria
 
         keeptightening = false
@@ -92,10 +94,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
         # Perform Bound Contraction
         for var_idx in 1:m.num_var_orig
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
-            if discretization[var_idx][1] == -Inf || discretization[var_idx][end] == Inf
-                continue
-            end
-            if abs(discretization[var_idx][1] - discretization[var_idx][end]) > m.presolve_bt_width_tol
+            if (discretization[var_idx][end] - discretization[var_idx][1]) > m.presolve_bt_width_tol
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
@@ -105,31 +104,48 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
                     elseif status in status_reroute
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/m.presolve_bt_output_tol)*m.presolve_bt_output_tol
                     else
-                        warn("!VAR[$(var_idx)]$(status)")
-                        temp_bounds[var_idx][tell_side[sense]] = temp_bounds[var_idx][tell_side[sense]]
+                        print("!")
                     end
                 end
             end
-            time() - st > timelimit && break
-       end
 
-        # Updates the discretization structure
-        # for var_idx in m.candidate_disc_vars
-        for var_idx in keys(temp_bounds)
-            if abs(temp_bounds[var_idx][1] - discretization[var_idx][1])/(m.tol+abs(discretization[var_idx][1])) > m.presolve_bt_width_tol
-                (m.loglevel > 99) && print("+")
-                m.loglevel > 99 && println("[DEBUG] VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
-                keeptightening = true # Continue to perform the next iteration
-                discretization[var_idx][1] = temp_bounds[var_idx][1]
+            if (temp_bounds[var_idx][tell_side[:Min]] > temp_bounds[var_idx][tell_side[:Max]]) 
+                temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
             end
-            if abs(discretization[var_idx][end] - temp_bounds[var_idx][end])/(m.tol+abs(temp_bounds[var_idx][end])) > m.presolve_bt_width_tol
-                (m.loglevel > 99) && print("+")
-                m.loglevel > 99 && println("[DEBUG] VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
-                keeptightening = true
+            if (temp_bounds[var_idx][tell_side[:Min]] > discretization[var_idx][end])
+                temp_bounds[var_idx][tell_side[:Min]] = discretization[var_idx][1]
+            end 
+            if (temp_bounds[var_idx][tell_side[:Max]] < discretization[var_idx][1])
+                temp_bounds[var_idx][tell_side[:Max]] = discretization[var_idx][end]
+            end
+
+            bound_reduction = 0.0
+            if (temp_bounds[var_idx][tell_side[:Max]] - temp_bounds[var_idx][tell_side[:Min]]) > m.presolve_bt_width_tol
+                new_range = temp_bounds[var_idx][tell_side[:Max]] - temp_bounds[var_idx][tell_side[:Min]]
+                old_range = discretization[var_idx][end] - discretization[var_idx][1]
+                bound_reduction = old_range - new_range
+                discretization[var_idx][1] = temp_bounds[var_idx][1]
+                discretization[var_idx][end] = temp_bounds[var_idx][end]
+            else 
+                midpoint = (temp_bounds[var_idx][1] + temp_bounds[var_idx][end])/2
+                temp_bounds[var_idx][tell_side[:Min]] = midpoint - (m.presolve_bt_width_tol/2)
+                temp_bounds[var_idx][tell_side[:Max]] = midpoint + (m.presolve_bt_width_tol/2)
+                new_range = temp_bounds[var_idx][tell_side[:Max]] - temp_bounds[var_idx][tell_side[:Min]]
+                old_range = discretization[var_idx][end] - discretization[var_idx][1]
+                bound_reduction = old_range - new_range
+                discretization[var_idx][1] = temp_bounds[var_idx][1]
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
             end
+            total_reduction += bound_reduction
+            (m.loglevel > 99) && print("+")
+            (m.loglevel > 99) && println("[DEBUG] VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
+            (m.loglevel > 99) && print("+")
+            (m.loglevel > 99) && println("[DEBUG] VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
         end
 
+        avg_reduction = total_reduction/length(keys(temp_bounds))
+        keeptightening = (avg_reduction > 1e-3)
+        
         (m.loglevel > 0) && print("\n")
         discretization = resolve_var_bounds(m, discretization)
         if haskey(options, :use_tmc)
