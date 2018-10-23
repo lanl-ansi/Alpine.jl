@@ -7,15 +7,6 @@ PODDEBUG = false
 using JuMP
 using MathProgBase
 using Compat
-using Requires: @require
-
-@require Gurobi begin
-    import Gurobi
-end
-
-@require CPLEX begin
-    import CPLEX
-end
 
 include("const.jl")
 
