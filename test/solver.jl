@@ -1,3 +1,4 @@
+#=
 @testset "PODNonlinearModel loading tests" begin
     # Random Model 1
     test_solver = PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
@@ -12,6 +13,7 @@
     status = JuMP.build(m)
     @test isa(m.internalModel, POD.PODNonlinearModel)
 end
+=#
 
 @testset "Partitioning variable selection tests :: nlp3" begin
 

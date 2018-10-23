@@ -8,6 +8,8 @@ using JuMP
 using MathProgBase
 using Compat
 
+using Compat.Printf
+
 include("const.jl")
 
 # Engine for High-level Algorithmic Control and User-interface

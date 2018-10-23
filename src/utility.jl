@@ -789,7 +789,7 @@ function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
     elseif contains(solverstring, "CoinOptServices.OsilSolver(\"bonmin\"")
         m.minlp_solver_id = "Bonmin"
     else
-        error("Unsupported nlp solver name. Using blank")
+        error("Unsupported nlp solver name, $(solverstring). Using blank")
     end
 
     return

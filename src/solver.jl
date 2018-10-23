@@ -1,6 +1,6 @@
 export PODSolver
 
-type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
+mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
     colorful_pod::Any                                           # Turn on for a color solver
@@ -315,10 +315,10 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     end
 end
 
-type UnsetSolver <: MathProgBase.AbstractMathProgSolver
+mutable struct UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
-type PODSolver <: MathProgBase.AbstractMathProgSolver
+mutable struct PODSolver <: MathProgBase.AbstractMathProgSolver
 
     colorful_pod::Any
 
@@ -404,10 +404,10 @@ function PODSolver(;
     bilinear_convexhull = true,
     monomial_convexhull = true,
 
-    method_convexification = Array{Function}(0),
-    method_partition_injection = Array{Function}(0),
-    term_patterns = Array{Function}(0),
-    constr_patterns = Array{Function}(0),
+    method_convexification = Array{Function}(),
+    method_partition_injection = Array{Function}(),
+    term_patterns = Array{Function}(),
+    constr_patterns = Array{Function}(),
 
     disc_var_pick = 2,                      # By default use the 15-variable selective rule
     disc_ratio = 4,

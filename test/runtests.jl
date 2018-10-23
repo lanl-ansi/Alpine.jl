@@ -1,8 +1,9 @@
-using Base.Test
 using JuMP, MathProgBase
 using Ipopt, Cbc, Pavito
 using GLPKMathProgInterface
 using POD
+
+using Compat.Test
 
 poddir = Pkg.dir("POD")
 
