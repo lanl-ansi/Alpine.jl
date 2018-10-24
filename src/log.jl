@@ -90,9 +90,9 @@ end
 
 function logging_head(m::PODNonlinearModel)
 	if m.logs[:time_left] < Inf
-		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | TIME LEFT     | Iter   \n")
+		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP%          | CLOCK         | TIME LEFT     | Iter   \n")
 	else
-		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP\%          | CLOCK         | | Iter   \n")
+		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP%          | CLOCK         | | Iter   \n")
 	end
 
 	return
