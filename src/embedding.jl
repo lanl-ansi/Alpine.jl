@@ -130,7 +130,7 @@ function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Ve
 		binprod_relax(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
 	end
 
-	α_R = [α, α_A;] # Iintialize Rearrgange the variable sequence
+	α_R = [α; α_A] # Iintialize Rearrgange the variable sequence
 
 	for i in 1:P # Start populating sub-expressions
 		exprs[i][:expr] = @expression(m.model_mip, sum(exprs[i][:coefs][j]*α_R[exprs[i][:vars][j]] for j in 1:exprs[i][:length] if exprs[i][:vars][j] != 0) + exprs[i][:vals])
@@ -159,12 +159,12 @@ function ebd_link_expression(code::Vector, lift_dict::Dict, link_dict::Dict, p_i
     for i in 2:L
         if code[i]
              for j in 1:length(coefs)
-                (vars[j] == 0) ? vars[j] = i : vars[j] = [vars[j], i;] # Update vars
+                (vars[j] == 0) ? vars[j] = i : vars[j] = [vars[j]; i] # Update vars
                 @assert length(vars) == length(coefs)
             end
         else
             for j in 1:length(coefs)
-                (vars[j] == 0) ? push!(vars, i) : push!(vars, [vars[j], i;]) # Update vars with variable multiplier (ADDING)
+                (vars[j] == 0) ? push!(vars, i) : push!(vars, [vars[j]; i]) # Update vars with variable multiplier (ADDING)
                 (vars[j] == 0) ? push!(coefs, -1) : push!(coefs, coefs[j] * -1) # Update the coeffs with -1 (ADDING)
             end
         end

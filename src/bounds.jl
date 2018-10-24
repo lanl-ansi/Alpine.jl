@@ -6,8 +6,8 @@ In this case, we don't have to mess with the original bound information.
 """
 function init_tight_bound(m::PODNonlinearModel)
 
-    m.l_var_tight = [m.l_var_orig, fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
-    m.u_var_tight = [m.u_var_orig, fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip);]
+    m.l_var_tight = [m.l_var_orig; fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+    m.u_var_tight = [m.u_var_orig; fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
@@ -240,7 +240,7 @@ function bound_propagation(m::PODNonlinearModel)
 end
 
 """
-    Categorize variable based on variable bounds
+    Recategorize :Int variables to :Bin variables if variable bounds are [0,1]
 """
 function recategorize_var(m::PODNonlinearModel)
 
@@ -248,7 +248,6 @@ function recategorize_var(m::PODNonlinearModel)
         if m.var_type_orig[i] == :Int && m.l_var_orig[i] == 0.0 && m.u_var_orig[i] == 1.0
             m.var_type_orig[i] = :Bin
             m.var_type[i] = :Bin
-            println("Converting VAR$(i) to binary variable")
         end
     end
 

@@ -9,6 +9,10 @@ using MathProgBase
 using Compat
 
 using Compat.Printf
+using Compat.LinearAlgebra
+using Compat.SparseArrays
+
+import Compat: undef
 
 include("const.jl")
 

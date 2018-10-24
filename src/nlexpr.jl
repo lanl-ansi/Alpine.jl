@@ -170,10 +170,10 @@ end
 """
 function build_constr_block(y_idx::Int, var_idxs::Vector, operator::Symbol)
 
-    expr_l_block = Expr(:call, :(==), parse("x[$(y_idx)]"))
+    expr_l_block = Expr(:call, :(==), Meta.parse("x[$(y_idx)]"))
     expr_r_block = Expr(:call, operator)
     for j in 1:length(var_idxs)
-        push!(expr_r_block.args, parse("x[$(var_idxs[j])]"))
+        push!(expr_r_block.args, Meta.parse("x[$(var_idxs[j])]"))
     end
     push!(expr_l_block.args, expr_r_block)
     return expr_l_block

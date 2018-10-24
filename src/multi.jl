@@ -505,7 +505,7 @@ function amp_post_λ_upperbound(m::PODNonlinearModel, λ::Dict, indices::Any, di
 
     if level == length(indices)
         isempty(tregions[level]) && return
-        sliced_indices = Set(collect_indices(λ[indices][:indices], 1, [reg[1],reg[1]+1;], dim))
+        sliced_indices = Set(collect_indices(λ[indices][:indices], 1, [reg[1]; reg[1]+1], dim))
         for i in 2:length(reg)
             sliced_indices = intersect(sliced_indices, Set(collect_indices(λ[indices][:indices], i, [reg[i],reg[i]+1], dim)))
         end

@@ -362,14 +362,14 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::PODNonlinearMod
 
         if bp_idx < 0 # intlin term if no binary variable
             intlin_key = [Expr(:ref, :x, ip_idx), Expr(:ref, :x, ml_idx)]
-            intlin_idxs = [ip_idx, ml_idx;]
+            intlin_idxs = [ip_idx; ml_idx]
             intlin_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, intlin_key, intlin_idxs, :INTLIN, :*, intlin, basic_intlin_bounds, collect_intlin_discvar)
             return true, lift_nonconvex_term(m, intlin_key, constr_id, scalar)
         end
 
         if ip_idx < 0 # binlin term if no integer variable
             binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ml_idx)]
-            binlin_idxs = [bp_idx, ml_idx;]
+            binlin_idxs = [bp_idx; ml_idx]
             binlin_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, binlin_key, binlin_idxs, :BINLIN, :*, binlin, basic_binlin_bounds, collect_binlin_discvar)
             return true, lift_nonconvex_term(m, binlin_key, constr_id, scalar)
         end
@@ -383,7 +383,7 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::PODNonlinearMod
         intlin_idx = intlin_lift.args[2]
 
         binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, intlin_idx)]
-        binlin_idxs = [bp_idx, intlin_idx;]
+        binlin_idxs = [bp_idx; intlin_idx]
         binlin_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, binlin_key, binlin_idxs, :BINLIN, :*, binlin, basic_binlin_bounds, collect_binlin_discvar)
         return true, lift_nonconvex_term(m, binlin_key, constr_id, scalar)
     end
@@ -446,8 +446,8 @@ function basic_intlin_bounds(m::PODNonlinearModel, k::Any)
     lin_idx = lins[1]
     int_idx = ints[1]
 
-    linrange = [m.l_var_tight[lin_idx],m.u_var_tight[lin_idx];]
-    intrange = [m.l_var_tight[int_idx],m.u_var_tight[int_idx];]
+    linrange = [m.l_var_tight[lin_idx]; m.u_var_tight[lin_idx]]
+    intrange = [m.l_var_tight[int_idx]; m.u_var_tight[int_idx]]
 
     crossrange = linrange * intrange'
 
@@ -468,8 +468,8 @@ function basic_intlin_bounds(m::PODNonlinearModel, k::Any, d::Dict)
     lin_idx = lins[1]
     int_idx = ints[1]
 
-    linrange = [d[lin_idx][1],d[lin_idx][end];]
-    intrange = [d[int_idx][1],d[int_idx][end];]
+    linrange = [d[lin_idx][1]; d[lin_idx][end]]
+    intrange = [d[int_idx][1]; d[int_idx][end]]
 
     crossrange = linrange * intrange'
 
@@ -567,7 +567,7 @@ function detect_binint_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
         end
 
         binint_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ip_idx)]
-        binint_idxs = [bp_idx, ip_idx;]
+        binint_idxs = [bp_idx; ip_idx]
         binint_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, binint_key, binint_idxs, :BININT, :*, binint, basic_binint_bound, collect_binint_discvar)
         return true, lift_nonconvex_term(m, binint_key, constr_id, scalar)
     end

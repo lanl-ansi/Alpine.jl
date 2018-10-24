@@ -31,7 +31,7 @@ end
 function logging_summary(m::PODNonlinearModel)
 
     if m.loglevel > 0
-        print_with_color(:light_yellow, "full problem loaded into POD\n")
+        printstyled(:light_yellow, "full problem loaded into POD\n")
         println("problen sense $(m.sense_orig)")
         println("# of constraints = ", m.num_constr_orig)
         println("# of non-linear constraints = ", m.num_nlconstr_orig)
@@ -90,9 +90,9 @@ end
 
 function logging_head(m::PODNonlinearModel)
 	if m.logs[:time_left] < Inf
-		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | TIME LEFT     | Iter   \n")
+		printstyled(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | TIME LEFT     | Iter   \n")
 	else
-		print_with_color(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | | Iter   \n")
+		printstyled(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | | Iter   \n")
 	end
 end
 
@@ -144,26 +144,26 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     if m.colorful_pod == "random"
         colors = [:blue, :cyan, :green, :red, :light_red, :light_blue, :light_cyan, :light_green, :light_magenta, :light_re, :light_yellow, :white, :yellow]
         print(" |")
-        print_with_color(rand(colors),UB_block)
+        printstyled(rand(colors),UB_block)
         print("|")
-        print_with_color(rand(colors),LB_block)
+        printstyled(rand(colors),LB_block)
         print("||")
-        print_with_color(rand(colors),incumb_UB_block)
+        printstyled(rand(colors),incumb_UB_block)
         print("|")
-        print_with_color(rand(colors),incumb_LB_block)
+        printstyled(rand(colors),incumb_LB_block)
         print("|")
-        print_with_color(rand(colors),GAP_block)
+        printstyled(rand(colors),GAP_block)
         print("|")
-        print_with_color(rand(colors),UTIME_block)
+        printstyled(rand(colors),UTIME_block)
         print("|")
-        print_with_color(rand(colors),LTIME_block)
+        printstyled(rand(colors),LTIME_block)
         print("|")
-        print_with_color(rand(colors),ITER_block)
+        printstyled(rand(colors),ITER_block)
         print("\n")
     elseif m.colorful_pod == "solarized"
-        print_with_color(m.logs[:n_iter]+21, " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
+        printstyled(m.logs[:n_iter]+21, " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
     elseif m.colorful_pod == "warmer"
-        print_with_color(max(20,170-m.logs[:n_iter]), " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
+        printstyled(max(20,170-m.logs[:n_iter]), " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
     elseif m.colorful_pod == false
         println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
     end
@@ -219,7 +219,7 @@ function summary_status(m::PODNonlinearModel)
         warn("[EXCEPTION] Indefinite POD status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/POD.jl/issues) to help us make POD better.")
     end
 
-    print_with_color(:green, "\n POD ended with status $(m.pod_status)\n")
+    printstyled(:green, "\n POD ended with status $(m.pod_status)\n")
 
     return
 end

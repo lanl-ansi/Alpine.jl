@@ -27,7 +27,7 @@ function update_opt_gap(m::PODNonlinearModel)
             m.best_rel_gap = 0.0
             return
         end
-        if m.gapref == "ub"
+        if m.gapref == :ub
             m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
         else
             m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_bound))
@@ -160,9 +160,9 @@ function update_boundstop_options(m::PODNonlinearModel)
     if m.mip_solver_id == "Gurobi"
         # Calculation of the bound
         if m.sense_orig == :Min
-            m.gapref == "ub" ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
+            m.gapref == :ub ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
         elseif m.sense_orig == :Max
-            m.gapref == "ub" ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
+            m.gapref == :ub ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
         end
 
         for i in 1:length(m.mip_solver.options)
@@ -366,18 +366,18 @@ function track_new_partition_idx(d::Dict, idx::Int, val::Float64, acp::Int=-1)
     newpidx = []                # Tracks the newly constructed partition idxes
     pcnt == 1 && return [1;]    # Still keep non-discretizing variables
     if acp == 1
-        return newpidx = [1,2;]
+        return newpidx = [1; 2]
     elseif acp == pcnt
-        return newpidx = [pcnt-1,pcnt;]
+        return newpidx = [pcnt-1; pcnt]
     else
         tlb = d[idx][acp-1]
         tub = d[idx][acp+1]
         if abs(val-tlb) == abs(val-tub)
-            return [acp-1, acp, acp+1;]
+            return [acp-1; acp; acp+1]
         elseif abs(val-tlb) > abs(val-tub)
-            return [acp-1, acp;]
+            return [acp-1; acp]
         elseif abs(val-tlb) < abs(val-tub)
-            return [acp, acp+1;]
+            return [acp; acp+1]
         end
     end
 
@@ -451,9 +451,9 @@ function initialize_solution_pool(m::PODNonlinearModel, cnt::Int)
     # !! Be careful with the :vars when utilizing the dynamic discretization variable selection !!
     s[:vars] = [i for i in m.candidate_disc_vars if length(m.discretization[i]) > 2]
 
-    s[:sol] = Vector{Vector}(cnt)                   # Solution value
-    s[:obj] = Vector{Float64}(cnt)                  # Objecitve value
-    s[:disc] = Vector{Dict}(cnt)                    # Discretization
+    s[:sol] = Vector{Vector}(undef, cnt)                   # Solution value
+    s[:obj] = Vector{Float64}(undef, cnt)                  # Objecitve value
+    s[:disc] = Vector{Dict}(undef, cnt)                    # Discretization
     s[:stat] = [:Alive for i in 1:cnt]              # Solution status
     s[:iter] = [m.logs[:n_iter] for i in 1:cnt]     # Iteration collected
     s[:ubstart] = [false for i in 1:cnt]           # Solution used for ub multistart
@@ -475,18 +475,18 @@ function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
         elseif m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
             @assert isa(m.nonconvex_terms[k][:var_idxs][1], Int)
             varidx = m.nonconvex_terms[k][:var_idxs][1]
-            push!(arcs, [varidx, varidx;])
+            push!(arcs, [varidx; varidx])
         elseif m.nonconvex_terms[k][:nonlinear_type] == :MULTILINEAR
             varidxs = m.nonconvex_terms[k][:var_idxs]
             for i in 1:length(varidxs)
                 for j in 1:length(varidxs)
                     if i != j
-                        push!(arcs, sort([varidxs[i], varidxs[j];]))
+                        push!(arcs, sort([varidxs[i]; varidxs[j]]))
                     end
                 end
             end
             if length(varidxs) == 1
-                push!(arcs, sort([varidxs[1], varidxs[1];]))
+                push!(arcs, sort([varidxs[1]; varidxs[1]]))
             end
         elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
             var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
@@ -495,13 +495,13 @@ function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
             var_idxs = m.nonconvex_terms[k][:var_idxs]
             for i in 1:length(var_idxs)
                 for j in 1:length(var_idxs)
-                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
+                    i != j && push!(arcs, sort([var_idxs[i]; var_idxs[j]]))
                 end
             end
         elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
             @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
             var_idx = m.nonconvex_terms[k][:var_idxs][1]
-            push!(arcs, [var_idx, var_idx;])
+            push!(arcs, [var_idx; var_idx])
         elseif m.nonconvex_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
             continue
         else
@@ -562,7 +562,7 @@ function build_discvar_graph(m::PODNonlinearModel)
     for i in 1:m.num_var_orig
         if !(i in nodes) && m.var_type[i] == :Int
             push!(nodes, i)
-            push!(arcs, [i,i;])
+            push!(arcs, [i; i])
         end
     end
 
@@ -708,28 +708,28 @@ end
 
 function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
 
-    isempty(override) ? solverstring = string(m.mip_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.mip_solver) : solverstring = override
 
     # Higher-level solvers: that can use sub-solvers
-    if contains(solverstring,"Pajarito")
+    if occursin("Pajarito", solverstring)
         m.mip_solver_id = "Pajarito"
         return
-    elseif contains(solverstring, "Pavito")
+    elseif occursin("Pavito", solverstring)
         m.mip_solver_id = "Pavito"
         return
     end
 
     # Lower level solvers
-    if contains(solverstring,"Gurobi")
+    if occursin("Gurobi", solverstring)
         m.mip_solver_id = "Gurobi"
-    elseif contains(solverstring,"CPLEX")
+    elseif occursin("CPLEX", solverstring)
         m.mip_solver_id = "CPLEX"
-    elseif contains(solverstring,"Cbc")
+    elseif occursin("Cbc", solverstring)
         m.mip_solver_id = "Cbc"
-    elseif contains(solverstring,"GLPK")
+    elseif occursin("GLPK", solverstring)
         m.mip_solver_id = "GLPK"
     else
-        error("Unsupported mip solver name. Using blank")
+        error("Unsupported MIP solver $solverstring; use a POD-supported MIP solver")
     end
 
     return
@@ -737,28 +737,28 @@ end
 
 function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
 
-    isempty(override) ? solverstring = string(m.nlp_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.nlp_solver) : solverstring = override
 
     # Higher-level solver
-    if contains(solverstring, "Pajarito")
+    if occursin("Pajarito", solverstring)
         m.nlp_solver_id = "Pajarito"
         return
-    elseif contains(solverstring, "Pavito")
+    elseif occursin("Pavito", solverstring)
         m.nlp_solver_id = "Pavito"
         return
     end
 
     # Lower-level solver
-    if contains(solverstring, "Ipopt")
+    if occursin("Ipopt", solverstring)
         m.nlp_solver_id = "Ipopt"
-    elseif contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+    elseif occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
         m.nlp_solver_id = "Bonmin"
-    elseif contains(solverstring, "KNITRO")
+    elseif occursin("KNITRO", solverstring)
         m.nlp_solver_id = "Knitro"
-    elseif contains(solverstring, "NLopt")
+    elseif occursin("NLopt", solverstring)
         m.nlp_solver_id = "NLopt"
     else
-        error("Unsupported nlp solver name. Using blank")
+        error("Unsupported NLP local solver $solverstring; use a POD-supported NLP local solver")
     end
 
     return
@@ -766,30 +766,30 @@ end
 
 function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
 
-    (m.minlp_solver == UnsetSolver()) && return
+    (m.minlp_solver == empty_solver) && return
 
-    isempty(override) ? solverstring = string(m.minlp_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.minlp_solver) : solverstring = override
 
     # Higher-level solver
-    if contains(solverstring, "Pajarito")
+    if occursin("Pajarito", solverstring)
         m.minlp_solver_id = "Pajarito"
         return
-    elseif contains(solverstring, "Pavito")
+    elseif occursin("Pavito", solverstring)
         m.minlp_solver_id = "Pavito"
         return
     end
 
     # Lower-level Solver
-    if contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+    if occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
         m.minlp_solver_id = "Bonmin"
-    elseif contains(solverstring, "KNITRO")
+    elseif occursin("KNITRO", solverstring)
         m.minlp_solver_id = "Knitro"
-    elseif contains(solverstring, "NLopt")
+    elseif occursin("NLopt", solverstring)
         m.minlp_solver_id = "NLopt"
-    elseif contains(solverstring, "CoinOptServices.OsilSolver(\"bonmin\"")
+    elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
         m.minlp_solver_id = "Bonmin"
     else
-        error("Unsupported nlp solver name, $(solverstring). Using blank")
+        error("Unsupported MINLP local solver $solverstring; use a POD-supported MINLP local solver")
     end
 
     return

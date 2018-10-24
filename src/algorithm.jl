@@ -128,15 +128,12 @@ function check_exit(m::PODNonlinearModel)
 end
 
 """
-
     local_solve(m::PODNonlinearModel, presolve::Bool=false)
 
 Perform a local NLP or MINLP solve to obtain a feasible solution.
 The `presolve` option is set to `true` when the function is invoked in [`presolve`](@ref).
 Otherwise, the function is invoked from [`bounding_solve`](@ref).
-
 """
-
 function local_solve(m::PODNonlinearModel; presolve = false)
 
     convertor = Dict(:Max=>:>, :Min=>:<)

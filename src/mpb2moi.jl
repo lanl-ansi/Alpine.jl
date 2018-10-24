@@ -5,7 +5,7 @@ function interface_init_nonlinear_model(solver::Any)
 end
 
 function interface_init_nonlinear_data(nonlinear_model::MathProgBase.AbstractNLPEvaluator)
-    MathProgBase.initialize(nonlinear_model, [:Grad,:Jac,:Hess,:HessVec,:ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
+    MathProgBase.initialize(nonlinear_model, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
     return
 end
 
