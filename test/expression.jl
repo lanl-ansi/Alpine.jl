@@ -674,7 +674,7 @@ end
     @test aff_mip[1][:rhs] == 0.0
     @test aff_mip[1][:vars] == Any[:(x[1])]
     @test aff_mip[1][:sense] == :(>=)
-    @test round.(aff_mip[1][:coefs]; digits=1) == Any[-3.0]
+    @test round(aff_mip[1][:coefs][1]; digits=1) == -3.0
     @test aff_mip[1][:cnt] == 1
 
     @test aff_mip[2][:rhs] == 0.0

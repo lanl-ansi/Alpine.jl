@@ -807,7 +807,7 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
     timelimit = 0.0
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
     
-    opts = Vector{Pair{Symbol,Any}}(undef, 0)
+    opts = Vector{Any}(undef, 0)
     if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
         for i in collect(m.mip_solver.options)
             push!(opts, i)

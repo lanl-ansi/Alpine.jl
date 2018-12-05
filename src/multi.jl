@@ -553,7 +553,7 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
 	k = 0
 	indices = Vector{Int}(undef, Int(prod(dim)/dim[fixed_dim]*length(fixed_partition)))
 	for i in 1:prod(dim)
-		ind = Tuple(CartesianIndices(l)[i])
+		ind = ind2sub(l, i)
 		if ind[fixed_dim] in fixed_partition
 			k += 1
 			indices[k] = i

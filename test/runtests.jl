@@ -2,17 +2,22 @@ using JuMP, MathProgBase
 using Ipopt, Cbc, Pavito
 using GLPKMathProgInterface
 using POD
-using Pkg
 
 using Compat.Test
 
 poddir = ""
 if VERSION < v"0.7.0-"
+    import Compat: round
+    import Compat: undef
+    import Compat: @warn
+    import Compat: occursin
+    import Compat: printstyled
     poddir = Pkg.dir("POD")
 end
 
 if VERSION > v"0.7.0-"
     using Random
+    using Pkg
     poddir = joinpath(dirname(pathof(POD)), "..")
 end
 

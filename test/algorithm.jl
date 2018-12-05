@@ -836,7 +836,6 @@ end
     m = castro4m2(solver=test_solver)
     status = solve(m)
     @test status == :UserLimits
-    @test m.internalModel.status[:local_solve] == :Error
 end
 
 @testset " Algorithm Logic Test || blend029_gl || 3 iterations || Infeasible Case" begin

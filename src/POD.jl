@@ -6,14 +6,37 @@ PODDEBUG = false
 
 using JuMP
 using MathProgBase
-using Compat
 
-using Compat.Printf
-using Compat.LinearAlgebra
-using Compat.SparseArrays
-using Compat.Statistics
 
-import Compat: undef
+
+if VERSION < v"0.7.0-"
+    import Compat: undef
+    import Compat: @warn
+    import Compat: occursin
+    import Compat: printstyled
+    import Compat: round
+
+    # function round(x; digits=2, base=10) 
+    #     return Base.round(x, digits, base)
+    # end
+end
+
+if VERSION > v"0.7.0-"
+    using LinearAlgebra
+    using Random
+    using Distributed
+    using Statistics
+    using Printf
+    using SparseArrays
+
+    function ind2sub(x, i)
+        return Tuple(CartesianIndices(x)[i])
+    end
+
+end
+
+
+
 
 include("const.jl")
 

@@ -23,7 +23,7 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 
 	m = Model(solver=solver)
 
-	Random.seed!(1)
+	VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
     @variable(m, 0.1<=x[1:4]<=rand()*100)
 	if exprmode == 1
 		@NLobjective(m, Max, x[1]*x[2]*x[3]*x[4])
@@ -63,7 +63,7 @@ function multi3(;verbose=false, solver=nothing, exprmode=1)
 
 	m = Model(solver=solver)
 
-	Random.seed!(1)
+	VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
 	ub = rand()
     @variable(m, 0.1<=x[1:3]<=ub*1000)
 	if exprmode == 1
@@ -89,7 +89,7 @@ function multi2(;verbose=false,solver=nothing)
 
 	m = Model(solver=solver)
 
-	Random.seed!(1)
+	VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
     @variable(m, 0.1<=x[1:2]<=rand()*10)
 	@NLobjective(m, Max, x[1]*x[2])
 	@constraint(m, sum(x[i] for i in 1:2) <= 2)
@@ -106,7 +106,7 @@ function multi4N(;verbose=false, exprmode=1, solver=nothing, N=1, randomub=true)
 	m = Model(solver=solver)
 
 	M = 1+3*N
-	Random.seed!(100)
+	VERSION > v"0.7.0-" ? Random.seed!(100) : srand(100)
 	isa(randomub, Bool) ? @variable(m, 0.1 <= x[1:M] <= 100*rand()) : @variable(m, 0.1 <= x[1:M] <= randomub)
 
 	if exprmode == 1
@@ -149,7 +149,7 @@ function multi3N(;verbose=false, randomub=nothing, solver=nothing, exprmode=1, N
 	m = Model(solver=solver)
 
 	M = 1+2*N
-	Random.seed!(100)
+	VERSION > v"0.7.0-" ? Random.seed!(100) : srand(100)
     isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
 	if exprmode == 1
 		@NLobjective(m, Max, sum(x[i]*x[i+1]*x[i+2] for i in 1:2:(M-1)))
@@ -175,7 +175,7 @@ function multiKND(;verbose=false, solver=nothing, exprmode=1, randomub=true, N=1
 	m = Model(solver=solver)
 
 	M = K+(K-D)*(N-1)
-	Random.seed!(100)
+	VERSION > v"0.7.0-" ? Random.seed!(100) : srand(100)
 	isa(randomub, Int) ? @variable(m, 0.1<=x[1:M]<=randomub) : @variable(m, 0.1<=x[1:M]<=rand()*100)
 	@NLobjective(m, Max, sum(prod(x[i+k] for k in 0:(K-1)) for i in 1:(K-D):(M-D)))
 	@constraint(m, [i in 1:(K-D):(M-D)], sum(x[i+k] for k in 0:(K-1)) <= K)
