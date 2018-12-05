@@ -303,7 +303,7 @@ function amp_post_convhull_constrs(m::PODNonlinearModel, λ::Dict, α::Dict, ind
             error("EXCEPTION: unexpected variable type during integer related realxation")
         end
         sliced_indices = [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
-        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repmat([d[i][k]],length(sliced_indices[k])), λ[indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
+        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repeat([d[i][k]],length(sliced_indices[k])), λ[indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
     end
 
     return
@@ -429,7 +429,7 @@ function amp_post_inequalities_int(m::PODNonlinearModel, d::Dict, λ::Dict, α::
     p_cnt = l_cnt - 1
 
     # Embedding formulation
-    m.convhull_ebd && warn("Embedding is currently not supported for multilinear terms with discrete variables", once=true)
+    m.convhull_ebd && @warn "Embedding is currently not supported for multilinear terms with discrete variables"
 
     # SOS-2 Formulation
     if m.convhull_formulation == "sos2"
@@ -551,9 +551,9 @@ end
 function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::Tuple)
 
 	k = 0
-	indices = Vector{Int}(Int(prod(dim)/dim[fixed_dim]*length(fixed_partition)))
+	indices = Vector{Int}(undef, Int(prod(dim)/dim[fixed_dim]*length(fixed_partition)))
 	for i in 1:prod(dim)
-		ind = ind2sub(l, i)
+		ind = Tuple(CartesianIndices(l)[i])
 		if ind[fixed_dim] in fixed_partition
 			k += 1
 			indices[k] = i

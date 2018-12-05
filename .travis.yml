@@ -3,19 +3,18 @@ os:
   - linux
 julia:
   - 0.6
+  - 0.7 
+  - 1.0
 
 # this will save build time, once it is working
 cache:
   directories:
     - /home/travis/.julia
-sudo: false
 
 addons:
   apt_packages:
     - gfortran
-    - liblapack-dev
-    - libgmp-dev
-    - libglpk-dev
+
 
 before_install:
     # don't keep an old version of the code in the cache

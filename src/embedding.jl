@@ -89,7 +89,7 @@ end
 	This is a utility function that convert the binary string into bool vector
 """
 function ebd_support_bool_vec(s::String)
-   v = Vector{Bool}(length(s))
+   v = Vector{Bool}(undef, length(s))
    for i in 1:length(s)
        s[i] == '1' ? v[i]=true : v[i]=false
    end
@@ -100,7 +100,7 @@ end
 	This is a utility function that convert the binary string into 0/1 vector
 """
 function ebd_support_binary_vec(s::String)
-   v = Vector{Int}(length(s))
+   v = Vector{Int}(undef, length(s))
    for i in 1:length(s)
        s[i] == '1' ? v[i]=1 : v[i]=0
    end
@@ -199,5 +199,5 @@ end
 """
 function ebd_gray(n, idx)
 	code_decimal = xor(n, n >> 1)
-	return bin(code_decimal, idx)
+	return string(code_decimal, base=2, pad=idx)
 end

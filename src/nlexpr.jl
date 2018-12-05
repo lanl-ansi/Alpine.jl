@@ -327,7 +327,7 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 			(coef != 0.0) ? coef = expr.args[2] * coef : coef = expr.args[2]	# Patch
 			# coef = expr.args[2]
 			start_pos = 3
-			warn("Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix...", once=true)
+			@warn "Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix..."
 		end
 	end
 
@@ -464,7 +464,7 @@ function expr_arrangeargs(args::Array; kwargs...)
 	if args[1] in [:^, :sin, :cos]
 		return args
 	elseif args[1] in [:/]
-		warn("Partially supported operator $(args[1]) in $(args). Trying to resolve the expression...")
+		@warn "Partially supported operator $(args[1]) in $(args). Trying to resolve the expression..."
 		args = expr_resolve_divdenominator(args)
 	elseif args[1] in [:*, :+, :-]
 		# Such generic operators can be handled

@@ -11,6 +11,7 @@ using Compat
 using Compat.Printf
 using Compat.LinearAlgebra
 using Compat.SparseArrays
+using Compat.Statistics
 
 import Compat: undef
 

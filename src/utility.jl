@@ -21,8 +21,8 @@ function update_opt_gap(m::PODNonlinearModel)
         return
     else
         p = convert(Int, round(abs(log(10,m.relgap))))
-        n = round(abs(m.best_obj-m.best_bound), p)
-        dn = round(abs(1e-12+abs(m.best_obj)), p)
+        n = round(abs(m.best_obj-m.best_bound); digits=p)
+        dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
         if isapprox(n, 0.0;atol=m.tol) && isapprox(m.best_obj,0.0;atol=m.tol)
             m.best_rel_gap = 0.0
             return
@@ -127,27 +127,29 @@ end
 """
     @docstring
 """
-function insert_timeleft_symbol(options, val::Float64, keywords::Symbol, timeout; options_string_type=1)
+function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_string_type=1)
 
     for i in 1:length(options)
         if options_string_type == 1
-            if keywords in collect(options[i])
+            if keyword in collect(options[i])
                 deleteat!(options, i)
+                break
             end
         elseif options_string_type == 2
-            if keywords == split(options[i],"=")[1]
+            if keyword == split(options[i],"=")[1]
                 deleteat!(options, i)
+                break
             end
         end
     end
 
     if options_string_type == 1
-        (val != Inf) && push!(options, (keywords, val))
+        (val != Inf) && (push!(options, keyword => val))
     elseif options_string_type == 2
-        (val != Inf) && push!(options, "$(keywords)=$(val)")
+        (val != Inf) && (push!(options, "$(keyword)=$(val)"))
     end
 
-    return
+    return options
 end
 
 """
@@ -250,7 +252,7 @@ function is_fully_convexified(m::PODNonlinearModel)
     # Other more advanced convexification check goes here
     for term in keys(m.nonconvex_terms)
         if !m.nonconvex_terms[term][:convexified]
-            warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
+            @warn "Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this"
             return
         else
             m.nonconvex_terms[term][:convexified] = false    # Reset status for next iteration
@@ -270,7 +272,7 @@ function collect_lb_pool(m::PODNonlinearModel)
     # If in need, the scheme need to be refreshed with customized discretization info
 
     if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
-        warn("Skipping collecting solution pool procedure", once=true) # Only feaible with Gurobi solver
+        @warn "Skipping collecting solution pool procedure",
         return
     end
 
@@ -396,7 +398,7 @@ function get_active_partition_idx(discretization::Dict, val::Float64, idx::Int; 
         end
     end
 
-    warn("Activate parition not found [VAR$(idx)]. Returning default partition 1.")
+    @warn "Activate parition not found [VAR$(idx)]. Returning default partition 1."
     return 1
 end
 
@@ -802,18 +804,30 @@ An utility function used to dynamically regulate MILP solver time limits to fit 
 function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
+    timelimit = 0.0
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+    
+    opts = Vector{Pair{Symbol,Any}}(undef, 0)
+    if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
+        for i in collect(m.mip_solver.options)
+            push!(opts, i)
+        end
+    end
 
     if m.mip_solver_id == "CPLEX"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+        opts = update_timeleft_symbol(opts, :CPX_PARAM_TILIM, timelimit)
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "Pavito"
         (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     elseif m.mip_solver_id == "Gurobi"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
+        opts = update_timeleft_symbol(opts, :TimeLimit, timelimit)  
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "Cbc"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
+        opts = update_timeleft_symbol(opts, :seconds, timelimit)
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "GLPK"
-        insert_timeleft_symbol(m.mip_solver.opts, timelimit,:tm_lim,m.timeout)
+        opts = update_timeleft_symbol(opts, :tm_lim, timelimit)
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "Pajarito"
         (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     else
@@ -830,14 +844,23 @@ An utility function used to dynamically regulate MILP solver time limits to fit 
 function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
+    timelimit = 0.0
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
+    opts = Vector{Any}(undef, 0)
+    if m.nlp_solver_id != "Pavito" && m.nlp_solver_id != "Pajarito"
+        opts = collect(m.nlp_solver.options)
+    end
+    
+
     if m.nlp_solver_id == "Ipopt"
-        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+        opts = update_timeleft_symbol(opts, :max_cpu_time, timelimit)
+        m.nlp_solver.options = opts
     elseif m.nlp_solver_id == "Pajarito"
         (timelimit < Inf) && (m.nlp_solver.timeout = timelimit)
     elseif m.nlp_solver_id == "AmplNL"
-        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
+        opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
+        m.nlp_solver.options = opts
     elseif m.nlp_solver_id == "Knitro"
         error("You never tell me anything about knitro. Probably because they have a very short trail length.")
     elseif m.nlp_solver_id == "NLopt"
@@ -856,14 +879,22 @@ end
 function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
+    timelimit = 0.0
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    opts = Vector{Any}(undef, 0)
+    if m.minlp_solver_id != "Pavito" && m.minlp_solver_id != "Pajarito"
+        opts = collect(m.minlp_solver.options)
+    end
+    
 
     if m.minlp_solver_id == "Pajarito"
         (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
     elseif m.minlp_solver_id == "Pavito"
         (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
     elseif m.minlp_solver_id == "AmplNL"
-        insert_timeleft_symbol(m.minlp_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
+        opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
+        m.minlp_solver.options = opts
     elseif m.minlp_solver_id == "Knitro"
         error("You never tell me anything about knitro. Probably because they charge everything they own.")
     elseif m.minlp_solver_id == "NLopt"

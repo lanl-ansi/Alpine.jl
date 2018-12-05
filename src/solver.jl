@@ -714,13 +714,13 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable recategorization
 
-    :Int in m.var_type_orig && warn("POD's support for integer variables is experimental")
+    :Int in m.var_type_orig && @warn "POD's support for integer variables is experimental"
     :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
 
     # Conduct solver-dependent detection
     fetch_mip_solver_identifier(m)
-    fetch_nlp_solver_identifier(m)
-    fetch_minlp_solver_identifier(m)
+    (m.nlp_solver != empty_solver) && (fetch_nlp_solver_identifier(m))
+    (m.minlp_solver != empty_solver) && (fetch_minlp_solver_identifier(m))
 
     # Solver Dependent Options
     if m.mip_solver_id != :Gurobi

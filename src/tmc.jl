@@ -108,7 +108,7 @@ end
 
 function amp_post_tmc_monomial_mc(m::JuMP.Model, idx_aa::Int, λ::Dict, λX::Dict, LB::Dict, UB::Dict, dim::Int, idx_a::Int)
     @constraint(m, Variable(m, idx_aa) >= Variable(m, idx_a)^(2))
-    @constraint(m, Variable(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(diagm(LB[idx_a]), UB[idx_a])))
+    @constraint(m, Variable(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(Matrix(Diagonal(LB[idx_a])), UB[idx_a])))
     return
 end
 
@@ -243,7 +243,7 @@ function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable
     end
 
     # Second position to handle inf bounds
-    warnuser && warn("BINLIN term exception using -1e4/1e4 as lb/ub", once=true)
+    warnuser && @warn "BINLIN term exception using -1e4/1e4 as lb/ub"
 
     return
 end

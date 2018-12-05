@@ -233,7 +233,7 @@ function bound_propagation(m::PODNonlinearModel)
 
     if infeasible
         m.status[:bounding_solve] = :Infeasible
-        warn("[INFEASIBLE] Infeasibility detected via bound propagation")
+        @warn "[INFEASIBLE] Infeasibility detected via bound propagation"
     end
 
     return infeasible

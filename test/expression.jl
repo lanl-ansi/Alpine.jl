@@ -230,7 +230,7 @@ end
 
 @testset "Expression Parsing || bilinear || Complex || blend029.jl " begin
 
-    test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = PODSolver(minlp_solver=pavito_solver,mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
     m = blend029(solver=test_solver)
 
@@ -674,7 +674,7 @@ end
     @test aff_mip[1][:rhs] == 0.0
     @test aff_mip[1][:vars] == Any[:(x[1])]
     @test aff_mip[1][:sense] == :(>=)
-    @test round.(aff_mip[1][:coefs],1) == Any[-3.0]
+    @test round.(aff_mip[1][:coefs]; digits=1) == Any[-3.0]
     @test aff_mip[1][:cnt] == 1
 
     @test aff_mip[2][:rhs] == 0.0
@@ -1207,7 +1207,7 @@ end
         @test length(m.internalModel.linear_terms) == 2
         @test length(m.internalModel.nonconvex_terms) == 4
 
-        lk = Vector{Any}(2)
+        lk = Vector{Any}(undef, 2)
         lk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -1.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3)])))
         lk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -2.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6)])))
 
@@ -1252,7 +1252,7 @@ end
 
         JuMP.build(m) # Setup internal model
 
-        lk = Vector{Any}(5)
+        lk = Vector{Any}(undef, 5)
         lk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (-1.0, 2)])))
         lk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(3.0, 2), (-1.0, 3)])))
         lk[3] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1), (1.0, 3)])))
@@ -1333,7 +1333,7 @@ end
 
         JuMP.build(m)
 
-        nlk = Vector{Any}(31)
+        nlk = Vector{Any}(undef, 31)
         nlk[1] = [:(x[1]), :(x[2])]
         nlk[2] = [:(x[2]), :(x[3])]
         nlk[3] = [:(x[1]), :(x[10])]
@@ -1382,7 +1382,7 @@ end
             @test m.internalModel.nonconvex_terms[nlk[i]][:y_type] == :Cont
         end
 
-        lk = Vector{Any}(12)
+        lk = Vector{Any}(undef, 12)
         lk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 4.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2)])))
         lk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2), (1.0, 3)])))
         lk[3] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 5.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1)])))
@@ -1415,7 +1415,7 @@ end
     @testset "Expression Parsing || Linear Lifting || brainpc3" begin
 
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(),
+                            mip_solver=CbcSolver(logLevel=0),
                             disc_ratio=8,
                             loglevel=100)
 
@@ -2890,6 +2890,7 @@ end
     @testset "Corner Cases - 1 : sign convertor special case" begin
         test_solver = PODSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
+                                minlp_solver=pavito_solver,
                                 loglevel=100)
 
         m = Model(solver=test_solver)
@@ -2958,7 +2959,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod" begin
 
-        test_solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
         m = bpml(solver=test_solver)
 
@@ -3009,7 +3010,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod with linear lifting and coefficients" begin
 
-        test_solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
         m = bmpl_linearlifting(solver=test_solver)
 
@@ -3135,7 +3136,7 @@ end
     end
 
     @testset "Expression Parsing || INTPROD Operators" begin
-        test_solver=PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0),mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = intprod_basic(solver=test_solver)
 
         JuMP.build(m) # Setup internal model
@@ -3219,7 +3220,7 @@ end
     end
 
     @testset "Expression Parsing || ex1225a" begin
-        test_solver = PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = PODSolver(minlp_solver=pavito_solver, nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = ex1225a(solver=test_solver)
 
         JuMP.build(m)
@@ -3600,7 +3601,7 @@ end
     end
 
     @testset "Expression Parsing || prob10" begin
-        test_solver = PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = prob10(solver=test_solver)
 
         JuMP.build(m)
@@ -3653,7 +3654,7 @@ end
     end
 
     @testset "Expression Parsing || prob03" begin
-        test_solver = PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = prob03(solver=test_solver)
 
         JuMP.build(m)
@@ -3677,7 +3678,7 @@ end
     end
 
     @testset "Expression Parsing || st_miqp5" begin
-        test_solver = PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = st_miqp5(solver=test_solver)
 
         JuMP.build(m)
@@ -3768,7 +3769,7 @@ end
 
     @testset "Expression Parsing || discretemulti_basic" begin
 
-		test_solver = PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+		test_solver = PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
 		m = discretemulti_basic(solver=test_solver)
 
 		JuMP.build(m)
@@ -4118,12 +4119,12 @@ end
 @testset "Expression Parsing || sin/cos" begin
     @testset "Expression Parsing || sin/cos || specialopts " begin
 
-        test_solver=PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
 
         m = specialopts(solver=test_solver)
         JuMP.build(m)
 
-        nlk = Vector{Any}(10)
+        nlk = Vector{Any}(undef, 10)
         nlk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[1]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))
         nlk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[2]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :cos))
         nlk[3] = Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[13]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :cos))
@@ -4140,7 +4141,7 @@ end
             isa(k, Dict) && @test k[:operator] == m.internalModel.nonconvex_terms[k][:nonlinear_type]
         end
 
-        lk = Vector{Any}(4)
+        lk = Vector{Any}(undef, 4)
         lk[1] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.2, 2), (0.2, 1)])))
         lk[2] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.5, 1)])))
         lk[3] = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.2, 11)])))
@@ -4158,7 +4159,7 @@ end
 
     @testset "Expression Parsing || sin/cos || sincos_p1" begin
 
-        test_solver=PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = sincos_p1(solver=test_solver)
         JuMP.build(m)
 
@@ -4429,7 +4430,7 @@ end
     end
 
     @testset "Expression Parsing || sin/cos || trig" begin
-        test_solver=PODSolver(nlp_solver=IpoptSolver(), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=PODSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = trig(solver=test_solver)
         JuMP.build(m)
         @test m.internalModel.nonconvex_terms[Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[7]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))][:y_idx] == 8

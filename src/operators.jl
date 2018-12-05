@@ -173,7 +173,7 @@ function detect_linear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
             # Specical Check
             if expr.args[i].head == :call && expr.args[i].args[1] == :* && length(expr.args[i].args) == 3
                 sub_coef = [j for j in expr.args[i].args if (isa(j, Int) || isa(j, Float64))]
-                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(j)) && j.head == :ref)]
+                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(typeof(j))) && j.head == :ref)]
                 (isempty(sub_coef) || isempty(sub_vars)) && return false, expr
                 (length(sub_coef) != 1 || length(sub_vars) != 1) && return false, expr
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
@@ -182,7 +182,7 @@ function detect_linear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
             # General Check
             if expr.args[i].head == :call && expr.args[i].args[1] in [:-,:+] && length(expr.args[i].args) == 2 # resolve -(2) or -(x) terms
                 expr.args[i].args[1] == :+ ? sub_coef = [1.0] : sub_coef = [-1.0]
-                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(j)) && j.head == :ref)]
+                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(typeof(j))) && j.head == :ref)]
                 isempty(sub_vars) && return false, expr
                 length(sub_vars) != 1 && return false, expr
                 (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
@@ -202,7 +202,7 @@ function detect_linear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
         coef_var = Set()
 
         sub_coef = [i for i in expr.args if (isa(i, Int) || isa(i, Float64))]
-        sub_vars = [i.args[2] for i in expr.args if ((:head in fieldnames(i)) && i.head == :ref)]
+        sub_vars = [i.args[2] for i in expr.args if ((:head in fieldnames(typeof(i))) && i.head == :ref)]
         (isempty(sub_coef) || isempty(sub_vars)) && return false, expr
         (length(sub_coef) != 1 || length(sub_vars) != 1) && return false, expr
         push!(coef_var, (1.0*sub_coef[1], sub_vars[1]))
@@ -274,7 +274,7 @@ bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
 sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
-linear(k, vec) = sum(k[:ref][:scalar] + [i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
+linear(k, vec) = sum(k[:ref][:scalar] .+ [i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
 """
     Recognize prodcuts of binary variables and multilinear products

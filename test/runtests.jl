@@ -12,6 +12,7 @@ if VERSION < v"0.7.0-"
 end
 
 if VERSION > v"0.7.0-"
+    using Random
     poddir = joinpath(dirname(pathof(POD)), "..")
 end
 

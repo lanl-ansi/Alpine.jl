@@ -85,7 +85,7 @@ function logging_summary(m::PODNonlinearModel)
     end
 
     # Additional warnings
-    m.mip_solver_id == "Gurobi" && warn("POD support Gurobi solver 7.0+ ...")
+    m.mip_solver_id == "Gurobi" && @warn "POD support Gurobi solver 7.0+ ..."
 end
 
 function logging_head(m::PODNonlinearModel)
@@ -102,7 +102,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
 
     b_len = 14
     if !isempty(m.logs[:obj]) && isa(m.logs[:obj][end], Float64)
-        objstr = string(round(m.logs[:obj][end],4))
+        objstr = string(round(m.logs[:obj][end]; digits=4))
         spc = max(0, b_len - length(objstr))
     else
         objstr = string("-")
@@ -111,7 +111,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     UB_block = string(" ", objstr, " " ^ spc)
 
     if isa(m.logs[:bound][end], Float64)
-        bdstr = string(round(m.logs[:bound][end],4))
+        bdstr = string(round(m.logs[:bound][end]; digits=4))
         spc = max(0, b_len - length(bdstr))
     else
         bdstr = string(m.logs[:bound][end])
@@ -119,22 +119,22 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
     end
     LB_block = string(" ", bdstr, " " ^ spc)
 
-    bobjstr = string(round(m.best_obj,4))
+    bobjstr = string(round(m.best_obj; digits=4))
     spc = max(0, b_len - length(bobjstr))
     incumb_UB_block = string(" ", bobjstr, " " ^ spc)
 
-    bbdstr = string(round(m.best_bound,4))
+    bbdstr = string(round(m.best_bound; digits=4))
     spc = max(0, b_len - length(bbdstr))
     incumb_LB_block = string(" ", bbdstr , " " ^ spc)
 
-    rel_gap = round(m.best_rel_gap*100, 5)
+    rel_gap = round(m.best_rel_gap*100, digits=5)
     rel_gap > 999 ? rel_gap = "LARGE" : rel_gap = string(rel_gap)
     GAP_block = string(" ", rel_gap, " " ^ (b_len - length(rel_gap)))
 
-    UTIME_block = string(" ", round(m.logs[:total_time],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time],2)))))
+    UTIME_block = string(" ", round(m.logs[:total_time]; digits=2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time]; digits=2)))))
 
     if m.logs[:time_left] < Inf
-		LTIME_block = string(" ", round(m.logs[:time_left],2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left],2)))))
+		LTIME_block = string(" ", round(m.logs[:time_left]; digits=2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left]; digits=2)))))
 	else
 		LTIME_block = " "
 	end
@@ -216,7 +216,7 @@ function summary_status(m::PODNonlinearModel)
     elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
         m.pod_status = :Heuristic
     else
-        warn("[EXCEPTION] Indefinite POD status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/POD.jl/issues) to help us make POD better.")
+        @warn "[EXCEPTION] Indefinite POD status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/POD.jl/issues) to help us make POD better."
     end
 
     printstyled(:green, "\n POD ended with status $(m.pod_status)\n")

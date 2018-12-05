@@ -91,7 +91,7 @@ function bpml_lnl(solver=nothing)
 
 	m = Model(solver=solver)
 
-	srand(10)
+	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
 	@variable(m, 0.1<=Y[1:5]<=0.1+10*rand())
 	@constraint(m,  sum(X) >= 3)
@@ -104,7 +104,7 @@ function bpml_binl(solver=nothing)
 
 	m = Model(solver=solver)
 
-	srand(10)
+	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
 	@variable(m, 50<=Y[1:5]<=50+100*rand()*rand())
 	@constraint(m, sum(X) >= 3)
@@ -117,7 +117,7 @@ function bpml_monl(solver=nothing)
 
 	m = Model(solver=solver)
 
-	srand(10)
+	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
 	@variable(m, 50<=Y[1:5]<=50+100*rand()*rand())
 	@constraint(m, sum(X) >= 3)
@@ -130,7 +130,7 @@ function bpml_negative(solver=nothing)
 
 	m = Model(solver=solver)
 
-	srand(10)
+	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
 	@variable(m, 50<=Y[1:5]<=50+100*rand()*rand())
 	setlowerbound(Y[1], -10)
@@ -161,7 +161,7 @@ function discretemulti_basic(;solver=nothing)
 
 	m = Model(solver=solver)
 
-	srand(10)
+	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
 	@variable(m, 0.1<=Y[1:5]<=0.1+10*rand())
 	@variable(m, 1<=Z[1:5]<=10, Int)
