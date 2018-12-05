@@ -16,9 +16,6 @@ if VERSION < v"0.7.0-"
     import Compat: printstyled
     import Compat: round
 
-    # function round(x; digits=2, base=10) 
-    #     return Base.round(x, digits, base)
-    # end
 end
 
 if VERSION > v"0.7.0-"
