@@ -18,10 +18,5 @@ makedocs(
 
 deploydocs(
     repo = "github.com/lanl-ansi/POD.git",
-    target = "build",
-    branch = "monomial",
-    osname = "linux",
-    julia  = "0.6",
-    deps   = nothing,
-    make   = nothing
 )
+
