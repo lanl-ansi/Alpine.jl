@@ -89,7 +89,7 @@ end
 	This is a utility function that convert the binary string into bool vector
 """
 function ebd_support_bool_vec(s::String)
-   v = Vector{Bool}(length(s))
+   v = Vector{Bool}(undef, length(s))
    for i in 1:length(s)
        s[i] == '1' ? v[i]=true : v[i]=false
    end
@@ -100,7 +100,7 @@ end
 	This is a utility function that convert the binary string into 0/1 vector
 """
 function ebd_support_binary_vec(s::String)
-   v = Vector{Int}(length(s))
+   v = Vector{Int}(undef, length(s))
    for i in 1:length(s)
        s[i] == '1' ? v[i]=1 : v[i]=0
    end
@@ -130,7 +130,7 @@ function ebd_link_xα(m::PODNonlinearModel, α::Vector, λCnt::Int, disc_vec::Ve
 		binprod_relax(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
 	end
 
-	α_R = [α, α_A;] # Iintialize Rearrgange the variable sequence
+	α_R = [α; α_A] # Iintialize Rearrgange the variable sequence
 
 	for i in 1:P # Start populating sub-expressions
 		exprs[i][:expr] = @expression(m.model_mip, sum(exprs[i][:coefs][j]*α_R[exprs[i][:vars][j]] for j in 1:exprs[i][:length] if exprs[i][:vars][j] != 0) + exprs[i][:vals])
@@ -159,12 +159,12 @@ function ebd_link_expression(code::Vector, lift_dict::Dict, link_dict::Dict, p_i
     for i in 2:L
         if code[i]
              for j in 1:length(coefs)
-                (vars[j] == 0) ? vars[j] = i : vars[j] = [vars[j], i;] # Update vars
+                (vars[j] == 0) ? vars[j] = i : vars[j] = [vars[j]; i] # Update vars
                 @assert length(vars) == length(coefs)
             end
         else
             for j in 1:length(coefs)
-                (vars[j] == 0) ? push!(vars, i) : push!(vars, [vars[j], i;]) # Update vars with variable multiplier (ADDING)
+                (vars[j] == 0) ? push!(vars, i) : push!(vars, [vars[j]; i]) # Update vars with variable multiplier (ADDING)
                 (vars[j] == 0) ? push!(coefs, -1) : push!(coefs, coefs[j] * -1) # Update the coeffs with -1 (ADDING)
             end
         end
@@ -190,7 +190,11 @@ end
 	This is a compatible encoding
 """
 function ebd_binary(n, idx)
-    return bin(n, idx)
+	if VERSION > v"0.7.0-" 
+		return string(n, base=2, pad=idx) 
+	else 
+		return bin(n, idx)
+	end
 end
 
 """
@@ -199,5 +203,9 @@ end
 """
 function ebd_gray(n, idx)
 	code_decimal = xor(n, n >> 1)
-	return bin(code_decimal, idx)
+	if VERSION > v"0.7.0-"  
+		return string(code_decimal, base=2, pad=idx)
+	else
+		return bin(code_decimal, idx)
+	end
 end

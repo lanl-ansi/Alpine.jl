@@ -3,33 +3,33 @@ os:
   - linux
 julia:
   - 0.6
+  - 0.7 
+  - 1.0
 
 # this will save build time, once it is working
 cache:
   directories:
     - /home/travis/.julia
-sudo: false
 
 addons:
   apt_packages:
     - gfortran
-    - liblapack-dev
-    - libgmp-dev
-    - libglpk-dev
+
 
 before_install:
-    # don't keep an old version of the code in the cache
-  - julia -e 'if "POD" in keys(Pkg.installed()) Pkg.rm("POD"); Pkg.rm("POD") end'
-  - julia -e 'Pkg.update()' #make sure we get the latest version of METADATA
-  - julia -e 'if !("Coverage" in keys(Pkg.installed())) Pkg.add("Coverage") end'
-  - julia -e 'if !("Documenter" in keys(Pkg.installed())) Pkg.add("Documenter") end'
-
-script:  # core code tests
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd())'
-  - julia -e 'Pkg.test("POD", coverage=true)'
+  - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.rm("POD"); Pkg.rm("POD")'
+  - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.update()'
 
 after_success:  # post-processing, if the script passes with no errors
-  - echo $TRAVIS_JULIA_VERSION  # just useful to know what version of Julia was used
-  - julia -e  'using Coverage; cd(Pkg.dir("POD")); LCOV.writefile("lcov.info", process_folder(".")); run(pipeline(`curl -s https://codecov.io/bash`, `bash`))'
-  - julia -e 'cd(Pkg.dir("POD")); include(joinpath("docs", "make.jl"))'
+  - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.add("Coverage"); cd(Pkg.dir("POD")); using Coverage; Codecov.submit(process_folder())'
+  
+jobs:
+  include:
+    - stage: "Documentation"
+      julia: 1.0
+      os: linux
+      script:
+        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
+        - julia --project=docs/ docs/make.jl
+      after_success: skip
+

@@ -71,7 +71,7 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
 
     discretization = to_discretization(m, m.l_var_tight, m.u_var_tight)
     if use_bound == false && haskey(options, :use_tmc)
-        (m.loglevel > 0) && warn("[BOUND TIGHTENING ALGO] TMC chosen by the user, but local solve infeasible; defaulting to doing bound-tightening without TMC.")
+        (m.loglevel > 0) && @warn "[BOUND TIGHTENING ALGO] TMC chosen by the user, but local solve infeasible; defaulting to doing bound-tightening without TMC."
     end
     if use_bound == true && haskey(options, :use_tmc)
         discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=discretization)
@@ -162,9 +162,9 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
     for i in m.disc_vars
-        contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]),2)*100
+        contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]); digits=2)*100
         if m.loglevel > 0 && contract_ratio > 0.0001
-            println("[DEBUG] VAR $(i) BOUND contracted $(contract_ratio)% |$(round(l_var_orig[i],4)) --> | $(round(m.l_var_tight[i],4)) - $(round(m.u_var_tight[i],4)) | <-- $(round(u_var_orig[i],4)) |")
+            println("[DEBUG] VAR $(i) BOUND contracted $(contract_ratio)% |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |")
         end
     end
     (m.loglevel > 0) && print("\n")

@@ -76,16 +76,16 @@ function presolve(m::PODNonlinearModel)
         m.presolve_bt && init_disc(m)
         m.loglevel > 0 && println("Presolve ended.")
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
-        warn("Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this.")
+        @warn "Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this."
     else
-        warn("Presolve ends with local solver yielding $(m.status[:local_solve]).")
+        @warn "Presolve ends with local solver yielding $(m.status[:local_solve])."
     end
 
     cputime_presolve = time() - start_presolve
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
-    (m.loglevel > 0) && println("Presolve time = $(@compat round.(m.logs[:total_time],2))s")
+    (m.loglevel > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
 
     return
 end
@@ -128,15 +128,12 @@ function check_exit(m::PODNonlinearModel)
 end
 
 """
-
     local_solve(m::PODNonlinearModel, presolve::Bool=false)
 
 Perform a local NLP or MINLP solve to obtain a feasible solution.
 The `presolve` option is set to `true` when the function is invoked in [`presolve`](@ref).
 Otherwise, the function is invoked from [`bounding_solve`](@ref).
-
 """
-
 function local_solve(m::PODNonlinearModel; presolve = false)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
@@ -203,7 +200,7 @@ function local_solve(m::PODNonlinearModel; presolve = false)
 
     if local_nlp_status in status_pass
         candidate_obj = interface_get_objval(local_solve_model)
-        candidate_sol = round.(interface_get_solution(local_solve_model), 5)
+        candidate_sol = round.(interface_get_solution(local_solve_model); digits=5)
         update_incumb_objective(m, candidate_obj, candidate_sol)
         m.status[:local_solve] = local_nlp_status
         return
@@ -218,12 +215,20 @@ function local_solve(m::PODNonlinearModel; presolve = false)
     elseif local_nlp_status == :Unbounded
         push!(m.logs[:obj], "U")
         m.status[:local_solve] = :Unbounded
-        presolve == true ? warn("[PRESOLVE] NLP local solve is unbounded.") : warn("[LOCAL SOLVE] NLP local solve is unbounded.")
+        if presolve == true 
+            @warn "[PRESOLVE] NLP local solve is unbounded." 
+        else 
+            @warn "[LOCAL SOLVE] NLP local solve is unbounded." 
+        end
         return
     else
         push!(m.logs[:obj], "E")
         m.status[:local_solve] = :Error
-		presolve == true ? warn("[PRESOLVE] NLP solve failure $(local_nlp_status).") : warn("[LOCAL SOLVE] NLP local solve failure.")
+        if presolve == true 
+            @warn "[PRESOLVE] NLP solve failure $(local_nlp_status)." 
+        else 
+            @warn "[LOCAL SOLVE] NLP local solve failure."
+        end
         return
     end
 
@@ -263,7 +268,7 @@ function bounding_solve(m::PODNonlinearModel)
     status_infeasible = [:Infeasible, :InfeasibleOrUnbounded]
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
-        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)), 6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+        candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
         # Experimental code
         measure_relaxed_deviation(m, sol=candidate_bound_sol)
         if m.disc_consecutive_forbid > 0
@@ -281,10 +286,10 @@ function bounding_solve(m::PODNonlinearModel)
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = :Infeasible
         PODDEBUG && print_iis_gurobi(m.model_mip) # Diagnostic code
-        warn("[INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility")
+        @warn "[INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility"
     elseif status == :Unbounded
         m.status[:bounding_solve] = :Unbounded
-        warn("[UNBOUNDED] MIP solver return unbounded")
+        @warn "[UNBOUNDED] MIP solver return unbounded"
     else
         error("[EXCEPTION] MIP solver failure $(status)")
     end

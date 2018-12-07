@@ -1,16 +1,16 @@
 export PODSolver
 
-type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
+mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
-    colorful_pod::Any                                           # Turn on for a color solver
+    colorful_pod::Any                                           # Turn on for a color solver (remove)
 
     # basic solver parameters
     loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     timeout::Float64                                            # Time limit for algorithm (in seconds)
     maxiter::Int                                                # Target Maximum Iterations
     relgap::Float64                                             # Relative optimality gap termination condition
-    gapref::AbstractString                                      # Relative gap reference point
+    gapref::Symbol                                              # Relative gap reference point (options: [:ub, :lb])
     absgap::Float64                                             # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
     largebound::Float64                                         # Presumed large bound for problems with unbounded variables
@@ -49,18 +49,18 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_bt::Any                                            # Perform bound tightening procedure before main algorithm
-    presolve_timeout::Float64
+    presolve_bt::Bool                                           # Perform bound tightening procedure before main algorithm (default: true)
+    presolve_timeout::Float64                                   # Time limit for presolving (seconds)
     presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
-    presolve_bt_output_tol::Float64                             # Variable bounds truncation tol
+    presolve_bt_output_tol::Float64                             # Variable bounds truncation tol (change to precision)
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be index of default methods or functional inputs
     presolve_bt_relax::Bool                                     # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_bt_mip_timeout::Float64                            # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
-    presolve_infeasible::Bool                                   # Presolve Feasibility
+    presolve_infeasible::Bool                                   # Presolve infeasiblity detection flag
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
     # Features for Integer Problems (NOTE: no support for intlin problems)
@@ -300,7 +300,7 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.best_bound_sol = []
         m.bound_sol_history = []
         m.presolve_infeasible = false
-        m.bound_sol_history = Vector{Vector{Float64}}(m.disc_consecutive_forbid)
+        m.bound_sol_history = Vector{Vector{Float64}}(undef, m.disc_consecutive_forbid)
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -315,10 +315,12 @@ type PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     end
 end
 
-type UnsetSolver <: MathProgBase.AbstractMathProgSolver
+mutable struct UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
-type PODSolver <: MathProgBase.AbstractMathProgSolver
+const empty_solver = UnsetSolver()
+
+mutable struct PODSolver <: MathProgBase.AbstractMathProgSolver
 
     colorful_pod::Any
 
@@ -326,7 +328,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     timeout::Float64
     maxiter::Int
     relgap::Float64
-    gapref::AbstractString
+    gapref::Symbol
     absgap::Float64
     tol::Float64
     largebound::Float64
@@ -364,7 +366,7 @@ type PODSolver <: MathProgBase.AbstractMathProgSolver
     convhull_no_good_cuts::Bool
 
     presolve_track_time::Bool
-    presolve_bt::Any
+    presolve_bt::Bool
     presolve_timeout::Float64
     presolve_maxiter::Int
     presolve_bt_width_tol::Float64
@@ -390,24 +392,24 @@ function PODSolver(;
     timeout = Inf,
     maxiter = 99,
     relgap = 1e-4,
-    gapref = "ub",
+    gapref = :ub,
     absgap = 1e-6,
     tol = 1e-6,
     largebound = 1e4,
 
-    nlp_solver = UnsetSolver(),
-    minlp_solver = UnsetSolver(),
-    mip_solver = UnsetSolver(),
+    nlp_solver = empty_solver,
+    minlp_solver = empty_solver,
+    mip_solver = empty_solver,
 
     recognize_convex = true,
     bilinear_mccormick = false,
     bilinear_convexhull = true,
     monomial_convexhull = true,
 
-    method_convexification = Array{Function}(0),
-    method_partition_injection = Array{Function}(0),
-    term_patterns = Array{Function}(0),
-    constr_patterns = Array{Function}(0),
+    method_convexification = Array{Function}(undef, 0),
+    method_partition_injection = Array{Function}(undef, 0),
+    term_patterns = Array{Function}(undef, 0),
+    constr_patterns = Array{Function}(undef, 0),
 
     disc_var_pick = 2,                      # By default use the 15-variable selective rule
     disc_ratio = 4,
@@ -429,7 +431,7 @@ function PODSolver(;
 
     presolve_track_time = true,
     presolve_maxiter = 10,
-    presolve_bt = nothing,
+    presolve_bt = true,
     presolve_timeout = 900,
     presolve_bt_width_tol = 1e-3,
     presolve_bt_output_tol = 1e-5,
@@ -447,16 +449,26 @@ function PODSolver(;
     kwargs...
     )
 
-    # Option Screening
-    unsupport_opts = Dict(kwargs)
-    !isempty(keys(unsupport_opts)) && error("Detected unsupported/experimental arguments = $(keys(unsupport_opts))")
+    # Keyword arguments screening
+    unsupported_kwargs = Dict(kwargs)
+    !isempty(keys(unsupported_kwargs)) && error("Detected unsupported keyword arguments: $(keys(unsupport_opts))")
 
-    nlp_solver == UnsetSolver() && error("No NLP local solver specified (set nlp_solver)\n")
-    mip_solver == UnsetSolver() && error("NO MIP solver specififed (set mip_solver)\n")
+    if nlp_solver == empty_solver && minlp_solver == empty_solver
+        error("No NLP and MINLP local solver specified; use nlp_solver or minlp_solver to set a local solver dependening on the problem type\n")
+    end 
+    mip_solver == empty_solver && error("No MIP solver specififed; use mip_solver to set a mip solver\n")
 
-    gapref in ["ub", "lb"] || error("Gap calculation only takes 'ub' pr 'lb'")
+    if nlp_solver != empty_solver && !applicable(MathProgBase.NonlinearModel, nlp_solver)
+        error("NLP local solver $(s.nlp_solver) is not supported by JuMP; use a JuMP-supoorted NLP local solver\n")
+    end 
 
-    # String Code Conversion
+    if minlp_solver != empty_solver && !applicable(MathProgBase.NonlinearModel, minlp_solver)
+        error("MINLP local solver $(s.minlp_solver) is not supported by JuMP; use a JuMP-supoorted MINLP local solver\n")
+    end 
+
+    gapref in [:ub, :lb] || error("the option gapref can take a value only in [:ub, :lb]")
+
+    # String Code Conversion (have to change this to consistently use Symbols and not give user many options)
     if disc_var_pick in ["ncvar_collect_nodes", "all", "max"]
         disc_var_pick = 0
     elseif disc_var_pick in ["min_vertex_cover","min"]
@@ -513,13 +525,10 @@ function PODSolver(;
         int_fully_disc)
     end
 
-# Create POD nonlinear model: can solve with nonlinear algorithm only
+# Create POD nonlinear model -- can solve with nonlinear algorithm only
 function MathProgBase.NonlinearModel(s::PODSolver)
 
-    if !applicable(MathProgBase.NonlinearModel, s.nlp_solver)
-        error("NLP local solver $(s.nlp_solver) specified is not a NLP solver recognized by POD\n")
-    end
-
+    
     # Translate options into old nonlinearmodel.jl fields
     colorful_pod = s.colorful_pod
 
@@ -636,7 +645,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
                                    sense::Symbol,
                                    d::MathProgBase.AbstractNLPEvaluator)
 
-    # Basic Problem Dimensions
+    # Populating PODNonlinearModel (invoked by JuMP.build(m))
     m.num_var_orig = num_var
     m.num_constr_orig = num_constr
     m.l_var_orig = l_var
@@ -668,8 +677,12 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
+    if !isempty(m.int_vars) || !isempty(m.bin_vars) 
+        (m.minlp_solver == empty_solver) && (error("Problem is a MINLP and no MINLP local solver given; use minlp_solver to specify a MINLP local solver"))
+    end 
+
     # Summarize constraints information in original model
-    @compat m.constr_type_orig = Array{Symbol}(m.num_constr_orig)
+    m.constr_type_orig = Array{Symbol}(undef, m.num_constr_orig)
 
     for i in 1:m.num_constr_orig
         if l_constr[i] > -Inf && u_constr[i] < Inf
@@ -698,18 +711,16 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
-    # Other preload Built-in Special Functions (append special functions to user-functions)
-
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable recategorization
 
-    :Int in m.var_type_orig && warn("POD's support for integer variables is highly experimental.")
+    :Int in m.var_type_orig && @warn "POD's support for integer variables is experimental"
     :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
 
     # Conduct solver-dependent detection
     fetch_mip_solver_identifier(m)
-    fetch_nlp_solver_identifier(m)
-    fetch_minlp_solver_identifier(m)
+    (m.nlp_solver != empty_solver) && (fetch_nlp_solver_identifier(m))
+    (m.minlp_solver != empty_solver) && (fetch_minlp_solver_identifier(m))
 
     # Solver Dependent Options
     if m.mip_solver_id != :Gurobi

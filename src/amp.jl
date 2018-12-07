@@ -261,7 +261,7 @@ function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
                 end
             end
         elseif m.var_type[i] == :Bin # This should never happen
-            warn("Binary variable in m.disc_vars. Check out what is wrong...")
+            @warn "Binary variable in m.disc_vars. Check out what is wrong..."
             continue  # No partition should be added to binary variable unless user specified
         elseif m.var_type[i] == :Int
             error("Support for general integer problem is current limited...")
@@ -279,7 +279,7 @@ end
 function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - m.tol || point > partvec[end] + m.tol
-        warn("VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point...")
+        @warn "VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point..."
         return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
     end
 
@@ -337,9 +337,9 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::N
         for i in 2:m.disc_divert_chunks
             insert!(partvec, pos+1, lb_local + chunk * (m.disc_divert_chunks-(i-1)))
         end
-        (m.loglevel > 199) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig,4))=>$(point) |$(round(lb_local,4)) | $(m.disc_divert_chunks) SEGMENTS | $(round(ub_local,4))|")
+        (m.loglevel > 199) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig; digits=4))=>$(point) |$(round(lb_local; digits=4)) | $(m.disc_divert_chunks) SEGMENTS | $(round(ub_local; digits=4))|")
     else
-        (m.loglevel > 199) && println("[DEBUG] VAR$(var): SOL=$(round(point,4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local,4)) |$(round(lb_new,6)) <- * -> $(round(ub_new,6))| $(round(ub_local,4))|")
+        (m.loglevel > 199) && println("[DEBUG] VAR$(var): SOL=$(round(point; digits=4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local; digits=4)) |$(round(lb_new; digits=6)) <- * -> $(round(ub_new; digits=6))| $(round(ub_local; digits=4))|")
     end
 
     return
@@ -357,7 +357,7 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
         chunk = distance / ((m.logs[:n_iter]+1)*m.disc_uniform_rate)
         discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*m.disc_uniform_rate]
         push!(discretization[i], ub_local)   # Safety Scheme
-        (m.loglevel > 199) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local,4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local,4))|")
+        (m.loglevel > 199) && println("[DEBUG] VAR$(i): RATE=$(m.disc_uniform_rate), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local; digits=4)) | $(m.disc_uniform_rate*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local; digits=4))|")
     end
 
     return discretization
@@ -427,7 +427,7 @@ function disc_branch_solve(m::PODNonlinearModel)
     if status in [:Optimal, :Suboptimal, :UserLimit]
         return m.model_mip.objBound
     else
-        warn("Unexpected solving condition $(status) during disc branching.")
+        @warn "Unexpected solving condition $(status) during disc branching."
     end
 
     # Safety scheme

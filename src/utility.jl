@@ -21,13 +21,13 @@ function update_opt_gap(m::PODNonlinearModel)
         return
     else
         p = convert(Int, round(abs(log(10,m.relgap))))
-        n = round(abs(m.best_obj-m.best_bound), p)
-        dn = round(abs(1e-12+abs(m.best_obj)), p)
+        n = round(abs(m.best_obj-m.best_bound); digits=p)
+        dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
         if isapprox(n, 0.0;atol=m.tol) && isapprox(m.best_obj,0.0;atol=m.tol)
             m.best_rel_gap = 0.0
             return
         end
-        if m.gapref == "ub"
+        if m.gapref == :ub
             m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
         else
             m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_bound))
@@ -127,27 +127,29 @@ end
 """
     @docstring
 """
-function insert_timeleft_symbol(options, val::Float64, keywords::Symbol, timeout; options_string_type=1)
+function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_string_type=1)
 
     for i in 1:length(options)
         if options_string_type == 1
-            if keywords in collect(options[i])
+            if keyword in collect(options[i])
                 deleteat!(options, i)
+                break
             end
         elseif options_string_type == 2
-            if keywords == split(options[i],"=")[1]
+            if keyword == split(options[i],"=")[1]
                 deleteat!(options, i)
+                break
             end
         end
     end
 
     if options_string_type == 1
-        (val != Inf) && push!(options, (keywords, val))
+        (val != Inf) && (push!(options, keyword => val))
     elseif options_string_type == 2
-        (val != Inf) && push!(options, "$(keywords)=$(val)")
+        (val != Inf) && (push!(options, "$(keyword)=$(val)"))
     end
 
-    return
+    return options
 end
 
 """
@@ -160,9 +162,9 @@ function update_boundstop_options(m::PODNonlinearModel)
     if m.mip_solver_id == "Gurobi"
         # Calculation of the bound
         if m.sense_orig == :Min
-            m.gapref == "ub" ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
+            m.gapref == :ub ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
         elseif m.sense_orig == :Max
-            m.gapref == "ub" ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
+            m.gapref == :ub ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
         end
 
         for i in 1:length(m.mip_solver.options)
@@ -250,7 +252,7 @@ function is_fully_convexified(m::PODNonlinearModel)
     # Other more advanced convexification check goes here
     for term in keys(m.nonconvex_terms)
         if !m.nonconvex_terms[term][:convexified]
-            warn("Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this")
+            @warn "Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this"
             return
         else
             m.nonconvex_terms[term][:convexified] = false    # Reset status for next iteration
@@ -270,7 +272,7 @@ function collect_lb_pool(m::PODNonlinearModel)
     # If in need, the scheme need to be refreshed with customized discretization info
 
     if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
-        warn("Skipping collecting solution pool procedure", once=true) # Only feaible with Gurobi solver
+        @warn "Skipping collecting solution pool procedure",
         return
     end
 
@@ -366,18 +368,18 @@ function track_new_partition_idx(d::Dict, idx::Int, val::Float64, acp::Int=-1)
     newpidx = []                # Tracks the newly constructed partition idxes
     pcnt == 1 && return [1;]    # Still keep non-discretizing variables
     if acp == 1
-        return newpidx = [1,2;]
+        return newpidx = [1; 2]
     elseif acp == pcnt
-        return newpidx = [pcnt-1,pcnt;]
+        return newpidx = [pcnt-1; pcnt]
     else
         tlb = d[idx][acp-1]
         tub = d[idx][acp+1]
         if abs(val-tlb) == abs(val-tub)
-            return [acp-1, acp, acp+1;]
+            return [acp-1; acp; acp+1]
         elseif abs(val-tlb) > abs(val-tub)
-            return [acp-1, acp;]
+            return [acp-1; acp]
         elseif abs(val-tlb) < abs(val-tub)
-            return [acp, acp+1;]
+            return [acp; acp+1]
         end
     end
 
@@ -396,7 +398,7 @@ function get_active_partition_idx(discretization::Dict, val::Float64, idx::Int; 
         end
     end
 
-    warn("Activate parition not found [VAR$(idx)]. Returning default partition 1.")
+    @warn "Activate parition not found [VAR$(idx)]. Returning default partition 1."
     return 1
 end
 
@@ -451,9 +453,9 @@ function initialize_solution_pool(m::PODNonlinearModel, cnt::Int)
     # !! Be careful with the :vars when utilizing the dynamic discretization variable selection !!
     s[:vars] = [i for i in m.candidate_disc_vars if length(m.discretization[i]) > 2]
 
-    s[:sol] = Vector{Vector}(cnt)                   # Solution value
-    s[:obj] = Vector{Float64}(cnt)                  # Objecitve value
-    s[:disc] = Vector{Dict}(cnt)                    # Discretization
+    s[:sol] = Vector{Vector}(undef, cnt)                   # Solution value
+    s[:obj] = Vector{Float64}(undef, cnt)                  # Objecitve value
+    s[:disc] = Vector{Dict}(undef, cnt)                    # Discretization
     s[:stat] = [:Alive for i in 1:cnt]              # Solution status
     s[:iter] = [m.logs[:n_iter] for i in 1:cnt]     # Iteration collected
     s[:ubstart] = [false for i in 1:cnt]           # Solution used for ub multistart
@@ -475,18 +477,18 @@ function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
         elseif m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
             @assert isa(m.nonconvex_terms[k][:var_idxs][1], Int)
             varidx = m.nonconvex_terms[k][:var_idxs][1]
-            push!(arcs, [varidx, varidx;])
+            push!(arcs, [varidx; varidx])
         elseif m.nonconvex_terms[k][:nonlinear_type] == :MULTILINEAR
             varidxs = m.nonconvex_terms[k][:var_idxs]
             for i in 1:length(varidxs)
                 for j in 1:length(varidxs)
                     if i != j
-                        push!(arcs, sort([varidxs[i], varidxs[j];]))
+                        push!(arcs, sort([varidxs[i]; varidxs[j]]))
                     end
                 end
             end
             if length(varidxs) == 1
-                push!(arcs, sort([varidxs[1], varidxs[1];]))
+                push!(arcs, sort([varidxs[1]; varidxs[1]]))
             end
         elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
             var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
@@ -495,13 +497,13 @@ function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
             var_idxs = m.nonconvex_terms[k][:var_idxs]
             for i in 1:length(var_idxs)
                 for j in 1:length(var_idxs)
-                    i != j && push!(arcs, sort([var_idxs[i], var_idxs[j];]))
+                    i != j && push!(arcs, sort([var_idxs[i]; var_idxs[j]]))
                 end
             end
         elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
             @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
             var_idx = m.nonconvex_terms[k][:var_idxs][1]
-            push!(arcs, [var_idx, var_idx;])
+            push!(arcs, [var_idx; var_idx])
         elseif m.nonconvex_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
             continue
         else
@@ -562,7 +564,7 @@ function build_discvar_graph(m::PODNonlinearModel)
     for i in 1:m.num_var_orig
         if !(i in nodes) && m.var_type[i] == :Int
             push!(nodes, i)
-            push!(arcs, [i,i;])
+            push!(arcs, [i; i])
         end
     end
 
@@ -708,28 +710,28 @@ end
 
 function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
 
-    isempty(override) ? solverstring = string(m.mip_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.mip_solver) : solverstring = override
 
     # Higher-level solvers: that can use sub-solvers
-    if contains(solverstring,"Pajarito")
+    if occursin("Pajarito", solverstring)
         m.mip_solver_id = "Pajarito"
         return
-    elseif contains(solverstring, "Pavito")
+    elseif occursin("Pavito", solverstring)
         m.mip_solver_id = "Pavito"
         return
     end
 
     # Lower level solvers
-    if contains(solverstring,"Gurobi")
+    if occursin("Gurobi", solverstring)
         m.mip_solver_id = "Gurobi"
-    elseif contains(solverstring,"CPLEX")
+    elseif occursin("CPLEX", solverstring)
         m.mip_solver_id = "CPLEX"
-    elseif contains(solverstring,"Cbc")
+    elseif occursin("Cbc", solverstring)
         m.mip_solver_id = "Cbc"
-    elseif contains(solverstring,"GLPK")
+    elseif occursin("GLPK", solverstring)
         m.mip_solver_id = "GLPK"
     else
-        error("Unsupported mip solver name. Using blank")
+        error("Unsupported MIP solver $solverstring; use a POD-supported MIP solver")
     end
 
     return
@@ -737,28 +739,28 @@ end
 
 function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
 
-    isempty(override) ? solverstring = string(m.nlp_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.nlp_solver) : solverstring = override
 
     # Higher-level solver
-    if contains(solverstring, "Pajarito")
+    if occursin("Pajarito", solverstring)
         m.nlp_solver_id = "Pajarito"
         return
-    elseif contains(solverstring, "Pavito")
+    elseif occursin("Pavito", solverstring)
         m.nlp_solver_id = "Pavito"
         return
     end
 
     # Lower-level solver
-    if contains(solverstring, "Ipopt")
+    if occursin("Ipopt", solverstring)
         m.nlp_solver_id = "Ipopt"
-    elseif contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+    elseif occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
         m.nlp_solver_id = "Bonmin"
-    elseif contains(solverstring, "KNITRO")
+    elseif occursin("KNITRO", solverstring)
         m.nlp_solver_id = "Knitro"
-    elseif contains(solverstring, "NLopt")
+    elseif occursin("NLopt", solverstring)
         m.nlp_solver_id = "NLopt"
     else
-        error("Unsupported nlp solver name. Using blank")
+        error("Unsupported NLP local solver $solverstring; use a POD-supported NLP local solver")
     end
 
     return
@@ -766,30 +768,30 @@ end
 
 function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
 
-    (m.minlp_solver == UnsetSolver()) && return
+    (m.minlp_solver == empty_solver) && return
 
-    isempty(override) ? solverstring = string(m.minlp_solver) : solverstring=override
+    isempty(override) ? solverstring = string(m.minlp_solver) : solverstring = override
 
     # Higher-level solver
-    if contains(solverstring, "Pajarito")
+    if occursin("Pajarito", solverstring)
         m.minlp_solver_id = "Pajarito"
         return
-    elseif contains(solverstring, "Pavito")
+    elseif occursin("Pavito", solverstring)
         m.minlp_solver_id = "Pavito"
         return
     end
 
     # Lower-level Solver
-    if contains(solverstring, "AmplNL") && contains(solverstring, "bonmin")
+    if occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
         m.minlp_solver_id = "Bonmin"
-    elseif contains(solverstring, "KNITRO")
+    elseif occursin("KNITRO", solverstring)
         m.minlp_solver_id = "Knitro"
-    elseif contains(solverstring, "NLopt")
+    elseif occursin("NLopt", solverstring)
         m.minlp_solver_id = "NLopt"
-    elseif contains(solverstring, "CoinOptServices.OsilSolver(\"bonmin\"")
+    elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
         m.minlp_solver_id = "Bonmin"
     else
-        error("Unsupported nlp solver name. Using blank")
+        error("Unsupported MINLP local solver $solverstring; use a POD-supported MINLP local solver")
     end
 
     return
@@ -802,18 +804,30 @@ An utility function used to dynamically regulate MILP solver time limits to fit 
 function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
+    timelimit = 0.0
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+    
+    opts = Vector{Any}(undef, 0)
+    if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
+        for i in collect(m.mip_solver.options)
+            push!(opts, i)
+        end
+    end
 
     if m.mip_solver_id == "CPLEX"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+        opts = update_timeleft_symbol(opts, :CPX_PARAM_TILIM, timelimit)
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "Pavito"
         (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     elseif m.mip_solver_id == "Gurobi"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:TimeLimit,m.timeout)
+        opts = update_timeleft_symbol(opts, :TimeLimit, timelimit)  
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "Cbc"
-        insert_timeleft_symbol(m.mip_solver.options,timelimit,:seconds,m.timeout)
+        opts = update_timeleft_symbol(opts, :seconds, timelimit)
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "GLPK"
-        insert_timeleft_symbol(m.mip_solver.opts, timelimit,:tm_lim,m.timeout)
+        opts = update_timeleft_symbol(opts, :tm_lim, timelimit)
+        m.mip_solver.options = opts
     elseif m.mip_solver_id == "Pajarito"
         (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
     else
@@ -830,14 +844,23 @@ An utility function used to dynamically regulate MILP solver time limits to fit 
 function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
+    timelimit = 0.0
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
 
+    opts = Vector{Any}(undef, 0)
+    if m.nlp_solver_id != "Pavito" && m.nlp_solver_id != "Pajarito"
+        opts = collect(m.nlp_solver.options)
+    end
+    
+
     if m.nlp_solver_id == "Ipopt"
-        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:CPX_PARAM_TILIM,m.timeout)
+        opts = update_timeleft_symbol(opts, :max_cpu_time, timelimit)
+        m.nlp_solver.options = opts
     elseif m.nlp_solver_id == "Pajarito"
         (timelimit < Inf) && (m.nlp_solver.timeout = timelimit)
     elseif m.nlp_solver_id == "AmplNL"
-        insert_timeleft_symbol(m.nlp_solver.options,timelimit,:seconds,m.timeout, options_string_type=2)
+        opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
+        m.nlp_solver.options = opts
     elseif m.nlp_solver_id == "Knitro"
         error("You never tell me anything about knitro. Probably because they have a very short trail length.")
     elseif m.nlp_solver_id == "NLopt"
@@ -856,14 +879,22 @@ end
 function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
+    timelimit = 0.0
     haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+
+    opts = Vector{Any}(undef, 0)
+    if m.minlp_solver_id != "Pavito" && m.minlp_solver_id != "Pajarito"
+        opts = collect(m.minlp_solver.options)
+    end
+    
 
     if m.minlp_solver_id == "Pajarito"
         (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
     elseif m.minlp_solver_id == "Pavito"
         (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
     elseif m.minlp_solver_id == "AmplNL"
-        insert_timeleft_symbol(m.minlp_solver.options,timelimit,:seconds,m.timeout,options_string_type=2)
+        opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
+        m.minlp_solver.options = opts
     elseif m.minlp_solver_id == "Knitro"
         error("You never tell me anything about knitro. Probably because they charge everything they own.")
     elseif m.minlp_solver_id == "NLopt"
