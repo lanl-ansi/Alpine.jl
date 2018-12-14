@@ -58,7 +58,7 @@ end
 """
 function heu_basic_rounding(m::PODNonlinearModel, local_model)
 
-    println("Basic Rounding Heuristic Avtivated...")
+    println("Basic Rounding Heuristic Activated...")
 
     convertor = Dict(:Max=>:>, :Min=>:<)
 
