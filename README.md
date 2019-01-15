@@ -57,12 +57,12 @@ Please report any issues via the Github **[issue tracker]**. All types of issues
 If you find POD useful in your work, we kindly request that you cite the following papers
 ```
 @article{NagarajanLuWangBentSundar2019,
-author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
-title = {An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs},
-journal = {Journal of Global Optimization},
-year = {2019},
-issn = {1573-2916},
-doi = {10.1007/s10898-018-00734-1},
+  author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
+  title = {An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs},
+  journal = {Journal of Global Optimization},
+  year = {2019},
+  issn = {1573-2916},
+  doi = {10.1007/s10898-018-00734-1},
 }
 
 @inproceedings{NagarajanLuYamangilBent2016,
