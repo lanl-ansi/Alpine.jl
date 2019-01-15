@@ -56,19 +56,21 @@ Please report any issues via the Github **[issue tracker]**. All types of issues
 
 If you find POD useful in your work, we kindly request that you cite the following papers
 ```
-@article{nagarajan2017adaptive,
-  title={An Adaptive, Multivariate Partitioning Algorithm for Global Optimization of Nonconvex Programs},
-  author={Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
-  journal={arXiv preprint arXiv:1707.02514},
-  year={2017}
+@article{NagarajanLuWangBentSundar2019,
+author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
+title = {An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs},
+journal = {Journal of Global Optimization},
+year = {2019},
+issn = {1573-2916},
+doi = {10.1007/s10898-018-00734-1},
 }
 
-@inproceedings{nagarajan2016tightening,
-  title={Tightening {McC}ormick relaxations for nonlinear programs via dynamic multivariate partitioning},
-  author={Nagarajan, Harsha and Lu, Mowen and Yamangil, Emre and Bent, Russell},
-  booktitle={International Conference on Principles and Practice of Constraint Programming},
-  pages={369--387},
-  year={2016},
-  organization={Springer}
+@inproceedings{NagarajanLuYamangilBent2016,
+  title = {Tightening {McC}ormick relaxations for nonlinear programs via dynamic multivariate partitioning},
+  author = {Nagarajan, Harsha and Lu, Mowen and Yamangil, Emre and Bent, Russell},
+  booktitle = {International Conference on Principles and Practice of Constraint Programming},
+  pages = {369--387},
+  year = {2016},
+  organization = {Springer}
 }
 ```
