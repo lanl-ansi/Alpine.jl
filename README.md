@@ -1,9 +1,9 @@
-# APLINE, A global solver for nonconvex MINLPs <span style="color:black"></span>
+# ALPINE, A global solver for nonconvex MINLPs <span style="color:black"></span>
 
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/POD.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/POD.jl)
 [![codecov](https://codecov.io/gh/lanl-ansi/POD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/POD.jl)
 
-"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations" is a novel global optimization solver that uses an adaptive convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programs (non-convex MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [MINLPLibJuMP.jl](https://github.com/lanl-ansi/MINLPLibJuMP.jl) for problem instances). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
+"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", formerly POD.jl, is a novel global optimization solver that uses an adaptive convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programs (non-convex MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [MINLPLibJuMP.jl](https://github.com/lanl-ansi/MINLPLibJuMP.jl) for problem instances). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
 
 Unlike many other state-of-the-art MINLP solvers, Alpine is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
 
