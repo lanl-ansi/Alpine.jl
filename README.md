@@ -24,7 +24,7 @@ Alpine globally solves a given MINLP by:
 
 ## Installation
 
-Alpine is a currently a unregistered package, with it's repository under the LANL-ANSI group, which can be installed through the Julia package manager:
+Alpine is currently a unregistered package, with it's repository under the LANL-ANSI group, which can be installed through the Julia package manager:
 
 `Pkg.clone("https://github.com/lanl-ansi/Alpine.git")`
 
