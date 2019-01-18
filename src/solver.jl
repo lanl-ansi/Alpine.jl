@@ -13,19 +13,19 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     gapref::Symbol                                              # Relative gap reference point (options: [:ub, :lb])
     absgap::Float64                                             # Absolute optimality gap termination condition
     tol::Float64                                                # Numerical tol used in the algorithmic process
-    largebound::Float64                                         # Presumed large bound for problems with unbounded variables
+    largebound::Float64                                         # Large bounds for problems with unbounded variables
 
     # convexification method tuning
-    recognize_convex::Bool                                      # recognize convex expressions in parsing objective functions and constraints
-    bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexify nonlinear terms
-    bilinear_convexhull::Bool                                   # convexify bilinear terms using convex hull representation
-    monomial_convexhull::Bool                                   # convexify monomial terms using convex hull representation
+    recognize_convex::Bool                                      # Recognize convex expressions in parsing objective functions and constraints
+    bilinear_mccormick::Bool                                    # Convexify bilinear terms using piecwise McCormick representation
+    bilinear_convexhull::Bool                                   # Convexify bilinear terms using lambda representation
+    monomial_convexhull::Bool                                   # Convexify monomial terms using convex-hull representation
 
     # expression-based user-inputs
-    method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear terms :: no over-ride privilege
-    method_partition_injection::Array{Function}                 # Array of functions for special methods to add partitions to variable under complex conditions
-    term_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize nonlinear terms in constraint expression
-    constr_patterns::Array{Function}                            # Array of functions that user wish to use to parse/recognize structural constraint from expression
+    method_convexification::Array{Function}                     # Array of functions that user can choose to convexify specific non-linear terms : no over-ride privilege
+    method_partition_injection::Array{Function}                 # Array of functions for special methods to add partitions to variables under complex conditions
+    term_patterns::Array{Function}                              # Array of functions that user can choose to parse/recognize nonlinear terms in constraint expressions
+    constr_patterns::Array{Function}                            # Array of functions that user can choose to parse/recognize structural constraint from expressions
 
     # parameters used in the partitioning algorithm
     disc_ratio::Any                                             # Discretization ratio parameter (use a fixed value for now, later switch to a function)
@@ -33,9 +33,9 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     disc_divert_chunks::Int                                     # How many uniform partitions to construct
     disc_add_partition_method::Any                              # Additional methods to add discretization
-    disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretization
-    disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretization
-    disc_consecutive_forbid::Int                                # prevent bounding model to add partitions consecutively in the same region when bounds do not improve 
+    disc_abs_width_tol::Float64                                 # Absolute tolerance used when setting up partition/discretization
+    disc_rel_width_tol::Float64                                 # Relative width tolerance when setting up partition/discretization
+    disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve 
     disc_ratio_branch::Bool                                     # Branching tests for picking fixed the discretization ratio
 
     # MIP Formulation Parameters
