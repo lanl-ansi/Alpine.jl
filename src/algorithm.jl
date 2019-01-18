@@ -16,13 +16,10 @@ end
 """
     global_solve(m::PODNonlinearModel)
 
-Perform the global algorithm that is based on the adaptive conexification scheme.
-This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) for converging lower bound (relaxed problem) and upper bound (feasible problem).
-Each [`bounding_solve`](@ref) provides a lower bound solution that is used as a partioning point for next iteration (this feature can be modified given different `add_adaptive_partition`).
-Each [`local_solve`](@ref) provides a local serach of incumbent feasible solution. The algrithm terminates given time limits, optimality condition, or iteration limits.
-
-The algorithm is can be reformed when `add_adaptive_partition` is replaced with user-defined functional input.
-For example, this algorithm can easily be reformed as a uniform-partitioning algorithm in other literature.
+Perform global optimization algorithm that is based on the adaptive piecewise convexification.
+This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) until the optimality gap between the lower bound (relaxed problem with min. objective) and the upper bound (feasible problem) is within the user prescribed limits.
+Each [`bounding_solve`](@ref) provides a lower bound that serves as the partioning point for the next iteration (this feature can be modified given a different `add_adaptive_partition`).
+Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorithm terminates when atleast one of these conditions are satisfied: time limit, optimality condition, or iteration limit.
 
 """
 function global_solve(m::PODNonlinearModel)
@@ -58,7 +55,7 @@ function presolve(m::PODNonlinearModel)
     m.loglevel > 0 && println("performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
-    # Possible solver status, return error when see different
+    # Solver status - returns error when see different
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_reroute = [:Infeasible, :Infeasibles]
 
