@@ -24,7 +24,7 @@ end
 function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=AlpineSolver(colorful_pod="warmer",
+		m = Model(solver=AlpineSolver(colorful_alpine="warmer",
 								   nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,

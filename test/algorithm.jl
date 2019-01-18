@@ -829,7 +829,7 @@ end
     test_solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=CbcSolver(logLevel=0),
                            maxiter=1,
-                           colorful_pod="warmer",
+                           colorful_alpine="warmer",
                            presolve_bt=false,
                            loglevel=100)
 
@@ -861,7 +861,7 @@ end
     test_solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
                            mip_solver=pavito_solver,
                            maxiter=1,
-                           colorful_pod="solarized",
+                           colorful_alpine="solarized",
                            presolve_bt=false,
                            loglevel=100)
     m = convex_solve(solver=test_solver)
@@ -876,7 +876,7 @@ end
                            disc_uniform_rate = 10,
                            maxiter=1,
                            presolve_bt=false,
-                           colorful_pod="random",
+                           colorful_alpine="random",
                            timeout=100000,
                            loglevel=100)
     m = nlp3(solver=test_solver)

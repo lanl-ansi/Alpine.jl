@@ -3,7 +3,7 @@ export AlpineSolver
 mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
-    colorful_pod::Any                                           # Turn on for a color solver (remove)
+    colorful_alpine::Any                                           # Turn on for a color solver (remove)
 
     # basic solver parameters
     loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
@@ -158,10 +158,10 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
     status::Dict{Symbol,Symbol}                                 # Detailed status of each different phases in algorithm
-    pod_status::Symbol                                          # Current Alpine status
+    alpine_status::Symbol                                          # Current Alpine status
 
     # constructor
-    function AlpineNonlinearModel(colorful_pod,
+    function AlpineNonlinearModel(colorful_alpine,
                                 loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                                 nlp_solver,
                                 minlp_solver,
@@ -207,7 +207,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m = new()
 
-        m.colorful_pod = colorful_pod
+        m.colorful_alpine = colorful_alpine
 
         m.loglevel = loglevel
         m.timeout = timeout
@@ -306,7 +306,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.best_bound = -Inf
         m.best_rel_gap = Inf
         m.best_abs_gap = Inf
-        m.pod_status = :NotLoaded
+        m.alpine_status = :NotLoaded
 
         create_status!(m)
         create_logs!(m)
@@ -322,7 +322,7 @@ const empty_solver = UnsetSolver()
 
 mutable struct AlpineSolver <: MathProgBase.AbstractMathProgSolver
 
-    colorful_pod::Any
+    colorful_alpine::Any
 
     loglevel::Int
     timeout::Float64
@@ -386,7 +386,7 @@ mutable struct AlpineSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 function AlpineSolver(;
-    colorful_pod = false,
+    colorful_alpine = false,
 
     loglevel = 1,
     timeout = Inf,
@@ -480,7 +480,7 @@ function AlpineSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside Alpine
-    AlpineSolver(colorful_pod,
+    AlpineSolver(colorful_alpine,
         loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
         deepcopy(minlp_solver),
@@ -530,7 +530,7 @@ function MathProgBase.NonlinearModel(s::AlpineSolver)
 
     
     # Translate options into old nonlinearmodel.jl fields
-    colorful_pod = s.colorful_pod
+    colorful_alpine = s.colorful_alpine
 
     loglevel = s.loglevel
     timeout = s.timeout
@@ -590,7 +590,7 @@ function MathProgBase.NonlinearModel(s::AlpineSolver)
     int_cumulative_disc = s.int_cumulative_disc
     int_fully_disc = s.int_fully_disc
 
-    return AlpineNonlinearModel(colorful_pod,
+    return AlpineNonlinearModel(colorful_alpine,
                             loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                             nlp_solver,
                             minlp_solver,

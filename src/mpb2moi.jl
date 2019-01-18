@@ -76,7 +76,7 @@ end
 
 MathProgBase.setwarmstart!(m::AlpineNonlinearModel, x) = (m.var_start_orig = x)
 MathProgBase.setvartype!(m::AlpineNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
-MathProgBase.status(m::AlpineNonlinearModel) = m.pod_status
+MathProgBase.status(m::AlpineNonlinearModel) = m.alpine_status
 MathProgBase.getobjval(m::AlpineNonlinearModel) = m.best_obj
 MathProgBase.getobjbound(m::AlpineNonlinearModel) = m.best_bound
 MathProgBase.getsolution(m::AlpineNonlinearModel) = m.best_sol
