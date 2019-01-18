@@ -20,7 +20,7 @@ Alpine globally solves a given MINLP by:
 -->
 **Presentation on Alpine.jl at the [2nd Annual JuMP-dev Workshop](http://www.juliaopt.org/meetings/bordeaux2018/), held at the Institut de Mathématiques de Bordeaux, June 2018** 
 
-[<img src="https://github.com/lanl-ansi/Alpine.jl/blob/master/pod_slide.png" width="600" height="350">](https://www.youtube.com/watch?v=mwkhiEIS5JA)
+[<img src="https://github.com/lanl-ansi/Alpine.jl/blob/master/alpine_slide.png" width="600" height="350">](https://www.youtube.com/watch?v=mwkhiEIS5JA)
 
 ## Installation
 
