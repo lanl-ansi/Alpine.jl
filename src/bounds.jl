@@ -288,7 +288,7 @@ function resolve_var_bounds(m::AlpineNonlinearModel)
 end
 
 """
-    Critically assumed since POD relies on finite bound to work
+    Critically assumed since Alpine relies on finite bound to work
 """
 function resolve_inf_bounds(m::AlpineNonlinearModel)
 
@@ -332,13 +332,13 @@ function resolve_var_bounds(m::AlpineNonlinearModel, d::Dict; kwargs...)
         k = m.term_seq[i]
         if haskey(m.nonconvex_terms, k)
             nlk = k
-            if m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
+            if m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_MONOMIAL
                 d = basic_monomial_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BININT]
                 d = basic_binint_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
                 d = basic_binprod_bounds(m, nlk, d)
-            elseif m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_TRIGONOMETRIC
                 d = basic_sincos_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
                 d = basic_binlin_bounds(m, nlk, d)

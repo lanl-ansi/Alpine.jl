@@ -51,7 +51,7 @@ end
 function presolve(m::AlpineNonlinearModel)
 
     start_presolve = time()
-    m.loglevel > 0 && println("\nPOD algorithm presolver started.")
+    m.loglevel > 0 && println("\nAlpine algorithm presolver started.")
     m.loglevel > 0 && println("performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 

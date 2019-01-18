@@ -31,7 +31,7 @@ end
 function logging_summary(m::AlpineNonlinearModel)
 
     if m.loglevel > 0
-        printstyled(:light_yellow, "full problem loaded into POD\n")
+        printstyled(:light_yellow, "full problem loaded into Alpine\n")
         println("problen sense $(m.sense_orig)")
         println("# of constraints = ", m.num_constr_orig)
         println("# of non-linear constraints = ", m.num_nlconstr_orig)
@@ -41,7 +41,7 @@ function logging_summary(m::AlpineNonlinearModel)
         println("# of integer variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
 
         println("detected nonlinear terms = ", length(m.nonconvex_terms))
-        for i in POD_C_NLTERMS
+        for i in ALPINE_C_NLTERMS
             cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
             cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
         end
@@ -85,7 +85,7 @@ function logging_summary(m::AlpineNonlinearModel)
     end
 
     # Additional warnings
-    m.mip_solver_id == "Gurobi" && @warn "POD support Gurobi solver 7.0+ ..."
+    m.mip_solver_id == "Gurobi" && @warn "Alpine support Gurobi solver 7.0+ ..."
 end
 
 function logging_head(m::AlpineNonlinearModel)
@@ -176,7 +176,7 @@ end
  Logging and printing functions
 =========================================================#
 
-# Create dictionary of statuses for POD algorithm
+# Create dictionary of statuses for Alpine algorithm
 function create_status!(m)
 
     status = Dict{Symbol,Symbol}()
@@ -198,7 +198,7 @@ end
 """
 function summary_status(m::AlpineNonlinearModel)
 
-    # POD Solver Status Definition
+    # Alpine Solver Status Definition
     # :Optimal : normal termination with gap closed within time limits
     # :UserLimits : any non-optimal termination related to user-defined parameters
     # :Infeasible : termination with relaxation proven infeasible or detection of
@@ -216,10 +216,10 @@ function summary_status(m::AlpineNonlinearModel)
     elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
         m.pod_status = :Heuristic
     else
-        @warn "[EXCEPTION] Indefinite Alpine status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make POD better."
+        @warn "[EXCEPTION] Indefinite Alpine status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."
     end
 
-    printstyled(:green, "\n POD ended with status $(m.pod_status)\n")
+    printstyled(:green, "\n Alpine ended with status $(m.pod_status)\n")
 
     return
 end

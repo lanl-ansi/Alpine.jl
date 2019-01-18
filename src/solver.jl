@@ -158,7 +158,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
     status::Dict{Symbol,Symbol}                                 # Detailed status of each different phases in algorithm
-    pod_status::Symbol                                          # Current POD status
+    pod_status::Symbol                                          # Current Alpine status
 
     # constructor
     function AlpineNonlinearModel(colorful_pod,
@@ -479,7 +479,7 @@ function AlpineSolver(;
         disc_var_pick = 3
     end
 
-    # Deepcopy the solvers because we may change option values inside POD
+    # Deepcopy the solvers because we may change option values inside Alpine
     AlpineSolver(colorful_pod,
         loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
@@ -525,7 +525,7 @@ function AlpineSolver(;
         int_fully_disc)
     end
 
-# Create POD nonlinear model -- can solve with nonlinear algorithm only
+# Create Alpine nonlinear model -- can solve with nonlinear algorithm only
 function MathProgBase.NonlinearModel(s::AlpineSolver)
 
     
@@ -714,7 +714,7 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable recategorization
 
-    :Int in m.var_type_orig && @warn "POD's support for integer variables is experimental"
+    :Int in m.var_type_orig && @warn "Alpine's support for integer variables is experimental"
     :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
 
     # Conduct solver-dependent detection
@@ -762,7 +762,7 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
 
     ## Citation
     println("----------------------------------------------------------------------")
-    println("If you find POD useful, please cite the following work. Thanks!!!")
+    println("If you find Alpine useful, please cite the following work. Thanks!!!")
     println("Nagarajan, H., Lu, M., Wang, S., Bent, R. and Sundar, K., 2017. ")
     println("An Adaptive, Multivariate Partitioning Algorithm for Global ")
     println("Optimization of Nonconvex Programs. arXiv preprint arXiv:1707.02514.")

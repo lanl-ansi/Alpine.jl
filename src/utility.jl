@@ -1,7 +1,7 @@
 """
     update_rel_gap(m::AlpineNonlinearModel)
 
-Update POD model relative & absolute optimality gap.
+Update Alpine model relative & absolute optimality gap.
 
 The relative gap calculation is
 
@@ -731,7 +731,7 @@ function fetch_mip_solver_identifier(m::AlpineNonlinearModel;override="")
     elseif occursin("GLPK", solverstring)
         m.mip_solver_id = "GLPK"
     else
-        error("Unsupported MIP solver $solverstring; use a POD-supported MIP solver")
+        error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
     end
 
     return
@@ -760,7 +760,7 @@ function fetch_nlp_solver_identifier(m::AlpineNonlinearModel;override="")
     elseif occursin("NLopt", solverstring)
         m.nlp_solver_id = "NLopt"
     else
-        error("Unsupported NLP local solver $solverstring; use a POD-supported NLP local solver")
+        error("Unsupported NLP local solver $solverstring; use a Alpine-supported NLP local solver")
     end
 
     return
@@ -791,7 +791,7 @@ function fetch_minlp_solver_identifier(m::AlpineNonlinearModel;override="")
     elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
         m.minlp_solver_id = "Bonmin"
     else
-        error("Unsupported MINLP local solver $solverstring; use a POD-supported MINLP local solver")
+        error("Unsupported MINLP local solver $solverstring; use a Alpine-supported MINLP local solver")
     end
 
     return
@@ -799,7 +799,7 @@ end
 
 """
     update_mip_time_limit(m::AlpineNonlinearModel)
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
 """
 function update_mip_time_limit(m::AlpineNonlinearModel; kwargs...)
 
@@ -839,7 +839,7 @@ end
 
 """
     update_mip_time_limit(m::AlpineNonlinearModel)
-An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
 """
 function update_nlp_time_limit(m::AlpineNonlinearModel; kwargs...)
 
@@ -874,7 +874,7 @@ end
 
 """
     update_mip_time_limit(m::AlpineNonlinearModel)
-    An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
+    An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
 """
 function update_minlp_time_limit(m::AlpineNonlinearModel; kwargs...)
 

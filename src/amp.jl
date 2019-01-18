@@ -3,7 +3,7 @@
     create_bounding_mip(m::AlpineNonlinearModel; use_disc::Dict)
 
 Set up a JuMP MILP bounding model base on variable domain partitioning information stored in `use_disc`.
-By default, if `use_disc is` not provided, it will use `m.discretizations` store in the POD model.
+By default, if `use_disc is` not provided, it will use `m.discretizations` store in the Alpine model.
 The basic idea of this MILP bounding model is to use Tighten McCormick to convexify the original Non-convex region.
 Among all presented partitionings, the bounding model will choose one specific partition as the lower bound solution.
 The more partitions there are, the better or finer bounding model relax the original MINLP while the more
