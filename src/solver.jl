@@ -3,7 +3,7 @@ export PODSolver
 mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
-    colorful_pod::Any                                           # Turn on for a color solver (remove)
+    colorful_pod::Any                                           # Colorful output (remove)
 
     # basic solver parameters
     loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
@@ -17,68 +17,68 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # convexification method tuning
     recognize_convex::Bool                                      # recognize convex expressions in parsing objective functions and constraints
-    bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexirfy nonlinear terms
+    bilinear_mccormick::Bool                                    # disable Tightening McCormick method used for for convexify nonlinear terms
     bilinear_convexhull::Bool                                   # convexify bilinear terms using convex hull representation
     monomial_convexhull::Bool                                   # convexify monomial terms using convex hull representation
 
     # expression-based user-inputs
-    method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear temrs :: no over-ride privilege
+    method_convexification::Array{Function}                     # Array of functions that user wich to use to convexify some specific non-linear terms :: no over-ride privilege
     method_partition_injection::Array{Function}                 # Array of functions for special methods to add partitions to variable under complex conditions
     term_patterns::Array{Function}                              # Array of functions that user wish to use to parse/recognize nonlinear terms in constraint expression
     constr_patterns::Array{Function}                            # Array of functions that user wish to use to parse/recognize structural constraint from expression
 
-    # parameters used in partitioning algorithm
+    # parameters used in the partitioning algorithm
     disc_ratio::Any                                             # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     disc_divert_chunks::Int                                     # How many uniform partitions to construct
     disc_add_partition_method::Any                              # Additional methods to add discretization
-    disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretizations
-    disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretizations
-    disc_consecutive_forbid::Int                                # forbit bounding model to add partitions on the same spot when # steps of previous indicate the same bouding solution, done in a distributed way (per variable)
-    disc_ratio_branch::Bool                                     # Branching tests for picking fixed disc ratios
+    disc_abs_width_tol::Float64                                 # absolute tolerance used when setting up partition/discretization
+    disc_rel_width_tol::Float64                                 # relative width tolerance when setting up partition/discretization
+    disc_consecutive_forbid::Int                                # prevent bounding model to add partitions consecutively in the same region when bounds do not improve 
+    disc_ratio_branch::Bool                                     # Branching tests for picking fixed the discretization ratio
 
-    # Convexifications Formulation Parameters
-    convhull_formulation::String                                # Formulation to used for relaxation
+    # MIP Formulation Parameters
+    convhull_formulation::String                                # MIP Formulation for the relaxation
     convhull_warmstart::Bool                                    # Warm start the bounding MIP
-    convhull_no_good_cuts::Bool                                 # Add no good cuts to MIP base on pool solutions
+    convhull_no_good_cuts::Bool                                 # Add no-good cuts to MIP based on the pool solutions
     convhull_ebd::Bool                                          # Enable embedding formulation
     convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
     convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
-    convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 usse hierarchical and type 2 with big-m
+    convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 uses hierarchical and type 2 uses big-m
 
     # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
-    presolve_bt::Bool                                           # Perform bound tightening procedure before main algorithm (default: true)
+    presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
     presolve_timeout::Float64                                   # Time limit for presolving (seconds)
-    presolve_maxiter::Int                                       # Maximum iteration allowed to perform presolve (vague in parallel mode)
-    presolve_bt_width_tol::Float64                              # Numerical tol bound-tightening width
+    presolve_maxiter::Int                                       # Maximum iterations allowed to perform presolve (vague in parallel mode)
+    presolve_bt_width_tol::Float64                              # Width tolerance for bound-tightening
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol (change to precision)
-    presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be index of default methods or functional inputs
+    presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
     presolve_bt_relax::Bool                                     # Relax the MIP solved in built-in relaxation scheme for time performance
-    presolve_bt_mip_timeout::Float64                            # Regulate the time limit for a single MIP solved in built-in bound tighening algorithm
+    presolve_bt_mip_timeout::Float64                            # Regulate the time limit for a single MIP solved in the built-in bound tightening algorithm
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
-    presolve_infeasible::Bool                                   # Presolve infeasiblity detection flag
+    presolve_infeasible::Bool                                   # Presolve infeasibility detection flag
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
-    # Features for Integer Problems (NOTE: no support for intlin problems)
-    int_enable::Bool                                            # Convert integer problem into binary problem by flatten the choice of variable domain
-    int_cumulative_disc::Bool                                   # [INACTIVE] Cummulatively involve integer variables for discretization
-    int_fully_disc::Bool                                        # [INACTIVE] Construct equalvaient formulation for integer variables
+    # Features for Integer Problems (NOTE: no support for int-lin problems)
+    int_enable::Bool                                            # Convert integer problem into binary problem 
+    int_cumulative_disc::Bool                                   # [INACTIVE] Cumulatively involve integer variables for discretization
+    int_fully_disc::Bool                                        # [INACTIVE] Construct equivalent formulation for integer variables
 
     # add all the solver options
     nlp_solver::MathProgBase.AbstractMathProgSolver             # Local continuous NLP solver for solving NLPs at each iteration
     minlp_solver::MathProgBase.AbstractMathProgSolver           # Local MINLP solver for solving MINLPs at each iteration
-    mip_solver::MathProgBase.AbstractMathProgSolver             # MILP solver for successive lower bound solves
+    mip_solver::MathProgBase.AbstractMathProgSolver             # MIP solver for successive lower bound solves
 
-    # Sub-solver identifier for cusomized solver option
+    # Sub-solver identifier for customized solver option
     nlp_solver_id::AbstractString                               # NLP Solver identifier string
     minlp_solver_id::AbstractString                             # MINLP local solver identifier string
     mip_solver_id::AbstractString                               # MIP solver identifier string
 
-    # initial data provided by user
+    # user provided inputs
     num_var_orig::Int                                           # Initial number of variables
     num_cont_var_orig::Int                                      # Initial number of continuous variables
     num_int_var_orig::Int                                       # Initial number of binary/integer variables
@@ -91,7 +91,7 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     constr_expr_orig::Vector{Expr}                              # Constraint expressions
     obj_expr_orig::Expr                                         # Objective expression
 
-    # extra initial data that is useful for non-linear local continuous solves
+    # additional user inputs useful for local solves
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
     u_var_orig::Vector{Float64}                                 # Variable upper bounds
     l_constr_orig::Vector{Float64}                              # Constraint lower bounds
@@ -99,7 +99,7 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     sense_orig::Symbol                                          # Problem type (:Min, :Max)
     d_orig::JuMP.NLPEvaluator                                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
 
-    # additional initial data that may be useful later on - non populated for now
+    # additional initial data that may be useful later (not populated)
     A_orig::Any                                                 # Linear constraint matrix
     A_l_orig::Vector{Float64}                                   # Linear constraint matrix LHS
     A_u_orig::Vector{Float64}                                   # Linear constraint matrix RHS
@@ -113,21 +113,21 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
 
-    # mixed-integer convex program bounding model
-    model_mip::JuMP.Model                                       # JuMP convex MIP model for bounding
+    # MIP bounding model
+    model_mip::JuMP.Model                                       # JuMP's convex-MIP model for bounding
 
-    num_var_linear_mip::Int                                     # Number of linear lifting variables required.
+    num_var_linear_mip::Int                                     # Number of linear lifted variables required
     num_var_nonlinear_mip::Int                                  # Number of lifted variables
-    num_var_disc_mip::Int                                       # Number of variables on which discretization is performed
-    num_constr_convex::Int                                      # Number of structural constraints
+    num_var_disc_mip::Int                                       # Number of variables which are discretized
+    num_constr_convex::Int                                      # Number of convex constraints
 
-    # Expression related and Structural Property Placeholder
+    # expression-related and structural property placeholder
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
     nonconvex_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
-    term_seq::Dict{Int, Any}                                    # Vector-Dictionary for nl terms detection
+    term_seq::Dict{Int, Any}                                    # Vector-Dictionary for NL terms detection
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     obj_structure::Symbol                                       # A symbolic indicator of the expression type of objective function
-    constr_structure::Vector{Symbol}                            # A vector indicate whether a constraint is with sepcial structure
+    constr_structure::Vector{Symbol}                            # A vector indicating whether a constraint is with the special structure
     bounding_obj_expr_mip::Expr                                 # Lifted objective expression; if linear, same as obj_expr_orig
     bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
@@ -135,30 +135,30 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # Discretization Related
     candidate_disc_vars::Vector{Int}                            # A vector of all original variable indices that is involved in the nonlinear terms
-    discretization::Dict{Any,Any}                               # Discretization points keyed by the variables
-    disc_vars::Vector{Int}                                      # Variables on which discretization is performed
+    discretization::Dict{Any,Any}                               # Discretization points with variable keys
+    disc_vars::Vector{Int}                                      # Variables chosen for discretization
     int_vars::Vector{Int}                                       # Index vector of integer variables
-    bin_vars::Vector{Int}                                       # Index vector of binary variable
+    bin_vars::Vector{Int}                                       # Index vector of binary variables
 
-    # Re-formulated problem
+    # Reformulated problem
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
-    u_var_tight::Vector{Float64}                                # Tightened variable Lower Bounds
+    u_var_tight::Vector{Float64}                                # Tightened variable lower bounds
     var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # Solution information
     best_bound::Float64                                         # Best bound from MIP
     best_obj::Float64                                           # Best feasible objective value
     best_sol::Vector{Float64}                                   # Best feasible solution
-    best_bound_sol::Vector{Float64}                             # Best bound solution
-    best_rel_gap::Float64                                       # Relative optimality gap = |best_bound - best_obj|/|best_obj|
-    best_abs_gap::Float64                                       # Absolute gap = |best_bound - best_obj|
-    bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by parameter disc_consecutive_forbid
+    best_bound_sol::Vector{Float64}                             # Best bound solution (arg-min)
+    best_rel_gap::Float64                                       # Relative optimality gap = |best_obj - best_bound|/|best_obj|*100
+    best_abs_gap::Float64                                       # Absolute gap = |best_obj - best_bound|
+    bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by "parameter disc_consecutive_forbid"
     bound_sol_pool::Dict{Any, Any}                              # A pool of solutions from solving model_mip
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
-    status::Dict{Symbol,Symbol}                                 # Detailed status of each different phases in algorithm
-    pod_status::Symbol                                          # Current POD status
+    status::Dict{Symbol,Symbol}                                 # Detailed status of every iteration in the algorithm
+    pod_status::Symbol                                          # Current Alpine's status
 
     # constructor
     function PODNonlinearModel(colorful_pod,
@@ -479,7 +479,7 @@ function PODSolver(;
         disc_var_pick = 3
     end
 
-    # Deepcopy the solvers because we may change option values inside POD
+    # Deep-copy the solvers because we may change option values inside Alpine
     PODSolver(colorful_pod,
         loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
@@ -525,7 +525,7 @@ function PODSolver(;
         int_fully_disc)
     end
 
-# Create POD nonlinear model -- can solve with nonlinear algorithm only
+# Create Alpine's nonlinear model -- can solve with nonlinear algorithm only
 function MathProgBase.NonlinearModel(s::PODSolver)
 
     
@@ -665,7 +665,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # Initialize NLP interface
     interface_init_nonlinear_data(m.d_orig)
 
-    # Collect objective & constraints expressions
+    # Collect objective & constraint expressions
     m.obj_expr_orig = interface_get_obj_expr(m.d_orig)
     for i in 1:m.num_constr_orig
         push!(m.constr_expr_orig, interface_get_constr_expr(m.d_orig, i))
@@ -712,7 +712,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
 
     # populate data to create the bounding model
-    recategorize_var(m)             # Initial round of variable recategorization
+    recategorize_var(m)             # Initial round of variable re-categorization
 
     :Int in m.var_type_orig && @warn "POD's support for integer variables is experimental"
     :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
@@ -733,9 +733,9 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     init_tight_bound(m)                     # Initialize bounds for algorithmic processes
     resolve_var_bounds(m)                   # resolve lifted var bounds
     pick_disc_vars(m)                       # Picking variables to be discretized
-    init_disc(m)                            # Initialize discretization dictionarys
+    init_disc(m)                            # Initialize discretization dictionaries
 
-    # Turn-on bt presolver if not discrete variables
+    # Turn-on bt presolver if variables are not discrete
     if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && m.presolve_bt == nothing
         m.presolve_bt = true
         println("Automatically turning on bound-tightening presolver...")
@@ -751,7 +751,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # Initialize the solution pool
     m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
 
-    # Record the initial solution from the warmstarting value, if any
+    # Record the initial solution from the warm-starting value, if any
     m.best_sol = m.d_orig.m.colVal
 
     # Check if any illegal term exist in the warm-solution
