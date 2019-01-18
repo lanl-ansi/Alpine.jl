@@ -9,7 +9,7 @@ function interface_init_nonlinear_data(nonlinear_model::MathProgBase.AbstractNLP
     return
 end
 
-function interface_load_nonlinear_model(m::PODNonlinearModel, nonlinear_model::Any, l_var::Vector, u_var::Vector)
+function interface_load_nonlinear_model(m::AlpineNonlinearModel, nonlinear_model::Any, l_var::Vector, u_var::Vector)
     MathProgBase.loadproblem!(nonlinear_model, m.num_var_orig,
                                                m.num_constr_orig,
                                                l_var,
@@ -74,10 +74,10 @@ function interface_get_rawsolver(m::JuMP.Model)
     return MathProgBase.getrawsolver(internalmodel(m))
 end
 
-MathProgBase.setwarmstart!(m::PODNonlinearModel, x) = (m.var_start_orig = x)
-MathProgBase.setvartype!(m::PODNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
-MathProgBase.status(m::PODNonlinearModel) = m.pod_status
-MathProgBase.getobjval(m::PODNonlinearModel) = m.best_obj
-MathProgBase.getobjbound(m::PODNonlinearModel) = m.best_bound
-MathProgBase.getsolution(m::PODNonlinearModel) = m.best_sol
-MathProgBase.getsolvetime(m::PODNonlinearModel) = m.logs[:total_time]
+MathProgBase.setwarmstart!(m::AlpineNonlinearModel, x) = (m.var_start_orig = x)
+MathProgBase.setvartype!(m::AlpineNonlinearModel, v::Vector{Symbol}) = (m.var_type_orig = v)
+MathProgBase.status(m::AlpineNonlinearModel) = m.pod_status
+MathProgBase.getobjval(m::AlpineNonlinearModel) = m.best_obj
+MathProgBase.getobjbound(m::AlpineNonlinearModel) = m.best_bound
+MathProgBase.getsolution(m::AlpineNonlinearModel) = m.best_sol
+MathProgBase.getsolvetime(m::AlpineNonlinearModel) = m.logs[:total_time]

@@ -1,6 +1,6 @@
-export PODSolver
+export AlpineSolver
 
-mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
+mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
     colorful_pod::Any                                           # Turn on for a color solver (remove)
@@ -161,7 +161,7 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     pod_status::Symbol                                          # Current POD status
 
     # constructor
-    function PODNonlinearModel(colorful_pod,
+    function AlpineNonlinearModel(colorful_pod,
                                 loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                                 nlp_solver,
                                 minlp_solver,
@@ -320,7 +320,7 @@ end
 
 const empty_solver = UnsetSolver()
 
-mutable struct PODSolver <: MathProgBase.AbstractMathProgSolver
+mutable struct AlpineSolver <: MathProgBase.AbstractMathProgSolver
 
     colorful_pod::Any
 
@@ -385,7 +385,7 @@ mutable struct PODSolver <: MathProgBase.AbstractMathProgSolver
     # other options to be added later on
 end
 
-function PODSolver(;
+function AlpineSolver(;
     colorful_pod = false,
 
     loglevel = 1,
@@ -480,7 +480,7 @@ function PODSolver(;
     end
 
     # Deepcopy the solvers because we may change option values inside POD
-    PODSolver(colorful_pod,
+    AlpineSolver(colorful_pod,
         loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
         deepcopy(minlp_solver),
@@ -526,7 +526,7 @@ function PODSolver(;
     end
 
 # Create POD nonlinear model -- can solve with nonlinear algorithm only
-function MathProgBase.NonlinearModel(s::PODSolver)
+function MathProgBase.NonlinearModel(s::AlpineSolver)
 
     
     # Translate options into old nonlinearmodel.jl fields
@@ -590,7 +590,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     int_cumulative_disc = s.int_cumulative_disc
     int_fully_disc = s.int_fully_disc
 
-    return PODNonlinearModel(colorful_pod,
+    return AlpineNonlinearModel(colorful_pod,
                             loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                             nlp_solver,
                             minlp_solver,
@@ -635,7 +635,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             int_fully_disc)
 end
 
-function MathProgBase.loadproblem!(m::PODNonlinearModel,
+function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
                                    num_var::Int,
                                    num_constr::Int,
                                    l_var::Vector{Float64},
@@ -645,7 +645,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
                                    sense::Symbol,
                                    d::MathProgBase.AbstractNLPEvaluator)
 
-    # Populating PODNonlinearModel (invoked by JuMP.build(m))
+    # Populating AlpineNonlinearModel (invoked by JuMP.build(m))
     m.num_var_orig = num_var
     m.num_constr_orig = num_constr
     m.l_var_orig = l_var

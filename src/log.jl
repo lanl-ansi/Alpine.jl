@@ -22,13 +22,13 @@ function create_logs!(m)
     m.logs = logs
 end
 
-function reset_timer(m::PODNonlinearModel)
+function reset_timer(m::AlpineNonlinearModel)
     m.logs[:total_time] = 0.
     m.logs[:time_left] = m.timeout
     return m
 end
 
-function logging_summary(m::PODNonlinearModel)
+function logging_summary(m::AlpineNonlinearModel)
 
     if m.loglevel > 0
         printstyled(:light_yellow, "full problem loaded into POD\n")
@@ -88,7 +88,7 @@ function logging_summary(m::PODNonlinearModel)
     m.mip_solver_id == "Gurobi" && @warn "POD support Gurobi solver 7.0+ ..."
 end
 
-function logging_head(m::PODNonlinearModel)
+function logging_head(m::AlpineNonlinearModel)
 	if m.logs[:time_left] < Inf
 		printstyled(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | TIME LEFT     | Iter   \n")
 	else
@@ -96,7 +96,7 @@ function logging_head(m::PODNonlinearModel)
 	end
 end
 
-function logging_row_entry(m::PODNonlinearModel; kwargs...)
+function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
@@ -196,7 +196,7 @@ end
         recorded in the solver. The output status is self-defined which requires users to
         read our documentation to understand what details is behind a status symbol.
 """
-function summary_status(m::PODNonlinearModel)
+function summary_status(m::AlpineNonlinearModel)
 
     # POD Solver Status Definition
     # :Optimal : normal termination with gap closed within time limits

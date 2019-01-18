@@ -2,7 +2,7 @@ __precompile__()
 
 module Alpine
 
-PODDEBUG = false
+const ALPINE_DEBUG = false
 
 using JuMP
 using MathProgBase

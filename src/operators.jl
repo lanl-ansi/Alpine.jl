@@ -1,9 +1,9 @@
 """
-    expr_term_parsing(expr, m::PODNonlinearModel, level=0)
+    expr_term_parsing(expr, m::AlpineNonlinearModel, level=0)
 
 Recognize and process nonlinear terms in an expression
 """
-function expr_term_parsing(expr::Any, constr_id::Int, m::PODNonlinearModel, level=0; options...)
+function expr_term_parsing(expr::Any, constr_id::Int, m::AlpineNonlinearModel, level=0; options...)
 
     cnt = 0
     for node in expr.args
@@ -23,7 +23,7 @@ function expr_term_parsing(expr::Any, constr_id::Int, m::PODNonlinearModel, leve
 end
 
 """
-    detect_nonconvex_terms(expr, m::PODNonlinearModel)
+    detect_nonconvex_terms(expr, m::AlpineNonlinearModel)
 
 This function recognizes, stores, and replaces a sub-tree `expr` with available
 user-defined/built-in structures patterns. The procedure is creates the required number
@@ -32,7 +32,7 @@ Then, go through all built-in structures and perform operatins to convexify the 
 
 Specific structure pattern information will be described formally.
 """
-function detect_nonconvex_terms(expr::Any, constr_id::Int, m::PODNonlinearModel; kwargs...)
+function detect_nonconvex_terms(expr::Any, constr_id::Int, m::AlpineNonlinearModel; kwargs...)
 
     # First process user-defined structures in-cases of over-ride
     for i in 1:length(m.term_patterns)
@@ -71,7 +71,7 @@ function detect_nonconvex_terms(expr::Any, constr_id::Int, m::PODNonlinearModel;
     return expr # if no structure is detected, simply return the original tree
 end
 
-function store_nonconvex_term(m::PODNonlinearModel, nl_key::Any, var_idxs::Any, term_type::Symbol, operator::Symbol, evaluator::Function, bd_resolver::Function, discvar_collector::Function)
+function store_nonconvex_term(m::AlpineNonlinearModel, nl_key::Any, var_idxs::Any, term_type::Symbol, operator::Symbol, evaluator::Function, bd_resolver::Function, discvar_collector::Function)
 
     l_cnt = length(keys(m.linear_terms))
     nl_cnt = length(keys(m.nonconvex_terms))
@@ -102,7 +102,7 @@ function store_nonconvex_term(m::PODNonlinearModel, nl_key::Any, var_idxs::Any, 
     return y_idx
 end
 
-function store_linear_term(m::PODNonlinearModel, term_key::Any, expr::Any)#, bound_resolver::Function)
+function store_linear_term(m::AlpineNonlinearModel, term_key::Any, expr::Any)#, bound_resolver::Function)
 
     l_cnt = length(keys(m.linear_terms))
     nl_cnt = length(keys(m.nonconvex_terms))
@@ -129,7 +129,7 @@ function store_linear_term(m::PODNonlinearModel, term_key::Any, expr::Any)#, bou
     return y_idx
 end
 
-function lift_nonconvex_term(m::PODNonlinearModel, nl_key, constr_id::Int, scalar = 1.0)
+function lift_nonconvex_term(m::AlpineNonlinearModel, nl_key, constr_id::Int, scalar = 1.0)
     push!(m.nonconvex_terms[nl_key][:constr_id], constr_id)
 
     if scalar == 1.0
@@ -139,7 +139,7 @@ function lift_nonconvex_term(m::PODNonlinearModel, nl_key, constr_id::Int, scala
     end
 end
 
-function lift_linear_term(m::PODNonlinearModel, term_key, constr_id::Int)
+function lift_linear_term(m::AlpineNonlinearModel, term_key, constr_id::Int)
 
     push!(m.linear_terms[term_key][:constr_id], constr_id)
     return m.linear_terms[term_key][:lifted_var_ref]
@@ -147,7 +147,7 @@ function lift_linear_term(m::PODNonlinearModel, term_key, constr_id::Int)
     return
 end
 
-function detect_linear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_linear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     @assert expr.head == :call
     coef_fetch = Dict(:+ => 1.0, :- => -1.0)
@@ -216,7 +216,7 @@ function detect_linear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms=nothing)
+function basic_linear_bounds(m::AlpineNonlinearModel, k::Any, linear_terms=nothing)
 
     linear_terms == nothing ? linear_terms = m.linear_terms : linear_term = linear_terms
 
@@ -239,7 +239,7 @@ function basic_linear_bounds(m::PODNonlinearModel, k::Any, linear_terms=nothing)
     return
 end
 
-function basic_linear_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+function basic_linear_bounds(m::AlpineNonlinearModel, k::Any, d::Dict)
 
     lifted_idx = m.linear_terms[k][:y_idx]
     ub = 0.0
@@ -284,7 +284,7 @@ linear(k, vec) = sum(k[:ref][:scalar] .+ [i[1]*vec[i[2]] for i in k[:ref][:coef_
 
     Leads to BINLIN terms, with BINPROD, INTPROD, INTLIN if necessary
 """
-function detect_discretemulti_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_discretemulti_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     # Alwasy construct the binlin term after lifting
     @assert expr.head == :call
@@ -391,7 +391,7 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::PODNonlinearMod
     return false, expr
 end
 
-function basic_binlin_bounds(m::PODNonlinearModel, k::Any)
+function basic_binlin_bounds(m::AlpineNonlinearModel, k::Any)
 
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
@@ -413,7 +413,7 @@ function basic_binlin_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_binlin_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+function basic_binlin_bounds(m::AlpineNonlinearModel, k::Any, d::Dict)
 
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
@@ -435,7 +435,7 @@ function basic_binlin_bounds(m::PODNonlinearModel, k::Any, d::Dict)
     return d
 end
 
-function basic_intlin_bounds(m::PODNonlinearModel, k::Any)
+function basic_intlin_bounds(m::AlpineNonlinearModel, k::Any)
 
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
@@ -457,7 +457,7 @@ function basic_intlin_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_intlin_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+function basic_intlin_bounds(m::AlpineNonlinearModel, k::Any, d::Dict)
 
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
@@ -479,12 +479,12 @@ function basic_intlin_bounds(m::PODNonlinearModel, k::Any, d::Dict)
     return d
 end
 
-function collect_binlin_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
+function collect_binlin_discvar(m::AlpineNonlinearModel, k::Any; var_bowl=nothing)
     # Exact linearization exist
     return
 end
 
-function collect_intlin_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
+function collect_intlin_discvar(m::AlpineNonlinearModel, k::Any; var_bowl=nothing)
 
     for i in m.nonconvex_terms[k][:var_idxs]
         @assert isa(i, Int)
@@ -507,7 +507,7 @@ end
 
 	Leads to BININT terms, with BINPROD, INTPROD if necessary
 """
-function detect_binint_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_binint_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     @assert expr.head == :call
 
@@ -575,7 +575,7 @@ function detect_binint_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function basic_binint_bound(m::PODNonlinearModel, k::Any)
+function basic_binint_bound(m::AlpineNonlinearModel, k::Any)
 
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
@@ -597,7 +597,7 @@ function basic_binint_bound(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_binint_bound(m::PODNonlinearModel, k::Any, d::Dict)
+function basic_binint_bound(m::AlpineNonlinearModel, k::Any, d::Dict)
 
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
@@ -619,7 +619,7 @@ function basic_binint_bound(m::PODNonlinearModel, k::Any, d::Dict)
     return d
 end
 
-function collect_binint_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
+function collect_binint_discvar(m::AlpineNonlinearModel, k::Any; var_bowl=nothing)
     # Exact linearization exist
     return
 end
@@ -627,7 +627,7 @@ end
 """
     Recognize products of binary variables : x1 * x2 * .. * xN
 """
-function detect_intprod_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_intprod_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
 	@assert expr.head == :call
     if (expr.args[1] == :*)
@@ -689,7 +689,7 @@ function detect_intprod_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
+function basic_intprod_bounds(m::AlpineNonlinearModel, k::Any)
 
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
 
@@ -716,7 +716,7 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_intprod_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+function basic_intprod_bounds(m::AlpineNonlinearModel, k::Any, d::Dict)
 
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
 
@@ -742,7 +742,7 @@ function basic_intprod_bounds(m::PODNonlinearModel, k::Any, d::Dict)
     return d
 end
 
-function collect_intprod_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
+function collect_intprod_discvar(m::AlpineNonlinearModel, k::Any; var_bowl=nothing)
     for var in m.nonconvex_terms[k][:var_idxs]
         @assert isa(var, Int)
         if var_bowl == nothing
@@ -757,7 +757,7 @@ end
 """
     Recognize products of binary variables : x1 * x2 * .. * xN
 """
-function detect_binprod_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_binprod_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
 	@assert expr.head == :call
     if (expr.args[1] == :*)
@@ -816,7 +816,7 @@ function detect_binprod_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function basic_binprod_bounds(m::PODNonlinearModel, k::Any)
+function basic_binprod_bounds(m::AlpineNonlinearModel, k::Any)
 
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     m.l_var_tight[lifted_idx] = 0
@@ -825,7 +825,7 @@ function basic_binprod_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_binprod_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+function basic_binprod_bounds(m::AlpineNonlinearModel, k::Any, d::Dict)
 
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     d[lifted_idx][1] = 0
@@ -834,7 +834,7 @@ function basic_binprod_bounds(m::PODNonlinearModel, k::Any, d::Dict)
     return d
 end
 
-function collect_binprod_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
+function collect_binprod_discvar(m::AlpineNonlinearModel, k::Any; var_bowl=nothing)
     # Exact linearization exists
     return
 end
@@ -846,7 +846,7 @@ end
     Recognize multilinear terms: x1 * x2 * .. * xN, where all x are continous variables
     Recognize monomial terms: x^2 or x * x, where x is continuous
 """
-function detect_bilinear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_bilinear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     @assert expr.head == :call
     if (expr.args[1] == :*)  # confirm head (:*)
@@ -887,7 +887,7 @@ function detect_bilinear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function detect_multilinear_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_multilinear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     @assert expr.head == :call
     if (expr.args[1] == :*) # Pattern: coefficients * x * y * z ...
@@ -944,7 +944,7 @@ function detect_multilinear_term(expr::Any, constr_id::Int, m::PODNonlinearModel
     return false, expr
 end
 
-function detect_monomial_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_monomial_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     if (expr.args[1] == :^) && length(expr.args) == 3
         # Pattern: (x)^(2)
@@ -1006,7 +1006,7 @@ function detect_monomial_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
+function basic_monomial_bounds(m::AlpineNonlinearModel, k::Any)
 
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     cnt = 0
@@ -1036,7 +1036,7 @@ function basic_monomial_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_monomial_bounds(m::PODNonlinearModel, nlk::Any, d::Dict)
+function basic_monomial_bounds(m::AlpineNonlinearModel, nlk::Any, d::Dict)
 
     lifted_idx = m.nonconvex_terms[nlk][:lifted_var_ref].args[2]
     cnt = 0
@@ -1065,7 +1065,7 @@ function basic_monomial_bounds(m::PODNonlinearModel, nlk::Any, d::Dict)
     return d
 end
 
-function collect_monomial_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
+function collect_monomial_discvar(m::AlpineNonlinearModel, k::Any; var_bowl=nothing)
     for var in k
         @assert isa(var.args[2], Int)
         if var_bowl == nothing
@@ -1081,7 +1081,7 @@ end
     Recognize sin/cos terms: sin(x) / cos(x), where x "should" be continous variables
     # TODO future call detect_TRIGONOMETRIC_term
 """
-function detect_sincos_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
+function detect_sincos_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     @assert expr.head == :call
     if expr.args[1] in [:sin, :cos]
@@ -1113,7 +1113,7 @@ function detect_sincos_term(expr::Any, constr_id::Int, m::PODNonlinearModel)
     return false, expr
 end
 
-function basic_sincos_bounds(m::PODNonlinearModel, k::Any)
+function basic_sincos_bounds(m::AlpineNonlinearModel, k::Any)
 
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     m.l_var_tight[lifted_idx] = -1  # TODO can be improved
@@ -1122,7 +1122,7 @@ function basic_sincos_bounds(m::PODNonlinearModel, k::Any)
     return
 end
 
-function basic_sincos_bounds(m::PODNonlinearModel, k::Any, d::Dict)
+function basic_sincos_bounds(m::AlpineNonlinearModel, k::Any, d::Dict)
 
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     d[lifted_idx][1] = -1  # TODO can be improved
@@ -1132,7 +1132,7 @@ function basic_sincos_bounds(m::PODNonlinearModel, k::Any, d::Dict)
 end
 
 
-function collect_sincos_discvar(m::PODNonlinearModel, k::Any; var_bowl=nothing)
+function collect_sincos_discvar(m::AlpineNonlinearModel, k::Any; var_bowl=nothing)
     for var in m.nonconvex_terms[k][:var_idxs]
         @assert isa(var, Int)
         if var_bowl == nothing
@@ -1148,7 +1148,7 @@ end
     Recognize convex constraints
     A scatch for type-A convex constraint expression
 """
-function resolve_convex_constr(expr::Any, m::PODNonlinearModel=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
+function resolve_convex_constr(expr::Any, m::AlpineNonlinearModel=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
 
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr

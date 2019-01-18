@@ -1,5 +1,5 @@
 """
-    update_rel_gap(m::PODNonlinearModel)
+    update_rel_gap(m::AlpineNonlinearModel)
 
 Update POD model relative & absolute optimality gap.
 
@@ -14,7 +14,7 @@ The absolute gap calculation is
     |UB-LB|
 ```
 """
-function update_opt_gap(m::PODNonlinearModel)
+function update_opt_gap(m::AlpineNonlinearModel)
 
     if m.best_obj in [Inf, -Inf]
         m.best_rel_gap = Inf
@@ -38,7 +38,7 @@ function update_opt_gap(m::PODNonlinearModel)
     return
 end
 
-function measure_relaxed_deviation(m::PODNonlinearModel;sol=nothing)
+function measure_relaxed_deviation(m::AlpineNonlinearModel;sol=nothing)
 
     sol == nothing ? sol = m.best_bound_sol : sol = sol
 
@@ -71,7 +71,7 @@ discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 """
     Update the data structure with feasible solution and its associated objective (if better)
 """
-function update_incumb_objective(m::PODNonlinearModel, objval::Float64, sol::Vector)
+function update_incumb_objective(m::AlpineNonlinearModel, objval::Float64, sol::Vector)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
     push!(m.logs[:obj], objval)
@@ -153,11 +153,11 @@ function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_
 end
 
 """
-    fetch_boundstop_symbol(m::PODNonlinearModel)
+    fetch_boundstop_symbol(m::AlpineNonlinearModel)
 
 An utility function used to recongize different sub-solvers and return the bound stop option key words
 """
-function update_boundstop_options(m::PODNonlinearModel)
+function update_boundstop_options(m::AlpineNonlinearModel)
 
     if m.mip_solver_id == "Gurobi"
         # Calculation of the bound
@@ -184,11 +184,11 @@ end
 
 
 """
-    check_solution_history(m::PODNonlinearModel, ind::Int)
+    check_solution_history(m::AlpineNonlinearModel, ind::Int)
 
 Check if the solution is alwasy the same within the last disc_consecutive_forbid iterations. Return true if suolution in invariant.
 """
-function check_solution_history(m::PODNonlinearModel, ind::Int)
+function check_solution_history(m::AlpineNonlinearModel, ind::Int)
 
     m.disc_consecutive_forbid == 0 && return false
     (m.logs[:n_iter] < m.disc_consecutive_forbid) && return false
@@ -205,13 +205,13 @@ end
 
 """
 
-    fix_domains(m::PODNonlinearModel)
+    fix_domains(m::AlpineNonlinearModel)
 
 This function is used to fix variables to certain domains during the local solve process in the [`global_solve`](@ref).
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing varibles to the active domain according to lower bound solution.
 """
-function fix_domains(m::PODNonlinearModel;discrete_sol=nothing, use_orig=false)
+function fix_domains(m::AlpineNonlinearModel;discrete_sol=nothing, use_orig=false)
 
     discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
 
@@ -245,9 +245,9 @@ function fix_domains(m::PODNonlinearModel;discrete_sol=nothing, use_orig=false)
 end
 
 """
-    is_fully_convexified(m::PODNonlinearModel)
+    is_fully_convexified(m::AlpineNonlinearModel)
 """
-function is_fully_convexified(m::PODNonlinearModel)
+function is_fully_convexified(m::AlpineNonlinearModel)
 
     # Other more advanced convexification check goes here
     for term in keys(m.nonconvex_terms)
@@ -266,7 +266,7 @@ end
     Collect LB solutions
     Don't test this function
 """
-function collect_lb_pool(m::PODNonlinearModel)
+function collect_lb_pool(m::AlpineNonlinearModel)
 
     # Always stick to the structural .discretization for algorithm consideration info
     # If in need, the scheme need to be refreshed with customized discretization info
@@ -299,7 +299,7 @@ end
 """
     Merge collected solution pools
 """
-function merge_solution_pool(m::PODNonlinearModel, s::Dict)
+function merge_solution_pool(m::AlpineNonlinearModel, s::Dict)
 
     # Always stick to the structural .discretization for algorithm consideration info
     # If in need, the scheme need to be refreshed with customized discretization info
@@ -404,12 +404,12 @@ end
 
 """
 
-    ncvar_collect_nodes(m:PODNonlinearModel)
+    ncvar_collect_nodes(m:AlpineNonlinearModel)
 
 A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
 
 """
-function ncvar_collect_nodes(m::PODNonlinearModel;getoutput=false)
+function ncvar_collect_nodes(m::AlpineNonlinearModel;getoutput=false)
 
     # Pick variables that is bound width more than tolerance length
     if getoutput
@@ -422,7 +422,7 @@ function ncvar_collect_nodes(m::PODNonlinearModel;getoutput=false)
     return
 end
 
-function eval_objective(m::PODNonlinearModel; svec::Vector=[])
+function eval_objective(m::AlpineNonlinearModel; svec::Vector=[])
 
     isempty(svec) ? svec = m.best_bound_sol : svec = svec
     m.sense_orig == :Min ? obj = Inf : obj=-Inf
@@ -441,7 +441,7 @@ function eval_objective(m::PODNonlinearModel; svec::Vector=[])
     return obj
 end
 
-function initialize_solution_pool(m::PODNonlinearModel, cnt::Int)
+function initialize_solution_pool(m::AlpineNonlinearModel, cnt::Int)
 
     s = Dict()
 
@@ -466,7 +466,7 @@ end
 """
     Reconsideration required
 """
-function ncvar_collect_arcs(m::PODNonlinearModel, nodes::Vector)
+function ncvar_collect_arcs(m::AlpineNonlinearModel, nodes::Vector)
 
     arcs = Set()
 
@@ -554,7 +554,7 @@ end
 """
     TODO can be improved
 """
-function build_discvar_graph(m::PODNonlinearModel)
+function build_discvar_graph(m::AlpineNonlinearModel)
 
     # Collect the information of nonlinear terms in terms of arcs and nodes
     nodes = ncvar_collect_nodes(m, getoutput=true)
@@ -574,7 +574,7 @@ function build_discvar_graph(m::PODNonlinearModel)
     return nodes, arcs
 end
 
-function min_vertex_cover(m::PODNonlinearModel)
+function min_vertex_cover(m::AlpineNonlinearModel)
 
     nodes, arcs = build_discvar_graph(m)
 
@@ -595,7 +595,7 @@ function min_vertex_cover(m::PODNonlinearModel)
     return
 end
 
-function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
+function weighted_min_vertex_cover(m::AlpineNonlinearModel, distance::Dict)
 
     # Collect the graph information
     nodes, arcs = build_discvar_graph(m)
@@ -630,7 +630,7 @@ function weighted_min_vertex_cover(m::PODNonlinearModel, distance::Dict)
     return
 end
 
-function round_sol(m::PODNonlinearModel;nlp_model=nothing, nlp_sol=[])
+function round_sol(m::AlpineNonlinearModel;nlp_model=nothing, nlp_sol=[])
 
     if nlp_model != nothing
         relaxed_sol = interface_get_solution(nlp_model)
@@ -661,7 +661,7 @@ end
 """
     Evaluate a solution feasibility: Solution bust be in the feasible category and evaluated rhs must be feasible
 """
-function eval_feasibility(m::PODNonlinearModel, sol::Vector)
+function eval_feasibility(m::AlpineNonlinearModel, sol::Vector)
 
     length(sol) == m.num_var_orig || error("Candidate solution length mismatch.")
 
@@ -708,7 +708,7 @@ function eval_feasibility(m::PODNonlinearModel, sol::Vector)
     return feasible
 end
 
-function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
+function fetch_mip_solver_identifier(m::AlpineNonlinearModel;override="")
 
     isempty(override) ? solverstring = string(m.mip_solver) : solverstring = override
 
@@ -737,7 +737,7 @@ function fetch_mip_solver_identifier(m::PODNonlinearModel;override="")
     return
 end
 
-function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
+function fetch_nlp_solver_identifier(m::AlpineNonlinearModel;override="")
 
     isempty(override) ? solverstring = string(m.nlp_solver) : solverstring = override
 
@@ -766,7 +766,7 @@ function fetch_nlp_solver_identifier(m::PODNonlinearModel;override="")
     return
 end
 
-function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
+function fetch_minlp_solver_identifier(m::AlpineNonlinearModel;override="")
 
     (m.minlp_solver == empty_solver) && return
 
@@ -798,10 +798,10 @@ function fetch_minlp_solver_identifier(m::PODNonlinearModel;override="")
 end
 
 """
-    update_mip_time_limit(m::PODNonlinearModel)
+    update_mip_time_limit(m::AlpineNonlinearModel)
 An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
-function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
+function update_mip_time_limit(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
     timelimit = 0.0
@@ -838,10 +838,10 @@ function update_mip_time_limit(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    update_mip_time_limit(m::PODNonlinearModel)
+    update_mip_time_limit(m::AlpineNonlinearModel)
 An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
-function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
+function update_nlp_time_limit(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
     timelimit = 0.0
@@ -873,10 +873,10 @@ function update_nlp_time_limit(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    update_mip_time_limit(m::PODNonlinearModel)
+    update_mip_time_limit(m::AlpineNonlinearModel)
     An utility function used to dynamically regulate MILP solver time limits to fit POD solver time limits.
 """
-function update_minlp_time_limit(m::PODNonlinearModel; kwargs...)
+function update_minlp_time_limit(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
     timelimit = 0.0
@@ -909,7 +909,7 @@ end
 """
     Follow the definition of terms to calculate the value of lifted terms
 """
-function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
+function resolve_lifted_var_value(m::AlpineNonlinearModel, sol_vec::Array)
 
     @assert length(sol_vec) == m.num_var_orig
     sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
@@ -930,7 +930,7 @@ function resolve_lifted_var_value(m::PODNonlinearModel, sol_vec::Array)
     return sol_vec
 end
 
-function adjust_branch_priority(m::PODNonlinearModel)
+function adjust_branch_priority(m::AlpineNonlinearModel)
 
     if m.mip_solver_id == "Gurobi"
         !m.model_mip.internalModelLoaded && return
