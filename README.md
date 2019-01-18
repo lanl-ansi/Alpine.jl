@@ -71,6 +71,7 @@ If you find Alpine useful in your work, we kindly request that you cite the foll
   booktitle = {International Conference on Principles and Practice of Constraint Programming},
   pages = {369--387},
   year = {2016},
-  organization = {Springer}
+  organization = {Springer},
+  doi = {10.1007/978-3-319-44953-1_24},
 }
 ```
