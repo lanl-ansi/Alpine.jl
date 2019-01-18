@@ -1,7 +1,7 @@
 # Choosing Sub-Solvers
 
 ```@meta
-CurrentModule = POD
+CurrentModule = Apline
 ```
 
 The design of the AMP solver requires a variety of programming problems to be solved underneath the surface. For algorithmic performance, it's recommend that dedicated solvers to be used for these operations. The design of AMP takes advantage of MathProgBase to allow a majority of optimization softwares to be utilized easily with simple development. Currently, the following sub-solvers with Julia Interface is supported by AMP:
@@ -21,9 +21,9 @@ To use different sub-solvers, here is an example:
 
 ```julia
     using JuMP
-    using POD
+    using Apline
     using Gurobi, Ipopt
     m = Model()
     # Here goes the building of your model...
-    setsolver(m, PODSolver(nlp_solver=IpoptSolver(print_level=0), mip_solver=GurobiSolver(OutputFlag=0)))
+    setsolver(m, AplineSolver(nlp_solver=IpoptSolver(print_level=0), mip_solver=GurobiSolver(OutputFlag=0)))
 ```

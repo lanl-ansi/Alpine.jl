@@ -1,7 +1,7 @@
 # Functions
 
 ```@meta
-CurrentModule = POD
+CurrentModule = Apline
 ```
 
 ## High-level Algorithmic Operations

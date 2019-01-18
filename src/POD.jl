@@ -1,6 +1,6 @@
 __precompile__()
 
-module POD
+module Apline
 
 PODDEBUG = false
 
