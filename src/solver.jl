@@ -761,12 +761,11 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     logging_summary(m)
 
     ## Citation
-    println("----------------------------------------------------------------------")
-    println("If you find POD useful, please cite the following work. Thanks!!!")
-    println("Nagarajan, H., Lu, M., Wang, S., Bent, R. and Sundar, K., 2017. ")
-    println("An Adaptive, Multivariate Partitioning Algorithm for Global ")
-    println("Optimization of Nonconvex Programs. arXiv preprint arXiv:1707.02514.")
-    println("----------------------------------------------------------------------")
+    println("**********************************************************************")
+    println("  This package contains Alpine.jl, a global nonconvex MINLP solver")
+    println("     If you find it useful, please cite the following paper: ")
+    println("    Journal of Global Optimization, 2019, https://goo.gl/89zrDf")
+    println("**********************************************************************")
 
     return
 end
