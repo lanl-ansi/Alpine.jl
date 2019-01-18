@@ -1,8 +1,8 @@
-using Documenter, Apline
+using Documenter, Alpine
 
 makedocs(
     format = :html,
-    sitename = "Apline",
+    sitename = "Alpine",
     pages = [
         "Introduction" => "intro.md",
         "How to Use" => "installation.md",
@@ -11,12 +11,12 @@ makedocs(
         "Expression Guideline" => "expression.md",
         "Parameters" => "parameters.md",
         "Methods" => "functions.md",
-        "Hacking Apline" => "hacking.md"
+        "Hacking Alpine" => "hacking.md"
     ]
 )
 
 
 deploydocs(
-    repo = "github.com/lanl-ansi/Apline.git",
+    repo = "github.com/lanl-ansi/Alpine.git",
 )
 

@@ -216,7 +216,7 @@ function summary_status(m::PODNonlinearModel)
     elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
         m.pod_status = :Heuristic
     else
-        @warn "[EXCEPTION] Indefinite Apline status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/Apline.jl/issues) to help us make POD better."
+        @warn "[EXCEPTION] Indefinite Alpine status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make POD better."
     end
 
     printstyled(:green, "\n POD ended with status $(m.pod_status)\n")

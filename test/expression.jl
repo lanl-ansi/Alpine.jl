@@ -7,7 +7,7 @@
     JuMP.build(m)
 
     ex = m.internalModel.bounding_constr_expr_mip[1]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [-1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[1][:coefs]
     @test affdict[:vars] == [:(x[1])]
@@ -18,7 +18,7 @@
     @test affdict[:sense] == m.internalModel.bounding_constr_mip[1][:sense]
 
     ex = m.internalModel.bounding_constr_expr_mip[2]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [3.0,3.0,3.0,3.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[2][:coefs]
     @test affdict[:vars] == [:(x[8]),:(x[9]),:(x[10]),:(x[11])]
@@ -29,7 +29,7 @@
     @test affdict[:sense] == m.internalModel.bounding_constr_mip[2][:sense]
 
     ex = m.internalModel.bounding_constr_expr_mip[3]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [-1.0,20.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[3][:coefs]
     @test affdict[:vars] == [:(x[12]),:(x[13])]
@@ -41,7 +41,7 @@
 
     # 1.0 * x[12] - 115.0 >= 0.0
     ex = m.internalModel.bounding_constr_expr_mip[4]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [-1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[4][:coefs]
     @test affdict[:vars] == [:(x[12])]
@@ -53,7 +53,7 @@
 
     # 1.0 * x[12] - 115.0 <= 0.0
     ex = m.internalModel.bounding_constr_expr_mip[5]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[5][:coefs]
     @test affdict[:vars] == [:(x[12])]
@@ -65,7 +65,7 @@
 
     # -1.0 * x[12] - 115.0 >= 0.0
     ex = m.internalModel.bounding_constr_expr_mip[6]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [-1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[6][:coefs]
     @test affdict[:vars] == [:(x[12])]
@@ -77,7 +77,7 @@
 
     # (x[1] + 1.0 * x[14]) - 555.0 >= 0.0
     ex = m.internalModel.bounding_constr_expr_mip[7]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [1.0, 1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[7][:coefs]
     @test affdict[:vars] == [:(x[1]),:(x[14])]
@@ -89,7 +89,7 @@
 
     # ((x[8] - 7.0 * x[9]) + x[10] + x[4]) - 6666.0 <= 0.0
     ex = m.internalModel.bounding_constr_expr_mip[8]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [1.0,-7.0,1.0,1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[8][:coefs]
     @test affdict[:vars] == [:(x[8]),:(x[9]),:(x[10]),:(x[4])]
@@ -101,7 +101,7 @@
 
     # ((13.0 * x[1] - x[2]) + 30.0 * x[3] + x[4]) - 77.0 >= 0.0
     ex = m.internalModel.bounding_constr_expr_mip[9]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [13.0,-1.0,30.0,1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[9][:coefs]
     @test affdict[:vars] == [:(x[1]),:(x[2]),:(x[3]),:(x[4])]
@@ -121,7 +121,7 @@ end
     JuMP.build(m)
 
     ex = m.internalModel.bounding_constr_expr_mip[1]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [1.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[1][:coefs]
     @test affdict[:vars] == [:(x[5])]
@@ -141,7 +141,7 @@ end
     JuMP.build(m)
 
     ex = m.internalModel.bounding_constr_expr_mip[1]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [0.0025,0.0025]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[1][:coefs]
     @test affdict[:vars] == [:(x[4]),:(x[6])]
@@ -152,7 +152,7 @@ end
     @test affdict[:sense] == m.internalModel.bounding_constr_mip[1][:sense]
 
     ex = m.internalModel.bounding_constr_expr_mip[2]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [0.0025,-0.0025,0.0025]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[2][:coefs]
     @test affdict[:vars] == [:(x[5]),:(x[4]),:(x[7])]
@@ -163,7 +163,7 @@ end
     @test affdict[:sense] == m.internalModel.bounding_constr_mip[2][:sense]
 
     ex = m.internalModel.bounding_constr_expr_mip[3]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [0.01, -0.01]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[3][:coefs]
     @test affdict[:vars] == [:(x[8]),:(x[5])]
@@ -174,7 +174,7 @@ end
     @test affdict[:sense] == m.internalModel.bounding_constr_mip[3][:sense]
 
     ex = m.internalModel.bounding_constr_expr_mip[4]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test (affdict[:coefs] .== [100.0, -1.0, 833.33252]) == [true, true, true]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[4][:coefs]
     @test affdict[:vars] == [:(x[1]),:(x[9]),:(x[4])]
@@ -185,7 +185,7 @@ end
     @test affdict[:sense] == m.internalModel.bounding_constr_mip[4][:sense]
 
     ex = m.internalModel.bounding_constr_expr_mip[5]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [1.0,-1.0,-1250.0,1250.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[5][:coefs]
     @test affdict[:vars] == [:(x[10]),:(x[11]),:(x[4]),:(x[5])]
@@ -196,7 +196,7 @@ end
     @test affdict[:sense] == m.internalModel.bounding_constr_mip[5][:sense]
 
     ex = m.internalModel.bounding_constr_expr_mip[6]
-    affdict = POD.expr_linear_to_affine(ex)
+    affdict = Alpine.expr_linear_to_affine(ex)
     @test affdict[:coefs] == [1.0,-1.0,-2500.0]
     @test affdict[:coefs] == m.internalModel.bounding_constr_mip[6][:coefs]
     @test affdict[:vars] == [:(x[12]),:(x[13]),:(x[5])]

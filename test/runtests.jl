@@ -1,7 +1,7 @@
 using JuMP, MathProgBase
 using Ipopt, Cbc, Pavito
 using GLPKMathProgInterface
-using Apline
+using Alpine
 
 using Compat.Test
 
@@ -12,13 +12,13 @@ if VERSION < v"0.7.0-"
     import Compat: @warn
     import Compat: occursin
     import Compat: printstyled
-    alpine_dir = Pkg.dir("Apline")
+    alpine_dir = Pkg.dir("Alpine")
 end
 
 if VERSION > v"0.7.0-"
     using Random
     using Pkg
-    alpine_dir = joinpath(dirname(pathof(Apline)), "..")
+    alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
 end
 
 examples = readdir(joinpath(alpine_dir, "test", "examples"))

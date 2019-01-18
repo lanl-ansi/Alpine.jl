@@ -1,7 +1,7 @@
 # Functions
 
 ```@meta
-CurrentModule = Apline
+CurrentModule = Alpine
 ```
 
 ## High-level Algorithmic Operations

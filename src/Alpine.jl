@@ -1,6 +1,6 @@
 __precompile__()
 
-module Apline
+module Alpine
 
 PODDEBUG = false
 

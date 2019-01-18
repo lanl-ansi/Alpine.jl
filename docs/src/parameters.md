@@ -1,7 +1,7 @@
 # Parameters
 
 ```@meta
-CurrentModule = Apline
+CurrentModule = Alpine
 ```
 
 ## General

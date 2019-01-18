@@ -5,13 +5,13 @@
     m = operator_c(solver=test_solver)
 
     status = JuMP.build(m)
-    @test isa(m.internalModel, POD.PODNonlinearModel)
+    @test isa(m.internalModel, Alpine.PODNonlinearModel)
 
     # Expression Model 1
     test_solver = PODSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
     m = exprstest(solver=test_solver)
     status = JuMP.build(m)
-    @test isa(m.internalModel, POD.PODNonlinearModel)
+    @test isa(m.internalModel, Alpine.PODNonlinearModel)
 end
 =#
 
