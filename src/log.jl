@@ -6,17 +6,17 @@ function create_logs!(m)
     # Timers
     logs[:presolve_time] = 0.       # Total presolve-time of the algorithm
     logs[:total_time] = 0.          # Total run-time of the algorithm
-    logs[:time_left] = m.timeout    # Total remaining time of the algorithm if timeout is specified
+    logs[:time_left] = m.timeout    # Total remaining time of the algorithm if time-out is specified
 
     # Values
-    logs[:obj] = []                 # Iteration based objective
-    logs[:bound] = []               # Iteration based objective
+    logs[:obj] = []                 # Iteration-based objective
+    logs[:bound] = []               # Iteration-based objective bound
 
     # Counters
-    logs[:n_iter] = 0               # Number of iterations in iterative
-    logs[:n_feas] = 0               # Number of times get a new feasible solution
-    logs[:ub_incumb_cnt] = 0        # Number of incumbents detected on upper bound
-    logs[:lb_incumb_cnt] = 0        # Number of incumebnts detected on lower bound
+    logs[:n_iter] = 0               # Number of iterations
+    logs[:n_feas] = 0               # Number of times a new feasible solution is obtained
+    logs[:ub_incumb_cnt] = 0        # Number of incumbents detected in the upper bound
+    logs[:lb_incumb_cnt] = 0        # Number of incumebnts detected in the lower bound
     logs[:bt_iter] = 0
 
     m.logs = logs
@@ -31,7 +31,7 @@ end
 function logging_summary(m::AlpineNonlinearModel)
 
     if m.loglevel > 0
-        printstyled(:light_yellow, "full problem loaded into Alpine\n")
+        # printstyled(:light_yellow, "full problem loaded into Alpine\n")
         println("problen sense $(m.sense_orig)")
         println("# of constraints = ", m.num_constr_orig)
         println("# of non-linear constraints = ", m.num_nlconstr_orig)
@@ -40,13 +40,13 @@ function logging_summary(m::AlpineNonlinearModel)
         println("# of binary variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]))
         println("# of integer variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
 
-        println("detected nonlinear terms = ", length(m.nonconvex_terms))
+        println("# of detected nonlinear terms = ", length(m.nonconvex_terms))
         for i in ALPINE_C_NLTERMS
             cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
             cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
         end
         println("# of variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
-        println("# of selected variables to discretize = ", length(m.disc_vars))
+        println("# of variables chosen to discretize = ", length(m.disc_vars))
 
         println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
         println("                        SUB-SOLVERS  ")
@@ -55,17 +55,17 @@ function logging_summary(m::AlpineNonlinearModel)
         println("MIP solver = ", split(string(m.mip_solver),".")[1])
         println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
         println("                    SOLVER CONFIGURATION ")
-        println("maximum solution time = ", m.timeout)
-        println("maximum iterations =  ", m.maxiter)
-        @printf "relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
-        println("default tolerance = ", m.tol)
+        println("Maximum solution time = ", m.timeout)
+        println("Maximum iterations =  ", m.maxiter)
+        @printf "Relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
+        println("Default tolerance = ", m.tol)
         m.recognize_convex && println("actively recognize convex patterns")
         m.recognize_convex && println("# of detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
-        println("basic bound propagation = ", m.presolve_bp)
-        println("use piece-wise relaxation formulation on integer variables = ", m.int_enable)
-        println("piece-wise relaxation formulation = $(m.convhull_formulation) formulation")
-        println("method for picking discretization variable = $(m.disc_var_pick)")
-        println("conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
+        println("Basic bound propagation = ", m.presolve_bp)
+        #println("use piece-wise relaxation formulation on integer variables = ", m.int_enable)
+        println("MIP formulation = $(m.convhull_formulation) formulation")
+        println("Disc. variables chosen = $(m.disc_var_pick)")
+        println("Conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
         if m.disc_ratio_branch
             println("discretization ratio branch activated")
         else
@@ -192,14 +192,14 @@ end
 
 
 """
-    This function summarize the eventual solver status based on all available infomration
+    This function summarizes the eventual solver status based on all available information
         recorded in the solver. The output status is self-defined which requires users to
-        read our documentation to understand what details is behind a status symbol.
+        read our documentation to understand the details behind every status symbols.
 """
 function summary_status(m::AlpineNonlinearModel)
 
     # Alpine Solver Status Definition
-    # :Optimal : normal termination with gap closed within time limits
+    # :Optimal : normal termination with optimality gap closed within time limits
     # :UserLimits : any non-optimal termination related to user-defined parameters
     # :Infeasible : termination with relaxation proven infeasible or detection of
     #               variable bound conflicts
