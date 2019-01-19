@@ -1,9 +1,9 @@
-export PODSolver
+export AlpineSolver
 
-mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
+mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
     # external developer parameters for testing and debugging
-    colorful_pod::Any                                           # Colorful output (remove)
+    colorful_alpine::Any                                           # Colorful output (remove)
 
     # basic solver parameters
     loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
@@ -158,10 +158,10 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
     status::Dict{Symbol,Symbol}                                 # Detailed status of every iteration in the algorithm
-    pod_status::Symbol                                          # Current Alpine's status
+    alpine_status::Symbol                                       # Current Alpine's status
 
     # constructor
-    function PODNonlinearModel(colorful_pod,
+    function AlpineNonlinearModel(colorful_alpine,
                                 loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                                 nlp_solver,
                                 minlp_solver,
@@ -207,7 +207,7 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
         m = new()
 
-        m.colorful_pod = colorful_pod
+        m.colorful_alpine = colorful_alpine
 
         m.loglevel = loglevel
         m.timeout = timeout
@@ -306,7 +306,7 @@ mutable struct PODNonlinearModel <: MathProgBase.AbstractNonlinearModel
         m.best_bound = -Inf
         m.best_rel_gap = Inf
         m.best_abs_gap = Inf
-        m.pod_status = :NotLoaded
+        m.alpine_status = :NotLoaded
 
         create_status!(m)
         create_logs!(m)
@@ -320,9 +320,9 @@ end
 
 const empty_solver = UnsetSolver()
 
-mutable struct PODSolver <: MathProgBase.AbstractMathProgSolver
+mutable struct AlpineSolver <: MathProgBase.AbstractMathProgSolver
 
-    colorful_pod::Any
+    colorful_alpine::Any
 
     loglevel::Int
     timeout::Float64
@@ -385,8 +385,8 @@ mutable struct PODSolver <: MathProgBase.AbstractMathProgSolver
     # other options to be added later on
 end
 
-function PODSolver(;
-    colorful_pod = false,
+function AlpineSolver(;
+    colorful_alpine = false,
 
     loglevel = 1,
     timeout = Inf,
@@ -480,7 +480,7 @@ function PODSolver(;
     end
 
     # Deep-copy the solvers because we may change option values inside Alpine
-    PODSolver(colorful_pod,
+    AlpineSolver(colorful_alpine,
         loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
         deepcopy(minlp_solver),
@@ -526,11 +526,10 @@ function PODSolver(;
     end
 
 # Create Alpine's nonlinear model -- can solve with nonlinear algorithm only
-function MathProgBase.NonlinearModel(s::PODSolver)
-
+function MathProgBase.NonlinearModel(s::AlpineSolver)
     
     # Translate options into old nonlinearmodel.jl fields
-    colorful_pod = s.colorful_pod
+    colorful_alpine = s.colorful_alpine
 
     loglevel = s.loglevel
     timeout = s.timeout
@@ -590,7 +589,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
     int_cumulative_disc = s.int_cumulative_disc
     int_fully_disc = s.int_fully_disc
 
-    return PODNonlinearModel(colorful_pod,
+    return AlpineNonlinearModel(colorful_alpine,
                             loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                             nlp_solver,
                             minlp_solver,
@@ -635,7 +634,7 @@ function MathProgBase.NonlinearModel(s::PODSolver)
                             int_fully_disc)
 end
 
-function MathProgBase.loadproblem!(m::PODNonlinearModel,
+function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
                                    num_var::Int,
                                    num_constr::Int,
                                    l_var::Vector{Float64},
@@ -645,7 +644,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
                                    sense::Symbol,
                                    d::MathProgBase.AbstractNLPEvaluator)
 
-    # Populating PODNonlinearModel (invoked by JuMP.build(m))
+    # Populating AlpineNonlinearModel (invoked by JuMP.build(m))
     m.num_var_orig = num_var
     m.num_constr_orig = num_constr
     m.l_var_orig = l_var
@@ -714,7 +713,7 @@ function MathProgBase.loadproblem!(m::PODNonlinearModel,
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable re-categorization
 
-    :Int in m.var_type_orig && @warn "POD's support for integer variables is experimental"
+    :Int in m.var_type_orig && @warn "Alpine's support for integer variables is experimental"
     :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
 
     # Conduct solver-dependent detection

@@ -2,7 +2,7 @@
     Collects distance of each variable's bounding solution to best feasible solution and select the ones that is the furthest
     Currently don't support recursively convexification
 """
-function update_disc_cont_var(m::PODNonlinearModel)
+function update_disc_cont_var(m::AlpineNonlinearModel)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
@@ -42,7 +42,7 @@ function update_disc_cont_var(m::PODNonlinearModel)
     return
 end
 
-function update_disc_int_var(m::PODNonlinearModel)
+function update_disc_int_var(m::AlpineNonlinearModel)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
@@ -56,7 +56,7 @@ end
     One-time rounding heuristic to obtain a feasible solution
     For integer solutions
 """
-function heu_basic_rounding(m::PODNonlinearModel, local_model)
+function heu_basic_rounding(m::AlpineNonlinearModel, local_model)
 
     println("Basic Rounding Heuristic Activated...")
 
@@ -90,7 +90,7 @@ end
 """
     Use all lower bound solution pools as starting points
 """
-function heu_pool_multistart(m::PODNonlinearModel)
+function heu_pool_multistart(m::AlpineNonlinearModel)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
     m.sense_orig == :Min ? incumb_obj = Inf : incumb_obj = -Inf

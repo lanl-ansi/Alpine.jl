@@ -1,10 +1,10 @@
 """
-    init_tight_bound(m::PODNonlinearModel)
+    init_tight_bound(m::AlpineNonlinearModel)
 
 Initialize internal bound vectors (placeholders) to be used in other places.
 In this case, we don't have to mess with the original bound information.
 """
-function init_tight_bound(m::PODNonlinearModel)
+function init_tight_bound(m::AlpineNonlinearModel)
 
     m.l_var_tight = [m.l_var_orig; fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     m.u_var_tight = [m.u_var_orig; fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
@@ -22,12 +22,12 @@ function init_tight_bound(m::PODNonlinearModel)
 end
 
 """
-    init_disc(m::PODNonlinearModel)
+    init_disc(m::AlpineNonlinearModel)
 
 This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
-The output is a dictionary with MathProgBase variable indices keys attached to the :PODNonlinearModel.discretization.
+The output is a dictionary with MathProgBase variable indices keys attached to the :AlpineNonlinearModel.discretization.
 """
-function init_disc(m::PODNonlinearModel)
+function init_disc(m::AlpineNonlinearModel)
 
     for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         if m.var_type[var] in [:Bin, :Cont]
@@ -48,13 +48,13 @@ end
 
 """
 
-    to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+    to_discretization(m::AlpineNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
 
 Utility functions to convert bounds vectors to Dictionary based structures that is more suitable for
 partition operations.
 
 """
-function to_discretization(m::PODNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+function to_discretization(m::AlpineNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
 
     @assert length(lbs) == length(ubs)
     var_discretization = Dict()
@@ -102,13 +102,13 @@ end
 
 
 """
-    detect_bound_from_aff(m::PODNonlinearModel)
+    detect_bound_from_aff(m::AlpineNonlinearModel)
 
 Detect bounds from parse affine constraint. This function examines the one variable constraints such as
 x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_tight.
 This function can potential grow to be smarter.
 """
-function bound_propagation(m::PODNonlinearModel)
+function bound_propagation(m::AlpineNonlinearModel)
 
     exhausted = false
     infeasible = false
@@ -242,7 +242,7 @@ end
 """
     Recategorize :Int variables to :Bin variables if variable bounds are [0,1]
 """
-function recategorize_var(m::PODNonlinearModel)
+function recategorize_var(m::AlpineNonlinearModel)
 
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Int && m.l_var_orig[i] == 0.0 && m.u_var_orig[i] == 1.0
@@ -255,12 +255,12 @@ function recategorize_var(m::PODNonlinearModel)
 end
 
 """
-    resolve_var_bounds(m::PODNonlinearModel)
+    resolve_var_bounds(m::AlpineNonlinearModel)
 
 Resolve the bounds of the lifted variable using the information in l_var_tight and u_var_tight. This method only takes
 in known or trivial bounds information to reason lifted variable bound to avoid the cases of infinity bounds.
 """
-function resolve_var_bounds(m::PODNonlinearModel)
+function resolve_var_bounds(m::AlpineNonlinearModel)
 
     # Basic Bound propagation
     if m.presolve_bp
@@ -288,9 +288,9 @@ function resolve_var_bounds(m::PODNonlinearModel)
 end
 
 """
-    Critically assumed since POD relies on finite bound to work
+    Critically assumed since Alpine relies on finite bound to work
 """
-function resolve_inf_bounds(m::PODNonlinearModel)
+function resolve_inf_bounds(m::AlpineNonlinearModel)
 
     warnuser = false
     infcount = 0
@@ -323,7 +323,7 @@ end
 
     Only used in presolve bound tightening
 """
-function resolve_var_bounds(m::PODNonlinearModel, d::Dict; kwargs...)
+function resolve_var_bounds(m::AlpineNonlinearModel, d::Dict; kwargs...)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
@@ -332,13 +332,13 @@ function resolve_var_bounds(m::PODNonlinearModel, d::Dict; kwargs...)
         k = m.term_seq[i]
         if haskey(m.nonconvex_terms, k)
             nlk = k
-            if m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_MONOMIAL
+            if m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_MONOMIAL
                 d = basic_monomial_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BININT]
                 d = basic_binint_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
                 d = basic_binprod_bounds(m, nlk, d)
-            elseif m.nonconvex_terms[nlk][:nonlinear_type] in POD_C_TRIGONOMETRIC
+            elseif m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_TRIGONOMETRIC
                 d = basic_sincos_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
                 d = basic_binlin_bounds(m, nlk, d)
@@ -360,14 +360,14 @@ function resolve_var_bounds(m::PODNonlinearModel, d::Dict; kwargs...)
 end
 
 """
-    resolve_closed_var_bounds(m::PODNonlinearModel)
+    resolve_closed_var_bounds(m::AlpineNonlinearModel)
 
 This function seeks variable with tight bounds (by presolve_bt_width_tol) by checking .l_var_tight and .u_var_tight.
 If a variable is found to be within a sufficiently small interval then no discretization will be performed on this variable
 and the .discretization will be cleared with the tight bounds for basic McCormick operation if necessary.
 
 """
-function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
+function resolve_closed_var_bounds(m::AlpineNonlinearModel; kwargs...)
 
     for var in m.candidate_disc_vars
         if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
@@ -380,7 +380,7 @@ function resolve_closed_var_bounds(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    update_var_bounds(m::PODNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
+    update_var_bounds(m::AlpineNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
 
 This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
 

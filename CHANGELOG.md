@@ -1,4 +1,4 @@
-# Critical Updates for POD.jl
+# Critical Updates for Alpine.jl
 
 I've forked the master branch hosted by lanl-ansi to my own Github while keeping all the most recent features merged on my master. Current, I am testing MPC instances with my master branch. Here is a summary of what are changed:
 
@@ -22,7 +22,7 @@ I've forked the master branch hosted by lanl-ansi to my own Github while keeping
 * Strengthen the checks to problems
 
 ## Code Structure
-* `POD.jl`: "header" file
+* `Alpine.jl`: "header" file
 * `solver.jl`: data structure and problem loading
 * `algorithm.jl`: high-level algorithms and major utilities (`presolve()`, `local_solve()`, `bounding_solve()`)
 * `amp.jl`: algorithms for bounding formulation constructions

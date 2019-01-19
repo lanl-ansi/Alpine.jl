@@ -1,36 +1,36 @@
 using JuMP, MathProgBase
 using Ipopt, Cbc, Pavito
 using GLPKMathProgInterface
-using POD
+using Alpine
 
 using Compat.Test
 
-poddir = ""
+alpine_dir = ""
 if VERSION < v"0.7.0-"
     import Compat: round
     import Compat: undef
     import Compat: @warn
     import Compat: occursin
     import Compat: printstyled
-    poddir = Pkg.dir("POD")
+    alpine_dir = Pkg.dir("Alpine")
 end
 
 if VERSION > v"0.7.0-"
     using Random
     using Pkg
-    poddir = joinpath(dirname(pathof(POD)), "..")
+    alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
 end
 
-examples = readdir(joinpath(poddir, "test", "examples"))
+examples = readdir(joinpath(alpine_dir, "test", "examples"))
 
 for i in examples
-    include(joinpath(poddir, "test", "examples", i))
+    include(joinpath(alpine_dir, "test", "examples", i))
 end
 
 pavito_solver=PavitoSolver(mip_solver=CbcSolver(logLevel=0), cont_solver=IpoptSolver(print_level=0), mip_solver_drives=false, log_level=0)
 
 # Performe Tests
-include("$(poddir)/test/solver.jl")
-include("$(poddir)/test/expression.jl")
-include("$(poddir)/test/algorithm.jl")
-include("$(poddir)/test/utility.jl")
+include("$(alpine_dir)/test/solver.jl")
+include("$(alpine_dir)/test/expression.jl")
+include("$(alpine_dir)/test/algorithm.jl")
+include("$(alpine_dir)/test/utility.jl")

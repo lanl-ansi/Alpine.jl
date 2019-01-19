@@ -22,13 +22,13 @@ function create_logs!(m)
     m.logs = logs
 end
 
-function reset_timer(m::PODNonlinearModel)
+function reset_timer(m::AlpineNonlinearModel)
     m.logs[:total_time] = 0.
     m.logs[:time_left] = m.timeout
     return m
 end
 
-function logging_summary(m::PODNonlinearModel)
+function logging_summary(m::AlpineNonlinearModel)
 
     if m.loglevel > 0
         # printstyled(:light_yellow, "full problem loaded into Alpine\n")
@@ -41,7 +41,7 @@ function logging_summary(m::PODNonlinearModel)
         println("# of integer variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
 
         println("# of detected nonlinear terms = ", length(m.nonconvex_terms))
-        for i in POD_C_NLTERMS
+        for i in ALPINE_C_NLTERMS
             cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
             cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
         end
@@ -85,10 +85,10 @@ function logging_summary(m::PODNonlinearModel)
     end
 
     # Additional warnings
-    m.mip_solver_id == "Gurobi" && @warn "POD support Gurobi solver 7.0+ ..."
+    m.mip_solver_id == "Gurobi" && @warn "Alpine support Gurobi solver 7.0+ ..."
 end
 
-function logging_head(m::PODNonlinearModel)
+function logging_head(m::AlpineNonlinearModel)
 	if m.logs[:time_left] < Inf
 		printstyled(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | TIME LEFT     | Iter   \n")
 	else
@@ -96,7 +96,7 @@ function logging_head(m::PODNonlinearModel)
 	end
 end
 
-function logging_row_entry(m::PODNonlinearModel; kwargs...)
+function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
@@ -141,7 +141,7 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
 
     haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish")) : (ITER_block = string(" ", m.logs[:n_iter]))
 
-    if m.colorful_pod == "random"
+    if m.colorful_alpine == "random"
         colors = [:blue, :cyan, :green, :red, :light_red, :light_blue, :light_cyan, :light_green, :light_magenta, :light_re, :light_yellow, :white, :yellow]
         print(" |")
         printstyled(rand(colors),UB_block)
@@ -160,11 +160,11 @@ function logging_row_entry(m::PODNonlinearModel; kwargs...)
         print("|")
         printstyled(rand(colors),ITER_block)
         print("\n")
-    elseif m.colorful_pod == "solarized"
+    elseif m.colorful_alpine == "solarized"
         printstyled(m.logs[:n_iter]+21, " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
-    elseif m.colorful_pod == "warmer"
+    elseif m.colorful_alpine == "warmer"
         printstyled(max(20,170-m.logs[:n_iter]), " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
-    elseif m.colorful_pod == false
+    elseif m.colorful_alpine == false
         println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
     end
 
@@ -176,7 +176,7 @@ end
  Logging and printing functions
 =========================================================#
 
-# Create dictionary of statuses for POD algorithm
+# Create dictionary of statuses for Alpine algorithm
 function create_status!(m)
 
     status = Dict{Symbol,Symbol}()
@@ -196,9 +196,9 @@ end
         recorded in the solver. The output status is self-defined which requires users to
         read our documentation to understand the details behind every status symbols.
 """
-function summary_status(m::PODNonlinearModel)
+function summary_status(m::AlpineNonlinearModel)
 
-    # POD Solver Status Definition
+    # Alpine Solver Status Definition
     # :Optimal : normal termination with optimality gap closed within time limits
     # :UserLimits : any non-optimal termination related to user-defined parameters
     # :Infeasible : termination with relaxation proven infeasible or detection of
@@ -208,18 +208,18 @@ function summary_status(m::PODNonlinearModel)
     # :Unknown : termination with no exception recorded
 
     if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
-        m.best_rel_gap > m.relgap ? m.pod_status = :UserLimits : m.pod_status = :Optimal
+        m.best_rel_gap > m.relgap ? m.alpine_status = :UserLimits : m.alpine_status = :Optimal
     elseif m.status[:bounding_solve] == :Infeasible
-        m.pod_status = :Infeasible
+        m.alpine_status = :Infeasible
     elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
-        m.pod_status = :UserLimits
+        m.alpine_status = :UserLimits
     elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
-        m.pod_status = :Heuristic
+        m.alpine_status = :Heuristic
     else
-        @warn "[EXCEPTION] Indefinite POD status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/POD.jl/issues) to help us make POD better."
+        @warn "[EXCEPTION] Indefinite Alpine status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."
     end
 
-    printstyled(:green, "\n POD ended with status $(m.pod_status)\n")
+    printstyled(:green, "\n Alpine ended with status $(m.alpine_status)\n")
 
     return
 end

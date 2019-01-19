@@ -1,8 +1,8 @@
-using Documenter, POD
+using Documenter, Alpine
 
 makedocs(
     format = :html,
-    sitename = "POD",
+    sitename = "Alpine",
     pages = [
         "Introduction" => "intro.md",
         "How to Use" => "installation.md",
@@ -11,12 +11,12 @@ makedocs(
         "Expression Guideline" => "expression.md",
         "Parameters" => "parameters.md",
         "Methods" => "functions.md",
-        "Hacking POD" => "hacking.md"
+        "Hacking Alpine" => "hacking.md"
     ]
 )
 
 
 deploydocs(
-    repo = "github.com/lanl-ansi/POD.git",
+    repo = "github.com/lanl-ansi/Alpine.git",
 )
 

@@ -1,7 +1,7 @@
 function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(nlp_solver=IpoptSolver(print_level=0),
+		m = Model(solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
@@ -24,7 +24,7 @@ end
 function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=PODSolver(colorful_pod="warmer",
+		m = Model(solver=AlpineSolver(colorful_alpine="warmer",
 								   nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
@@ -44,7 +44,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 	return m
 end
 
-function max_cover_var_picker(m::POD.PODNonlinearModel)
+function max_cover_var_picker(m::Alpine.AlpineNonlinearModel)
 	nodes = Set()
 	for pair in keys(m.nonconvex_terms)
 		for i in pair

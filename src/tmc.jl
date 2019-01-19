@@ -1,7 +1,7 @@
 """
     TODO: docstring
 """
-function amp_post_mccormick(m::PODNonlinearModel; kwargs...)
+function amp_post_mccormick(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 

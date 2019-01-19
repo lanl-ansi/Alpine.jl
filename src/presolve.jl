@@ -1,6 +1,6 @@
 """
 
-    bound_tightening(m::PODNonlinearModel)
+    bound_tightening(m::AlpineNonlinearModel)
 
 Entry point for the bound-tightening algorithm. The aim of the bound-tightening algorithm
 is to tighten the variable bounds, if possible.
@@ -12,7 +12,7 @@ Currently, two bounding tightening method is implemented [`minmax_bound_tighteni
     If no local feasible solution is obtained, the algorithm defaults to bound-tightening with basic McCormick
 
 """
-function bound_tightening(m::PODNonlinearModel; use_bound = true, kwargs...)
+function bound_tightening(m::AlpineNonlinearModel; use_bound = true, kwargs...)
 
     m.presolve_bt || return
 
@@ -31,7 +31,7 @@ end
 
 """
 
-    minmax_bound_tightening(m:PODNonlinearModel; use_bound::Bool=true, use_tmc::Bool)
+    minmax_bound_tightening(m:AlpineNonlinearModel; use_bound::Bool=true, use_tmc::Bool)
 
 This function implements the bound-tightening algorithm to tighten the variable bounds.
 It utilizes either the basic McCormick relaxation or the Tightened McCormick relaxation (TMC)
@@ -48,7 +48,7 @@ Several other parameters are available for the presolve algorithm tuning.
 For more details, see [Parameters](@ref).
 
 """
-function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelimit = Inf, kwargs...)
+function minmax_bound_tightening(m::AlpineNonlinearModel; use_bound = true, timelimit = Inf, kwargs...)
 
     # Some functinal constants
     both_senses = [:Min, :Max]             # Senses during bound tightening procedures
@@ -173,13 +173,13 @@ function minmax_bound_tightening(m::PODNonlinearModel; use_bound = true, timelim
 end
 
 """
-    create_bound_tightening_model(m::PODNonlinearModel, discretization::Dict, bound::Float64)
+    create_bound_tightening_model(m::AlpineNonlinearModel, discretization::Dict, bound::Float64)
 
 This function takes in the initial discretization information and builds a bound-tightening model.
 It is an algorithm specific function called by [`minmax_bound_tightening`](@ref)
 
  """
-function create_bound_tightening_model(m::PODNonlinearModel, discretization, bound; kwargs...)
+function create_bound_tightening_model(m::AlpineNonlinearModel, discretization, bound; kwargs...)
 
     options = Dict(kwargs)
 
@@ -202,12 +202,12 @@ end
 
 """
 
-    solve_bound_tightening_model(m::PODNonlinearModel)
+    solve_bound_tightening_model(m::AlpineNonlinearModel)
 
 A function that solves the min and max bound-tightening model.
 
 """
-function solve_bound_tightening_model(m::PODNonlinearModel; kwargs...)
+function solve_bound_tightening_model(m::AlpineNonlinearModel; kwargs...)
 
     # ========= MILP Solve ========= #
     if m.presolve_bt_mip_timeout < Inf
@@ -229,7 +229,7 @@ end
 """
     TODO: docstring
 """
-function post_obj_bounds(m::PODNonlinearModel, bound::Float64; kwargs...)
+function post_obj_bounds(m::AlpineNonlinearModel, bound::Float64; kwargs...)
     if m.sense_orig == :Max
         @constraint(m.model_mip,
             sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) >= bound)

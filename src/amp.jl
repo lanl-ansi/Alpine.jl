@@ -1,9 +1,9 @@
 """
 
-    create_bounding_mip(m::PODNonlinearModel; use_disc::Dict)
+    create_bounding_mip(m::AlpineNonlinearModel; use_disc::Dict)
 
 Set up a JuMP MILP bounding model base on variable domain partitioning information stored in `use_disc`.
-By default, if `use_disc is` not provided, it will use `m.discretizations` store in the POD model.
+By default, if `use_disc is` not provided, it will use `m.discretizations` store in the Alpine model.
 The basic idea of this MILP bounding model is to use Tighten McCormick to convexify the original Non-convex region.
 Among all presented partitionings, the bounding model will choose one specific partition as the lower bound solution.
 The more partitions there are, the better or finer bounding model relax the original MINLP while the more
@@ -33,7 +33,7 @@ More specifically, the Tightening McCormick used here can be genealized in the f
 ```
 
 """
-function create_bounding_mip(m::PODNonlinearModel; use_disc=nothing)
+function create_bounding_mip(m::AlpineNonlinearModel; use_disc=nothing)
 
     use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
@@ -53,12 +53,12 @@ function create_bounding_mip(m::PODNonlinearModel; use_disc=nothing)
 end
 
 """
-    amp_post_convexification(m::PODNonlinearModel; kwargs...)
+    amp_post_convexification(m::AlpineNonlinearModel; kwargs...)
 
 warpper function to convexify the problem for a bounding model. This function talks to nonconvex_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
-function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)
+function amp_post_convexification(m::AlpineNonlinearModel; use_disc=nothing)
 
     use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
@@ -74,7 +74,7 @@ function amp_post_convexification(m::PODNonlinearModel; use_disc=nothing)
     return
 end
 
-function amp_post_vars(m::PODNonlinearModel; kwargs...)
+function amp_post_vars(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
 
@@ -103,7 +103,7 @@ function amp_post_vars(m::PODNonlinearModel; kwargs...)
 end
 
 
-function amp_post_lifted_constraints(m::PODNonlinearModel)
+function amp_post_lifted_constraints(m::AlpineNonlinearModel)
 
     for i in 1:m.num_constr_orig
         if m.constr_structure[i] == :affine
@@ -164,7 +164,7 @@ function amp_post_linear_lift_constraints(model_mip::JuMP.Model, l::Dict)
     return
 end
 
-function amp_post_lifted_objective(m::PODNonlinearModel)
+function amp_post_lifted_objective(m::AlpineNonlinearModel)
 
     if m.obj_structure == :affine
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
@@ -177,7 +177,7 @@ function amp_post_lifted_objective(m::PODNonlinearModel)
     return
 end
 
-function add_partition(m::PODNonlinearModel; kwargs...)
+function add_partition(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
@@ -197,7 +197,7 @@ function add_partition(m::PODNonlinearModel; kwargs...)
 end
 
 """
-    add_discretization(m::PODNonlinearModel; use_disc::Dict, use_solution::Vector)
+    add_discretization(m::AlpineNonlinearModel; use_disc::Dict, use_solution::Vector)
 
 Basic built-in method used to add a new partition on feasible domains of discretizing variables.
 This method make modification in .discretization
@@ -222,7 +222,7 @@ TODO: also need to document the speical diverted cases when new partition touche
 
 This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
 """
-function add_adaptive_partition(m::PODNonlinearModel;kwargs...)
+function add_adaptive_partition(m::AlpineNonlinearModel;kwargs...)
 
     options = Dict(kwargs)
 
@@ -276,7 +276,7 @@ end
 """
     This function targets to address unexpected numerical issues when adding partitions to tight regions.
 """
-function correct_point(m::PODNonlinearModel, partvec::Vector, point::Float64, var::Int)
+function correct_point(m::AlpineNonlinearModel, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - m.tol || point > partvec[end] + m.tol
         @warn "VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point..."
@@ -306,7 +306,7 @@ function calculate_radius(partvec::Vector, part::Int, ratio::Any)
     return radius
 end
 
-function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::Number, radius::Float64, partvec::Vector)
+function insert_partition(m::AlpineNonlinearModel, var::Int, partidx::Int, point::Number, radius::Float64, partvec::Vector)
 
     abstol, reltol = m.disc_abs_width_tol, m.disc_rel_width_tol
 
@@ -345,7 +345,7 @@ function insert_partition(m::PODNonlinearModel, var::Int, partidx::Int, point::N
     return
 end
 
-function add_uniform_partition(m::PODNonlinearModel; kwargs...)
+function add_uniform_partition(m::AlpineNonlinearModel; kwargs...)
 
     options = Dict(kwargs)
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
@@ -363,7 +363,7 @@ function add_uniform_partition(m::PODNonlinearModel; kwargs...)
     return discretization
 end
 
-function update_disc_ratio(m::PODNonlinearModel, presolve=false)
+function update_disc_ratio(m::AlpineNonlinearModel, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
 
@@ -413,7 +413,7 @@ function update_disc_ratio(m::PODNonlinearModel, presolve=false)
     return incumb_ratio
 end
 
-function disc_branch_solve(m::PODNonlinearModel)
+function disc_branch_solve(m::AlpineNonlinearModel)
 
     # ================= Solve Start ================ #
     update_mip_time_limit(m)

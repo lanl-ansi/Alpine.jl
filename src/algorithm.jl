@@ -1,7 +1,7 @@
 """
     High-level Function
 """
-function MathProgBase.optimize!(m::PODNonlinearModel)
+function MathProgBase.optimize!(m::AlpineNonlinearModel)
     if m.presolve_infeasible
         summary_status(m)
         return
@@ -14,7 +14,7 @@ function MathProgBase.optimize!(m::PODNonlinearModel)
 end
 
 """
-    global_solve(m::PODNonlinearModel)
+    global_solve(m::AlpineNonlinearModel)
 
 Perform global optimization algorithm that is based on the adaptive piecewise convexification.
 This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) until the optimality gap between the lower bound (relaxed problem with min. objective) and the upper bound (feasible problem) is within the user prescribed limits.
@@ -22,7 +22,7 @@ Each [`bounding_solve`](@ref) provides a lower bound that serves as the partioni
 Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorithm terminates when atleast one of these conditions are satisfied: time limit, optimality condition, or iteration limit.
 
 """
-function global_solve(m::PODNonlinearModel)
+function global_solve(m::AlpineNonlinearModel)
 
     m.loglevel > 0 && logging_head(m)
     m.presolve_track_time || reset_timer(m)
@@ -46,12 +46,12 @@ end
 
 
 """
-    presolve(m::PODNonlinearModel)
+    presolve(m::AlpineNonlinearModel)
 """
-function presolve(m::PODNonlinearModel)
+function presolve(m::AlpineNonlinearModel)
 
     start_presolve = time()
-    m.loglevel > 0 && println("\nPOD algorithm presolver started.")
+    m.loglevel > 0 && println("\nAlpine algorithm presolver started.")
     m.loglevel > 0 && println("performing local solve to obtain a feasible solution.")
     local_solve(m, presolve = true)
 
@@ -90,7 +90,7 @@ end
 """
     A wrapper function that collects some automated solver adjustments within the main while loop.
 """
-function algorithm_automation(m::PODNonlinearModel)
+function algorithm_automation(m::AlpineNonlinearModel)
 
     m.disc_var_pick == 3 && update_disc_cont_var(m)
     m.int_cumulative_disc && update_disc_int_var(m)
@@ -105,7 +105,7 @@ end
 """
     Summarized function to determine whether to interrupt the main while loop.
 """
-function check_exit(m::PODNonlinearModel)
+function check_exit(m::AlpineNonlinearModel)
 
     # Infeasibility check
     m.status[:bounding_solve] == :Infeasible && return true
@@ -125,13 +125,13 @@ function check_exit(m::PODNonlinearModel)
 end
 
 """
-    local_solve(m::PODNonlinearModel, presolve::Bool=false)
+    local_solve(m::AlpineNonlinearModel, presolve::Bool=false)
 
 Perform a local NLP or MINLP solve to obtain a feasible solution.
 The `presolve` option is set to `true` when the function is invoked in [`presolve`](@ref).
 Otherwise, the function is invoked from [`bounding_solve`](@ref).
 """
-function local_solve(m::PODNonlinearModel; presolve = false)
+function local_solve(m::AlpineNonlinearModel; presolve = false)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
     local_nlp_status = :Unknown
@@ -235,7 +235,7 @@ end
 
 """
 
-    bounding_solve(m::PODNonlinearModel; kwargs...)
+    bounding_solve(m::AlpineNonlinearModel; kwargs...)
 
 This is a solving process usually deal with a MIP or MIQCP problem for lower bounds of problems.
 It solves the problem built upon a convexification base on a discretization Dictionary of some variables.
@@ -243,7 +243,7 @@ The convexification utilized is Tighten McCormick scheme.
 See `create_bounding_mip` for more details of the problem solved here.
 
 """
-function bounding_solve(m::PODNonlinearModel)
+function bounding_solve(m::AlpineNonlinearModel)
 
     convertor = Dict(:Max=>:<, :Min=>:>)
     boundlocator = Dict(:Max=>:+, :Min=>:-)
@@ -282,7 +282,7 @@ function bounding_solve(m::PODNonlinearModel)
     elseif status in status_infeasible
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = :Infeasible
-        PODDEBUG && print_iis_gurobi(m.model_mip) # Diagnostic code
+        ALPINE_DEBUG && print_iis_gurobi(m.model_mip) # Diagnostic code
         @warn "[INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility"
     elseif status == :Unbounded
         m.status[:bounding_solve] = :Unbounded
@@ -295,7 +295,7 @@ function bounding_solve(m::PODNonlinearModel)
 end
 
 """
-    pick_disc_vars(m::PODNonlinearModel)
+    pick_disc_vars(m::AlpineNonlinearModel)
 
 This function helps pick the variables for discretization. The method chosen depends on user-inputs.
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
@@ -308,7 +308,7 @@ For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is require
 For more information, read more details at [Hacking Solver](@ref).
 
 """
-function pick_disc_vars(m::PODNonlinearModel)
+function pick_disc_vars(m::AlpineNonlinearModel)
 
     if isa(m.disc_var_pick, Function)
         eval(m.disc_var_pick)(m)
