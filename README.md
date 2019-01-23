@@ -3,7 +3,7 @@
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Alpine.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/Alpine.jl)
 [![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
 
-"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", formerly **POD.jl**, is a novel global optimization solver that uses an adaptive convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programs (non-convex MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see this [MINLPLibJuMP.jl](https://github.com/lanl-ansi/MINLPLibJuMP.jl) for problem instances). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
+"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", formerly **POD.jl**, is a novel global optimization solver that uses an adaptive, piecewise convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programs (non-convex MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see [MINLPLibJuMP.jl](https://github.com/lanl-ansi/MINLPLibJuMP.jl)). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
 
 Unlike many other state-of-the-art MINLP solvers, Alpine is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
 
@@ -11,7 +11,9 @@ Alpine globally solves a given MINLP by:
 
 * Analyzing the problem's expressions (objective & constraints) and applies approporite convex relaxations
 
-* Performing novel adaptive/dynamic partitioning methods to create piecewise relaxations, bound tightening and polyhedral outer-approximations to guarantee global convergence
+* Performing novel adaptive partitioning methods to create piecewise relaxations, bound tightening and polyhedral outer-approximations to guarantee global convergence
+
+**Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. 
 
 <!-- 
  **Illustration of Alpine's dynamic partitioning and outer-approximation on simple functions** ([Source](https://arxiv.org/abs/1707.02514))
@@ -24,9 +26,9 @@ Alpine globally solves a given MINLP by:
 
 ## Installation
 
-Alpine is currently a unregistered package, with it's repository under the LANL-ANSI group, which can be installed through the Julia package manager:
+Alpine, with it's repository under the LANL-ANSI group, can be installed through the Julia package manager:
 
-`Pkg.clone("https://github.com/lanl-ansi/Alpine.git")`
+`julia> Pkg.add("Alpine")`
 
 Developers: Any further development of Alpine can be conducted on a new branch or a forked repo.
 
@@ -51,8 +53,10 @@ Please report any issues via the Github **[issue tracker]**. All types of issues
 
 [issue tracker]: https://github.com/lanl-ansi/Alpine.jl/issues
 
+## Challenging MINLPs
+We are seeking out hard benchmark instances for MINLPs. Please get in touch either by opening an issue or [privately](https://harshangrjn.github.io) if you would like to share any hard instances. Challenging problems will help us determine how to improve Alpine.
 
-## Citing Alpine.jl
+## Citing Alpine
 
 If you find Alpine useful in your work, we kindly request that you cite the following papers
 ```
