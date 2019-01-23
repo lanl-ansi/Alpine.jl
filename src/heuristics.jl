@@ -1,12 +1,13 @@
 """
-    Collects distance of each variable's bounding solution to best feasible solution and select the ones that is the furthest
-    Currently don't support recursively convexification
+    Ranking of variables involved in nonlinear terms for piecewise adaptive partitioning: 
+    Ranked based on the absolute gap between each variable's solution from the lower-bounding MIP and the best feasible solution to the MINLP. 
+    Currently doesn't support recursive convexification
 """
 function update_disc_cont_var(m::AlpineNonlinearModel)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
-    # If no feasible solution found, do NOT update
+    # If no feasible solution is found, do NOT update
     if m.status[:feasible_solution] != :Detected
         println("no feasible solution detected. No update disc var selection.")
         return
@@ -46,7 +47,7 @@ function update_disc_int_var(m::AlpineNonlinearModel)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
-    # Additional error check scheme
+    # Additional error checking scheme
     :Int in m.var_type && error("Support for general integer problems are limited...")
 
     return
@@ -88,7 +89,7 @@ function heu_basic_rounding(m::AlpineNonlinearModel, local_model)
 end
 
 """
-    Use all lower bound solution pools as starting points
+    Use solutions from the MIP solution pool as starting points
 """
 function heu_pool_multistart(m::AlpineNonlinearModel)
 
