@@ -17,6 +17,6 @@ makedocs(
 
 
 deploydocs(
-    repo = "lanl-ansi/Alpine.git",
+    repo = "github.com/lanl-ansi/Alpine.jl.git",
 )
 
