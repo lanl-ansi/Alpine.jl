@@ -2,6 +2,7 @@
 
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Alpine.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/Alpine.jl)
 [![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
+[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Alpine.jl/latest/)
 
 "ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", formerly **POD.jl**, is a novel global optimization solver that uses an adaptive, piecewise convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programs (non-convex MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see [MINLPLibJuMP.jl](https://github.com/lanl-ansi/MINLPLibJuMP.jl)). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
 
