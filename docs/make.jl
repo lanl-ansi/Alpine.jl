@@ -4,7 +4,7 @@ makedocs(
     format = :html,
     sitename = "Alpine",
     pages = [
-        "Introduction" => "intro.md",
+        "Introduction" => "index.md",
         "How to Use" => "installation.md",
         "Choosing Sub-Solvers" => "choosingsolver.md",
         "Algorithm" => "algorithm.md",
