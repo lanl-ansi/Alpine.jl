@@ -59,7 +59,7 @@ We are seeking out hard benchmark instances for MINLPs. Please get in touch eith
 
 ## Citing Alpine
 
-If you find Alpine useful in your work, we kindly request that you cite the following papers
+If you find Alpine useful in your work, we kindly request that you cite the following papers ([pdf](http://harshangrjn.github.io/pdf/JOGO_2018.pdf), [pdf](http://harshangrjn.github.io/pdf/CP_2016.pdf))
 ```
 @article{NagarajanLuWangBentSundar2019,
   author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
