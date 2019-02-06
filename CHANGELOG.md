@@ -1,5 +1,7 @@
 # Critical Updates for Alpine.jl
 
+## Staged
+* typo fix
 
 ## v0.1.2
 * Bug fix in bound tightening tolerance corner case
