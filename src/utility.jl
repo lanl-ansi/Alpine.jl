@@ -285,8 +285,8 @@ function collect_lb_pool(m::AlpineNonlinearModel)
             Gurobi.set_int_param!(m.model_mip.internalModel.inner, "SolutionNumber", i-1)
             s[:sol][i] = Gurobi.get_dblattrarray(m.model_mip.internalModel.inner, "Xn", 1, s[:len])
             s[:obj][i] = Gurobi.get_dblattr(m.model_mip.internalModel.inner, "PoolObjVal")
-        elseif m.mip_solver_id == "CPLEX"
-            error("No implementation for CPLEX")
+        elseif m.mip_solver_id == "Cplex"
+            error("No implementation for Cplex")
         end
         s[:disc][i] = Dict(j=>get_active_partition_idx(m.discretization, s[:sol][i][j],j) for j in s[:vars])
     end
@@ -724,8 +724,8 @@ function fetch_mip_solver_identifier(m::AlpineNonlinearModel;override="")
     # Lower level solvers
     if occursin("Gurobi", solverstring)
         m.mip_solver_id = "Gurobi"
-    elseif occursin("CPLEX", solverstring)
-        m.mip_solver_id = "CPLEX"
+    elseif occursin("Cplex", solverstring)
+        m.mip_solver_id = "Cplex"
     elseif occursin("Cbc", solverstring)
         m.mip_solver_id = "Cbc"
     elseif occursin("GLPK", solverstring)
@@ -814,7 +814,7 @@ function update_mip_time_limit(m::AlpineNonlinearModel; kwargs...)
         end
     end
 
-    if m.mip_solver_id == "CPLEX"
+    if m.mip_solver_id == "Cplex"
         opts = update_timeleft_symbol(opts, :CPX_PARAM_TILIM, timelimit)
         m.mip_solver.options = opts
     elseif m.mip_solver_id == "Pavito"
@@ -940,7 +940,7 @@ function adjust_branch_priority(m::AlpineNonlinearModel)
             push!(prior, i)
         end
         Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
-    elseif m.mip_solver_id == "CPLEX"
+    elseif m.mip_solver_id == "Cplex"
         !m.model_mip.internalModelLoaded && return
         n = length(m.model_mip.colVal)
         idxlist = Cint[1:n;] # variable indices

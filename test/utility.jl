@@ -20,7 +20,7 @@
     Alpine.fetch_mip_solver_identifier(m.internalModel;override="Gurobi.GurobiSolver(nothing, Any[])")
     @test m.internalModel.mip_solver_id == "Gurobi"
     Alpine.fetch_mip_solver_identifier(m.internalModel;override="CPLEX.CplexSolver(Any[])")
-    @test m.internalModel.mip_solver_id == "CPLEX"
+    @test m.internalModel.mip_solver_id == "Cplex"
     Alpine.fetch_mip_solver_identifier(m.internalModel;override="Cbc.CbcMathProgSolverInterface.CbcSolver(Any[])")
     @test m.internalModel.mip_solver_id == "Cbc"
     Alpine.fetch_mip_solver_identifier(m.internalModel;override="GLPKMathProgInterface.GLPKInterfaceMIP.GLPKSolverMIP(false, Any[])")

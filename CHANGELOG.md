@@ -1,6 +1,10 @@
 # Critical Updates for Alpine.jl
 
-I've forked the master branch hosted by lanl-ansi to my own Github while keeping all the most recent features merged on my master. Current, I am testing MPC instances with my master branch. Here is a summary of what are changed:
+## v1.0.1
+* Bug fix in Cplex solver recognition
+
+## v1.0.0
+* Alpine.jl first release
 
 ## Merged Features
 * `disc_ratio` selection algorithm
