@@ -759,12 +759,5 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     # Initialize log
     logging_summary(m)
 
-    ## Citation
-    println("***********************************************************************")
-    println(" This package contains Alpine.jl, a global solver for nonconvex MINLPs")
-    println("       If you find it useful, please cite the following paper: ")
-    println("     Journal of Global Optimization, 2019, https://goo.gl/89zrDf")
-    println("***********************************************************************")
-
     return
 end
