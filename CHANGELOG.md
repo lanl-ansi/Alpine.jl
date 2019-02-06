@@ -1,9 +1,9 @@
 # Critical Updates for Alpine.jl
 
-## v1.0.1
+## v0.1.1
 * Bug fix in Cplex solver recognition
 
-## v1.0.0
+## v0.1.0
 * Alpine.jl first release
 
 ## Merged Features
