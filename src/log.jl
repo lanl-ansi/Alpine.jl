@@ -32,7 +32,7 @@ function logging_summary(m::AlpineNonlinearModel)
 
     if m.loglevel > 0
         # printstyled(:light_yellow, "full problem loaded into Alpine\n")
-        println("problen sense $(m.sense_orig)")
+        println("Problem sense $(m.sense_orig)")
         println("# of constraints = ", m.num_constr_orig)
         println("# of non-linear constraints = ", m.num_nlconstr_orig)
         println("# of linear constraints = ", m.num_lconstr_orig)
