@@ -32,6 +32,12 @@ function logging_summary(m::AlpineNonlinearModel)
 
     if m.loglevel > 0
         # printstyled(:light_yellow, "full problem loaded into Alpine\n")
+        println("***********************************************************************")
+        println(" This package contains Alpine.jl, a global solver for nonconvex MINLPs")
+        println("       If you find it useful, please cite the following paper: ")
+        println("     Journal of Global Optimization, 2019, https://goo.gl/89zrDf")
+        println("***********************************************************************")
+	println("\n")
         println("Problem sense $(m.sense_orig)")
         println("# of constraints = ", m.num_constr_orig)
         println("# of non-linear constraints = ", m.num_nlconstr_orig)
