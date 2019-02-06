@@ -1,5 +1,9 @@
 # Critical Updates for Alpine.jl
 
+
+## v0.1.2
+* Bug fix in bound tightening tolerance corner case
+
 ## v0.1.1
 * Bug fix in Cplex solver recognition
 

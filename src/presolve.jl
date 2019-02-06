@@ -128,8 +128,16 @@ function minmax_bound_tightening(m::AlpineNonlinearModel; use_bound = true, time
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
             else 
                 midpoint = (temp_bounds[var_idx][1] + temp_bounds[var_idx][end])/2
-                temp_bounds[var_idx][tell_side[:Min]] = midpoint - (m.presolve_bt_width_tol/2)
-                temp_bounds[var_idx][tell_side[:Max]] = midpoint + (m.presolve_bt_width_tol/2)
+                if (midpoint - discretization[var_idx][1] < m.presolve_bt_width_tol/2) 
+                    temp_bounds[var_idx][tell_side[:Min]] = discretization[var_idx][1]
+                    temp_bounds[var_idx][tell_side[:Max]] = discretization[var_idx][1] + (m.presolve_bt_width_tol)
+                elseif (discretization[var_idx][end] - midpoint < m.presolve_bt_width_tol/2) 
+                    temp_bounds[var_idx][tell_side[:Min]] = discretization[var_idx][end] - (m.presolve_bt_width_tol)
+                    temp_bounds[var_idx][tell_side[:Max]] = discretization[var_idx][end]
+                else 
+                    temp_bounds[var_idx][tell_side[:Min]] = midpoint - (m.presolve_bt_width_tol/2)
+                    temp_bounds[var_idx][tell_side[:Max]] = midpoint + (m.presolve_bt_width_tol/2)
+                end 
                 new_range = temp_bounds[var_idx][tell_side[:Max]] - temp_bounds[var_idx][tell_side[:Min]]
                 old_range = discretization[var_idx][end] - discretization[var_idx][1]
                 bound_reduction = old_range - new_range
@@ -146,7 +154,6 @@ function minmax_bound_tightening(m::AlpineNonlinearModel; use_bound = true, time
         avg_reduction = total_reduction/length(keys(temp_bounds))
         keeptightening = (avg_reduction > 1e-3)
         
-        (m.loglevel > 0) && print("\n")
         discretization = resolve_var_bounds(m, discretization)
         if haskey(options, :use_tmc)
             discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization))
