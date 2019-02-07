@@ -55,7 +55,7 @@ Please report any issues via the Github **[issue tracker]**. All types of issues
 [issue tracker]: https://github.com/lanl-ansi/Alpine.jl/issues
 
 ## Challenging MINLPs
-We are seeking out hard benchmark instances for MINLPs. Please get in touch either by opening an issue or [privately](https://harshangrjn.github.io) if you would like to share any hard instances. Challenging problems will help us determine how to improve Alpine.
+We are seeking out hard benchmark instances for MINLPs. Please get in touch either by opening an issue or [privately](https://harshangrjn.github.io/#contact) if you would like to share any hard instances. Challenging problems will help us determine how to improve Alpine.
 
 ## Citing Alpine
 
