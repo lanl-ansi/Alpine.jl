@@ -2,6 +2,7 @@
 
 ## Staged
 * typo fix
+* set Big-M values for unbounded variables
 
 ## v0.1.2
 * Bug fix in bound tightening tolerance corner case
