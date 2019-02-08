@@ -299,12 +299,12 @@ function resolve_inf_bounds(m::AlpineNonlinearModel)
     for i in m.candidate_disc_vars
         if m.l_var_tight[i] == -Inf
             warnuser = true
-            # m.l_var_tight[i] = -m.largebound
+            m.l_var_tight[i] = -m.largebound
             infcount += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
-            # m.u_var_tight[i] = m.largebound
+            m.u_var_tight[i] = m.largebound
             infcount +=1
         end
     end
