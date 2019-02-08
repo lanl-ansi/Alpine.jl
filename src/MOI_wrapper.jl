@@ -61,11 +61,52 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     quadratic_le_constraints::Vector{Tuple{SAF, MOI.LessThan{Float64}}}
     quadratic_ge_constraints::Vector{Tuple{SQF, MOI.GreaterThan{Float64}}}
     quadratic_eq_constraints::Vector{Tuple{SQF, MOI.EqualTo{Float64}}}
+    convex_constraints::Vector{ConstraintRef}
     options
 end
+
+struct EmptyNLPEvaluator <: MOI.AbstractNLPEvaluator end
+MOI.features_available(::EmptyNLPEvaluator) = [:Grad, :Jac, :Hess]
+MOI.initialize(::EmptyNLPEvaluator, features) = nothing
+MOI.eval_objective(::EmptyNLPEvaluator, x) = NaN
+function MOI.eval_constraint(::EmptyNLPEvaluator, g, x)
+    @assert length(g) == 0
+    return
+end
+function MOI.eval_objective_gradient(::EmptyNLPEvaluator, g, x)
+    fill!(g, 0.0)
+    return
+end
+MOI.jacobian_structure(::EmptyNLPEvaluator) = Tuple{Int64,Int64}[]
+MOI.hessian_lagrangian_structure(::EmptyNLPEvaluator) = Tuple{Int64,Int64}[]
+function MOI.eval_constraint_jacobian(::EmptyNLPEvaluator, J, x)
+    @assert length(J) == 0
+    return
+end
+function MOI.eval_hessian_lagrangian(::EmptyNLPEvaluator, H, x, σ, μ)
+    @assert length(H) == 0
+    return
+end
+empty_nlp_data() = MOI.NLPBlockData([], EmptyNLPEvaluator(), false)
+
+
+Optimizer(;options...) = Optimizer(nothing, [], empty_nlp_data(), MOI.FEASIBILITY_SENSE, nothing, [], [], [], [], [], [], [], options)
 
 # copy constructor
 MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = true
 function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
     return MOI.Utilities.automatic_copy_to(model, src; kws...)
+end
+
+function MOI.is_empty(model::Optimizer)
+    return isempty(model.variable_info) &&
+        model.nlp_data.evaluator isa EmptyNLPEvaluator &&
+        model.sense == MOI.FEASIBILITY_SENSE &&
+        isempty(model.linear_le_constraints) &&
+        isempty(model.linear_ge_constraints) &&
+        isempty(model.linear_eq_constraints) &&
+        isempty(model.quadratic_le_constraints) &&
+        isempty(model.quadratic_ge_constraints) &&
+        isempty(model.quadratic_eq_constraints) && 
+        isempty(model.convex_constraints)
 end
