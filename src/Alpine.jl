@@ -3,7 +3,7 @@ __precompile__()
 module Alpine
 
 using JuMP
-using MathProgBase
+using MathOptInterface
 
 
 include("types.jl")
