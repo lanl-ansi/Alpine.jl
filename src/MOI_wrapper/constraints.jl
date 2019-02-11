@@ -1,7 +1,5 @@
 """
-The MOI_wrapper/constraints.jl file contains all information 
-on the supported constraints for Alpine.jl with its 
-corresponding functions
+MOI constraints
 """
 
 """
@@ -73,3 +71,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, ::MOI.ZeroOne)
 	
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.ZeroOne}(vi.value)
 end 
+
+"""
+ConstraintIndex support 
+"""
+MOI.supports(::Optimizer, ::MOI.ConstraintName, ::Type{CI}) = true
