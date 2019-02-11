@@ -276,6 +276,7 @@ function collect_lb_pool(m::AlpineNonlinearModel)
         return
     end
 
+    return
     # Construct a new solution pool for just this new iteration
     s = initialize_solution_pool(m, Gurobi.get_intattr(m.model_mip.internalModel.inner, "SolCount"))
 
