@@ -71,7 +71,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     soc_constraints::Vector{Tuple{VECTOR, SOC}}
     rsoc_constraints::Vector{Tuple{VECTOR, RSOC}}
     convex_constraint_indices::Vector{CI}
-    options
+    solver_options::Dict{Symbol,Any}
 end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
@@ -106,17 +106,21 @@ empty_nlp_data() = MOI.NLPBlockData([], EmptyNLPEvaluator(), false)
 """
 Optimizer struct constructor 
 """
-Optimizer(;options...) = Optimizer(
-    nothing, 
-    [], 
-    empty_nlp_data(), 
-    MOI.FEASIBILITY_SENSE, 
-    nothing, 
-    [], [], [], # linear constraints 
-    [], [], [], # quadratic constraints
-    [], [], # conic constraints 
-    [], # convex constraint ids
-    options)
+function Optimizer(; options...) 
+    solver_options = create_default_solver_options()
+    update_solver_options(solver_options, options)
+    return Optimizer(
+        nothing, 
+        [], 
+        empty_nlp_data(), 
+        MOI.FEASIBILITY_SENSE, 
+        nothing, 
+        [], [], [], # linear constraints 
+        [], [], [], # quadratic constraints
+        [], [], # conic constraints 
+        [], # convex constraint ids
+        solver_options)
+end 
 
 """
 Printing the optimizer 
@@ -172,6 +176,42 @@ function MOI.empty!(model::Optimizer)
     empty!(model.rsoc_constraints)
     empty!(model.convex_constraint_indices)
 end
+
+"""
+ordering of constraints provided to Alpine.jl 
+"""
+linear_le_offset(model::Optimizer) = 0
+linear_ge_offset(model::Optimizer) = length(model.linear_le_constraints)
+linear_eq_offset(model::Optimizer) = linear_ge_offset(model) + length(model.linear_ge_constraints)
+quadratic_le_offset(model::Optimizer) = linear_eq_offset(model) + length(model.linear_eq_constraints)
+quadratic_ge_offset(model::Optimizer) = quadratic_le_offset(model) + length(model.quadratic_le_constraints)
+quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
+nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
+
+
+"""
+``MOI.optimize!()`` for Alpine 
+""" 
+function MOI.optimize!(model::Optimizer)
+    num_variables = length(model.variable_info)
+    num_linear_le_constraints = length(model.linear_le_constraints)
+    num_linear_ge_constraints = length(model.linear_ge_constraints)
+    num_linear_eq_constraints = length(model.linear_eq_constraints)
+    num_quadratic_le_constraints = length(model.quadratic_le_constraints)
+    num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
+    num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
+    num_soc_constraints = length(model.soc_constraints)
+    num_rsoc_constraints = length(model.rsoc_constraints)
+    
+    if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
+
+    else 
+        info(LOGGER, "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros")
+    end 
+
+end 
+
+
 
 include(joinpath("MOI_wrapper", "variables.jl"))
 include(joinpath("MOI_wrapper", "constraints.jl"))
