@@ -202,9 +202,20 @@ function MOI.optimize!(model::Optimizer)
     num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
     num_soc_constraints = length(model.soc_constraints)
     num_rsoc_constraints = length(model.rsoc_constraints)
+    lower_original = Vector{Float64}()
+    upper_original = Vector{Float64}()
+
+    for vi in model.variable_info
+        if (!vi.has_lower_bound || !vi.has_upper_bound) 
+            error(LOGGER, "Alpine.jl requires every variable in the problem to be bounded; 
+                ensure that bounds are provided for every variable")
+        end 
+        push!(lower_original, vi.lower_bound)
+        push!(upper_original, vi.upper_bound)
+    end 
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
-
+        num_nlp_constraints = length(model.nlp_data.constraint_bounds)
     else 
         info(LOGGER, "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros")
     end 
