@@ -71,7 +71,15 @@ mutable struct AlpineProblem
     upper_tightened                 ::Vector{Float64} 
 
     # Nonlinear information 
-    nl_terms                        ::Dict{Any,Any}
+    is_obj_linear                   ::Bool 
+    is_obj_quadratic                ::Bool
+    is_obj_nl                       ::Bool
+    obj_expr                        ::Expr 
+    nl_constraints_expr             ::Vector{Expr} 
+    nl_terms                        ::Dict{Expr, Any}
+    constraints_with_nl_terms       ::Vector{Int}
+    lifted_constraints              ::Vector{JuMP.ConstraintRef}   
+    lifted_var_info                 ::Dict{Expr, Any}
 
     # Incumbent information 
     incumbent                       ::Incumbent
