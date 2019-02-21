@@ -3,10 +3,6 @@ MOI_wrapper.jl defines the Alpine.Optimizer struct
 with all mandatory MOI functions overloaded
 """
 
-using MathOptInterface
-const MOI = MathOptInterface
-const MOIU = MOI.Utilities
-
 """ 
 MOI functions, sets and, other type definitions
 """
@@ -54,6 +50,19 @@ end
 VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, "")
 
 """
+function to get an array of variable attributes 
+"""
+function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symbol)
+    len_var_info = length(variable_info)
+    type_dict = get_type_dict(variable_info[1])
+    result = Array{type_dict[attr], 1}(undef, len_var_info)
+    for i = 1:len_var_info
+        result[i] = getfield(variable_info[i], attr)
+    end
+    return result
+end
+
+"""
 Optimizer struct
 """  
 mutable struct Optimizer <: MOI.AbstractOptimizer
@@ -71,7 +80,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     soc_constraints::Vector{Tuple{VECTOR, SOC}}
     rsoc_constraints::Vector{Tuple{VECTOR, RSOC}}
     convex_constraint_indices::Vector{CI}
-    solver_options::Dict{Symbol,Any}
+    solver_options::SolverOptions
 end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
@@ -107,8 +116,8 @@ empty_nlp_data() = MOI.NLPBlockData([], EmptyNLPEvaluator(), false)
 Optimizer struct constructor 
 """
 function Optimizer(; options...) 
-    solver_options = create_default_solver_options()
-    update_solver_options(solver_options, options)
+    solver_options = combine_options(options)
+
     return Optimizer(
         nothing, 
         [], 

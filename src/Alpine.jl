@@ -3,8 +3,11 @@ __precompile__()
 module Alpine
 
 using JuMP
-using MathOptInterface
 using Memento
+
+using MathOptInterface
+const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 
 # Create our module level logger (this will get precompiled)
 const LOGGER = getlogger(@__MODULE__)

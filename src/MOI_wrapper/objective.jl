@@ -19,3 +19,9 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense::MOI.Optimization
     model.sense = sense
     return
 end
+
+function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::Union{SVF, SAF, SQF})
+    check_inbounds(model, func)
+    model.objective = func
+    return
+end

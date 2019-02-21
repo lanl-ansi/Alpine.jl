@@ -61,8 +61,8 @@ mutable struct AlpineProblem
     num_nlp_constraints             ::Int  
     
     # JuMP models 
-    mip                             ::JuMP.model 
-    continuous_relaxation           ::JuMP.model 
+    mip                             ::JuMP.Model 
+    continuous_relaxation           ::JuMP.Model 
 
     # Variable bounds information 
     lower_original                  ::Vector{Float64}
