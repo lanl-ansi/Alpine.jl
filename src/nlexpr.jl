@@ -314,7 +314,7 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 	elseif expr in [:(<=), :(==), :(>=)]
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
 	elseif expr in [:/, :^]
-		error("Unsupported operators $expr, it is suppose to be affine function")
+		error("Alpine currently supports `$expr` operator with only positive integer exponents")
 	elseif expr.head == :ref
 		bufferVar = expr
 		return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
@@ -327,7 +327,7 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 			(coef != 0.0) ? coef = expr.args[2] * coef : coef = expr.args[2]	# Patch
 			# coef = expr.args[2]
 			start_pos = 3
-			@warn "Speicial expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix..."
+			@warn "Special expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix..."
 		end
 	end
 
@@ -461,17 +461,21 @@ function expr_arrangeargs(args::Array; kwargs...)
 		return val
 	end
 
-	if args[1] in [:^, :sin, :cos]
+	if args[1] in [:^]
 		return args
-	elseif args[1] in [:/]
-		@warn "Partially supported operator $(args[1]) in $(args). Trying to resolve the expression..."
-		args = expr_resolve_divdenominator(args)
+	elseif args[1] in [:/]  
+		# error("Alpine does not currently support `$(args[1])` operator")
+		if (typeof(args[3]) == Float64) || (typeof(args[3]) == Int64)
+			args = expr_resolve_divdenominator(args)
+		else 
+			error("Alpine does not currently support `$(args[1])` operator with a variable in the denominator")
+		end	
 	elseif args[1] in [:*, :+, :-]
 		# Such generic operators can be handled
 	else
-		error("Unkown/unspported operator $(args[1])")
+		error("Alpine does not currently support `$(args[1])` operator acting on a variable")
 	end
-
+								
 	if args[1] in [:*, :+, :-]
 		val = operator_coefficient_base[args[1]] # initialize
 		exprs = []
@@ -527,7 +531,7 @@ function expr_arrangeargs(args::Array; kwargs...)
 end
 
 """
-	Check if a sub-tree is pure constant or not
+	Check if a sub-tree is a constant or not
 """
 function expr_resolve_const(expr)
 
@@ -548,7 +552,7 @@ function expr_resolve_const(expr)
 end
 
 """
-	Check if a division's denominator is pure numerical and replace it with a multiply
+	If the fractions's denominator is a constant, then replace the expression as product of a constant and the expression
 """
 function expr_resolve_divdenominator(args)
 
