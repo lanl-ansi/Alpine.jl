@@ -1324,6 +1324,7 @@ end
         @test m.internalModel.nonconvex_terms[nlk9][:var_idxs] == [14]
     end
 
+    #=
     @testset "Expression Parsing || complex || Affine || operator_b" begin
         test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
                                 mip_solver=CbcSolver(logLevel=0),
@@ -1411,7 +1412,8 @@ end
             end
         end
     end
-
+    =#
+	
     @testset "Expression Parsing || Linear Lifting || brainpc3" begin
 
         test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
@@ -3600,6 +3602,7 @@ end
         @test m.internalModel.bounding_constr_mip[35][:cnt] == 2
     end
 
+    #=
     @testset "Expression Parsing || prob10" begin
         test_solver = AlpineSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = prob10(solver=test_solver)
@@ -3652,7 +3655,7 @@ end
         @test m.internalModel.bounding_constr_mip[3][:sense] == :(==)
         @test m.internalModel.bounding_constr_mip[3][:cnt] == 4
     end
-
+    =#
     @testset "Expression Parsing || prob03" begin
         test_solver = AlpineSolver(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
         m = prob03(solver=test_solver)
@@ -4116,6 +4119,7 @@ end
     end
 end
 
+#=
 @testset "Expression Parsing || sin/cos" begin
     @testset "Expression Parsing || sin/cos || specialopts " begin
 
@@ -4491,3 +4495,4 @@ end
         @test m.internalModel.bounding_constr_mip[2][:cnt] == 2
     end
 end
+=#
