@@ -9,7 +9,8 @@ function MathProgBase.optimize!(m::AlpineNonlinearModel)
     presolve(m)
     global_solve(m)
     m.loglevel > 0 && logging_row_entry(m, finsih_entry=true)
-    summary_status(m)
+    println("====================================================================================================")
+    summary_status(m)  
     return
 end
 
@@ -51,8 +52,8 @@ end
 function presolve(m::AlpineNonlinearModel)
 
     start_presolve = time()
-    m.loglevel > 0 && println("* PRESOLVE *")
-    m.loglevel > 0 && println("Doing local search")
+    m.loglevel > 0 && printstyled("PRESOLVE \n", color=:cyan)
+    m.loglevel > 0 && println("  Doing local search")
     local_solve(m, presolve = true)
 
     # Solver status - returns error when see different
@@ -60,22 +61,22 @@ function presolve(m::AlpineNonlinearModel)
     status_reroute = [:Infeasible, :Infeasibles]
 
     if m.status[:local_solve] in status_pass
-        m.loglevel > 0 && println("Local solver returns a feasible point")
+        m.loglevel > 0 && println("  Local solver returns a feasible point")
         bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
         m.presolve_bt && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
         m.disc_ratio_branch && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
         # m.loglevel > 0 && println("Ending the presolve")
     elseif m.status[:local_solve] in status_reroute
-        (m.loglevel > 0) && println("Bound tightening without objective bounds (OBBT)")
+        (m.loglevel > 0) && println("  Bound tightening without objective bounds (OBBT)")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
         (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
         m.presolve_bt && init_disc(m)
         # m.loglevel > 0 && println("Ending the presolve")
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
-        @warn "Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this."
+        @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this."
     else
-        @warn "Presolve ends with local solver yielding $(m.status[:local_solve])."
+        @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve])."
     end
 
     cputime_presolve = time() - start_presolve
@@ -83,7 +84,7 @@ function presolve(m::AlpineNonlinearModel)
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
     # (m.loglevel > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-    (m.loglevel > 0) && println("Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations).")
+    (m.loglevel > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations).")
     return
 end
 
@@ -213,18 +214,18 @@ function local_solve(m::AlpineNonlinearModel; presolve = false)
         push!(m.logs[:obj], "U")
         m.status[:local_solve] = :Unbounded
         if presolve == true 
-            @warn "[PRESOLVE] NLP local solve is unbounded." 
+            @warn "  Warning: NLP local solve is unbounded." 
         else 
-            @warn "[LOCAL SOLVE] NLP local solve is unbounded." 
+            @warn "  Warning: NLP local solve is unbounded." 
         end
         return
     else
         push!(m.logs[:obj], "E")
         m.status[:local_solve] = :Error
         if presolve == true 
-            @warn "[PRESOLVE] NLP solve failure $(local_nlp_status)." 
+            @warn " Warning: NLP solve failure $(local_nlp_status)." 
         else 
-            @warn "[LOCAL SOLVE] NLP local solve failure."
+            @warn " Warning: NLP local solve failure."
         end
         return
     end
@@ -283,12 +284,12 @@ function bounding_solve(m::AlpineNonlinearModel)
         push!(m.logs[:bound], "-")
         m.status[:bounding_solve] = :Infeasible
         ALPINE_DEBUG && print_iis_gurobi(m.model_mip) # Diagnostic code
-        @warn "[INFEASIBLE] Infeasibility detected via convex relaxation Infeasibility"
+        @warn "  Warning: Infeasibility detected via convex relaxation Infeasibility"
     elseif status == :Unbounded
         m.status[:bounding_solve] = :Unbounded
-        @warn "[UNBOUNDED] MIP solver return unbounded"
+        @warn "  Warning: MIP solver return unbounded"
     else
-        error("[EXCEPTION] MIP solver failure $(status)")
+        error("  Warning: MIP solver failure $(status)")
     end
 
     return

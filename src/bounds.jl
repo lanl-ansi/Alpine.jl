@@ -309,7 +309,7 @@ function resolve_inf_bounds(m::AlpineNonlinearModel)
         end
     end
 
-    warnuser && println("Inf bound detected on $(infcount) variables. Initialize with value -/+$(m.largebound). This may affect global optimality and performance.")
+    warnuser && println("  Warning: Inf bound detected on $(infcount) variables. Initialize with value -/+$(m.largebound). This may affect global optimality and performance.")
 
     return
 end

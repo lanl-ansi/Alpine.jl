@@ -252,7 +252,7 @@ function is_fully_convexified(m::AlpineNonlinearModel)
     # Other more advanced convexification check goes here
     for term in keys(m.nonconvex_terms)
         if !m.nonconvex_terms[term][:convexified]
-            @warn "Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this"
+            @warn "  Warning: Detected terms that is not convexified $(term[:lifted_constr_ref]), bounding model solver may report a error due to this"
             return
         else
             m.nonconvex_terms[term][:convexified] = false    # Reset status for next iteration
@@ -272,7 +272,7 @@ function collect_lb_pool(m::AlpineNonlinearModel)
     # If in need, the scheme need to be refreshed with customized discretization info
 
     if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
-        @warn "Skipping collecting solution pool procedure",
+        @warn "  Warning: Skipping collecting solution pool procedure",
         return
     end
 
@@ -399,7 +399,7 @@ function get_active_partition_idx(discretization::Dict, val::Float64, idx::Int; 
         end
     end
 
-    @warn "Activate parition not found [VAR$(idx)]. Returning default partition 1."
+    @warn "  Warning: Activate parition not found [VAR$(idx)]. Returning default partition 1."
     return 1
 end
 
