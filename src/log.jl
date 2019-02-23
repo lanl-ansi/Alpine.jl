@@ -31,74 +31,83 @@ end
 function logging_summary(m::AlpineNonlinearModel)
 
     if m.loglevel > 0
-        # printstyled(:light_yellow, "full problem loaded into Alpine\n")
         println("***********************************************************************")
         println(" This package contains Alpine.jl, a global solver for nonconvex MINLPs")
         println("       If you find it useful, please cite the following paper: ")
         println("     Journal of Global Optimization, 2019, https://goo.gl/89zrDf")
         println("***********************************************************************")
-	println("\n")
-        println("Problem sense $(m.sense_orig)")
+        # println("Problem sense $(m.sense_orig)")
+        println("* PROBLEM STATISTICS *")
         println("# of constraints = ", m.num_constr_orig)
         println("# of non-linear constraints = ", m.num_nlconstr_orig)
         println("# of linear constraints = ", m.num_lconstr_orig)
         println("# of continuous variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]))
         println("# of binary variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]))
         println("# of integer variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
-
+        m.recognize_convex && println("# of detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
         println("# of detected nonlinear terms = ", length(m.nonconvex_terms))
-        for i in ALPINE_C_NLTERMS
-            cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
-            cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
-        end
+        # for i in ALPINE_C_NLTERMS
+        #     cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
+        #     cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
+        # end
         println("# of variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
         println("# of variables chosen to discretize = ", length(m.disc_vars))
 
-        println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
-        println("                        SUB-SOLVERS  ")
-        m.minlp_solver != UnsetSolver() && println("MINLP local solver = ", split(string(m.minlp_solver),".")[1])
-        println("NLP local solver = ", split(string(m.nlp_solver),".")[1])
-        println("MIP solver = ", split(string(m.mip_solver),".")[1])
-        println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
-        println("                    SOLVER CONFIGURATION ")
+        println("=======================================================================")
+        println("* SUB-SOLVERS USED BY ALPINE *")
+        # m.minlp_solver != UnsetSolver() && println("MINLP local solver = ", split(string(m.minlp_solver),".")[1])
+        if string(m.minlp_solver) == "Alpine.UnsetSolver()"
+            println("NLP local solver = ", split(string(m.nlp_solver),"S")[1])
+        else 
+            println("MINLP local solver = ", split(string(m.minlp_solver),"S")[1])
+        end
+        println("MIP solver = ", split(string(m.mip_solver),"S")[1])
+        println("=======================================================================")
+        println("* ALPINE CONFIGURATION *")
         println("Maximum solution time = ", m.timeout)
         println("Maximum iterations =  ", m.maxiter)
-        @printf "Relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
-        println("Default tolerance = ", m.tol)
-        m.recognize_convex && println("actively recognize convex patterns")
-        m.recognize_convex && println("# of detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
-        println("Basic bound propagation = ", m.presolve_bp)
+        # @printf "Relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
+        @printf "Relative optimality gap criteria = %.4f%%\n" m.relgap*100 
+        # println("Default tolerance = ", m.tol)
+        # m.recognize_convex && println("actively recognize convex patterns")
+        # println("Basic bound propagation = ", m.presolve_bp)
         #println("use piece-wise relaxation formulation on integer variables = ", m.int_enable)
-        println("MIP formulation = $(m.convhull_formulation) formulation")
-        println("Disc. variables chosen = $(m.disc_var_pick)")
-        println("Conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
+        # println("MIP formulation = $(m.convhull_formulation) formulation")
+        println("No. of variables chosen for discretization = $(m.disc_var_pick)")
+        # println("Conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
         if m.disc_ratio_branch
-            println("discretization ratio branch activated")
+            println("Discretization ratio branch activated")
         else
-            println("discretization ratio = ", m.disc_ratio)
+            println("Discretization ratio = ", m.disc_ratio)
         end
         (m.convhull_ebd) && println("using convhull_ebd formulation")
         (m.convhull_ebd) && println("encoding method = $(m.convhull_ebd_encode)")
         (m.convhull_ebd) && println("independent branching scheme = $(m.convhull_ebd_ibs)")
-        println("bound tightening presolver = ", m.presolve_bt)
-        m.presolve_bt && println("bound tightening presolve maximum iteration = ", m.presolve_maxiter)
-        m.presolve_bt && println("bound tightening presolve algorithm = ", m.presolve_bt_algo)
-        m.presolve_bt && println("bound tightening presolve width tolerance = ", m.presolve_bt_width_tol)
-        m.presolve_bt && println("bound tightening presolve output tolerance = ", m.presolve_bt_output_tol)
-        m.presolve_bt && println("bound tightening presolve relaxation = ", m.presolve_bt_relax)
-        m.presolve_bt && println("bound tightening presolve mip regulation time = ", m.presolve_bt_mip_timeout)
-        println("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *")
+        println("Bound-tightening presolve = ", m.presolve_bt)
+        m.presolve_bt && println("Presolve maximum iterations = ", m.presolve_maxiter)
+        # m.presolve_bt && println("bound tightening presolve algorithm = ", m.presolve_bt_algo)
+        # m.presolve_bt && println("bound tightening presolve width tolerance = ", m.presolve_bt_width_tol)
+        # m.presolve_bt && println("bound tightening presolve output tolerance = ", m.presolve_bt_output_tol)
+        # m.presolve_bt && println("bound tightening presolve relaxation = ", m.presolve_bt_relax)
+        # m.presolve_bt && println("bound tightening presolve mip regulation time = ", m.presolve_bt_mip_timeout)
+        println("=======================================================================")
     end
 
     # Additional warnings
-    m.mip_solver_id == "Gurobi" && @warn "Alpine support Gurobi solver 7.0+ ..."
+    m.mip_solver_id == "Gurobi" && @warn "Alpine only supports Gurobi v7.0+ ..."
 end
 
 function logging_head(m::AlpineNonlinearModel)
+    println("============================================================================================================")
+    if m.sense_orig == :Min
+        println("* LOWER-BOUNDING ITERATIONS *")
+    elseif m.sense_orig == :Max
+        println("* UPPER-BOUNDING ITERATIONS *")
+    end
 	if m.logs[:time_left] < Inf
-		printstyled(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | TIME LEFT     | Iter   \n")
+        printstyled(" | NLP           | MIP           | Objective     | Bound         | GAP (%)       | Time         | TIME LEFT     | Iter   \n")
 	else
-		printstyled(:light_yellow, " | NLP           | MIP           || Objective     | Bound         | GAP (%)       | CLOCK         | | Iter   \n")
+        printstyled(" | NLP           | MIP           | Objective     | Bound         | GAP (%)       | CLOCK         |  Iter   \n")
 	end
 end
 
@@ -153,7 +162,7 @@ function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
         printstyled(rand(colors),UB_block)
         print("|")
         printstyled(rand(colors),LB_block)
-        print("||")
+        print("|")
         printstyled(rand(colors),incumb_UB_block)
         print("|")
         printstyled(rand(colors),incumb_LB_block)
@@ -171,9 +180,9 @@ function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
     elseif m.colorful_alpine == "warmer"
         printstyled(max(20,170-m.logs[:n_iter]), " |$(UB_block)|$(LB_block)||$(incumb_UB_block)|$(incumb_LB_block)|$(GAP_block)|$(UTIME_block)|$(LTIME_block)|$(ITER_block)\n")
     elseif m.colorful_alpine == false
-        println(" |",UB_block,"|",LB_block,"||",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
+        println(" |",UB_block,"|",LB_block,"|",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,"|",LTIME_block,"|",ITER_block)
     end
-
+    println("============================================================================================================")
     return
 end
 
@@ -195,7 +204,6 @@ function create_status!(m)
 
     m.status = status
 end
-
 
 """
     This function summarizes the eventual solver status based on all available information
@@ -225,7 +233,7 @@ function summary_status(m::AlpineNonlinearModel)
         @warn "[EXCEPTION] Indefinite Alpine status. Please report your instance and configuration as and Issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."
     end
 
-    printstyled(:green, "\n Alpine ended with status $(m.alpine_status)\n")
+    printstyled("\n*** Alpine ended with status $(m.alpine_status) ***\n")
 
     return
 end

@@ -78,7 +78,7 @@ function minmax_bound_tightening(m::AlpineNonlinearModel; use_bound = true, time
     end
     discretization = resolve_var_bounds(m, discretization) # recomputation of bounds for lifted_variables
 
-    (m.loglevel > 0) && println("starting the bound-tightening algorithm ...")
+    (m.loglevel > 0) && println("Starting bound-tightening")
 
     # start of the solve
     keeptightening = true
@@ -163,18 +163,18 @@ function minmax_bound_tightening(m::AlpineNonlinearModel; use_bound = true, time
         time() - st > timelimit && break
     end
 
-    (m.loglevel > 0) && println("\nfinished bound tightening in $(m.logs[:bt_iter]) iterations, applying tighten bounds")
-
+    # (m.loglevel > 0) && println("Completed bound-tightening in $(m.logs[:bt_iter]) iterations. Here are the tightened bounds:")
+    (m.loglevel > 0) && println("Variables whose bounds are tightened:")
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
     for i in m.disc_vars
         contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]); digits=2)*100
         if m.loglevel > 0 && contract_ratio > 0.0001
-            println("[DEBUG] VAR $(i) BOUND contracted $(contract_ratio)% |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |")
+            println("  VAR $(i): $(contract_ratio)% contraction |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |")
         end
     end
-    (m.loglevel > 0) && print("\n")
+    # (m.loglevel > 0) && print("\n")
 
     return
 end

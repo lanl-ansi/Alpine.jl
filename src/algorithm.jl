@@ -51,8 +51,8 @@ end
 function presolve(m::AlpineNonlinearModel)
 
     start_presolve = time()
-    m.loglevel > 0 && println("\nAlpine algorithm presolver started.")
-    m.loglevel > 0 && println("performing local solve to obtain a feasible solution.")
+    m.loglevel > 0 && println("* PRESOLVE *")
+    m.loglevel > 0 && println("Doing local search")
     local_solve(m, presolve = true)
 
     # Solver status - returns error when see different
@@ -60,18 +60,18 @@ function presolve(m::AlpineNonlinearModel)
     status_reroute = [:Infeasible, :Infeasibles]
 
     if m.status[:local_solve] in status_pass
-        m.loglevel > 0 && println("local solver returns feasible point")
+        m.loglevel > 0 && println("Local solver returns a feasible point")
         bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
         m.presolve_bt && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
         m.disc_ratio_branch && (m.disc_ratio = update_disc_ratio(m, true))
         add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
-        m.loglevel > 0 && println("presolve ended.")
+        # m.loglevel > 0 && println("Ending the presolve")
     elseif m.status[:local_solve] in status_reroute
-        (m.loglevel > 0) && println("performing bound tightening without objective bounds...")
+        (m.loglevel > 0) && println("Bound tightening without objective bounds (OBBT)")
         bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
         (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
         m.presolve_bt && init_disc(m)
-        m.loglevel > 0 && println("Presolve ended.")
+        # m.loglevel > 0 && println("Ending the presolve")
     elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
         @warn "Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this."
     else
@@ -82,8 +82,8 @@ function presolve(m::AlpineNonlinearModel)
     m.logs[:presolve_time] += cputime_presolve
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
-    (m.loglevel > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-
+    # (m.loglevel > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
+    (m.loglevel > 0) && println("Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations).")
     return
 end
 
