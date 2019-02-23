@@ -285,9 +285,6 @@ This function traverse a left hand side tree to collect affine terms.
 Updated status : possible to handle (x-(x+y(t-z))) cases where signs are handled properly
 """
 function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0, bufferVal=nothing, bufferVar=nothing, sign=1.0, coef=1.0, level=0)
-
-	# @show expr, coef, bufferVal
-
 	reversor = Dict(true => -1.0, false => 1.0)
 	function sign_convertor(subexpr, pos)
 		if length(subexpr.args) == 2 && subexpr.args[1] == :-
@@ -330,7 +327,7 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
 			@warn "Special expression structure detected [*, coef, :call, ...]. Currently handling using a beta fix..."
 		end
 	end
-
+	
 	for i in start_pos:length(expr.args)
 		lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_linear_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
 		if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term

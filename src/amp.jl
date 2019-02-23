@@ -261,7 +261,7 @@ function add_adaptive_partition(m::AlpineNonlinearModel;kwargs...)
                 end
             end
         elseif m.var_type[i] == :Bin # This should never happen
-            @warn "Binary variable in m.disc_vars. Check out what is wrong..."
+            @warn "  Warning: Binary variable in m.disc_vars. Check out what is wrong..."
             continue  # No partition should be added to binary variable unless user specified
         elseif m.var_type[i] == :Int
             error("Support for general integer problem is current limited...")
@@ -279,7 +279,7 @@ end
 function correct_point(m::AlpineNonlinearModel, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - m.tol || point > partvec[end] + m.tol
-        @warn "VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point..."
+        @warn "  Warning: VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point..."
         return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
     end
 
@@ -427,7 +427,7 @@ function disc_branch_solve(m::AlpineNonlinearModel)
     if status in [:Optimal, :Suboptimal, :UserLimit]
         return m.model_mip.objBound
     else
-        @warn "Unexpected solving condition $(status) during disc branching."
+        @warn "  Warning: Unexpected solving condition $(status) during disc branching."
     end
 
     # Safety scheme
