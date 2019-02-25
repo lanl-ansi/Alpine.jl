@@ -2,12 +2,14 @@ __precompile__()
 
 module Alpine
 
-using JuMP
+import JuMP
 using Memento
 
-using MathOptInterface
+import MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
+
+using Printf
 
 # Create our module level logger (this will get precompiled)
 const LOGGER = getlogger(@__MODULE__)
@@ -25,6 +27,7 @@ end
 
 include("types.jl")
 include("solver_options.jl")
+include("logging.jl")
 include("MOI_wrapper.jl")
 
 end # module

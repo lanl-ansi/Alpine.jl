@@ -6,12 +6,16 @@ mutable struct Incumbent
     status                          ::Symbol 
 end
 
+Incumbent() = Incumbent(Vector{Float64}(), NaN, NaN, :NaN)
+
 mutable struct Status 
     local_solve_status              ::Symbol 
     mip_solve_status                ::Symbol 
     alpine_status                   ::Symbol 
     bt_status                       ::Symbol 
 end 
+
+Status() = Status(:NaN, :NaN, :NaN, :NaN)
 
 mutable struct SolverOptions 
     nlp_optimizer                   ::Union{Nothing, MOI.AbstractOptimizer}
@@ -61,34 +65,43 @@ mutable struct AlpineProblem
     num_nlp_constraints             ::Int  
     
     # JuMP models 
-    mip                             ::JuMP.Model 
-    continuous_relaxation           ::JuMP.Model 
+    mip                             ::Union{Nothing, JuMP.Model}
+    continuous_relaxation           ::Union{Nothing, JuMP.Model} 
 
     # Variable bounds information 
-    lower_original                  ::Vector{Float64}
-    upper_original                  ::Vector{Float64}
-    lower_tightened                 ::Vector{Float64}
-    upper_tightened                 ::Vector{Float64} 
+    lower_original                  ::Union{Nothing, Vector{Float64}}
+    upper_original                  ::Union{Nothing, Vector{Float64}}
+    lower_tightened                 ::Union{Nothing, Vector{Float64}}
+    upper_tightened                 ::Union{Nothing, Vector{Float64}}
 
     # Nonlinear information 
-    is_obj_linear                   ::Bool 
-    is_obj_quadratic                ::Bool
-    is_obj_nl                       ::Bool
-    obj_expr                        ::Expr 
-    nl_constraints_expr             ::Vector{Expr} 
-    nl_terms                        ::Dict{Expr, Any}
-    constraints_with_nl_terms       ::Vector{Int}
-    lifted_constraints              ::Vector{JuMP.ConstraintRef}   
-    lifted_var_info                 ::Dict{Expr, Any}
+    is_obj_linear                   ::Union{Nothing, Bool} 
+    is_obj_quadratic                ::Union{Nothing, Bool} 
+    is_obj_nl                       ::Union{Nothing, Bool} 
+    obj_expr                        ::Union{Nothing, Expr} 
+    nl_constraints_expr             ::Union{Nothing, Vector{Expr}}
+    nl_terms                        ::Union{Nothing, Dict{Expr, Any}}
+    constraints_with_nl_terms       ::Union{Nothing, Vector{Int}}
+    lifted_constraints              ::Union{Nothing, Vector{JuMP.ConstraintRef}}
+    lifted_var_info                 ::Union{Nothing, Dict{Expr, Any}}
 
     # Incumbent information 
-    incumbent                       ::Incumbent
+    incumbent                       ::Union{Nothing, Incumbent}
 
     # Algorithm status
-    status                          ::Status
+    status                          ::Union{Nothing, Status}
 
     # Algorithm progress 
     iteration                       ::Int
 
 end 
 
+AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    nothing, nothing, 
+    nothing, nothing, nothing, nothing, 
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, 
+    nothing, 
+    0
+)
+     

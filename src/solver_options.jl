@@ -45,8 +45,6 @@ function get_default_solver_options()
 end 
 
 
-
-
 function combine_options(options)
     options_dict = Dict{Symbol,Any}()
     for kv in options

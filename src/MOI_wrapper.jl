@@ -74,7 +74,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     linear_le_constraints::Vector{Tuple{SAF, MOI.LessThan{Float64}}}
     linear_ge_constraints::Vector{Tuple{SAF, MOI.GreaterThan{Float64}}}
     linear_eq_constraints::Vector{Tuple{SAF, MOI.EqualTo{Float64}}}
-    quadratic_le_constraints::Vector{Tuple{SAF, MOI.LessThan{Float64}}}
+    quadratic_le_constraints::Vector{Tuple{SQF, MOI.LessThan{Float64}}}
     quadratic_ge_constraints::Vector{Tuple{SQF, MOI.GreaterThan{Float64}}}
     quadratic_eq_constraints::Vector{Tuple{SQF, MOI.EqualTo{Float64}}}
     soc_constraints::Vector{Tuple{VECTOR, SOC}}
@@ -197,20 +197,21 @@ quadratic_ge_offset(model::Optimizer) = quadratic_le_offset(model) + length(mode
 quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
 nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
 
-
 """
 ``MOI.optimize!()`` for Alpine 
 """ 
 function MOI.optimize!(model::Optimizer)
-    num_variables = length(model.variable_info)
-    num_linear_le_constraints = length(model.linear_le_constraints)
-    num_linear_ge_constraints = length(model.linear_ge_constraints)
-    num_linear_eq_constraints = length(model.linear_eq_constraints)
-    num_quadratic_le_constraints = length(model.quadratic_le_constraints)
-    num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
-    num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
-    num_soc_constraints = length(model.soc_constraints)
-    num_rsoc_constraints = length(model.rsoc_constraints)
+    model.inner = AlpineProblem()
+    model.inner.num_variables = length(model.variable_info)
+    model.inner.num_linear_eq_constraints = length(model.linear_le_constraints)
+    model.inner.num_linear_ge_constraints = length(model.linear_ge_constraints)
+    model.inner.num_linear_eq_constraints = length(model.linear_eq_constraints)
+    model.inner.num_quadratic_le_constraints = length(model.quadratic_le_constraints)
+    model.inner.num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
+    model.inner.num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
+    model.inner.num_soc_constraints = length(model.soc_constraints)
+    model.inner.num_rsoc_constraints = length(model.rsoc_constraints)
+
     lower_original = Vector{Float64}()
     upper_original = Vector{Float64}()
 
@@ -225,8 +226,12 @@ function MOI.optimize!(model::Optimizer)
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
         num_nlp_constraints = length(model.nlp_data.constraint_bounds)
+        model.inner.num_nlp_constraints = num_nlp_constraints
+        print_var_con_summary(model.inner)
     else 
         info(LOGGER, "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros")
+        model.inner.num_nlp_constraints = 0
+        print_var_con_summary(model.inner)
     end 
 
 end 
