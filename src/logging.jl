@@ -6,7 +6,6 @@ function print_line(count)
         print("-")
     end
     print("\n") 
-    return
 end
 
 """
@@ -47,5 +46,4 @@ function print_var_con_summary(ap::AlpineProblem)
     end 
 
     println()
-    return
 end

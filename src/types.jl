@@ -76,11 +76,11 @@ mutable struct AlpineProblem
     upper_tightened                 ::Union{Nothing, Vector{Float64}}
 
     # Nonlinear information 
-    is_obj_linear                   ::Union{Nothing, Bool} 
-    is_obj_quadratic                ::Union{Nothing, Bool} 
-    is_obj_nl                       ::Union{Nothing, Bool} 
-    obj_expr                        ::Union{Nothing, Expr} 
-    nl_constraints_expr             ::Union{Nothing, Vector{Expr}}
+    is_objective_linear             ::Union{Nothing, Bool} 
+    is_objective_quadratic          ::Union{Nothing, Bool} 
+    is_objective_nl                 ::Union{Nothing, Bool} 
+    objective_expr                  ::Union{Nothing, Expr} 
+    nl_constraint_expr              ::Union{Nothing, Vector{Expr}}
     nl_terms                        ::Union{Nothing, Dict{Expr, Any}}
     constraints_with_nl_terms       ::Union{Nothing, Vector{Int}}
     lifted_constraints              ::Union{Nothing, Vector{JuMP.ConstraintRef}}
