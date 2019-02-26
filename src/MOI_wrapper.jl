@@ -14,8 +14,9 @@ mutable struct VariableInfo
     is_fixed::Bool        # Implies lower_bound == upper_bound and !has_lower_bound and !has_upper_bound
     is_binary::Bool       # Implies lower_bound == 0, upper_bound == 1 and is MOI.ZeroOne
     name::String
+    start::Union{Nothing, Float64}
 end
-VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, "")
+VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, "", nothing)
 
 """
 function to get an array of variable attributes 

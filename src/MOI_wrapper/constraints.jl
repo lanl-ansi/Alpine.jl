@@ -17,7 +17,9 @@ MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.ZeroOne}) = true
 """
 Linear constraints
 """
-MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{<:BOUNDS}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{MOI.LessThan{Float64}}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{MOI.GreaterThan{Float64}}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{MOI.EqualTo{Float64}}) = true
 
 """
 Quadratic constraints (scalar i.e., vectorized constraints are not supported)
