@@ -45,6 +45,25 @@ function global_solve(m::AlpineNonlinearModel)
     return
 end
 
+function run_bounding_iteration(m::AlpineNonlinearModel)
+    m.loglevel > 0 && logging_head(m)
+    m.presolve_track_time || reset_timer(m)
+
+    m.logs[:n_iter] += 1
+    create_bounding_mip(m)                  # Build the relaxation model
+    bounding_solve(m)                       # Solve the relaxation model
+    update_opt_gap(m)                       # Update optimality gap
+    check_exit(m) && return                 # Feasibility check
+    m.loglevel > 0 && logging_row_entry(m)  # Logging
+    local_solve(m)                          # Solve local model for feasible solution
+    update_opt_gap(m)                       # Update optimality gap
+    check_exit(m) && return                 # Detect optimality termination
+    algorithm_automation(m)                 # Automated adjustments
+    add_partition(m)                        # Add extra discretizations
+
+
+    return
+end 
 
 """
     presolve(m::AlpineNonlinearModel)
