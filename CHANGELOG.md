@@ -1,5 +1,14 @@
 # Critical Updates for Alpine.jl
 
+## v0.1.5
+* Unit exponent bug-fix
+* Meaningful error messages for unsupported functions 
+* Pinned tests to JuMP 0.18.5
+* Cleaner & meaningful logs
+
+## v0.1.3
+* Finite large boudns on unbdd varaibles 
+
 ## Staged
 * typo fix
 * set Big-M values for unbounded variables

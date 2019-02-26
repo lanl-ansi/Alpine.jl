@@ -967,6 +967,12 @@ function detect_monomial_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel
                 continue
             end
         end
+
+        # Detect 1.0 in the exponent and return only the variable
+        if length(var_idxs) == 1 && power_scalar == 1.0 
+            return false, Expr(:call, expr.args[2])
+        end 
+        
         if length(var_idxs) == 1 && power_scalar == 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:2]
             term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial, basic_monomial_bounds, collect_monomial_discvar)

@@ -7,8 +7,6 @@ const ALPINE_DEBUG = false
 using JuMP
 using MathProgBase
 
-
-
 if VERSION < v"0.7.0-"
     import Compat: undef
     import Compat: @warn
@@ -31,9 +29,6 @@ if VERSION > v"0.7.0-"
     end
 
 end
-
-
-
 
 include("const.jl")
 
