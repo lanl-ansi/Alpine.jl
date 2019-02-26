@@ -1,9 +1,5 @@
 julia 0.6
-<<<<<<< HEAD
-JuMP 0.18
-=======
 JuMP 0.18 0.19-
->>>>>>> 632883e7e6fd9aa92248679b355bf88d4d7ff598
 MathProgBase 0.6.4
 Ipopt
 Cbc 0.3.2
