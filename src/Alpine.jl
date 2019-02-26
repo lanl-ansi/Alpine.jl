@@ -9,7 +9,7 @@ import MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
-using Printf
+using Compat.Printf
 
 # Create our module level logger (this will get precompiled)
 const LOGGER = getlogger(@__MODULE__)
