@@ -23,6 +23,8 @@ function print_var_con_summary(ap::AlpineProblem)
         ap.num_quadratic_ge_constraints + ap.num_quadratic_le_constraints 
     num_soc_constraints = ap.num_soc_constraints 
     num_rsoc_constraints = ap.num_rsoc_constraints 
+
+    @printf("%-40s : %5d\n", "Number of constraints", ap.num_constraints)
     
     if num_linear_constraints != 0
         @printf("%-40s : %5d\n", "Number of linear constraints", num_linear_constraints)

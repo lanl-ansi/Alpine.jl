@@ -54,6 +54,7 @@ end
 mutable struct AlpineProblem 
     # variable and constraint count
     num_variables                   ::Int 
+    num_constraints                 ::Int
     num_linear_le_constraints       ::Int 
     num_linear_ge_constraints       ::Int 
     num_linear_eq_constraints       ::Int  
@@ -96,7 +97,7 @@ mutable struct AlpineProblem
 
 end 
 
-AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing, nothing, 
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,

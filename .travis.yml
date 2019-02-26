@@ -1,12 +1,11 @@
 language: julia
 os:
   - linux
+  - osx
 julia:
-  - 0.6
-  - 0.7 
   - 1.0
+  - 1.1
 
-# this will save build time, once it is working
 cache:
   directories:
     - /home/travis/.julia
@@ -15,13 +14,12 @@ addons:
   apt_packages:
     - gfortran
 
-
 before_install:
-  - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.rm("Alpine"); Pkg.rm("Alpine")'
-  - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.update()'
+  - julia -e 'using Pkg; Pkg.rm("Alpine"); Pkg.rm("Alpine")'
+  - julia -e 'using Pkg; Pkg.update()'
 
 after_success:  # post-processing, if the script passes with no errors
-  - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.add("Coverage"); cd(Pkg.dir("Alpine")); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'using Pkg; Pkg.add("Coverage"); cd(Pkg.dir("Alpine")); using Coverage; Codecov.submit(process_folder())'
   
 jobs:
   include:

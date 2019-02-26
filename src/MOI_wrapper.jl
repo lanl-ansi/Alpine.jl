@@ -131,12 +131,27 @@ function Optimizer(; options...)
         solver_options)
 end 
 
+function Optimizer(options::Dict{Symbol,Any}) 
+    solver_options = combine_options(options)
+
+    return Optimizer(
+        nothing, 
+        [], 
+        empty_nlp_data(), 
+        MOI.FEASIBILITY_SENSE, 
+        nothing, 
+        [], [], [], # linear constraints 
+        [], [], [], # quadratic constraints
+        [], [], # conic constraints 
+        [], # convex constraint ids
+        solver_options)
+end 
+
 """
 Printing the optimizer 
 """
 function Base.show(io::IO, model::Optimizer)
-    println(io, "A MathOptInterface model with backend:")
-    println(io, model.inner)
+    println(io, "Alpine Optimizer")
     return
 end
 
@@ -198,9 +213,9 @@ quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(mode
 nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
 
 """
-``MOI.optimize!()`` for Alpine 
+populate_generic_ap_data!() for Alpine 
 """ 
-function MOI.optimize!(model::Optimizer)
+function populate_generic_ap_data!(model::Optimizer)
     model.inner = AlpineProblem()
     model.inner.num_variables = length(model.variable_info)
     model.inner.num_linear_eq_constraints = length(model.linear_le_constraints)
@@ -210,32 +225,48 @@ function MOI.optimize!(model::Optimizer)
     model.inner.num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
     model.inner.num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
     model.inner.num_soc_constraints = length(model.soc_constraints)
-    model.inner.num_rsoc_constraints = length(model.rsoc_constraints)
+    model.inner.num_rsoc_constraints = length(model.rsoc_constraints) 
 
-    lower_original = Vector{Float64}()
-    upper_original = Vector{Float64}()
+    model.inner.lower_original = Vector{Float64}()
+    model.inner.upper_original = Vector{Float64}()
 
     for vi in model.variable_info
         if (!vi.has_lower_bound || !vi.has_upper_bound) 
             error(LOGGER, "Alpine.jl requires every variable in the problem to be bounded; 
                 ensure that bounds are provided for every variable")
         end 
-        push!(lower_original, vi.lower_bound)
-        push!(upper_original, vi.upper_bound)
+        push!(model.inner.lower_original, vi.lower_bound)
+        push!(model.inner.upper_original, vi.upper_bound)
     end 
-    
+
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
         num_nlp_constraints = length(model.nlp_data.constraint_bounds)
         model.inner.num_nlp_constraints = num_nlp_constraints
-        print_var_con_summary(model.inner)
     else 
         info(LOGGER, "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros")
         model.inner.num_nlp_constraints = 0
-        print_var_con_summary(model.inner)
     end 
 
-end 
+    model.inner.num_constraints = model.inner.num_linear_eq_constraints + 
+        model.inner.num_linear_ge_constraints +
+        model.inner.num_linear_eq_constraints +
+        model.inner.num_quadratic_le_constraints +
+        model.inner.num_quadratic_ge_constraints +
+        model.inner.num_quadratic_eq_constraints +
+        model.inner.num_soc_constraints +
+        model.inner.num_rsoc_constraints + 
+        model.inner.num_nlp_constraints
+    
+    print_var_con_summary(model.inner)
+end
 
+"""
+``MOI.optimize!()`` for Alpine 
+""" 
+function MOI.optimize!(model::Optimizer)
+    populate_generic_ap_data!(model)
+
+end 
 
 
 include(joinpath("MOI_wrapper", "variables.jl"))
