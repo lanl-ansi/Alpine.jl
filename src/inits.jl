@@ -17,11 +17,10 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner.upper_original = Vector{Float64}()
 
     for vi in model.variable_info
-        if model.solver_options.bt == false
-            if !vi.has_lower_bound || !vi.has_upper_bound 
-            error(LOGGER, "Alpine.jl requires every variable in the problem to be bounded when the bound-tightening option is set to false; ensure that finite bbounds are provided for every variable using JuMP.set_lower_bound() and JuMP.set_upper_bound()")
-            end 
+        if !vi.has_lower_bound || !vi.has_upper_bound 
+            error(LOGGER, "Alpine.jl requires every variable in the problem to be bounded; ensure that finite bounds are provided for every variable using JuMP.set_lower_bound() and JuMP.set_upper_bound()")
         end 
+
         push!(model.inner.lower_original, vi.lower_bound)
         push!(model.inner.upper_original, vi.upper_bound)
     end 
@@ -48,6 +47,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
             model.inner.is_objective_nl = false
             model.inner.is_objective_linear = true
             model.inner.is_objective_quadratic = false
+            model.inner.is_objective_convex = true
         end
 
         for i in 1:num_nlp_constraints
@@ -65,6 +65,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         elseif isa(model.objective, Union{SAF, SVF})
             model.inner.is_objective_linear = true 
             model.inner.is_objective_quadratic = false 
+            model.inner.is_objective_convex = true
         end
     end 
 

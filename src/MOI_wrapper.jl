@@ -182,6 +182,7 @@ nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(mo
 """ 
 function MOI.optimize!(model::Optimizer)
     init_ap_data!(model)
+    # run_convexity_detection!(model)
 
 end 
 

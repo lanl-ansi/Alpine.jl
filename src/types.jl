@@ -79,6 +79,7 @@ mutable struct AlpineProblem
     is_objective_linear             ::Union{Nothing, Bool} 
     is_objective_quadratic          ::Union{Nothing, Bool} 
     is_objective_nl                 ::Union{Nothing, Bool} 
+    is_objective_convex             ::Union{Nothing, Bool}
     objective_expr                  ::Union{Nothing, Expr} 
     nl_constraint_expr              ::Union{Nothing, Vector{Expr}}
     nl_terms                        ::Union{Nothing, Dict{Expr, Any}}
@@ -100,7 +101,7 @@ end
 AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing, nothing, 
-    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 
     0
