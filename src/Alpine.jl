@@ -19,6 +19,9 @@ const SAF = MOI.ScalarAffineFunction{Float64}
 const SQF = MOI.ScalarQuadraticFunction{Float64}
 const VECTOR = MOI.VectorOfVariables
 
+# terms 
+const SQT = MOI.ScalarQuadraticTerm{Float64}
+
 # sets
 const BOUNDS = Union{
     MOI.EqualTo{Float64}, 

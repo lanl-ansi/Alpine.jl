@@ -87,8 +87,9 @@ mutable struct AlpineProblem
     lifted_var_info                 ::Union{Nothing, Dict{Expr, Any}}
 
     # convexity information 
-    is_objective_convex             ::Union{Nothing, Bool} 
-    is_constraint_convex            ::Union{Nothing, Dict{Symbol,Vector{Bool}}}
+    is_objective_convex             ::Union{Nothing, Symbol} 
+    is_quadratic_function_convex    ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
+    is_quadratic_constraint_convex  ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
 
     # Incumbent information 
     incumbent                       ::Union{Nothing, Incumbent}
@@ -105,7 +106,7 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing, nothing, 
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
-    nothing, nothing, 
+    nothing, nothing, nothing,
     nothing, 
     nothing, 
     0
