@@ -48,7 +48,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     quadratic_eq_constraints::Vector{Tuple{SQF, MOI.EqualTo{Float64}}}
     soc_constraints::Vector{Tuple{VECTOR, SOC}}
     rsoc_constraints::Vector{Tuple{VECTOR, RSOC}}
-    convex_constraint_indices::Vector{CI}
     solver_options::SolverOptions
 end
 
@@ -92,7 +91,6 @@ function Optimizer(; options...)
         [], [], [], # linear constraints 
         [], [], [], # quadratic constraints
         [], [], # conic constraints 
-        [], # convex constraint ids
         solver_options)
 end 
 
@@ -108,7 +106,6 @@ function Optimizer(options::Dict{Symbol,Any})
         [], [], [], # linear constraints 
         [], [], [], # quadratic constraints
         [], [], # conic constraints 
-        [], # convex constraint ids
         solver_options)
 end 
 
@@ -141,8 +138,7 @@ function MOI.is_empty(model::Optimizer)
         isempty(model.quadratic_ge_constraints) &&
         isempty(model.quadratic_eq_constraints) && 
         isempty(model.soc_constraints) && 
-        isempty(model.rsoc_constraints) &&
-        isempty(model.convex_constraint_indices)
+        isempty(model.rsoc_constraints)
 end
 
 """
@@ -162,7 +158,6 @@ function MOI.empty!(model::Optimizer)
     empty!(model.quadratic_eq_constraints)
     empty!(model.soc_constraints)
     empty!(model.rsoc_constraints)
-    empty!(model.convex_constraint_indices)
 end
 
 """
@@ -187,6 +182,7 @@ function MOI.optimize!(model::Optimizer)
 end 
 
 
+include(joinpath("MOI_wrapper", "attributes.jl"))
 include(joinpath("MOI_wrapper", "variables.jl"))
 include(joinpath("MOI_wrapper", "constraints.jl"))
 include(joinpath("MOI_wrapper", "objective.jl"))

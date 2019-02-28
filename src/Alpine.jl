@@ -58,6 +58,8 @@ include("types.jl")
 include("solver_options.jl")
 include("logging.jl")
 include("inits.jl")
+include("convexity.jl")
+include("user_functions.jl")
 include("MOI_wrapper.jl")
 
 end # module

@@ -1,0 +1,3 @@
+"""
+Choose variables for partitioning 
+"""

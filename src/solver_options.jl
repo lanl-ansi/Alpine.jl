@@ -27,7 +27,7 @@ function get_default_solver_options()
     bt_relax = false 
     bt_mip_time_limit = 200.0 
     bp = true
-    is_convex = false 
+    is_problem_convex = false 
     
     return SolverOptions(
         nlp_optimizer, minlp_optimizer, mip_optimizer, 
@@ -40,7 +40,7 @@ function get_default_solver_options()
         bt, presolve_time_limit, 
         bt_max_iter, bt_width_tol, bt_improvement_tol,
         bt_precision, bt_algo, bt_relax, bt_mip_time_limit, 
-        bp, is_convex
+        bp, is_problem_convex
     )
 end 
 

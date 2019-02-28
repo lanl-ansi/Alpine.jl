@@ -48,7 +48,7 @@ mutable struct SolverOptions
     bt_mip_time_limit               ::Float64 
     bp                              ::Bool 
 
-    is_convex                       ::Bool
+    is_problem_convex               ::Bool
 end 
 
 mutable struct AlpineProblem 
@@ -79,13 +79,16 @@ mutable struct AlpineProblem
     is_objective_linear             ::Union{Nothing, Bool} 
     is_objective_quadratic          ::Union{Nothing, Bool} 
     is_objective_nl                 ::Union{Nothing, Bool} 
-    is_objective_convex             ::Union{Nothing, Bool}
     objective_expr                  ::Union{Nothing, Expr} 
     nl_constraint_expr              ::Union{Nothing, Vector{Expr}}
     nl_terms                        ::Union{Nothing, Dict{Expr, Any}}
     constraints_with_nl_terms       ::Union{Nothing, Vector{Int}}
     lifted_constraints              ::Union{Nothing, Vector{JuMP.ConstraintRef}}
     lifted_var_info                 ::Union{Nothing, Dict{Expr, Any}}
+
+    # convexity information 
+    is_objective_convex             ::Union{Nothing, Bool} 
+    is_constraint_convex            ::Union{Nothing, Dict{Symbol,Vector{Bool}}}
 
     # Incumbent information 
     incumbent                       ::Union{Nothing, Incumbent}
@@ -101,7 +104,8 @@ end
 AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing, nothing, 
-    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, 
     nothing, 
     nothing, 
     0

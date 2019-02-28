@@ -13,6 +13,18 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner.num_soc_constraints = length(model.soc_constraints)
     model.inner.num_rsoc_constraints = length(model.rsoc_constraints) 
 
+    model.inner.is_constraint_convex = Dict{Symbol, Vector{Bool}}()
+
+    if model.inner.num_quadratic_le_constraints > 0 
+        model.inner.is_constraint_convex[:quadratic_le] = 
+            [false for i in 1:model.inner.num_quadratic_le_constraints]
+    end 
+
+    if model.inner.num_quadratic_ge_constraints > 0 
+        model.inner.is_constraint_convex[:quadratic_ge] = 
+            [false for i in 1:model.inner.num_quadratic_ge_constraints]
+    end
+
     model.inner.lower_original = Vector{Float64}()
     model.inner.upper_original = Vector{Float64}()
 
@@ -47,7 +59,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
             model.inner.is_objective_nl = false
             model.inner.is_objective_linear = true
             model.inner.is_objective_quadratic = false
-            model.inner.is_objective_convex = true
+            model.is_objective_convex = true
         end
 
         for i in 1:num_nlp_constraints
@@ -65,7 +77,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         elseif isa(model.objective, Union{SAF, SVF})
             model.inner.is_objective_linear = true 
             model.inner.is_objective_quadratic = false 
-            model.inner.is_objective_convex = true
+            model.is_objective_convex = true
         end
     end 
 
