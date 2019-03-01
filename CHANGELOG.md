@@ -1,5 +1,8 @@
 # Critical Updates for Alpine.jl
 
+## v0.1.6
+* Bug fix in operators.jl for accounting all extreme points in the bound evaluation 
+
 ## v0.1.5
 * Unit exponent bug-fix
 * Meaningful error messages for unsupported functions 
