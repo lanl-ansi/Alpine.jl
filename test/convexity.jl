@@ -1,5 +1,6 @@
 
 @testset "function convexity detection" begin
+    Alpine.silence()
     optimizer = nlp_optimizer()
     num_variables = 4
     x = MOI.add_variables(optimizer, num_variables)

@@ -8,6 +8,8 @@
     @variable(m, -5 <= x[1:2] <= 5)
     @objective(m, Min, 6*x[1]^2 + 4*x[2]^2 - 2.5*x[1]*x[2])
     @NLconstraint(m, x[1]*x[2] >= 8)
+    @constraint(m, x[1]^2 <= -x[2]^2 + 100)
+    @constraint(m, x[1]^2 == 25)
     optimize!(m)
 
     bm = JuMP.backend(m)
@@ -17,6 +19,9 @@
     @test length(internal_model.inner.nl_constraint_expr) == 1
     @test length(internal_model.variable_info) == 2
     @test internal_model.inner.objective_convexity == :convex
+    @test internal_model.inner.quadratic_function_convexity[:quadratic_le][1] == :convex
+    @test internal_model.inner.quadratic_constraint_convexity[:quadratic_le][1] == :convex
+    @test internal_model.inner.quadratic_function_convexity[:quadratic_eq][1] == :convex
 
     m = Model(with_optimizer(
         Alpine.Optimizer, 
