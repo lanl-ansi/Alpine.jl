@@ -702,7 +702,7 @@ function basic_intprod_bounds(m::AlpineNonlinearModel, k::Any)
         elseif cnt == 2
             bound = bound * var_bounds'
         else
-            bound = diag(bound) * var_bounds'
+            bound = vec(bound) * var_bounds'
         end
     end
 
@@ -729,7 +729,7 @@ function basic_intprod_bounds(m::AlpineNonlinearModel, k::Any, d::Dict)
         elseif cnt == 2
             bound = bound * var_bounds'
         else
-            bound = diag(bound) * var_bounds'
+            bound = vec(bound) * var_bounds'
         end
     end
     if minimum(bound) > d[lifted_idx][1] + m.tol
@@ -1026,7 +1026,7 @@ function basic_monomial_bounds(m::AlpineNonlinearModel, k::Any)
         elseif cnt == 2
             bound = bound * var_bounds'
         else
-            bound = diag(bound) * var_bounds'
+            bound = vec(bound) * var_bounds'
         end
     end
     if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
@@ -1056,7 +1056,7 @@ function basic_monomial_bounds(m::AlpineNonlinearModel, nlk::Any, d::Dict)
         elseif cnt == 2
             bound = bound * var_bounds'
         else
-            bound = diag(bound) * var_bounds'
+            bound = vec(bound) * var_bounds'
         end
     end
 
