@@ -27,4 +27,5 @@ end
 
 @testset "Alpine" begin 
     include("loading.jl")
+    include("convexity.jl")
 end 

@@ -23,9 +23,9 @@ Checking if a quadratic term is factorable in a quadratic function and deduce co
 function get_convexity(quadratic_function::SQF, term::SQT)::Symbol
     
     if term.variable_index_1 == term.variable_index_2 
-        if term.coefficient > 0 
+        if term.coefficient >= 0.0
             return :convex 
-        else
+        else 
             return :concave
         end 
     end 
@@ -56,7 +56,7 @@ end
 Get square term by variable index in a quadratic function 
 """
 function get_square_term(quadratic_function::SQF, id::VI)::Union{SQT, Nothing}
-    for term in quadratic_function:
+    for term in quadratic_function.quadratic_terms
         if term.variable_index_1 == id && term.variable_index_2 == id 
             return term 
         end

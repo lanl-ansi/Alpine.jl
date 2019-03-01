@@ -1,5 +1,5 @@
 
-@testset "loading tests" begin
+@testset "loading/printing tests" begin
     solver_options = DefaultTestSolver(log_level=0)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options)
@@ -36,5 +36,6 @@
     internal_model = bm.optimizer.model
 
     @test internal_model.inner.num_constraints == 2 
+    @test internal_model.inner.is_objective_quadratic == true
 
 end 

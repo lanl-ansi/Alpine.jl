@@ -60,17 +60,17 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
             model.inner.objective_expr = MOI.objective_expr(evaluator)
             model.inner.is_objective_linear = false 
             model.inner.is_objective_quadratic = false 
-            model.is_objective_convex = :undet
+            model.inner.is_objective_convex = :undet
         elseif isa(model.objective, SQF)
             model.inner.is_objective_nl = false
             model.inner.is_objective_linear = false 
             model.inner.is_objective_quadratic = true
-            model.is_objective_convex = :undet
+            model.inner.is_objective_convex = :undet
         elseif isa(model.objective, Union{SAF, SVF})
             model.inner.is_objective_nl = false
             model.inner.is_objective_linear = true
             model.inner.is_objective_quadratic = false
-            model.is_objective_convex = :convex
+            model.inner.is_objective_convex = :convex
         end
 
         for i in 1:num_nlp_constraints
