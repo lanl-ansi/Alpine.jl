@@ -87,9 +87,9 @@ mutable struct AlpineProblem
     lifted_var_info                 ::Union{Nothing, Dict{Expr, Any}}
 
     # convexity information 
-    is_objective_convex             ::Union{Nothing, Symbol} 
-    is_quadratic_function_convex    ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
-    is_quadratic_constraint_convex  ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
+    objective_convexity             ::Union{Nothing, Symbol} 
+    quadratic_function_convexity    ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
+    quadratic_constraint_convexity  ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
 
     # Incumbent information 
     incumbent                       ::Union{Nothing, Incumbent}

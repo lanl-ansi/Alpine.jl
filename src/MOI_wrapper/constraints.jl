@@ -41,7 +41,7 @@ macro define_add_constraint(function_type, set_type, array_name)
     quote
         function MOI.add_constraint(model::Optimizer, func::$function_type, set::$set_type)
             check_inbounds(model, func)
-            push!(model.$(array_name), (func, set))
+            push!(model.$(array_name), (MOIU.canonical(func), set))
             return MOI.ConstraintIndex{$function_type, $set_type}(length(model.$(array_name)))
         end
     end

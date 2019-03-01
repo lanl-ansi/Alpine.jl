@@ -16,6 +16,7 @@
     @test internal_model.inner.is_objective_quadratic == true 
     @test length(internal_model.inner.nl_constraint_expr) == 1
     @test length(internal_model.variable_info) == 2
+    @test internal_model.inner.objective_convexity == :convex
 
     m = Model(with_optimizer(
         Alpine.Optimizer, 
@@ -28,7 +29,7 @@
     JuMP.set_upper_bound(y, 5)
     JuMP.set_lower_bound(y, -5)
     @constraint(m, y == 0.0)
-    @objective(m, Max, y^2)
+    @objective(m, Min, y^2)
     @constraint(m, x * y <= 3)
     optimize!(m)
 
@@ -37,5 +38,8 @@
 
     @test internal_model.inner.num_constraints == 2 
     @test internal_model.inner.is_objective_quadratic == true
-
+    @test internal_model.inner.objective_convexity == :convex 
+    @test internal_model.inner.quadratic_function_convexity[:quadratic_le][1] == :undet
+    @test internal_model.inner.quadratic_constraint_convexity[:quadratic_le][1] == :undet
+ 
 end 
