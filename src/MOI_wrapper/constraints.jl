@@ -70,6 +70,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, ::MOI.ZeroOne)
     model.variable_info[vi.value].upper_bound = 1.0
     model.variable_info[vi.value].has_upper_bound = true
     model.variable_info[vi.value].is_binary = true
+    model.variable_info[vi.value].is_bounded = true
 	
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.ZeroOne}(vi.value)
 end 

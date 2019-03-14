@@ -51,6 +51,68 @@ mutable struct SolverOptions
     is_problem_convex               ::Bool
 end 
 
+mutable struct VariableInfo
+    lower_bound::Float64  # May be -Inf even if has_lower_bound == true
+    has_lower_bound::Bool # Implies lower_bound == Inf
+    upper_bound::Float64  # May be Inf even if has_upper_bound == true
+    has_upper_bound::Bool # Implies upper_bound == Inf
+    is_fixed::Bool        # Implies lower_bound == upper_bound and !has_lower_bound and !has_upper_bound
+    is_binary::Bool       # Implies lower_bound == 0, upper_bound == 1 and is MOI.ZeroOne
+    is_bounded::Bool      # has_lower_bound == true && has_upper_bound == true 
+    is_in_nl_term::Bool   # true if the variable is a part of some non-linear term 
+    name::String
+    start::Union{Nothing, Float64}
+end
+
+VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, false, false, "", nothing)
+
+function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symbol)
+    len_var_info = length(variable_info)
+    type_dict = get_type_dict(variable_info[1])
+    result = Array{type_dict[attr], 1}(undef, len_var_info)
+    for i = 1:len_var_info
+        result[i] = getfield(variable_info[i], attr)
+    end
+    return result
+end
+
+
+mutable struct TermInfo 
+    lifted_variable_id              ::Int 
+    convexity                       ::Symbol
+    lifted_variable_info            ::VariableInfo 
+    term_type                       ::Union{Nothing, Symbol}
+end 
+
+TermInfo() = TermInfo(NaN, :undet, VariableInfo(), nothing)
+    
+mutable struct Terms 
+    quadratic_terms                 ::Union{Nothing, Dict{Expr, TermInfo}}
+    bilinear_terms                  ::Union{Nothing, Dict{Expr, TermInfo}}
+    multilinear_terms               ::Union{Nothing, Dict{Expr, TermInfo}}
+    polynomial_terms                ::Union{Nothing, Dict{Expr, TermInfo}}
+    trigonometric_terms             ::Union{Nothing, Dict{Expr, TermInfo}}
+    other_terms                     ::Union{Nothing, Dict{Expr, TermInfo}}
+end 
+
+Terms() = Terms(nothing, nothing, nothing, 
+    nothing, nothing, nothing)
+
+mutable struct AlpineExpr 
+    Expr                            ::Expr 
+    convexity                       ::Symbol
+end 
+
+mutable struct NLFunction 
+    linear_part                     ::Union{Nothing, AlpineExpr}
+    quadratic_part                  ::Union{Nothing, AlpineExpr}
+    polynomial_part                 ::Union{Nothing, AlpineExpr}
+    other_part                      ::Union{Nothing, AlpineExpr}
+end 
+
+NLFunction() = NLFunction(nothing, nothing, nothing, nothing)
+
+
 mutable struct AlpineProblem 
     # variable and constraint count
     num_variables                   ::Int 
@@ -81,15 +143,17 @@ mutable struct AlpineProblem
     is_objective_nl                 ::Union{Nothing, Bool} 
     objective_expr                  ::Union{Nothing, Expr} 
     nl_constraint_expr              ::Union{Nothing, Vector{Expr}}
-    nl_terms                        ::Union{Nothing, Dict{Expr, Any}}
+    nl_terms                        ::Union{Nothing, TermInfo}
     constraints_with_nl_terms       ::Union{Nothing, Vector{Int}}
     lifted_constraints              ::Union{Nothing, Vector{JuMP.ConstraintRef}}
-    lifted_var_info                 ::Union{Nothing, Dict{Expr, Any}}
+    lifted_var_info                 ::Union{Nothing, Dict{Int, Any}}
 
     # convexity information 
     objective_convexity             ::Union{Nothing, Symbol} 
     quadratic_function_convexity    ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
     quadratic_constraint_convexity  ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
+    nl_function_convexity           ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
+    nl_constraint_convexity         ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
 
     # Incumbent information 
     incumbent                       ::Union{Nothing, Incumbent}
@@ -106,7 +170,7 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing, nothing, 
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
-    nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 
     0

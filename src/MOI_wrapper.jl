@@ -4,34 +4,6 @@ with all mandatory MOI functions overloaded
 """
 
 """
-Variable information struct definition 
-""" 
-mutable struct VariableInfo
-    lower_bound::Float64  # May be -Inf even if has_lower_bound == true
-    has_lower_bound::Bool # Implies lower_bound == Inf
-    upper_bound::Float64  # May be Inf even if has_upper_bound == true
-    has_upper_bound::Bool # Implies upper_bound == Inf
-    is_fixed::Bool        # Implies lower_bound == upper_bound and !has_lower_bound and !has_upper_bound
-    is_binary::Bool       # Implies lower_bound == 0, upper_bound == 1 and is MOI.ZeroOne
-    name::String
-    start::Union{Nothing, Float64}
-end
-VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, "", nothing)
-
-"""
-function to get an array of variable attributes 
-"""
-function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symbol)
-    len_var_info = length(variable_info)
-    type_dict = get_type_dict(variable_info[1])
-    result = Array{type_dict[attr], 1}(undef, len_var_info)
-    for i = 1:len_var_info
-        result[i] = getfield(variable_info[i], attr)
-    end
-    return result
-end
-
-"""
 Optimizer struct
 """  
 mutable struct Optimizer <: MOI.AbstractOptimizer
@@ -170,6 +142,11 @@ quadratic_le_offset(model::Optimizer) = linear_eq_offset(model) + length(model.l
 quadratic_ge_offset(model::Optimizer) = quadratic_le_offset(model) + length(model.quadratic_le_constraints)
 quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
 nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
+
+"""
+variable offset 
+""" 
+variable_offset(model::Optimizer) = length(model.variable_info)
 
 
 """

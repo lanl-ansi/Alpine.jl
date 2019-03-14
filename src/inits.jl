@@ -38,6 +38,9 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner.upper_original = Vector{Float64}()
 
     for vi in model.variable_info
+        if vi.has_lower_bound && vi.has_upper_bound 
+            vi.is_bounded = true 
+        end
         if !vi.has_lower_bound || !vi.has_upper_bound 
             error(LOGGER, "Alpine.jl requires every variable in the problem to be bounded; ensure that finite bounds are provided for every variable using JuMP.set_lower_bound() and JuMP.set_upper_bound()")
         end 
