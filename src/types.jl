@@ -76,7 +76,6 @@ function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symb
     return result
 end
 
-
 mutable struct TermInfo 
     lifted_variable_id              ::Int 
     convexity                       ::Symbol
@@ -91,12 +90,14 @@ mutable struct Terms
     bilinear_terms                  ::Union{Nothing, Dict{Expr, TermInfo}}
     multilinear_terms               ::Union{Nothing, Dict{Expr, TermInfo}}
     polynomial_terms                ::Union{Nothing, Dict{Expr, TermInfo}}
+    signomial_terms                 ::Union{Nothing, Dict{Expr, TermInfo}}
+    abs_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
     trigonometric_terms             ::Union{Nothing, Dict{Expr, TermInfo}}
     other_terms                     ::Union{Nothing, Dict{Expr, TermInfo}}
 end 
 
 Terms() = Terms(nothing, nothing, nothing, 
-    nothing, nothing, nothing)
+    nothing, nothing, nothing, nothing, nothing)
 
 mutable struct AlpineExpr 
     Expr                            ::Expr 
@@ -112,6 +113,32 @@ end
 
 NLFunction() = NLFunction(nothing, nothing, nothing, nothing)
 
+mutable struct Operator
+    operation                       ::Symbol 
+    num_args                        ::Int 
+    args                            ::Vector{Any}
+end 
+
+Operator() = Operator(:NaN, 0, Any())
+
+mutable struct DAGVertex 
+    vertex_type                     ::Symbol 
+    depth                           ::Int
+    vertex                          ::Union{Int, Operator, Nothing}
+    children                        ::Vector{Union{Nothing, DAGVertex}}
+    parents                         ::Vector{Union{Nothing, DAGVertex}}
+end 
+
+DAGVertex() = DAGVertex(:NaN, 0, nothing, 
+    Vector{Union{Nothing, DAGVertex}}(), 
+    Vector{Union{Nothing, DAGVertex}}())
+
+mutable struct DAG 
+    total_depth                     ::Int 
+    vertices                        ::Dict{Int, Vector{DAGVertex}}
+end 
+
+DAG() = DAG(0, Dict{Int, Vector{DAGVertex}})
 
 mutable struct AlpineProblem 
     # variable and constraint count

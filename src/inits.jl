@@ -16,6 +16,10 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner.quadratic_constraint_convexity = Dict{Symbol, Vector{Symbol}}()
     model.inner.quadratic_function_convexity = Dict{Symbol, Vector{Symbol}}()
 
+    model.inner.is_objective_linear = false 
+    model.inner.is_objective_nl = false 
+    model.inner.is_objective_quadratic = false
+
     if model.inner.num_quadratic_le_constraints > 0 
         model.inner.quadratic_constraint_convexity[:quadratic_le] = 
             [:undet for i in 1:model.inner.num_quadratic_le_constraints]
@@ -85,10 +89,10 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         info(LOGGER, "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros")
         model.inner.num_nlp_constraints = 0
         model.inner.is_objective_nl = false
-        if isa(model.objective, SQF)
+        if isa(model.objective, SQF) 
             model.inner.is_objective_quadratic = true 
             model.inner.is_objective_linear = false 
-        elseif isa(model.objective, Union{SAF, SVF})
+        elseif isa(model.objective, Union{SAF, SVF}) 
             model.inner.is_objective_linear = true 
             model.inner.is_objective_quadratic = false 
             model.objective_convexity = true
