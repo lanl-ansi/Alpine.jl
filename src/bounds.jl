@@ -267,9 +267,6 @@ function resolve_var_bounds(m::AlpineNonlinearModel)
         m.presolve_infeasible = bound_propagation(m) # Fetch bounds from constraints
     end
 
-    # First resolve infinity bounds with assumptions
-    resolve_inf_bounds(m) # Temporarily disabled
-
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
@@ -283,6 +280,9 @@ function resolve_var_bounds(m::AlpineNonlinearModel)
             error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
     end
+        
+    # First resolve infinity bounds with assumptions
+    resolve_inf_bounds(m) # Temporarily disabled
 
     return
 end
@@ -308,9 +308,7 @@ function resolve_inf_bounds(m::AlpineNonlinearModel)
             infcount +=1
         end
     end
-
-    warnuser && println("  Warning: Inf bound detected on $(infcount) variables. Initialize with value -/+$(m.largebound). This may affect global optimality and performance.")
-
+    warnuser && println("Warning: Inf bound detected on $(infcount) variables. Initialize with value -/+$(m.largebound). This may affect global optimality and performance.")
     return
 end
 
@@ -324,7 +322,6 @@ end
     Only used in presolve bound tightening
 """
 function resolve_var_bounds(m::AlpineNonlinearModel, d::Dict; kwargs...)
-
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
