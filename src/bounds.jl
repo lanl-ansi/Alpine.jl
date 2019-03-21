@@ -267,8 +267,8 @@ function resolve_var_bounds(m::AlpineNonlinearModel)
         m.presolve_infeasible = bound_propagation(m) # Fetch bounds from constraints
     end
 
-    # First resolve infinity bounds with assumptions
-    resolve_inf_bounds(m) # Temporarily disabled
+    # Resolve unbounded variables in the original formulation 
+    resolve_inf_bounds(m)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
@@ -291,26 +291,29 @@ end
     Critically assumed since Alpine relies on finite bound to work
 """
 function resolve_inf_bounds(m::AlpineNonlinearModel)
-
     warnuser = false
-    infcount = 0
+    infcount_l = 0
+    infcount_u = 0
 
     # Only specify necessary bounds
-    for i in m.candidate_disc_vars
+    for i = 1:length(m.l_var_orig)
         if m.l_var_tight[i] == -Inf
             warnuser = true
             m.l_var_tight[i] = -m.largebound
-            infcount += 1
+            infcount_l += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
             m.u_var_tight[i] = m.largebound
-            infcount +=1
+            infcount_u +=1
         end
     end
-
-    warnuser && println("  Warning: Inf bound detected on $(infcount) variables. Initialize with value -/+$(m.largebound). This may affect global optimality and performance.")
-
+    infcount = min(infcount_l, infcount_u)
+    if infcount == 1
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(m.largebound). This may affect global optimality and run times.")
+    elseif infcount > 1
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(m.largebound). This may affect global optimality and run times.")
+    end
     return
 end
 
@@ -324,7 +327,6 @@ end
     Only used in presolve bound tightening
 """
 function resolve_var_bounds(m::AlpineNonlinearModel, d::Dict; kwargs...)
-
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
