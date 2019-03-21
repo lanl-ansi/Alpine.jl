@@ -60,6 +60,7 @@ end
 include("types.jl")
 include("solver_options.jl")
 include("logging.jl")
+include("nl_expr_utilities.jl")
 include("inits.jl")
 include("convexity.jl")
 include("user_functions.jl")

@@ -104,7 +104,7 @@ function run_convexity_detection!(model::MOI.AbstractOptimizer)
         model.inner.quadratic_function_convexity[:quadratic_eq][i] = is_function_convex
     end 
 
-    if model.inner.is_objective_quadratic 
+    if model.sense != MOI.FEASIBILITY_SENSE && model.inner.is_objective_quadratic
         is_function_convex = get_convexity(model.objective)
         if is_function_convex == :convex && model.sense == MOI.MIN_SENSE 
             model.inner.objective_convexity = :convex
