@@ -82,9 +82,10 @@ mutable struct TermInfo
     convexity                       ::Symbol
     lifted_variable_info            ::VariableInfo 
     term_type                       ::Union{Nothing, Symbol}
+    in_constraint                   ::Union{Nothing, Dict{Symbol, Any}}
 end 
 
-TermInfo() = TermInfo(NaN, :undet, VariableInfo(), nothing)
+TermInfo() = TermInfo(NaN, :undet, VariableInfo(), nothing, nothing)
     
 mutable struct Terms 
     quadratic_terms                 ::Union{Nothing, Dict{Expr, TermInfo}}
