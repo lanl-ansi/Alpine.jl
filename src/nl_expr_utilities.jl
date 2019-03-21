@@ -43,9 +43,9 @@ function expr_flatten_constant_subtree(expr)
 end 
 
 """
-Multilinear term coefficient aggregation 
+Multilinear term negative sign separation 
 """
-function expr_aggregate_coeff_multilinear(expr)
+function expr_separate_sign_multilinear(expr)
     for i in 2:length(expr.args)
         if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 
             if length(expr.args[i].args) == 2 && expr.args[i].head == :call 
@@ -58,10 +58,38 @@ function expr_aggregate_coeff_multilinear(expr)
                     end 
                 end 
             elseif expr.args[i].head == :call 
-                expr_aggregate_coeff_multilinear(expr.args[i])
+                expr_separate_sign_multilinear(expr.args[i])
             end 
         end 
     end 
- 
+
     return
 end
+
+"""
+Multilinear term coefficient aggregration 
+"""
+function expr_aggregate_coeff_multilinear(expr)
+    if expr.args[1] == :* 
+        constant = 1.0
+        indexes = []
+        for i in 2:length(expr.args)
+            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+                constant *= expr.args[i]
+                push!(indexes, i)
+            end 
+        end 
+        deleteat!(expr.args, indexes)
+        (constant != 1.0) && insert!(expr.args, 2, constant) 
+    end 
+
+    for i in 1:length(expr.args)
+        if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
+			continue
+        elseif expr.args[i].head == :call
+            expr_aggregate_coeff_multilinear(expr.args[i])
+        end 
+    end 
+
+    return 
+end 
