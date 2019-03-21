@@ -28,5 +28,5 @@ end
 @testset "Alpine" begin 
     include("loading.jl")
     include("convexity.jl")
-    include("nl_expression.jl")
+    include("nl_expr_utilities.jl")
 end 
