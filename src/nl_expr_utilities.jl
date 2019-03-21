@@ -13,7 +13,7 @@ function expr_is_constant(expr)
 		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
 			continue
 		elseif expr.args[i].head == :call
-			is_constant = is_constant * expr_isconst(expr.args[i])
+			is_constant = is_constant * expr_is_constant(expr.args[i])
 		elseif expr.args[i].head == :ref
 			return false
 		end
@@ -51,7 +51,7 @@ function expr_separate_sign_multilinear(expr)
             if length(expr.args[i].args) == 2 && expr.args[i].head == :call 
                 if expr.args[1] == :*
                     if expr.args[i].args[1] == :- 
-                        push!(expr.args, -1)
+                        push!(expr.args, -1.0)
                         expr.args[i] = expr.args[i].args[2]
                     elseif expr.args[i].args[1] == :+
                         expr.args[i] = expr.args[i].args[2]
