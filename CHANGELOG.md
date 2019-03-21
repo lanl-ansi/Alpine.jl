@@ -1,5 +1,9 @@
 # Critical Updates for Alpine.jl
 
+## v0.1.7
+* Bug fixes for bounds on lifted variables representing nonlinear terms
+* Inf bound warning issue fixed 
+
 ## v0.1.6
 * Bug fix in operators.jl for accounting all extreme points in the bound evaluation 
 
