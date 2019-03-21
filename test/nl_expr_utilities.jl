@@ -11,7 +11,7 @@
 
     expressions = Expr[
         :(x[$(x[1])] + (0.5 + 0.25 * 1.0)        == 2.0), # constant sub-tree flattening
-        :(x[$(x[1])] * -x[$(x[2])] * x[$(x[3])]  == 2.0), # multilinear sign separation
+        :(x[$(x[1])] * -x[$(x[2])] * +x[$(x[3])] == 2.0), # multilinear sign separation
         :(-2.0 * -x[$(x[2])] * -4.0              == 2.0), # multilinear coeff aggregation
     ]
 

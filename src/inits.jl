@@ -114,4 +114,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         print_var_con_summary(model.inner)
     end
     
+    clean_nl_expressions!(model)
+    
+    return
 end

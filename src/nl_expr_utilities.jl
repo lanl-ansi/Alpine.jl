@@ -3,6 +3,27 @@ Utilities for performing operations on nonlinear expression trees
 """ 
 
 """
+Clean the nonlinear expressions
+"""
+function clean_nl_expressions!(model::MOI.AbstractOptimizer)
+    if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
+        for expr in model.inner.nl_constraint_expr
+            expr_flatten_constant_subtree(expr)
+            expr_separate_sign_multilinear(expr)
+            expr_aggregate_coeff_multilinear(expr)
+        end
+        
+        if model.inner.is_objective_nl
+            expr_flatten_constant_subtree(model.inner.objective_expr)
+            expr_separate_sign_multilinear(model.inner.objective_expr)
+            expr_aggregate_coeff_multilinear(model.inner.objective_expr)
+        end 
+    end 
+
+    return
+end
+
+"""
 Check if a sub-tree is totally composed of constants
 """
 function expr_is_constant(expr)
