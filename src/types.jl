@@ -103,7 +103,7 @@ Terms() = Terms(nothing, nothing, nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing)
 
 mutable struct AlpineExpr 
-    Expr                            ::Expr 
+    expression                      ::Tuple{Float64, Union{Expr, Symbol, Float64, Int}} 
     convexity                       ::Symbol
 end 
 
@@ -118,8 +118,8 @@ mutable struct NLFunction
     trigonometric_part              ::Union{Nothing, Vector{AlpineExpr}}
     log_part                        ::Union{Nothing, Vector{AlpineExpr}}
     exp_part                        ::Union{Nothing, Vector{AlpineExpr}}
-    other_part                      ::Union{Nothing, Vector{AlpineExpr}}
-    constant_part                   ::Union{Nothing, Vector{Float64}}
+    other_part                      ::Union{Nothing, Vector{AlpineExpr}} # contains hybrids
+    constant_part                   ::Union{Nothing, Vector{AlpineExpr}}
 end 
 
 NLFunction() = NLFunction(nothing, nothing, nothing, nothing, 

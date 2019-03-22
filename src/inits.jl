@@ -119,7 +119,8 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
         for expr in model.inner.nl_constraint_expr
-            nl_function = expr_disaggregate(expr)
+            disaggregated_expr = expr_disaggregate(expr)
+            # nl_function = create_nl_function(disaggregated_expr)
         end
     end
 
