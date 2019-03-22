@@ -13,7 +13,7 @@
         :(x[$(x[1])] + (0.5 + 0.25 * 1.0) == 2.0),       
         :(x[$(x[1])] * -x[$(x[2])] * +x[$(x[3])] == 2.0), 
         :(-2.0 * -x[$(x[2])] * -4.0 == 2.0), 
-        :(x[$(x[1])] - (sin(x[$(x[2])]) - log(x[$(x[3])]) * x[$(x[1])]) == 2.0) 
+        :(x[$(x[1])] - (sin(x[$(x[2])]) - -4.0 * log(x[$(x[3])]) *x[$(x[1])]) == 2.0) 
     ]
 
     Alpine.expr_flatten_constant_subtree(expressions[1])
@@ -25,8 +25,8 @@
     @test expressions[1] == :(x[$(x[1])] + 0.75 == 2.0)
     @test expressions[2] == :(x[$(x[1])] * x[$(x[2])] * x[$(x[3])] * -1.0 == 2.0)
     @test expressions[3] == :(-8.0 * x[$(x[2])] == 2.0)
-    @test disaggretated_expr[1] ==  ( 1, :(x[$(x[1])]))  
-    @test disaggretated_expr[2] ==  (-1, :(sin(x[$(x[2])])))
-    @test disaggretated_expr[3] ==  ( 1, :(log(x[$(x[3])]) * x[$(x[1])]))
+    @test disaggretated_expr[1] ==  ( 1.0, :(x[$(x[1])]))  
+    @test disaggretated_expr[2] ==  (-1.0, :(sin(x[$(x[2])])))
+    @test disaggretated_expr[3] ==  (-4.0, :(log(x[$(x[3])]) * x[$(x[1])]))
     
 end

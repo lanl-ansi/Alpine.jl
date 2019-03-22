@@ -116,44 +116,67 @@ function expr_aggregate_coeff_multilinear(expr)
 end 
 
 """
-Break an expression tree into sum of pieces of expression trees
+Break an expression tree into sum of pieces of expression trees;
+returns a vector of Tuple{Float64, Union{Expr, Symbol, Float64, Int}}, 
+where the first element is the coefficient and the second is Union{Expr, Symbol, Float64, Int}.
+This is a core function for all of Alpine.jl
 """
-function expr_disaggregate(expr; sign=1)
-    expr_tree = Vector{Tuple{Int, Union{Expr, Symbol, Float64, Int}}}()
+function expr_disaggregate(expr; coeff=1.0)
+    expr_tree = Vector{Tuple{Float64, Union{Expr, Symbol, Float64, Int}}}()
     
     if isa(expr, Float64) || isa(expr, Int) 
-        push!(expr_tree, (sign, expr))
+        push!(expr_tree, (coeff, expr))
         return expr_tree
     end
 
     if expr.args[1] in [:(<=), :(>=), :(==)]
-        append!(expr_tree, expr_disaggregate(expr.args[2], sign=sign))
+        append!(expr_tree, expr_disaggregate(expr.args[2], coeff=coeff))
         return expr_tree 
     end
     
     if expr.head == :ref 
-        push!(expr_tree, (sign, expr))
+        push!(expr_tree, (coeff, expr))
+        return expr_tree
     end
 
     if expr.args[1] == :-
+        # (:-) is either be unary or binary operator - both cases handled here
         if length(expr.args) == 2
-            append!(expr_tree, expr_disaggregate(expr.args[2], sign=-1*sign))
+            append!(expr_tree, expr_disaggregate(expr.args[2], coeff=-1*coeff))
         else 
-            append!(expr_tree, expr_disaggregate(expr.args[2], sign=sign))
-            append!(expr_tree, expr_disaggregate(expr.args[3], sign=-1*sign))
+            append!(expr_tree, expr_disaggregate(expr.args[2], coeff=coeff))
+            append!(expr_tree, expr_disaggregate(expr.args[3], coeff=-1*coeff))
         end
+    
     elseif expr.args[1] == :+
+        # (:+) is n-ary operator - all cases handled here
         for i in 2:length(expr.args)
-            append!(expr_tree, expr_disaggregate(expr.args[i], sign=sign))
-        end 
-    elseif isa(expr.args[1], Float64) || isa(expr.args[1], Int)
-        push!(expr_tree, (sign, expr.args[1]))
-    elseif expr.head == :call  
-        if expr.args[1] in [:+, :-]
-            append!(expr_tree, expr_disaggregate(expr, sign=sign))
-        else 
-            push!(expr_tree, (sign, expr))
+            append!(expr_tree, expr_disaggregate(expr.args[i], coeff=coeff))
         end
+
+    elseif isa(expr.args[1], Float64) || isa(expr.args[1], Int)
+        # numbers handled here
+        push!(expr_tree, (coeff, expr.args[1]))
+    
+    elseif expr.head == :call  
+        # :call is handled here; [:+, :-, :*] handled separately 
+        # for :*, it is assumed coefficient aggregation is already performed, 
+        # otherwise this function will result in faulty disaggregation
+        if expr.args[1] in [:+, :-]
+            append!(expr_tree, expr_disaggregate(expr, coeff=coeff))
+        elseif expr.args[1] == :* && (isa(expr.args[2], Float64) || isa(expr.args[2], Int))
+            cleaned_expr = deepcopy(expr)
+            constant = cleaned_expr.args[2]
+            deleteat!(cleaned_expr.args, 2)
+            if length(cleaned_expr.args) == 2
+                push!(expr_tree, (coeff * constant, cleaned_expr.args[2]))
+            else 
+                push!(expr_tree, (coeff * constant, cleaned_expr))
+            end 
+        else 
+            push!(expr_tree, (coeff, expr))
+        end
+
     end 
 
     return expr_tree
