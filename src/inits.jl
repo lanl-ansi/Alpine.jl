@@ -115,6 +115,13 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     end
     
     clean_nl_expressions!(model)
+    nl_functions = Vector{Tuple{Int, Union{Expr, Symbol, Float64, Int}}}()
     
+    if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
+        for expr in model.inner.nl_constraint_expr
+            nl_function = expr_disaggregate(expr)
+        end
+    end
+
     return
 end

@@ -94,10 +94,12 @@ mutable struct Terms
     signomial_terms                 ::Union{Nothing, Dict{Expr, TermInfo}}
     abs_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
     trigonometric_terms             ::Union{Nothing, Dict{Expr, TermInfo}}
+    log_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
+    exp_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
     other_terms                     ::Union{Nothing, Dict{Expr, TermInfo}}
 end 
 
-Terms() = Terms(nothing, nothing, nothing, 
+Terms() = Terms(nothing, nothing, nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing)
 
 mutable struct AlpineExpr 
@@ -106,13 +108,23 @@ mutable struct AlpineExpr
 end 
 
 mutable struct NLFunction 
-    linear_part                     ::Union{Nothing, AlpineExpr}
-    quadratic_part                  ::Union{Nothing, AlpineExpr}
-    polynomial_part                 ::Union{Nothing, AlpineExpr}
-    other_part                      ::Union{Nothing, AlpineExpr}
+    linear_part                     ::Union{Nothing, Vector{AlpineExpr}}
+    quadratic_part                  ::Union{Nothing, Vector{AlpineExpr}}
+    bilinear_part                   ::Union{Nothing, Vector{AlpineExpr}}
+    multilinear_part                ::Union{Nothing, Vector{AlpineExpr}}
+    polynomial_part                 ::Union{Nothing, Vector{AlpineExpr}}
+    signomial_part                  ::Union{Nothing, Vector{AlpineExpr}}
+    abs_part                        ::Union{Nothing, Vector{AlpineExpr}}
+    trigonometric_part              ::Union{Nothing, Vector{AlpineExpr}}
+    log_part                        ::Union{Nothing, Vector{AlpineExpr}}
+    exp_part                        ::Union{Nothing, Vector{AlpineExpr}}
+    other_part                      ::Union{Nothing, Vector{AlpineExpr}}
+    constant_part                   ::Union{Nothing, Vector{Float64}}
 end 
 
-NLFunction() = NLFunction(nothing, nothing, nothing, nothing)
+NLFunction() = NLFunction(nothing, nothing, nothing, nothing, 
+    nothing, nothing, nothing, nothing, 
+    nothing, nothing, nothing, nothing)
 
 mutable struct Operator
     operation                       ::Symbol 

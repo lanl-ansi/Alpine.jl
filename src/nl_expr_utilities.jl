@@ -114,3 +114,48 @@ function expr_aggregate_coeff_multilinear(expr)
 
     return 
 end 
+
+"""
+Break an expression tree into sum of pieces of expression trees
+"""
+function expr_disaggregate(expr; sign=1)
+    expr_tree = Vector{Tuple{Int, Union{Expr, Symbol, Float64, Int}}}()
+    
+    if isa(expr, Float64) || isa(expr, Int) 
+        push!(expr_tree, (sign, expr))
+        return expr_tree
+    end
+
+    if expr.args[1] in [:(<=), :(>=), :(==)]
+        append!(expr_tree, expr_disaggregate(expr.args[2], sign=sign))
+        return expr_tree 
+    end
+    
+    if expr.head == :ref 
+        push!(expr_tree, (sign, expr))
+    end
+
+    if expr.args[1] == :-
+        if length(expr.args) == 2
+            append!(expr_tree, expr_disaggregate(expr.args[2], sign=-1*sign))
+        else 
+            append!(expr_tree, expr_disaggregate(expr.args[2], sign=sign))
+            append!(expr_tree, expr_disaggregate(expr.args[3], sign=-1*sign))
+        end
+    elseif expr.args[1] == :+
+        for i in 2:length(expr.args)
+            append!(expr_tree, expr_disaggregate(expr.args[i], sign=sign))
+        end 
+    elseif isa(expr.args[1], Float64) || isa(expr.args[1], Int)
+        push!(expr_tree, (sign, expr.args[1]))
+    elseif expr.head == :call  
+        if expr.args[1] in [:+, :-]
+            append!(expr_tree, expr_disaggregate(expr, sign=sign))
+        else 
+            push!(expr_tree, (sign, expr))
+        end
+    end 
+
+    return expr_tree
+
+end
