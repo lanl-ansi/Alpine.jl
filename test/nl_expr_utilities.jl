@@ -13,7 +13,10 @@
         :(x[$(x[1])] + (0.5 + 0.25 * 1.0) == 2.0),       
         :(x[$(x[1])] * -x[$(x[2])] * +x[$(x[3])] == 2.0), 
         :(-2.0 * -x[$(x[2])] * -4.0 == 2.0), 
-        :(x[$(x[1])] - (sin(x[$(x[2])]) - -4.0 * log(x[$(x[3])]) *x[$(x[1])]) == 2.0) 
+        :(x[$(x[1])] - (sin(x[$(x[2])]) - -4.0 * log(x[$(x[3])]) *x[$(x[1])]) == 2.0),
+        :(x[$(x[1])] + x[$(x[1])] - x[$(x[1])]^2 + x[$(x[1])] * x[$(x[2])] - 
+        x[$(x[1])]^2 + x[$(x[2])] * x[$(x[1])] + x[$(x[2])] * x[$(x[1])] * x[$(x[3])] +
+        x[$(x[1])] * x[$(x[3])] * x[$(x[2])] == 2.0)
     ]
 
     Alpine.expr_flatten_constant_subtree(expressions[1])
@@ -28,5 +31,26 @@
     @test disaggretated_expr[1] ==  ( 1.0, :(x[$(x[1])]))  
     @test disaggretated_expr[2] ==  (-1.0, :(sin(x[$(x[2])])))
     @test disaggretated_expr[3] ==  (-4.0, :(log(x[$(x[3])]) * x[$(x[1])]))
+
+    disaggretated_expr = Alpine.expr_disaggregate(expressions[5])
+    nl_function = Alpine.create_nl_function(disaggretated_expr)
+
+    @test length(disaggretated_expr) == 8 
+    
+    @test nl_function.linear_part[1].expression[1] == 2.0 
+    @test nl_function.linear_part[1].expression[2] == :(x[$(x[1])])
+    @test nl_function.linear_part[1].convexity == :convex
+    
+    @test nl_function.quadratic_part[1].expression[1] == -2.0
+    @test nl_function.quadratic_part[1].expression[2] == :(x[$(x[1])]^2)
+    @test nl_function.quadratic_part[1].convexity == :concave
+
+    @test nl_function.bilinear_part[1].expression[1] == 2.0
+    @test nl_function.bilinear_part[1].expression[2] == :(x[$(x[1])] * x[$(x[2])])
+    @test nl_function.bilinear_part[1].convexity == :undet
+    
+    @test nl_function.multilinear_part[1].expression[1] == 2.0
+    @test nl_function.multilinear_part[1].expression[2] == :(x[$(x[1])] * x[$(x[2])] * x[$(x[3])])
+    @test nl_function.multilinear_part[1].convexity == :undet
     
 end
