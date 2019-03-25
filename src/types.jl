@@ -113,8 +113,6 @@ mutable struct NLFunction
     power_part                      ::Union{Nothing, Vector{AlpineExpr}}
     bilinear_part                   ::Union{Nothing, Vector{AlpineExpr}}
     multilinear_part                ::Union{Nothing, Vector{AlpineExpr}}
-    polynomial_part                 ::Union{Nothing, Vector{AlpineExpr}}
-    signomial_part                  ::Union{Nothing, Vector{AlpineExpr}}
     abs_part                        ::Union{Nothing, Vector{AlpineExpr}}
     trigonometric_part              ::Union{Nothing, Vector{AlpineExpr}}
     log_part                        ::Union{Nothing, Vector{AlpineExpr}}
@@ -125,8 +123,7 @@ end
 
 NLFunction() = NLFunction(nothing, nothing, nothing, 
     nothing, nothing, nothing, nothing, 
-    nothing, nothing, nothing, nothing, 
-    nothing, nothing)
+    nothing, nothing, nothing, nothing)
 
 mutable struct Operator
     operation                       ::Symbol 

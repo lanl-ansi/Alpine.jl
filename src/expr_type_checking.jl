@@ -105,31 +105,6 @@ function expr_is_multilinear(expr)::Bool
 
 end 
 
-"""
-Check if term is polynomial
-"""
-function expr_is_polynomial(expr)::Bool 
-    (expr.args[1] != :*) && (return false)
-    is_polynomial = true
-    variable_powers = Dict{Int, Int}()
-
-    for i in 2:length(expr.args)
-        
-    end 
-
-    return is_polynomial
-
-end 
-
-"""
-Check if term is signomial 
-""" 
-function expr_is_signomial(expr)::Bool 
-    (expr.args[1] != :*) && (return false)
-    is_signomial = true
-
-    return is_signomial
-end 
 
 """
 Check if term is abs(x)
@@ -144,7 +119,7 @@ end
 """
 Check if term is sin(x), cos(x), tan(x)
 """
-function expr_is_trignometric(expr)::Bool 
+function expr_is_trigonometric(expr)::Bool 
     operations = [:sin, :cos, :tan]
     (~(expr.args[1] in operations)) && (return false)
     is_trigonometric = true

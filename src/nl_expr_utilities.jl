@@ -121,7 +121,7 @@ returns a vector of Tuple{Float64, Union{Expr, Symbol, Float64, Int}},
 where the first element is the coefficient and the second is Union{Expr, Symbol, Float64, Int}.
 This is a core function for all of Alpine.jl
 """
-function expr_disaggregate(expr; coeff=1.0)::Vector{Tuple{Int, Union{Expr, Symbol, Float64, Int}}}
+function expr_disaggregate(expr; coeff=1.0)::Vector{Tuple{Float64, Union{Expr, Symbol, Float64, Int}}}
     expr_tree = Vector{Tuple{Float64, Union{Expr, Symbol, Float64, Int}}}()
 
     if isa(expr, Float64) || isa(expr, Int)  
@@ -185,16 +185,14 @@ end
 """
 Create NLFunction() from disaggregated expression 
 """ 
-function create_nl_function(disaggregated_expr::Vector{Tuple{Int, Union{Expr, Symbol, Float64, Int}}})::NLFunction 
+function create_nl_function(disaggregated_expr::Vector{Tuple{Float64, Union{Expr, Symbol, Float64, Int}}})::NLFunction 
 
     nl_function = NLFunction()
     linear_part = AlpineExpr[]
     quadratic_part = AlpineExpr[]    
     power_part = AlpineExpr[]            
     bilinear_part = AlpineExpr[]
-    multilinear_part = AlpineExpr[]
-    polynomial_part = AlpineExpr[]
-    signomial_part = AlpineExpr[]            
+    multilinear_part = AlpineExpr[]         
     abs_part = AlpineExpr[]
     trigonometric_part = AlpineExpr[]
     log_part = AlpineExpr[]
@@ -207,13 +205,11 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Int, Union{Expr, Sy
     power_expr_dict = Dict()
     bilinear_expr_dict = Dict() 
     multilinear_expr_dict = Dict() 
-    polynomial_expr_dict = Dict() 
-    signomial_expr_dict = Dict() 
     abs_expr_dict = Dict()
     trigonometric_expr_dict = Dict()
     log_expr_dict = Dict() 
     exp_expr_dict = Dict() 
-    other_part_dict = Dict()
+    other_expr_dict = Dict()
 
     for (coeff, expr) in disaggregated_expr 
         
@@ -245,6 +241,17 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Int, Union{Expr, Sy
                 quadratic_expr_dict[expr] = length(quadratic_part)
             end 
         
+        # power term x^a where a not in [2, 0]
+        elseif expr_is_power(expr)
+            if haskey(power_expr_dict, expr)
+                index = power_expr_dict[expr] 
+                new_coeff = power_part[index].expression[1] + coeff 
+                power_part[index] = AlpineExpr((new_coeff, expr), :undet)
+            else 
+                push!(power_part, AlpineExpr((coeff, expr), :undet))
+                power_expr_dict[expr] = length(power_part)
+            end 
+
         # bilinear term 
         elseif expr_is_bilinear(expr)
             if haskey(bilinear_expr_dict, expr)
@@ -266,6 +273,50 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Int, Union{Expr, Sy
                 push!(multilinear_part, AlpineExpr((coeff, expr), :undet))
                 multilinear_expr_dict[expr] = length(multilinear_part)
             end 
+
+        # abs(x) term 
+        elseif expr_is_abs(expr) 
+            if haskey(abs_expr_dict, expr)
+                index = abs_expr_dict[expr]
+                new_coeff = abs_part[index].expression[1] + coeff 
+                abs_part[index] = AlpineExpr((new_coeff, expr), :undet)
+            else 
+                push!(abs_part, AlpineExpr((coeff, expr), :undet))
+                abs_expr_dict[expr] = length(abs_part)
+            end 
+
+        # trigonometric term 
+        elseif expr_is_trigonometric(expr)
+            if haskey(trigonometric_expr_dict, expr)
+                index = trigonometric_expr_dict[expr]
+                new_coeff = trigonometric_part[index].expression[1] + coeff 
+                trigonometric_part[index] = AlpineExpr((new_coeff, expr), :undet)
+            else 
+                push!(trigonometric_part, AlpineExpr((coeff, expr), :undet))
+                trigonometric_expr_dict[expr] = length(trigonometric_part)
+            end 
+
+        # log term 
+        elseif expr_is_log(expr)
+            if haskey(log_expr_dict, expr)
+                index = log_expr_dict[expr]
+                new_coeff = log_part[index].expression[1] + coeff 
+                log_part[index] = AlpineExpr((new_coeff, expr), :undet)
+            else 
+                push!(log_part, AlpineExpr((coeff, expr), :undet))
+                log_expr_dict[expr] = length(log_part)
+            end 
+
+        # exp term 
+        elseif expr_is_exp(expr)
+            if haskey(exp_expr_dict, expr)
+                index = exp_expr_dict[expr]
+                new_coeff = exp_part[index].expression[1] + coeff 
+                exp_part[index] = AlpineExpr((new_coeff, expr), :convex)
+            else 
+                push!(exp_part, AlpineExpr((coeff, expr), :convex))
+                exp_expr_dict[expr] = length(exp_part)
+            end
         
         # other terms
         else 
@@ -281,11 +332,17 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Int, Union{Expr, Sy
         end  
     end 
 
-    nl_function.constant_part = constant_part
-    nl_function.linear_part = linear_part 
-    nl_function.quadratic_part = quadratic_part
-    nl_function.bilinear_part = bilinear_part
-    nl_function.multilinear_part = multilinear_part
+    (length(constant_part) != 0) && (nl_function.constant_part = constant_part)
+    (length(linear_part) != 0) && (nl_function.linear_part = linear_part)
+    (length(quadratic_part) != 0) && (nl_function.quadratic_part = quadratic_part)
+    (length(power_part) != 0) && (nl_function.power_part = power_part)
+    (length(bilinear_part) != 0) && (nl_function.bilinear_part = bilinear_part)
+    (length(multilinear_part) != 0) && (nl_function.multilinear_part = multilinear_part)
+    (length(abs_part) != 0) && (nl_function.abs_part = abs_part)
+    (length(trigonometric_part) != 0) && (nl_function.trigonometric_part = trigonometric_part)
+    (length(log_part) != 0) && (nl_function.log_part = log_part)
+    (length(exp_part) != 0) && (nl_function.exp_part = exp_part)
+    (length(other_part) != 0) && (nl_function.other_part = other_part)
     
     return nl_function
 end
