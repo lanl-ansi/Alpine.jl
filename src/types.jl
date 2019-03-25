@@ -110,6 +110,7 @@ end
 mutable struct NLFunction 
     linear_part                     ::Union{Nothing, Vector{AlpineExpr}}
     quadratic_part                  ::Union{Nothing, Vector{AlpineExpr}}
+    power_part                      ::Union{Nothing, Vector{AlpineExpr}}
     bilinear_part                   ::Union{Nothing, Vector{AlpineExpr}}
     multilinear_part                ::Union{Nothing, Vector{AlpineExpr}}
     polynomial_part                 ::Union{Nothing, Vector{AlpineExpr}}
@@ -118,13 +119,14 @@ mutable struct NLFunction
     trigonometric_part              ::Union{Nothing, Vector{AlpineExpr}}
     log_part                        ::Union{Nothing, Vector{AlpineExpr}}
     exp_part                        ::Union{Nothing, Vector{AlpineExpr}}
-    other_part                      ::Union{Nothing, Vector{AlpineExpr}} # contains hybrids
+    other_part                      ::Union{Nothing, Vector{AlpineExpr}} # contains composite terms
     constant_part                   ::Union{Nothing, Vector{AlpineExpr}}
 end 
 
-NLFunction() = NLFunction(nothing, nothing, nothing, nothing, 
+NLFunction() = NLFunction(nothing, nothing, nothing, 
     nothing, nothing, nothing, nothing, 
-    nothing, nothing, nothing, nothing)
+    nothing, nothing, nothing, nothing, 
+    nothing, nothing)
 
 mutable struct Operator
     operation                       ::Symbol 

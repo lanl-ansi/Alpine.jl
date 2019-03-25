@@ -3,7 +3,7 @@ This file contains all the functions to classify the type of an expression tree
 """
 
 """
-Check if expression is quadratic 
+Check if term is quadratic 
 """
 function expr_is_quadratic(expr)::Bool 
     (length(expr.args) != 3) && (return false)
@@ -19,7 +19,35 @@ function expr_is_quadratic(expr)::Bool
 end 
 
 """
-Check if expression is bilinear 
+Check if term is x^a, where a != 2
+"""
+function expr_is_power(expr)::Bool 
+    (length(expr.args) > 3 || length(expr.args) < 2) && (return false)
+    (expr_is_quadratic(expr)) && (return false)
+    is_power = (expr.args[1] == :^ || expr.args[1] == :sqrt)
+
+    if is_power && expr.args[1] == :^ 
+        is_power = is_power && 
+        try expr.args[2].head == :ref && 
+            (isa(expr.args[3], Float64) || isa(expr.args[3], Int))
+        catch y 
+            false 
+        end 
+    end 
+
+    if is_power && expr.args[1] == :sqrt 
+        is_power = is_power && 
+        try expr.args[2].head == :ref && length(expr.args) == 2
+        catch y 
+            false 
+        end 
+    end 
+
+    return is_power 
+end
+
+"""
+Check if term is bilinear 
 """
 function expr_is_bilinear(expr)::Bool 
     (length(expr.args) != 3) && (return false)
@@ -45,7 +73,7 @@ function expr_is_bilinear(expr)::Bool
 end
 
 """
-Check if expression is multilinear
+Check if term is multilinear
 """
 function expr_is_multilinear(expr)::Bool 
     (expr.args[1] != :*) && (return false)
@@ -75,4 +103,71 @@ function expr_is_multilinear(expr)::Bool
 
     return is_multilinear
 
+end 
+
+"""
+Check if term is polynomial
+"""
+function expr_is_polynomial(expr)::Bool 
+    (expr.args[1] != :*) && (return false)
+    is_polynomial = true
+    variable_powers = Dict{Int, Int}()
+
+    for i in 2:length(expr.args)
+        
+    end 
+
+    return is_polynomial
+
+end 
+
+"""
+Check if term is signomial 
+""" 
+function expr_is_signomial(expr)::Bool 
+    (expr.args[1] != :*) && (return false)
+    is_signomial = true
+
+    return is_signomial
+end 
+
+"""
+Check if term is abs(x)
+"""
+function expr_is_abs(expr)::Bool 
+    (expr.args[1] != :abs) && (return false)
+    is_abs = true
+
+    return is_abs 
+end 
+
+"""
+Check if term is sin(x), cos(x), tan(x)
+"""
+function expr_is_trignometric(expr)::Bool 
+    operations = [:sin, :cos, :tan]
+    (~(expr.args[1] in operations)) && (return false)
+    is_trigonometric = true
+
+    return is_trigonometric 
+end 
+
+"""
+Check if term is log(x)
+"""
+function expr_is_log(expr)::Bool 
+    (expr.args[1] != :log) && (return false)
+    is_log = true
+    
+    return is_log 
+end 
+
+"""
+Check if term is exp(x)
+"""
+function expr_is_exp(expr)::Bool 
+    (expr.args[1] != :exp) && (return false)
+    is_exp = true
+    
+    return is_exp
 end 

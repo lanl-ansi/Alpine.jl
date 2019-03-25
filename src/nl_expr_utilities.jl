@@ -189,7 +189,8 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Int, Union{Expr, Sy
 
     nl_function = NLFunction()
     linear_part = AlpineExpr[]
-    quadratic_part = AlpineExpr[]                
+    quadratic_part = AlpineExpr[]    
+    power_part = AlpineExpr[]            
     bilinear_part = AlpineExpr[]
     multilinear_part = AlpineExpr[]
     polynomial_part = AlpineExpr[]
@@ -203,6 +204,7 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Int, Union{Expr, Sy
 
     linear_expr_dict = Dict()
     quadratic_expr_dict = Dict()
+    power_expr_dict = Dict()
     bilinear_expr_dict = Dict() 
     multilinear_expr_dict = Dict() 
     polynomial_expr_dict = Dict() 
