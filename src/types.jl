@@ -88,10 +88,9 @@ TermInfo() = TermInfo(NaN, :undet, VariableInfo(), nothing, nothing)
     
 mutable struct Terms 
     quadratic_terms                 ::Union{Nothing, Dict{Expr, TermInfo}}
+    power_terms                     ::Union{Nothing, Dict{Expr, TermInfo}}
     bilinear_terms                  ::Union{Nothing, Dict{Expr, TermInfo}}
     multilinear_terms               ::Union{Nothing, Dict{Expr, TermInfo}}
-    polynomial_terms                ::Union{Nothing, Dict{Expr, TermInfo}}
-    signomial_terms                 ::Union{Nothing, Dict{Expr, TermInfo}}
     abs_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
     trigonometric_terms             ::Union{Nothing, Dict{Expr, TermInfo}}
     log_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
@@ -99,7 +98,7 @@ mutable struct Terms
     other_terms                     ::Union{Nothing, Dict{Expr, TermInfo}}
 end 
 
-Terms() = Terms(nothing, nothing, nothing, nothing, nothing,
+Terms() = Terms(nothing, nothing, nothing, nothing, 
     nothing, nothing, nothing, nothing, nothing)
 
 mutable struct AlpineExpr 
@@ -166,15 +165,18 @@ mutable struct AlpineProblem
     num_rsoc_constraints            ::Int  
     num_nlp_constraints             ::Int  
     
+    # constraint bound information
+    constraint_bound_info           ::Union{Nothing, Vector{Interval{Float64}}}
+    objective_bound_info            ::Union{Nothing, Interval{Float64}}
+    
     # JuMP models 
     mip                             ::Union{Nothing, JuMP.Model}
     continuous_relaxation           ::Union{Nothing, JuMP.Model} 
 
     # Variable bounds information 
-    lower_original                  ::Union{Nothing, Vector{Float64}}
-    upper_original                  ::Union{Nothing, Vector{Float64}}
-    lower_tightened                 ::Union{Nothing, Vector{Float64}}
-    upper_tightened                 ::Union{Nothing, Vector{Float64}}
+    variable_bound_original         ::Union{Nothing, Vector{Interval{Float64}}}
+    variable_bound_tightened        ::Union{Nothing, Vector{Interval{Float64}}}
+    lifted_variable_bound           ::Union{Nothing, Vector{Interval{Float64}}}
 
     # Nonlinear information 
     is_objective_linear             ::Union{Nothing, Bool} 
@@ -207,7 +209,8 @@ end
 
 AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
-    nothing, nothing, nothing, nothing, 
+    nothing, nothing, 
+    nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing,
     nothing, 

@@ -13,6 +13,42 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner.num_soc_constraints = length(model.soc_constraints)
     model.inner.num_rsoc_constraints = length(model.rsoc_constraints) 
 
+    model.inner.constraint_bound_info = Vector{Interval{Float64}}()
+    model.inner.objective_bound_info = -Inf..Inf
+
+
+    for (func, set) in model.linear_le_constraints 
+        push!(model.inner.constraint_bound_info, -Inf..set.upper)
+    end 
+
+    for (func, set) in model.linear_ge_constraints 
+        push!(model.inner.constraint_bound_info, set.lower..Inf)
+    end 
+
+    for (func, set) in model.linear_eq_constraints 
+        push!(model.inner.constraint_bound_info, set.value..set.value)
+    end 
+
+    for (func, set) in model.quadratic_le_constraints 
+        push!(model.inner.constraint_bound_info, -Inf..set.upper)
+    end 
+
+    for (func, set) in model.quadratic_ge_constraints 
+        push!(model.inner.constraint_bound_info, set.lower..Inf)
+    end 
+
+    for (func, set) in model.quadratic_eq_constraints 
+        push!(model.inner.constraint_bound_info, set.value..set.value)
+    end 
+
+    for constraint in model.soc_constraints 
+        push!(model.inner.constraint_bound_info, -Inf..Inf)
+    end 
+
+    for constraint in model.rsoc_constraints 
+        push!(model.inner.constraint_bound_info, -Inf..Inf)
+    end
+
     model.inner.quadratic_constraint_convexity = Dict{Symbol, Vector{Symbol}}()
     model.inner.quadratic_function_convexity = Dict{Symbol, Vector{Symbol}}()
 
@@ -38,19 +74,17 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         model.inner.quadratic_function_convexity[:quadratic_eq] = 
             [:undet for i in 1:model.inner.num_quadratic_eq_constraints]
     end 
-    model.inner.lower_original = Vector{Float64}()
-    model.inner.upper_original = Vector{Float64}()
+    model.inner.variable_bound_original = Vector{Interval{Float64}}()
+    model.inner.variable_bound_tightened = Vector{Interval{Float64}}()
 
     for vi in model.variable_info
-        if vi.has_lower_bound && vi.has_upper_bound 
-            vi.is_bounded = true 
-        end
-        if !vi.has_lower_bound || !vi.has_upper_bound 
-            error(LOGGER, "Alpine.jl requires every variable in the problem to be bounded; ensure that finite bounds are provided for every variable using JuMP.set_lower_bound() and JuMP.set_upper_bound()")
-        end 
+        lb = -Inf 
+        ub = Inf
+        (vi.has_lower_bound) && (lb = vi.lower_bound)
+        (vi.has_upper_bound) && (ub = vi.upper_bound)
 
-        push!(model.inner.lower_original, vi.lower_bound)
-        push!(model.inner.upper_original, vi.upper_bound)
+        push!(model.inner.variable_bound_original, lb..ub)
+        push!(model.inner.variable_bound_tightened, lb..ub)
     end 
 
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
@@ -61,6 +95,12 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         if num_nlp_constraints > 0 
             model.inner.nl_constraint_expr = Vector{Expr}()
         end
+
+        for i in 1:num_nlp_constraints 
+            lb = model.nlp_data.constraint_bounds[i].lower
+            ub = model.nlp_data.constraint_bounds[i].upper
+            push!(model.inner.constraint_bound_info, lb..ub)
+        end 
         
         if model.nlp_data.has_objective 
             model.inner.is_objective_nl = true 
@@ -112,7 +152,9 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     
     if model.solver_options.log_level != 0
         print_var_con_summary(model.inner)
-    end
+    end 
+
+    fbbt_linear_constraints!(model)
     
     clean_nl_expressions!(model)
     nl_functions = Vector{Tuple{Int, Union{Expr, Symbol, Float64, Int}}}()
