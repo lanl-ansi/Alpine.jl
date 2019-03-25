@@ -22,7 +22,7 @@ function interface_load_nonlinear_model(m::AlpineNonlinearModel, nonlinear_model
     return
 end
 
-function interface_set_warmstart(nonlinear_model::Any, startval::Vector)
+function interface_set_warmstart(nonlinear_model::Any, startval::Vector{Float64})
     MathProgBase.setwarmstart!(nonlinear_model, startval)
     return
 end

@@ -184,7 +184,7 @@ function local_solve(m::AlpineNonlinearModel; presolve = false)
     if presolve == false
         interface_set_warmstart(local_solve_model, m.best_sol[1:m.num_var_orig])
     else
-        initial_warmval = []
+        initial_warmval = Float64[]
         for i in 1:m.num_var_orig
             isnan(m.d_orig.m.colVal[i]) ? push!(initial_warmval, 0.0) : push!(initial_warmval, m.d_orig.m.colVal[i])
         end
