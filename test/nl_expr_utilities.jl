@@ -10,9 +10,9 @@
     x = MOI.add_variables(optimizer, num_variables)
 
     expressions = Expr[
-        :(x[$(x[1])] + (0.5 + 0.25 * 1.0) == 2.0),              # 1
-        :(x[$(x[1])] * -x[$(x[2])] * +x[$(x[3])] == 2.0),       # 2
-        :(-2.0 * -x[$(x[2])] * -4.0 == 2.0),                    # 3
+        :(x[$(x[1])] + (0.5 + 0.25 * 1.0) == 2.0), # 1
+        :(x[$(x[1])] * -x[$(x[2])] * +x[$(x[3])] == 2.0), # 2
+        :(-2.0 * -x[$(x[2])] * -4.0 == 2.0), # 3
         :(x[$(x[1])] - (sin(x[$(x[2])]) - -4.0 * log(x[$(x[3])]) *x[$(x[1])]) == 2.0), # 4
         :(x[$(x[1])] + x[$(x[1])] - x[$(x[1])]^2 + x[$(x[1])] * x[$(x[2])] - 
         x[$(x[1])]^2 + x[$(x[2])] * x[$(x[1])] + x[$(x[2])] * x[$(x[1])] * x[$(x[3])] +
@@ -63,7 +63,7 @@
     disaggretated_expr = Alpine.expr_disaggregate(expressions[6])
     nl_function = Alpine.create_nl_function(disaggretated_expr)
 
-    @test length(disaggretated_expr) == 2.0 
+    @test length(disaggretated_expr) == 2
 
     @test nl_function.power_part[1].expression[1] == 3.5 
     @test nl_function.power_part[1].expression[2] == :(x[$(x[1])]^5)
@@ -72,7 +72,7 @@
     disaggretated_expr = Alpine.expr_disaggregate(expressions[7])
     nl_function = Alpine.create_nl_function(disaggretated_expr)
 
-    @test length(disaggretated_expr) == 2.0 
+    @test length(disaggretated_expr) == 2 
 
     @test nl_function.log_part[1].expression[1] == 6.0
     @test nl_function.log_part[1].expression[2] == :(log(x[$(x[1])]))
@@ -81,7 +81,7 @@
     disaggretated_expr = Alpine.expr_disaggregate(expressions[8])
     nl_function = Alpine.create_nl_function(disaggretated_expr)
 
-    @test length(disaggretated_expr) == 3.0 
+    @test length(disaggretated_expr) == 3 
 
     @test nl_function.trigonometric_part[1].expression[1] == 4.0
     @test nl_function.trigonometric_part[2].expression[1] == 1.0
@@ -89,7 +89,7 @@
     disaggretated_expr = Alpine.expr_disaggregate(expressions[9])
     nl_function = Alpine.create_nl_function(disaggretated_expr)
 
-    @test length(disaggretated_expr) == 2.0 
+    @test length(disaggretated_expr) == 2 
 
     @test nl_function.abs_part[1].expression[1] == 3.0
     @test nl_function.abs_part[1].expression[2] == :(abs(x[$(x[1])]))
@@ -98,7 +98,7 @@
     disaggretated_expr = Alpine.expr_disaggregate(expressions[10])
     nl_function = Alpine.create_nl_function(disaggretated_expr)
 
-    @test length(disaggretated_expr) == 1.0 
+    @test length(disaggretated_expr) == 1 
 
     @test nl_function.other_part[1].expression[1] == 1.0
     @test nl_function.other_part[1].expression[2] == :(log(x[$(x[1])]) * exp(x[$(x[1])]))
@@ -107,7 +107,7 @@
     disaggretated_expr = Alpine.expr_disaggregate(expressions[11])
     nl_function = Alpine.create_nl_function(disaggretated_expr)
 
-    @test length(disaggretated_expr) == 2.0 
+    @test length(disaggretated_expr) == 2 
 
     @test nl_function.exp_part[1].expression[1] == 6.0
     @test nl_function.exp_part[1].expression[2] == :(exp(x[$(x[1])]))

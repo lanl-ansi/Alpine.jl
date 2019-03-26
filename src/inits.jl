@@ -157,13 +157,16 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     fbbt_linear_constraints!(model)
     
     clean_nl_expressions!(model)
-    nl_functions = Vector{Tuple{Int, Union{Expr, Symbol, Float64, Int}}}()
+    nl_function = NLFunction[]
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
         for expr in model.inner.nl_constraint_expr
             disaggregated_expr = expr_disaggregate(expr)
-            # nl_function = create_nl_function(disaggregated_expr)
+            push!(nl_function, create_nl_function(disaggregated_expr))
         end
+        model.inner.nl_function = nl_function
+
+        create_dag!(model)
     end
 
     return

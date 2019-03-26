@@ -1,5 +1,5 @@
 """
-Feasibility-based bound-tightening for linear constraints 
+feasibility-based bound-tightening for linear constraints 
 """
 function fbbt_linear_constraints!(model::MOI.AbstractOptimizer)
 

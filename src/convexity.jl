@@ -90,11 +90,11 @@ function run_convexity_detection!(model::MOI.AbstractOptimizer)
         is_function_convex = get_convexity(quadratic_function)
         model.inner.quadratic_function_convexity[:quadratic_ge][i] = is_function_convex
         if is_function_convex == :convex
-            model.inner.quadratic_constraint_convexity[:quadratic_le][i] = :concave
+            model.inner.quadratic_constraint_convexity[:quadratic_ge][i] = :concave
         elseif is_function_convex == :concave 
-            model.inner.quadratic_constraint_convexity[:quadratic_le][i] = :convex 
+            model.inner.quadratic_constraint_convexity[:quadratic_ge][i] = :convex 
         else 
-            model.inner.quadratic_constraint_convexity[:quadratic_le][i] = :undet
+            model.inner.quadratic_constraint_convexity[:quadratic_ge][i] = :undet
         end
     end 
 

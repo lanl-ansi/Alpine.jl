@@ -30,4 +30,5 @@ end
     include("convexity.jl")
     include("nl_expr_utilities.jl")
     include("fbbt.jl")
+    include("dag.jl")
 end 

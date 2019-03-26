@@ -124,32 +124,24 @@ NLFunction() = NLFunction(nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, 
     nothing, nothing, nothing, nothing)
 
-mutable struct Operator
-    operation                       ::Symbol 
-    num_args                        ::Int 
-    args                            ::Vector{Any}
-end 
-
-Operator() = Operator(:NaN, 0, Any())
-
 mutable struct DAGVertex 
-    vertex_type                     ::Symbol 
+    vertex_type                     ::Union{Symbol} 
     depth                           ::Int
-    vertex                          ::Union{Int, Operator, Nothing}
-    children                        ::Vector{Union{Nothing, DAGVertex}}
-    parents                         ::Vector{Union{Nothing, DAGVertex}}
+    vertex                          ::Union{Symbol, Expr, Float64, Int, Nothing} 
+    children                        ::Vector{Union{Symbol, Expr, Float64, Int}}
+    parents                         ::Vector{Union{Symbol, Expr, Float64, Int}}
 end 
 
 DAGVertex() = DAGVertex(:NaN, 0, nothing, 
-    Vector{Union{Nothing, DAGVertex}}(), 
-    Vector{Union{Nothing, DAGVertex}}())
+    Vector{Union{Symbol, Expr, Float64, Int}}(), 
+    Vector{Union{Symbol, Expr, Float64, Int}}())
 
 mutable struct DAG 
-    total_depth                     ::Int 
+    max_depth                     ::Int 
     vertices                        ::Dict{Int, Vector{DAGVertex}}
 end 
 
-DAG() = DAG(0, Dict{Int, Vector{DAGVertex}})
+DAG() = DAG(0, Dict{Int, Vector{DAGVertex}}())
 
 mutable struct AlpineProblem 
     # variable and constraint count
@@ -168,6 +160,11 @@ mutable struct AlpineProblem
     # constraint bound information
     constraint_bound_info           ::Union{Nothing, Vector{Interval{Float64}}}
     objective_bound_info            ::Union{Nothing, Interval{Float64}}
+
+    # DAG 
+    expression_graph                ::Union{Nothing, DAG}
+    dag_lookup                      ::Union{Nothing, Dict{Union{Expr, Symbol, Float64, Int}, Tuple{Int, Int}}}
+    common_sub_expression_dict      ::Union{Nothing, Dict{Expr, Vector{Int}}}
     
     # JuMP models 
     mip                             ::Union{Nothing, JuMP.Model}
@@ -184,6 +181,7 @@ mutable struct AlpineProblem
     is_objective_nl                 ::Union{Nothing, Bool} 
     objective_expr                  ::Union{Nothing, Expr} 
     nl_constraint_expr              ::Union{Nothing, Vector{Expr}}
+    nl_function                     ::Union{Nothing, Vector{NLFunction}}
     nl_terms                        ::Union{Nothing, TermInfo}
     constraints_with_nl_terms       ::Union{Nothing, Vector{Int}}
     lifted_constraints              ::Union{Nothing, Vector{JuMP.ConstraintRef}}
@@ -209,9 +207,10 @@ end
 
 AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
+    nothing, nothing, nothing,
     nothing, nothing, 
     nothing, nothing, nothing,
-    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 
