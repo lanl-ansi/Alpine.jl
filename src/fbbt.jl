@@ -19,7 +19,7 @@ Forward propagation
 """ 
 function run_forward_propagation!(model::MOI.AbstractOptimizer)
     fbbt_forward_linear_constraints!(model)
-    # fbbt_forward_quadratic_constraints!(model)
+    fbbt_forward_quadratic_constraints!(model)
     # fbbt_forward_dag!(model)
     # fbbt_forward_nl_constraints!(model)
     return 

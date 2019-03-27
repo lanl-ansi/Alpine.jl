@@ -171,6 +171,87 @@ function fbbt_backward_linear_constraints!(model::MOI.AbstractOptimizer)
 end 
 
 """
+Forward propogation for quadratic constraints
+"""
+function fbbt_forward_quadratic_constraints!(model::MOI.AbstractOptimizer)
+
+    for i in 1:model.inner.num_quadratic_le_constraints 
+        func, set = model.quadratic_le_constraints[i]
+        offset = quadratic_le_offset(model)
+        computed_bound_info = func.constant..func.constant 
+        for term in func.affine_terms 
+            var_id = term.variable_index.value 
+            coeff = term.coefficient 
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+        end
+        for term in func.quadratic_terms 
+            var_id_1 = term.variable_index_1.value 
+            var_id_2 = term.variable_index_2.value 
+            coeff = term.coefficient
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
+                model.inner.variable_bound_tightened[var_id_2]
+        end 
+        model.inner.constraint_bound_info[offset + i] = 
+            intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info)
+        if isempty(model.inner.constraint_bound_info[offset + i])
+            model.inner.status = Status() 
+            model.inner.status.alpine_status = :infeasible
+        end 
+    end 
+
+    for i in 1:model.inner.num_quadratic_ge_constraints 
+        func, set = model.quadratic_ge_constraints[i]
+        offset = quadratic_ge_offset(model)
+        computed_bound_info = func.constant..func.constant 
+        for term in func.affine_terms 
+            var_id = term.variable_index.value 
+            coeff = term.coefficient 
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+        end
+        for term in func.quadratic_terms 
+            var_id_1 = term.variable_index_1.value 
+            var_id_2 = term.variable_index_2.value 
+            coeff = term.coefficient
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
+                model.inner.variable_bound_tightened[var_id_2]
+        end 
+        model.inner.constraint_bound_info[offset + i] = 
+            intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info) 
+        if isempty(model.inner.constraint_bound_info[offset + i])
+            (isa(model.inner.status, Nothing)) && (model.inner.status = Status())
+            model.inner.status.alpine_status = :infeasible
+        end
+    end
+
+    for i in 1:model.inner.num_quadratic_eq_constraints
+        func, set = model.quadratic_eq_constraints[i]
+        offset = quadratic_eq_offset(model)
+        computed_bound_info = func.constant..func.constant 
+        for term in func.affine_terms 
+            var_id = term.variable_index.value 
+            coeff = term.coefficient 
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+        end
+        for term in func.quadratic_terms 
+            var_id_1 = term.variable_index_1.value 
+            var_id_2 = term.variable_index_2.value 
+            coeff = term.coefficient
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
+                model.inner.variable_bound_tightened[var_id_2]
+        end 
+        model.inner.constraint_bound_info[offset + i] = 
+            intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info) 
+        if isempty(model.inner.constraint_bound_info[offset + i])
+            (isa(model.inner.status, Nothing)) && (model.inner.status = Status())
+            model.inner.status.alpine_status = :infeasible
+        end
+    end
+
+    return
+end
+
+
+"""
 Check if problem is infeasible
 """
 function is_infeasible(model::MOI.AbstractOptimizer)::Bool 
