@@ -5,11 +5,39 @@ function create_dag!(model::MOI.AbstractOptimizer)
     model.inner.expression_graph = DAG()
     model.inner.dag_lookup = Dict{Union{Expr, Float64, Int, Symbol}, Tuple{Int, Int}}()
     model.inner.common_sub_expression_dict = Dict{Expr, Vector{Int}}()
-   
-    for i in 1:length(model.inner.nl_function)
-        nl_function = model.inner.nl_function[i]
+    
+    if model.inner.is_objective_nl || model.inner.is_objective_quadratic
+        id = 0 
+        add_to_dag!(model.inner.objective_nl_function, model.inner.expression_graph, 
+            model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
+    end 
+
+    for i in 1:model.inner.num_quadratic_le_constraints 
+        nl_function = model.inner.quadratic_nl_function_le[i]
+        id = quadratic_le_offset(model) + i
         add_to_dag!(nl_function, model.inner.expression_graph, 
-            model.inner.common_sub_expression_dict, i; dag_lookup = model.inner.dag_lookup)
+            model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
+    end 
+
+    for i in 1:model.inner.num_quadratic_ge_constraints 
+        nl_function = model.inner.quadratic_nl_function_ge[i]
+        id = quadratic_ge_offset(model) + i
+        add_to_dag!(nl_function, model.inner.expression_graph, 
+            model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
+    end 
+
+    for i in 1:model.inner.num_quadratic_eq_constraints 
+        nl_function = model.inner.quadratic_nl_function_eq[i]
+        id = quadratic_eq_offset(model) + i
+        add_to_dag!(nl_function, model.inner.expression_graph, 
+            model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
+    end 
+
+    for i in 1:model.inner.num_nlp_constraints
+        nl_function = model.inner.nl_function[i]
+        id = nlp_offset(model) + i
+        add_to_dag!(nl_function, model.inner.expression_graph, 
+            model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
     end 
 
     update_max_depth!(model.inner.expression_graph)
@@ -22,7 +50,9 @@ Update max depth of the DAG
 """ 
 function update_max_depth!(dag::DAG)
     depth = [d for d in keys(dag.vertices)]
+    (length(depth) == 0) && (return)
     dag.max_depth = maximum(depth)
+    return
 end 
 
 """

@@ -41,6 +41,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         push!(model.inner.constraint_bound_info, set.value..set.value)
     end 
 
+    # handle SOCs and RSOCs later with additional book-keeping in AlpineProblem struct
     for constraint in model.soc_constraints 
         push!(model.inner.constraint_bound_info, -Inf..Inf)
     end 
@@ -93,7 +94,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         num_nlp_constraints = length(model.nlp_data.constraint_bounds)
         model.inner.num_nlp_constraints = num_nlp_constraints
         if num_nlp_constraints > 0 
-            model.inner.nl_constraint_expr = Vector{Expr}()
+            model.inner.nl_constraint_expression = Vector{Expr}()
         end
 
         for i in 1:num_nlp_constraints 
@@ -104,7 +105,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         
         if model.nlp_data.has_objective 
             model.inner.is_objective_nl = true 
-            model.inner.objective_expr = MOI.objective_expr(evaluator)
+            model.inner.objective_expression = MOI.objective_expression(evaluator)
             model.inner.is_objective_linear = false 
             model.inner.is_objective_quadratic = false 
             model.inner.objective_convexity = :undet
@@ -122,7 +123,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
 
         for i in 1:num_nlp_constraints
             constraint_expr = MOI.constraint_expr(evaluator, i)
-            push!(model.inner.nl_constraint_expr, constraint_expr)
+            push!(model.inner.nl_constraint_expression, constraint_expr)
         end
 
     else 
@@ -156,18 +157,27 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
 
     fbbt_linear_constraints!(model)
     
+    create_quadratic_nl_functions!(model)
+
     clean_nl_expressions!(model)
     nl_function = NLFunction[]
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
-        for expr in model.inner.nl_constraint_expr
+        for expr in model.inner.nl_constraint_expression
             disaggregated_expr = expr_disaggregate(expr)
             push!(nl_function, create_nl_function(disaggregated_expr))
         end
         model.inner.nl_function = nl_function
 
-        create_dag!(model)
+        if model.inner.is_objective_nl 
+            disaggregated_expr = expr_disaggregate(objective_expression)
+            model.inner.objective_nl_function = create_nl_function(disaggregated_expr)
+        end 
     end
+
+    
+
+    create_dag!(model)
 
     return
 end

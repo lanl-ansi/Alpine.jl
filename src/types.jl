@@ -179,13 +179,20 @@ mutable struct AlpineProblem
     is_objective_linear             ::Union{Nothing, Bool} 
     is_objective_quadratic          ::Union{Nothing, Bool} 
     is_objective_nl                 ::Union{Nothing, Bool} 
-    objective_expr                  ::Union{Nothing, Expr} 
-    nl_constraint_expr              ::Union{Nothing, Vector{Expr}}
+    objective_expression            ::Union{Nothing, Expr} 
+    nl_constraint_expression        ::Union{Nothing, Vector{Expr}}
     nl_function                     ::Union{Nothing, Vector{NLFunction}}
+    objective_nl_function           ::Union{Nothing, NLFunction}
     nl_terms                        ::Union{Nothing, TermInfo}
     constraints_with_nl_terms       ::Union{Nothing, Vector{Int}}
     lifted_constraints              ::Union{Nothing, Vector{JuMP.ConstraintRef}}
     lifted_var_info                 ::Union{Nothing, Dict{Int, Any}}
+
+    # quadratic constraint information
+    quadratic_nl_function_le        ::Union{Nothing, Vector{NLFunction}}
+    quadratic_nl_function_ge        ::Union{Nothing, Vector{NLFunction}}
+    quadratic_nl_function_eq        ::Union{Nothing, Vector{NLFunction}}
+
 
     # convexity information 
     objective_convexity             ::Union{Nothing, Symbol} 
@@ -210,7 +217,8 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, nothing,
     nothing, nothing, 
     nothing, nothing, nothing,
-    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 

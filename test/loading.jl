@@ -16,7 +16,7 @@
     internal_model = bm.optimizer.model
 
     @test internal_model.inner.is_objective_quadratic == true 
-    @test length(internal_model.inner.nl_constraint_expr) == 1
+    @test length(internal_model.inner.nl_constraint_expression) == 1
     @test length(internal_model.variable_info) == 2
     @test internal_model.inner.objective_convexity == :convex
     @test internal_model.inner.quadratic_function_convexity[:quadratic_le][1] == :convex

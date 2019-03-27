@@ -141,9 +141,9 @@ linear_eq_offset(model::Optimizer) = linear_ge_offset(model) + length(model.line
 quadratic_le_offset(model::Optimizer) = linear_eq_offset(model) + length(model.linear_eq_constraints)
 quadratic_ge_offset(model::Optimizer) = quadratic_le_offset(model) + length(model.quadratic_le_constraints)
 quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
-soc_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.soc_constraints)
-rsoc_offset(model::Optimizer) = soc_offset(model) + length(model.rsoc_constraints)
-nlp_constraint_offset(model::Optimizer) = rsoc_offset(model) + length(model.quadratic_eq_constraints)
+soc_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
+rsoc_offset(model::Optimizer) = soc_offset(model) + length(model.soc_constraints)
+nlp_offset(model::Optimizer) = rsoc_offset(model) + length(model.rsoc_constraints)
 
 """
 variable offset 

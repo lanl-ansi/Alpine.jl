@@ -7,16 +7,16 @@ Clean the nonlinear expressions
 """
 function clean_nl_expressions!(model::MOI.AbstractOptimizer)
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
-        for expr in model.inner.nl_constraint_expr
+        for expr in model.inner.nl_constraint_expression
             expr_flatten_constant_subtree(expr)
             expr_separate_sign_multilinear(expr)
             expr_aggregate_coeff_multilinear(expr)
         end
         
         if model.inner.is_objective_nl
-            expr_flatten_constant_subtree(model.inner.objective_expr)
-            expr_separate_sign_multilinear(model.inner.objective_expr)
-            expr_aggregate_coeff_multilinear(model.inner.objective_expr)
+            expr_flatten_constant_subtree(model.inner.objective_expression)
+            expr_separate_sign_multilinear(model.inner.objective_expression)
+            expr_aggregate_coeff_multilinear(model.inner.objective_expression)
         end 
     end 
 
@@ -346,3 +346,103 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Float64, Union{Expr
     
     return nl_function
 end
+
+"""
+Create NLFunction() for each of the quadratic constraints and quadratic objective 
+"""
+function create_quadratic_nl_functions!(model::MOI.AbstractOptimizer)
+    quadratic_nl_function_le = NLFunction[]
+    for i in 1:model.inner.num_quadratic_le_constraints 
+        func = model.quadratic_le_constraints[i][1]
+        push!(quadratic_nl_function_le, create_quadratic_nl_function(func))
+    end 
+    model.inner.quadratic_nl_function_le = quadratic_nl_function_le
+
+    quadratic_nl_function_ge = NLFunction[]
+    for i in 1:model.inner.num_quadratic_ge_constraints 
+        func = model.quadratic_ge_constraints[i][1]
+        push!(quadratic_nl_function_ge, create_quadratic_nl_function(func))
+    end 
+    model.inner.quadratic_nl_function_ge = quadratic_nl_function_ge
+
+    quadratic_nl_function_eq = NLFunction[]
+    for i in 1:model.inner.num_quadratic_eq_constraints 
+        func = model.quadratic_eq_constraints[i][1]
+        push!(quadratic_nl_function_eq, create_quadratic_nl_function(func))
+    end 
+    model.inner.quadratic_nl_function_eq = quadratic_nl_function_eq
+
+    if model.inner.is_objective_quadratic 
+        model.inner.objective_nl_function = create_quadratic_nl_function(model.objective)
+    end 
+
+    return
+end 
+
+"""
+Create NLFunction() for a quadratic function 
+"""
+function create_quadratic_nl_function(quadratic_function::SQF)::NLFunction
+    
+    nl_function = NLFunction()
+    linear_part = AlpineExpr[]
+    quadratic_part = AlpineExpr[]               
+    bilinear_part = AlpineExpr[]
+    constant_part = AlpineExpr[]
+
+    linear_expr_dict = Dict()
+    quadratic_expr_dict = Dict()
+    bilinear_expr_dict = Dict() 
+
+    for term in quadratic_function.affine_terms 
+        expr = :(x[$(term.variable_index)])
+        if haskey(linear_expr_dict, expr)
+            index = linear_expr_dict[expr]
+            new_coeff = linear_part[index].expression[1] + term.coefficient 
+            linear_part[index] = AlpineExpr((new_coeff, expr), :convex)
+        else 
+            push!(linear_part, AlpineExpr((term.coefficient, expr), :convex))
+            linear_expr_dict[expr] = length(linear_part)
+        end
+    end
+
+    if quadratic_function.constant != 0.0
+        push!(constant_part, AlpineExpr((1.0, quadratic_function.constant), :convex))
+    end 
+
+    for term in quadratic_function.quadratic_terms 
+        if term.variable_index_1 == term.variable_index_2 
+            expr = :(x[$(term.variable_index_1)]^2)
+            if haskey(quadratic_expr_dict, expr)
+                index = quadratic_expr_dict[expr]
+                new_coeff = quadratic_part[index].expression[1] + term.coefficient 
+                convexity = (new_coeff >= 0) ? :convex : :concave 
+                quadratic_part[index] = AlpineExpr((new_coeff, expr), convexity)
+            else 
+                convexity = (term.coefficient >= 0) ? :convex : :concave 
+                push!(quadratic_part, AlpineExpr((term.coefficient, expr), convexity))
+                quadratic_expr_dict[expr] = length(quadratic_part)
+            end 
+        else 
+            min_index = min(term.variable_index_1.value, term.variable_index_2.value)
+            max_index = max(term.variable_index_1.value, term.variable_index_2.value)
+            expr = :(x[$(VI(min_index))] * x[$(VI(max_index))])
+            if haskey(bilinear_expr_dict, expr)
+                index = bilinear_expr_dict[expr]
+                new_coeff = bilinear_part[index].expression[1] + term.coefficient
+                bilinear_part[index] = AlpineExpr((new_coeff, expr), :undet)
+            else 
+                push!(bilinear_part, AlpineExpr((term.coefficient, expr), :undet)) 
+                bilinear_expr_dict[expr] = length(bilinear_part)
+            end 
+        end 
+    end 
+
+    (length(constant_part) != 0) && (nl_function.constant_part = constant_part)
+    (length(linear_part) != 0) && (nl_function.linear_part = linear_part)
+    (length(quadratic_part) != 0) && (nl_function.quadratic_part = quadratic_part)
+    (length(bilinear_part) != 0) && (nl_function.bilinear_part = bilinear_part)
+
+    return nl_function
+
+end 
