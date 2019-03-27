@@ -47,6 +47,7 @@ mutable struct SolverOptions
     bt_relax                        ::Bool 
     bt_mip_time_limit               ::Float64 
     bp                              ::Bool 
+    bp_max_iter                   ::Int
 
     is_problem_convex               ::Bool
 end 
@@ -130,14 +131,17 @@ mutable struct DAGVertex
     vertex                          ::Union{Symbol, Expr, Float64, Int, Nothing} 
     children                        ::Vector{Union{Symbol, Expr, Float64, Int}}
     parents                         ::Vector{Union{Symbol, Expr, Float64, Int}}
+    convexity                       ::Symbol 
+    interval                        ::Interval{Float64}
 end 
 
 DAGVertex() = DAGVertex(:NaN, 0, nothing, 
     Vector{Union{Symbol, Expr, Float64, Int}}(), 
-    Vector{Union{Symbol, Expr, Float64, Int}}())
+    Vector{Union{Symbol, Expr, Float64, Int}}(), 
+    :undet, -Inf..Inf)
 
 mutable struct DAG 
-    max_depth                     ::Int 
+    max_depth                       ::Int 
     vertices                        ::Dict{Int, Vector{DAGVertex}}
 end 
 

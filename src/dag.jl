@@ -111,7 +111,11 @@ function append_dag!(expr;
             (isa(parent, Nothing)) && (error(LOGGER, "DAG vertex $current_vertex is isolated"))
             current_parents = Vector{Union{Symbol, Expr, Float64, Int}}() 
             push!(current_parents, parent)
-            current_dag_vertex = DAGVertex(current_vertex_type, current_depth, current_vertex, current_children, current_parents)
+            current_convexity = :linear 
+            current_interval = -Inf..Inf 
+            (current_vertex_type == :constant) && (current_interval = expr..expr)
+            current_dag_vertex = DAGVertex(current_vertex_type, current_depth, current_vertex, 
+                current_children, current_parents, current_convexity, current_interval)
             (~haskey(dag.vertices, 0)) && (dag.vertices[0] = DAGVertex[])
             push!(dag.vertices[current_depth], current_dag_vertex)
             dag_lookup[expr] = (current_depth, length(dag.vertices[current_depth]))
@@ -146,7 +150,10 @@ function append_dag!(expr;
     current_children = Vector{Union{Symbol, Expr, Float64, Int}}() 
     current_parents = Vector{Union{Symbol, Expr, Float64, Int}}() 
     (~isa(parent, Nothing)) && (push!(current_parents, parent))
-    current_dag_vertex = DAGVertex(current_vertex_type, current_depth, current_vertex, current_children, current_parents)
+    current_convexity = :undet 
+    current_interval = -Inf..Inf
+    current_dag_vertex = DAGVertex(current_vertex_type, current_depth, current_vertex, 
+        current_children, current_parents, current_convexity, current_interval)
     
     # recursive call to the arguments
     for i in 2:length(expr.args)

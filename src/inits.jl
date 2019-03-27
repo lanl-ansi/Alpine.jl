@@ -155,8 +155,6 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         print_var_con_summary(model.inner)
     end 
 
-    fbbt_linear_constraints!(model)
-    
     create_quadratic_nl_functions!(model)
 
     clean_nl_expressions!(model)

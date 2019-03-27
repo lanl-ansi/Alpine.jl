@@ -156,6 +156,13 @@ variable_offset(model::Optimizer) = length(model.variable_info)
 """ 
 function MOI.optimize!(model::Optimizer)
     init_ap_data!(model)
+    if model.solver_options.bp == true 
+        run_fbbt!(model)
+        if ~isa(model.inner.status, Nothing) && model.inner.status.alpine_status == :infeasible 
+            info(LOGGER, "problem infeasibility detected using bound-propagation")
+            return
+        end 
+    end
     run_convexity_detection!(model)
 
 end 

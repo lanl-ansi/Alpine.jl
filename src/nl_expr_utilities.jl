@@ -215,16 +215,16 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Float64, Union{Expr
         
         # constant term
         if isa(expr, Float64) || isa(expr, Int)
-            push!(constant_part, AlpineExpr((coeff, expr), :convex))
+            push!(constant_part, AlpineExpr((coeff, expr), :linear))
             
         # linear term
         elseif expr.head == :ref 
             if haskey(linear_expr_dict, expr)
                 index = linear_expr_dict[expr]
                 new_coeff = linear_part[index].expression[1] + coeff 
-                linear_part[index] = AlpineExpr((new_coeff, expr), :convex)
+                linear_part[index] = AlpineExpr((new_coeff, expr), :linear)
             else 
-                push!(linear_part, AlpineExpr((coeff, expr), :convex))
+                push!(linear_part, AlpineExpr((coeff, expr), :linear))
                 linear_expr_dict[expr] = length(linear_part)
             end 
         
@@ -399,15 +399,15 @@ function create_quadratic_nl_function(quadratic_function::SQF)::NLFunction
         if haskey(linear_expr_dict, expr)
             index = linear_expr_dict[expr]
             new_coeff = linear_part[index].expression[1] + term.coefficient 
-            linear_part[index] = AlpineExpr((new_coeff, expr), :convex)
+            linear_part[index] = AlpineExpr((new_coeff, expr), :linear)
         else 
-            push!(linear_part, AlpineExpr((term.coefficient, expr), :convex))
+            push!(linear_part, AlpineExpr((term.coefficient, expr), :linear))
             linear_expr_dict[expr] = length(linear_part)
         end
     end
 
     if quadratic_function.constant != 0.0
-        push!(constant_part, AlpineExpr((1.0, quadratic_function.constant), :convex))
+        push!(constant_part, AlpineExpr((1.0, quadratic_function.constant), :linear))
     end 
 
     for term in quadratic_function.quadratic_terms 

@@ -46,7 +46,7 @@
     
     @test nl_function.linear_part[1].expression[1] == 2.0 
     @test nl_function.linear_part[1].expression[2] == :(x[$(x[1])])
-    @test nl_function.linear_part[1].convexity == :convex
+    @test nl_function.linear_part[1].convexity == :linear
     
     @test nl_function.quadratic_part[1].expression[1] == -2.0
     @test nl_function.quadratic_part[1].expression[2] == :(x[$(x[1])]^2)
