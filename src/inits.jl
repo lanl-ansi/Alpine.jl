@@ -72,6 +72,8 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     end
 
     if model.inner.num_quadratic_eq_constraints > 0 
+        model.inner.quadratic_constraint_convexity[:quadratic_eq] = 
+            [:undet for i in 1:model.inner.num_quadratic_eq_constraints]
         model.inner.quadratic_function_convexity[:quadratic_eq] = 
             [:undet for i in 1:model.inner.num_quadratic_eq_constraints]
     end 
@@ -105,7 +107,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         
         if model.nlp_data.has_objective 
             model.inner.is_objective_nl = true 
-            model.inner.objective_expression = MOI.objective_expression(evaluator)
+            model.inner.objective_expression = MOI.objective_expr(evaluator)
             model.inner.is_objective_linear = false 
             model.inner.is_objective_quadratic = false 
             model.inner.objective_convexity = :undet
@@ -161,19 +163,18 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     nl_function = NLFunction[]
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
-        for expr in model.inner.nl_constraint_expression
+        for i in 1:model.inner.num_nlp_constraints 
+            expr = model.inner.nl_constraint_expression[i]
             disaggregated_expr = expr_disaggregate(expr)
             push!(nl_function, create_nl_function(disaggregated_expr))
         end
         model.inner.nl_function = nl_function
 
         if model.inner.is_objective_nl 
-            disaggregated_expr = expr_disaggregate(objective_expression)
+            disaggregated_expr = expr_disaggregate(model.inner.objective_expression)
             model.inner.objective_nl_function = create_nl_function(disaggregated_expr)
         end 
     end
-
-    
 
     create_dag!(model)
 
