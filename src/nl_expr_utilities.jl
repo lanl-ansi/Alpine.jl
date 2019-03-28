@@ -415,12 +415,12 @@ function create_quadratic_nl_function(quadratic_function::SQF)::NLFunction
             expr = :(x[$(term.variable_index_1)]^2)
             if haskey(quadratic_expr_dict, expr)
                 index = quadratic_expr_dict[expr]
-                new_coeff = quadratic_part[index].expression[1] + term.coefficient 
+                new_coeff = quadratic_part[index].expression[1] + term.coefficient/2.0 
                 convexity = (new_coeff >= 0) ? :convex : :concave 
                 quadratic_part[index] = AlpineExpr((new_coeff, expr), convexity)
             else 
                 convexity = (term.coefficient >= 0) ? :convex : :concave 
-                push!(quadratic_part, AlpineExpr((term.coefficient, expr), convexity))
+                push!(quadratic_part, AlpineExpr((term.coefficient/2.0, expr), convexity))
                 quadratic_expr_dict[expr] = length(quadratic_part)
             end 
         else 
@@ -429,10 +429,10 @@ function create_quadratic_nl_function(quadratic_function::SQF)::NLFunction
             expr = :(x[$(VI(min_index))] * x[$(VI(max_index))])
             if haskey(bilinear_expr_dict, expr)
                 index = bilinear_expr_dict[expr]
-                new_coeff = bilinear_part[index].expression[1] + term.coefficient
+                new_coeff = bilinear_part[index].expression[1] + term.coefficient/2.0
                 bilinear_part[index] = AlpineExpr((new_coeff, expr), :undet)
             else 
-                push!(bilinear_part, AlpineExpr((term.coefficient, expr), :undet)) 
+                push!(bilinear_part, AlpineExpr((term.coefficient/2.0, expr), :undet)) 
                 bilinear_expr_dict[expr] = length(bilinear_part)
             end 
         end 

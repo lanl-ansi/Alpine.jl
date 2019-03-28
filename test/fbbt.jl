@@ -32,5 +32,29 @@
     @test alpine_problem.variable_bound_tightened[4].hi == 0
     @test alpine_problem.variable_bound_tightened[4].lo == -1
 
+    # infeasible LP 
+    m = Model(with_optimizer(
+        Alpine.Optimizer, solver_options)
+    )
+    @variable(m, 0 <= x[1:2] <= 1)
+    @constraint(m, sum(x) >= 3)
+
+    optimize!(m) 
+
+    @test JuMP.termination_status(m) == MOI.INFEASIBLE
+
+    # infeasible QP 
+    m = Model(with_optimizer(
+        Alpine.Optimizer, solver_options)
+    )
+    @variable(m, x[1:2])
+    @constraint(m, x[1]^2 + x[2]^2 <= -1)
+
+    optimize!(m) 
+
+    @test JuMP.termination_status(m) == MOI.INFEASIBLE
+
+
+
 
 end 

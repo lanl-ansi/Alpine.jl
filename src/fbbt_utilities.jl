@@ -187,9 +187,13 @@ function fbbt_forward_quadratic_constraints!(model::MOI.AbstractOptimizer)
         for term in func.quadratic_terms 
             var_id_1 = term.variable_index_1.value 
             var_id_2 = term.variable_index_2.value 
-            coeff = term.coefficient
-            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
-                model.inner.variable_bound_tightened[var_id_2]
+            coeff = term.coefficient/2.0
+            if var_id_1 == var_id_2 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1]^2 
+            else 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
+                    model.inner.variable_bound_tightened[var_id_2]
+            end 
         end 
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info)
@@ -211,9 +215,13 @@ function fbbt_forward_quadratic_constraints!(model::MOI.AbstractOptimizer)
         for term in func.quadratic_terms 
             var_id_1 = term.variable_index_1.value 
             var_id_2 = term.variable_index_2.value 
-            coeff = term.coefficient
-            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
-                model.inner.variable_bound_tightened[var_id_2]
+            coeff = term.coefficient/2.0
+            if var_id_1 == var_id_2 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1]^2 
+            else 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
+                    model.inner.variable_bound_tightened[var_id_2]
+            end 
         end 
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info) 
@@ -235,9 +243,13 @@ function fbbt_forward_quadratic_constraints!(model::MOI.AbstractOptimizer)
         for term in func.quadratic_terms 
             var_id_1 = term.variable_index_1.value 
             var_id_2 = term.variable_index_2.value 
-            coeff = term.coefficient
-            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
-                model.inner.variable_bound_tightened[var_id_2]
+            coeff = term.coefficient/2.0
+            if var_id_1 == var_id_2 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1]^2 
+            else 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
+                    model.inner.variable_bound_tightened[var_id_2]
+            end 
         end 
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info) 
