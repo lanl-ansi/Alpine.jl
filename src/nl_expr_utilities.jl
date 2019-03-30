@@ -352,26 +352,12 @@ end
 Create NLFunction() for each of the quadratic constraints and quadratic objective 
 """
 function create_quadratic_nl_functions!(model::MOI.AbstractOptimizer)
-    quadratic_nl_function_le = NLFunction[]
-    for i in 1:model.inner.num_quadratic_le_constraints 
-        func = model.quadratic_le_constraints[i][1]
-        push!(quadratic_nl_function_le, create_quadratic_nl_function(func))
+    quadratic_nl_function = NLFunction[]
+    for i in 1:model.inner.num_quadratic_constraints 
+        func = model.quadratic_constraints[i][1]
+        push!(quadratic_nl_function, create_quadratic_nl_function(func))
     end 
-    model.inner.quadratic_nl_function_le = quadratic_nl_function_le
-
-    quadratic_nl_function_ge = NLFunction[]
-    for i in 1:model.inner.num_quadratic_ge_constraints 
-        func = model.quadratic_ge_constraints[i][1]
-        push!(quadratic_nl_function_ge, create_quadratic_nl_function(func))
-    end 
-    model.inner.quadratic_nl_function_ge = quadratic_nl_function_ge
-
-    quadratic_nl_function_eq = NLFunction[]
-    for i in 1:model.inner.num_quadratic_eq_constraints 
-        func = model.quadratic_eq_constraints[i][1]
-        push!(quadratic_nl_function_eq, create_quadratic_nl_function(func))
-    end 
-    model.inner.quadratic_nl_function_eq = quadratic_nl_function_eq
+    model.inner.quadratic_nl_function = quadratic_nl_function
 
     if model.inner.is_objective_quadratic 
         model.inner.objective_nl_function = create_quadratic_nl_function(model.objective)

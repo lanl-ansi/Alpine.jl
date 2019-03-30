@@ -32,6 +32,12 @@ const BOUNDS = Union{
     MOI.Interval{Float64}
 }
 
+const CONSTRAINT_BOUNDS = Union{ 
+    MOI.EqualTo{Float64},
+    MOI.GreaterThan{Float64},
+    MOI.LessThan{Float64}
+}
+
 const VAR_TYPES = Union{
     MOI.ZeroOne, 
     MOI.Integer

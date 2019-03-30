@@ -12,12 +12,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     nlp_data::MOI.NLPBlockData
     sense::MOI.OptimizationSense 
     objective::Union{SVF, SAF, SQF, Nothing}
-    linear_le_constraints::Vector{Tuple{SAF, MOI.LessThan{Float64}}}
-    linear_ge_constraints::Vector{Tuple{SAF, MOI.GreaterThan{Float64}}}
-    linear_eq_constraints::Vector{Tuple{SAF, MOI.EqualTo{Float64}}}
-    quadratic_le_constraints::Vector{Tuple{SQF, MOI.LessThan{Float64}}}
-    quadratic_ge_constraints::Vector{Tuple{SQF, MOI.GreaterThan{Float64}}}
-    quadratic_eq_constraints::Vector{Tuple{SQF, MOI.EqualTo{Float64}}}
+    linear_constraints::Vector{Tuple{SAF, CONSTRAINT_BOUNDS}}
+    quadratic_constraints::Vector{Tuple{SQF, CONSTRAINT_BOUNDS}}
     soc_constraints::Vector{Tuple{VECTOR, SOC}}
     rsoc_constraints::Vector{Tuple{VECTOR, RSOC}}
     solver_options::SolverOptions
@@ -60,8 +56,8 @@ function Optimizer(; options...)
         empty_nlp_data(), 
         MOI.FEASIBILITY_SENSE, 
         nothing, 
-        [], [], [], # linear constraints 
-        [], [], [], # quadratic constraints
+        [], # linear constraints 
+        [], # quadratic constraints
         [], [], # conic constraints 
         solver_options)
 end 
@@ -75,8 +71,8 @@ function Optimizer(options::Dict{Symbol,Any})
         empty_nlp_data(), 
         MOI.FEASIBILITY_SENSE, 
         nothing, 
-        [], [], [], # linear constraints 
-        [], [], [], # quadratic constraints
+        [], # linear constraints  
+        [], # quadratic constraints
         [], [], # conic constraints 
         solver_options)
 end 
@@ -103,12 +99,8 @@ function MOI.is_empty(model::Optimizer)
     return isempty(model.variable_info) &&
         model.nlp_data.evaluator isa EmptyNLPEvaluator &&
         model.sense == MOI.FEASIBILITY_SENSE &&
-        isempty(model.linear_le_constraints) &&
-        isempty(model.linear_ge_constraints) &&
-        isempty(model.linear_eq_constraints) &&
-        isempty(model.quadratic_le_constraints) &&
-        isempty(model.quadratic_ge_constraints) &&
-        isempty(model.quadratic_eq_constraints) && 
+        isempty(model.linear_constraints) &&
+        isempty(model.quadratic_constraints) &&
         isempty(model.soc_constraints) && 
         isempty(model.rsoc_constraints)
 end
@@ -122,12 +114,8 @@ function MOI.empty!(model::Optimizer)
     model.nlp_data = empty_nlp_data()
     model.sense = MOI.FEASIBILITY_SENSE
     model.objective = nothing
-    empty!(model.linear_le_constraints)
-    empty!(model.linear_ge_constraints)
-    empty!(model.linear_eq_constraints)
-    empty!(model.quadratic_le_constraints)
-    empty!(model.quadratic_ge_constraints)
-    empty!(model.quadratic_eq_constraints)
+    empty!(model.linear_constraints)
+    empty!(model.quadratic_constraints)
     empty!(model.soc_constraints)
     empty!(model.rsoc_constraints)
 end
@@ -135,13 +123,9 @@ end
 """
 ordering of constraints provided to Alpine.jl 
 """
-linear_le_offset(model::Optimizer) = 0
-linear_ge_offset(model::Optimizer) = length(model.linear_le_constraints)
-linear_eq_offset(model::Optimizer) = linear_ge_offset(model) + length(model.linear_ge_constraints)
-quadratic_le_offset(model::Optimizer) = linear_eq_offset(model) + length(model.linear_eq_constraints)
-quadratic_ge_offset(model::Optimizer) = quadratic_le_offset(model) + length(model.quadratic_le_constraints)
-quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
-soc_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
+linear_offset(model::Optimizer) = 0
+quadratic_offset(model::Optimizer) = linear_offset(model) 
+soc_offset(model::Optimizer) = quadratic_offset(model) + length(model.quadratic_constraints)
 rsoc_offset(model::Optimizer) = soc_offset(model) + length(model.soc_constraints)
 nlp_offset(model::Optimizer) = rsoc_offset(model) + length(model.rsoc_constraints)
 

@@ -50,12 +50,12 @@ end
 """
 ``MOI.add_constraint()`` overloads for all the supported constraint types 
 """
-@define_add_constraint(SAF, MOI.LessThan{Float64}, linear_le_constraints)
-@define_add_constraint(SAF, MOI.GreaterThan{Float64}, linear_ge_constraints)
-@define_add_constraint(SAF, MOI.EqualTo{Float64}, linear_eq_constraints)
-@define_add_constraint(SQF, MOI.LessThan{Float64}, quadratic_le_constraints)
-@define_add_constraint(SQF, MOI.GreaterThan{Float64}, quadratic_ge_constraints)
-@define_add_constraint(SQF, MOI.EqualTo{Float64}, quadratic_eq_constraints)
+@define_add_constraint(SAF, MOI.LessThan{Float64}, linear_constraints)
+@define_add_constraint(SAF, MOI.GreaterThan{Float64}, linear_constraints)
+@define_add_constraint(SAF, MOI.EqualTo{Float64}, linear_constraints)
+@define_add_constraint(SQF, MOI.LessThan{Float64}, quadratic_constraints)
+@define_add_constraint(SQF, MOI.GreaterThan{Float64}, quadratic_constraints)
+@define_add_constraint(SQF, MOI.EqualTo{Float64}, quadratic_constraints)
 @define_add_constraint(VECTOR, SOC, soc_constraints)
 @define_add_constraint(VECTOR, RSOC, rsoc_constraints)
 

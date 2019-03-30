@@ -19,9 +19,13 @@
     @test length(internal_model.inner.nl_constraint_expression) == 1
     @test length(internal_model.variable_info) == 2
     @test internal_model.inner.objective_convexity == :convex
-    @test internal_model.inner.quadratic_function_convexity[:quadratic_le][1] == :convex
-    @test internal_model.inner.quadratic_constraint_convexity[:quadratic_le][1] == :convex
-    @test internal_model.inner.quadratic_function_convexity[:quadratic_eq][1] == :convex
+    @test internal_model.inner.quadratic_function_convexity[1] == :convex
+    if isa(internal_model.quadratic_constraints[1][2], MOI.LessThan{Float64})
+        @test internal_model.inner.quadratic_constraint_convexity[1] == :convex
+    else 
+        @test internal_model.inner.quadratic_constraint_convexity[1] == :undet
+    end
+    @test internal_model.inner.quadratic_function_convexity[2] == :convex
 
     m = Model(with_optimizer(
         Alpine.Optimizer, 
@@ -44,7 +48,7 @@
     @test internal_model.inner.num_constraints == 2 
     @test internal_model.inner.is_objective_quadratic == true
     @test internal_model.inner.objective_convexity == :convex 
-    @test internal_model.inner.quadratic_function_convexity[:quadratic_le][1] == :undet
-    @test internal_model.inner.quadratic_constraint_convexity[:quadratic_le][1] == :undet
+    @test internal_model.inner.quadratic_function_convexity[1] == :undet
+    @test internal_model.inner.quadratic_constraint_convexity[1] == :undet
  
 end 

@@ -151,12 +151,8 @@ mutable struct AlpineProblem
     # variable and constraint count
     num_variables                   ::Int 
     num_constraints                 ::Int
-    num_linear_le_constraints       ::Int 
-    num_linear_ge_constraints       ::Int 
-    num_linear_eq_constraints       ::Int  
-    num_quadratic_le_constraints    ::Int  
-    num_quadratic_ge_constraints    ::Int  
-    num_quadratic_eq_constraints    ::Int  
+    num_linear_constraints          ::Int 
+    num_quadratic_constraints       ::Int  
     num_soc_constraints             ::Int  
     num_rsoc_constraints            ::Int  
     num_nlp_constraints             ::Int  
@@ -193,17 +189,14 @@ mutable struct AlpineProblem
     lifted_var_info                 ::Union{Nothing, Dict{Int, Any}}
 
     # quadratic constraint information
-    quadratic_nl_function_le        ::Union{Nothing, Vector{NLFunction}}
-    quadratic_nl_function_ge        ::Union{Nothing, Vector{NLFunction}}
-    quadratic_nl_function_eq        ::Union{Nothing, Vector{NLFunction}}
-
+    quadratic_nl_function           ::Union{Nothing, Vector{NLFunction}}
 
     # convexity information 
     objective_convexity             ::Union{Nothing, Symbol} 
-    quadratic_function_convexity    ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
-    quadratic_constraint_convexity  ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
-    nl_function_convexity           ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
-    nl_constraint_convexity         ::Union{Nothing, Dict{Symbol,Vector{Symbol}}}
+    quadratic_function_convexity    ::Union{Nothing, Vector{Symbol}}
+    quadratic_constraint_convexity  ::Union{Nothing, Vector{Symbol}}
+    nl_function_convexity           ::Union{Nothing, Vector{Symbol}}
+    nl_constraint_convexity         ::Union{Nothing, Vector{Symbol}}
 
     # Incumbent information 
     incumbent                       ::Union{Nothing, Incumbent}
@@ -216,13 +209,13 @@ mutable struct AlpineProblem
 
 end 
 
-AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing,
     nothing, nothing, 
     nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
-    nothing, nothing, nothing,
+    nothing,
     nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 

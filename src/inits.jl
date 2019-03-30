@@ -4,41 +4,32 @@ init_ap_data!() for Alpine
 function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner = AlpineProblem()
     model.inner.num_variables = length(model.variable_info)
-    model.inner.num_linear_le_constraints = length(model.linear_le_constraints)
-    model.inner.num_linear_ge_constraints = length(model.linear_ge_constraints)
-    model.inner.num_linear_eq_constraints = length(model.linear_eq_constraints)
-    model.inner.num_quadratic_le_constraints = length(model.quadratic_le_constraints)
-    model.inner.num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
-    model.inner.num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
+    model.inner.num_linear_constraints = length(model.linear_constraints)
+    model.inner.num_quadratic_constraints = length(model.quadratic_constraints)
     model.inner.num_soc_constraints = length(model.soc_constraints)
     model.inner.num_rsoc_constraints = length(model.rsoc_constraints) 
 
     model.inner.constraint_bound_info = Vector{Interval{Float64}}()
     model.inner.objective_bound_info = -Inf..Inf
 
-
-    for (func, set) in model.linear_le_constraints 
-        push!(model.inner.constraint_bound_info, -Inf..set.upper)
+    for (func, set) in model.linear_constraints 
+        if isa(set, MOI.LessThan{Float64}) 
+            push!(model.inner.constraint_bound_info, -Inf..set.upper)
+        elseif isa(set, MOI.GreaterThan{Float64})
+            push!(model.inner.constraint_bound_info, set.lower..Inf)
+        else 
+            push!(model.inner.constraint_bound_info, set.value..set.value)
+        end 
     end 
 
-    for (func, set) in model.linear_ge_constraints 
-        push!(model.inner.constraint_bound_info, set.lower..Inf)
-    end 
-
-    for (func, set) in model.linear_eq_constraints 
-        push!(model.inner.constraint_bound_info, set.value..set.value)
-    end 
-
-    for (func, set) in model.quadratic_le_constraints 
-        push!(model.inner.constraint_bound_info, -Inf..set.upper)
-    end 
-
-    for (func, set) in model.quadratic_ge_constraints 
-        push!(model.inner.constraint_bound_info, set.lower..Inf)
-    end 
-
-    for (func, set) in model.quadratic_eq_constraints 
-        push!(model.inner.constraint_bound_info, set.value..set.value)
+    for (func, set) in model.quadratic_constraints 
+        if isa(set, MOI.LessThan{Float64}) 
+            push!(model.inner.constraint_bound_info, -Inf..set.upper)
+        elseif isa(set, MOI.GreaterThan{Float64})
+            push!(model.inner.constraint_bound_info, set.lower..Inf)
+        else 
+            push!(model.inner.constraint_bound_info, set.value..set.value)
+        end 
     end 
 
     # handle SOCs and RSOCs later with additional book-keeping in AlpineProblem struct
@@ -50,33 +41,20 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         push!(model.inner.constraint_bound_info, -Inf..Inf)
     end
 
-    model.inner.quadratic_constraint_convexity = Dict{Symbol, Vector{Symbol}}()
-    model.inner.quadratic_function_convexity = Dict{Symbol, Vector{Symbol}}()
+    model.inner.quadratic_constraint_convexity = Symbol[]
+    model.inner.quadratic_function_convexity = Symbol[]
 
     model.inner.is_objective_linear = false 
     model.inner.is_objective_nl = false 
     model.inner.is_objective_quadratic = false
 
-    if model.inner.num_quadratic_le_constraints > 0 
-        model.inner.quadratic_constraint_convexity[:quadratic_le] = 
-            [:undet for i in 1:model.inner.num_quadratic_le_constraints]
-        model.inner.quadratic_function_convexity[:quadratic_le] = 
-            [:undet for i in 1:model.inner.num_quadratic_le_constraints]
+    if model.inner.num_quadratic_constraints > 0 
+        model.inner.quadratic_constraint_convexity = 
+            [:undet for i in 1:model.inner.num_quadratic_constraints]
+        model.inner.quadratic_function_convexity = 
+            [:undet for i in 1:model.inner.num_quadratic_constraints]
     end 
 
-    if model.inner.num_quadratic_ge_constraints > 0 
-        model.inner.quadratic_constraint_convexity[:quadratic_ge] = 
-            [:undet for i in 1:model.inner.num_quadratic_ge_constraints]
-        model.inner.quadratic_function_convexity[:quadratic_ge] = 
-            [:undet for i in 1:model.inner.num_quadratic_ge_constraints]
-    end
-
-    if model.inner.num_quadratic_eq_constraints > 0 
-        model.inner.quadratic_constraint_convexity[:quadratic_eq] = 
-            [:undet for i in 1:model.inner.num_quadratic_eq_constraints]
-        model.inner.quadratic_function_convexity[:quadratic_eq] = 
-            [:undet for i in 1:model.inner.num_quadratic_eq_constraints]
-    end 
     model.inner.variable_bound_original = Vector{Interval{Float64}}()
     model.inner.variable_bound_tightened = Vector{Interval{Float64}}()
 
@@ -143,12 +121,8 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     end 
 
     model.inner.num_constraints = 
-        model.inner.num_linear_le_constraints + 
-        model.inner.num_linear_ge_constraints +
-        model.inner.num_linear_eq_constraints +
-        model.inner.num_quadratic_le_constraints +
-        model.inner.num_quadratic_ge_constraints +
-        model.inner.num_quadratic_eq_constraints +
+        model.inner.num_linear_constraints + 
+        model.inner.num_quadratic_constraints +
         model.inner.num_soc_constraints +
         model.inner.num_rsoc_constraints + 
         model.inner.num_nlp_constraints

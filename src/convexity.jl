@@ -70,38 +70,24 @@ Convexity detection for quadratic objective and constraints
 """
 
 function run_convexity_detection!(model::MOI.AbstractOptimizer)
-    for i in 1:model.inner.num_quadratic_le_constraints
-        quadratic_function = model.quadratic_le_constraints[i][1]
-        constraint_set = model.quadratic_le_constraints[i][2]
+    for i in 1:model.inner.num_quadratic_constraints
+        quadratic_function = model.quadratic_constraints[i][1]
+        constraint_set = model.quadratic_constraints[i][2]
         is_function_convex = get_convexity(quadratic_function)
-        model.inner.quadratic_function_convexity[:quadratic_le][i] = is_function_convex
+        model.inner.quadratic_function_convexity[i] = is_function_convex
         if is_function_convex == :convex
-            model.inner.quadratic_constraint_convexity[:quadratic_le][i] = :convex 
+            if isa(constraint_set, MOI.LessThan{Float64}) 
+                model.inner.quadratic_constraint_convexity[i] = :convex 
+            elseif isa(constraint_set, MOI.GreaterThan{Float64})
+                model.inner.quadratic_constraint_convexity[i] = :concave 
+            end
         elseif is_function_convex == :concave 
-            model.inner.quadratic_constraint_convexity[:quadratic_le][i] = :concave 
-        else 
-            model.inner.quadratic_constraint_convexity[:quadratic_le][i] = :undet
+            if isa(constraint_set, MOI.LessThan{Float64}) 
+                model.inner.quadratic_constraint_convexity[i] = :concave
+            elseif isa(constraint_set, MOI.GreaterThan{Float64})
+                model.inner.quadratic_constraint_convexity[i] = :convex
+            end
         end
-    end 
-
-    for i in 1:model.inner.num_quadratic_ge_constraints
-        quadratic_function = model.quadratic_ge_constraints[i][1]
-        constraint_set = model.quadratic_ge_constraints[i][2]
-        is_function_convex = get_convexity(quadratic_function)
-        model.inner.quadratic_function_convexity[:quadratic_ge][i] = is_function_convex
-        if is_function_convex == :convex
-            model.inner.quadratic_constraint_convexity[:quadratic_ge][i] = :concave
-        elseif is_function_convex == :concave 
-            model.inner.quadratic_constraint_convexity[:quadratic_ge][i] = :convex 
-        else 
-            model.inner.quadratic_constraint_convexity[:quadratic_ge][i] = :undet
-        end
-    end 
-
-    for i in 1:model.inner.num_quadratic_eq_constraints
-        quadratic_function = model.quadratic_eq_constraints[i][1]
-        is_function_convex = get_convexity(quadratic_function)
-        model.inner.quadratic_function_convexity[:quadratic_eq][i] = is_function_convex
     end 
 
     if model.sense != MOI.FEASIBILITY_SENSE && model.inner.is_objective_quadratic

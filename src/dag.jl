@@ -12,23 +12,9 @@ function create_dag!(model::MOI.AbstractOptimizer)
             model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
     end 
 
-    for i in 1:model.inner.num_quadratic_le_constraints 
-        nl_function = model.inner.quadratic_nl_function_le[i]
-        id = quadratic_le_offset(model) + i
-        add_to_dag!(nl_function, model.inner.expression_graph, 
-            model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
-    end 
-
-    for i in 1:model.inner.num_quadratic_ge_constraints 
-        nl_function = model.inner.quadratic_nl_function_ge[i]
-        id = quadratic_ge_offset(model) + i
-        add_to_dag!(nl_function, model.inner.expression_graph, 
-            model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
-    end 
-
-    for i in 1:model.inner.num_quadratic_eq_constraints 
-        nl_function = model.inner.quadratic_nl_function_eq[i]
-        id = quadratic_eq_offset(model) + i
+    for i in 1:model.inner.num_quadratic_constraints 
+        nl_function = model.inner.quadratic_nl_function[i]
+        id = quadratic_offset(model) + i
         add_to_dag!(nl_function, model.inner.expression_graph, 
             model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
     end 
