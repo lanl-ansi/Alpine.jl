@@ -2,3 +2,4 @@ Ipopt
 Cbc
 GLPK
 IntervalArithmetic
+IntervalContractors

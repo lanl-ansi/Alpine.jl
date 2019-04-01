@@ -47,7 +47,7 @@ mutable struct SolverOptions
     bt_relax                        ::Bool 
     bt_mip_time_limit               ::Float64 
     bp                              ::Bool 
-    bp_max_iter                   ::Int
+    bp_max_iter                     ::Int
 
     is_problem_convex               ::Bool
 end 

@@ -37,10 +37,9 @@ function run_backward_propagation!(model::MOI.AbstractOptimizer)
     num_quadratic_constraints = model.inner.num_quadratic_constraints 
     num_nlp_constraints = model.inner.num_nlp_constraints
     if num_quadratic_constraints + num_nlp_constraints > 0
-        a = 1
-        # fbbt_backward_quadratic_constraints!(model)
-        # fbbt_backward_nl_constraints!(model)
-        # fbbt_backward_dag!(model)
+        fbbt_backward_quadratic_constraints!(model)
+        fbbt_backward_nl_constraints!(model)
+        fbbt_backward_dag!(model)
     end
    
     

@@ -6,6 +6,7 @@ import JuMP
 using Memento
 
 using IntervalArithmetic
+using IntervalContractors
 
 import MathOptInterface
 const MOI = MathOptInterface
