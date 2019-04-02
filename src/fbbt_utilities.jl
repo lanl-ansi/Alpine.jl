@@ -220,6 +220,12 @@ function fbbt_backward_dag!(model::MOI.AbstractOptimizer)
         end 
     end 
 
+    for dag_vertex in dag.vertices[0]
+        if dag_vertex.vertex_type == :variable 
+            var_id = dag_vertex.vertex.args[2].value 
+            model.inner.variable_bound_tightened[var_id] = model.inner.variable_bound_tightened[var_id] ∩ dag_vertex.interval
+        end 
+    end 
 
     return
     
@@ -341,8 +347,6 @@ Backward propogation for quadratic constraints
 """
 function fbbt_backward_quadratic_constraints!(model::MOI.AbstractOptimizer)
     fnames = [:constant_part, :linear_part, :quadratic_part, :bilinear_part]
-    dag_lookup = model.inner.dag_lookup
-    dag = model.inner.expression_graph
     for i in 1:model.inner.num_quadratic_constraints 
         nl_function = model.inner.quadratic_nl_function[i]
         offset = quadratic_offset(model)
@@ -351,51 +355,12 @@ function fbbt_backward_quadratic_constraints!(model::MOI.AbstractOptimizer)
             (fname == :constant_part) && (continue)  
             f_value = getfield(nl_function, fname)
             (isa(f_value, Nothing)) && (continue)
-            for alpine_expression in f_value
-                coeff, expr = alpine_expression.expression 
-                original_interval = -Inf..Inf 
-                depth = NaN 
-                position = NaN
-                original_var_id = NaN
-                if haskey(dag_lookup, expr)
-                    depth, position = dag_lookup[expr]
-                    original_interval = original_interval ∩ 
-                        dag.vertices[depth][position].interval
-                else 
-                    original_var_id = expr.args[2].value 
-                    original_interval = original_interval ∩ 
-                        model.inner.variable_bound_tightened[original_var_id]
-                end
-                sum_interval = 0..0
-                for fname_1 in fnames 
-                    f_value_1 = getfield(nl_function, fname_1)
-                    (isa(f_value_1, Nothing)) && (continue)
-                    for sum_expression in f_value_1 
-                        coeff_1, expr_1 = sum_expression.expression
-                        (fname == :constant_part) && (sum_interval += coeff_1; continue)
-                        if fname_1 == :linear_part 
-                            var_id = expr_1.args[2].value 
-                            var_interval = model.inner.variable_bound_tightened[var_id]
-                            sum_interval += coeff_1 * var_interval
-                            continue
-                        end 
-                        (~haskey(dag_lookup, expr_1)) && (error(LOGGER, "expression $expr_1 not found in expression graph"))
-                        depth_1, position_1 = dag_lookup[expr_1]
-                        if expr == expr_1
-                            continue
-                        end 
-                        sum_interval += coeff_1 * dag.vertices[depth_1][position_1].interval
-                    end 
-                end 
-                if isnan(depth) 
-                    model.inner.variable_bound_tightened[original_var_id] = original_interval ∩ (1/coeff * (constraint_interval - sum_interval))
-                else 
-                    dag.vertices[depth][position].interval = original_interval ∩ (1/coeff * (constraint_interval - sum_interval))
-                end
-            end
+            for j in 1:length(f_value)
+                propagate_backward_nl_function!(model, nl_function, fname, j, constraint_interval)
+            end 
         end 
     end 
-
+            
     return
 end 
 
@@ -414,46 +379,64 @@ function fbbt_backward_nl_constraints!(model::MOI.AbstractOptimizer)
             (fname == :constant_part) && (continue)  
             f_value = getfield(nl_function, fname)
             (isa(f_value, Nothing)) && (continue)
-            for alpine_expression in f_value
-                coeff, expr = alpine_expression.expression 
-                original_interval = -Inf..Inf 
-                if haskey(dag_lookup, expr)
-                    depth, position = dag_lookup[expr]
-                    original_interval = original_interval ∩ 
-                        dag.vertices[depth][position].interval
-                else 
-                    var_id = expr.args[2].value 
-                    original_interval = original_interval ∩ 
-                        model.inner.variable_bound_tightened[var_id]
-                end 
-                sum_interval = 0..0
-                for fname_1 in fnames 
-                    f_value_1 = getfield(nl_function, fname_1)
-                    (isa(f_value_1, Nothing)) && (continue)
-                    for sum_expression in f_value_1 
-                        coeff_1, expr_1 = sum_expression.expression
-                        (fname_1 == :constant_part) && (sum_interval += coeff_1; continue)
-                        if fname_1 == :linear_part 
-                            var_id = expr_1.args[2].value 
-                            var_interval = model.inner.variable_bound_tightened[var_id]
-                            sum_interval += coeff_1 * var_interval
-                            continue
-                        end 
-                        (~haskey(dag_lookup, expr_1)) && (error(LOGGER, "expression $expr_1 not found in expression graph"))
-                        depth_1, position_1 = dag_lookup[expr_1]
-                        if expr == expr_1
-                            continue
-                        end 
-                        sum_interval += coeff_1 * dag.vertices[depth_1][position_1].interval
-                    end 
-                end 
-                dag.vertices[depth][position].interval = original_interval ∩ (1/coeff * (constraint_interval - sum_interval))
-            end
+            for j in 1:length(f_value)
+                propagate_backward_nl_function!(model, nl_function, fname, j, constraint_interval)
+            end 
         end 
-    end 
+    end
 
     return
 end 
+
+"""
+FBBT of summation expressions 
+Reference: https://static-content.springer.com/esm/art%3A10.1007%2Fs11590-019-01396-y/MediaObjects/11590_2019_1396_MOESM1_ESM.pdf (Section B)
+"""
+function propagate_backward_nl_function!(model::MOI.AbstractOptimizer, nl_function::NLFunction, fname::Symbol, position::Int, constraint_interval::Interval{Float64})
+
+    dag = model.inner.expression_graph 
+    dag_lookup = model.inner.dag_lookup
+
+    fnames = fieldnames(NLFunction)
+
+    sum_interval = 0..0
+    for fname_1 in fnames
+        f_value = getfield(nl_function, fname_1)
+        (isa(f_value, Nothing)) && (continue)
+        for i in 1:length(f_value)
+            (fname_1 == fname && i == position) && (continue)
+            coeff, expr = f_value[i].expression
+            if fname_1 == :constant_part 
+                sum_interval += coeff 
+            elseif fname_1 == :linear_part 
+                var_id = expr.args[2].value 
+                var_interval = model.inner.variable_bound_tightened[var_id]
+                sum_interval += coeff * var_interval
+            else 
+                (~haskey(dag_lookup, expr)) && (error(LOGGER, "expression $expr not found in expression graph"))
+                depth, j = dag_lookup[expr]
+                sum_interval += coeff * dag.vertices[depth][j].interval
+            end 
+        end 
+    end 
+
+    if fname == :linear_part
+        coeff, expr = getfield(nl_function, fname)[position].expression
+        var_id = expr.args[2].value 
+        var_interval = model.inner.variable_bound_tightened[var_id]
+        var_interval = var_interval ∩ (1/coeff * (constraint_interval - sum_interval))
+        model.inner.variable_bound_tightened[var_id] = var_interval 
+    else 
+        coeff, expr = getfield(nl_function, fname)[position].expression 
+        depth, position = dag_lookup[expr]
+        expr_interval = dag.vertices[depth][position].interval
+        expr_interval = expr_interval ∩ (1/coeff * (constraint_interval - sum_interval)) 
+        dag.vertices[depth][position].interval = expr_interval 
+    end
+
+    return
+end 
+
 
 """
 Check if problem is infeasible
