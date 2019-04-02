@@ -176,10 +176,8 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
                     depth, position = depth, position = dag_lookup[expr]
                     computed_bound_info += coeff * dag.vertices[depth][position].interval
                 end 
-                @show expr, computed_bound_info
             end 
         end 
-        @show model.inner.constraint_bound_info[offset + i], computed_bound_info
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info) 
         if isempty(model.inner.constraint_bound_info[offset + i])
@@ -201,7 +199,7 @@ function fbbt_backward_dag!(model::MOI.AbstractOptimizer)
     
     max_depth = dag.max_depth
     
-    for d in max_depth:-1:2
+    for d in max_depth:-1:1
         for dag_vertex in dag.vertices[d]
             operation = dag_vertex.vertex.args[1]
             current_interval = dag_vertex.interval
@@ -217,7 +215,6 @@ function fbbt_backward_dag!(model::MOI.AbstractOptimizer)
             for child in children 
                 depth, position = dag_lookup[child]
                 dag.vertices[depth][position].interval = children_interval[i]
-                @show dag.vertices[depth][position].interval
                 i += 1
             end
         end 
@@ -278,17 +275,17 @@ function propagate_intervals!(operation::Symbol, current_interval::Interval{Floa
         c = children_interval[2].lo
         is_integer = try isa(Int(c), Int) catch y false end 
         if is_integer 
-            if n == 2  
+            if c == 2  
                 root = sqrt(a)
                 b1 = b ∩ root
                 b2 = b ∩ (-root)
-            elseif iseven(n)
-                root = a^(1//n)
+            elseif iseven(c)
+                root = a^(1//c)
                 b1 = b ∩ root
                 b2 = b ∩ (-root)
-            elseif isodd(n)
-                pos_root = (a ∩ (0..Inf)) ^ (1//n)
-                neg_root = -( ( (-a) ∩ (0..Inf) ) ^ (1//n) )
+            elseif isodd(c)
+                pos_root = (a ∩ (0..Inf)) ^ (1//c)
+                neg_root = -( ( (-a) ∩ (0..Inf) ) ^ (1//c) )
                 b1 = b ∩ pos_root
                 b2 = b ∩ neg_root
             end
@@ -355,24 +352,46 @@ function fbbt_backward_quadratic_constraints!(model::MOI.AbstractOptimizer)
             f_value = getfield(nl_function, fname)
             (isa(f_value, Nothing)) && (continue)
             for alpine_expression in f_value
-                coeff, expr = alpine_expression.expression
-                depth, position = dag_lookup[expr]
+                coeff, expr = alpine_expression.expression 
+                original_interval = -Inf..Inf 
+                depth = NaN 
+                position = NaN
+                original_var_id = NaN
+                if haskey(dag_lookup, expr)
+                    depth, position = dag_lookup[expr]
+                    original_interval = original_interval ∩ 
+                        dag.vertices[depth][position].interval
+                else 
+                    original_var_id = expr.args[2].value 
+                    original_interval = original_interval ∩ 
+                        model.inner.variable_bound_tightened[original_var_id]
+                end
                 sum_interval = 0..0
                 for fname_1 in fnames 
                     f_value_1 = getfield(nl_function, fname_1)
                     (isa(f_value_1, Nothing)) && (continue)
                     for sum_expression in f_value_1 
                         coeff_1, expr_1 = sum_expression.expression
-                        (fname == :constant_part) && (sum_interval += coeff_1..coeff_1; continue)
-                        (~haskey(dag_lookup, expr_1)) && (error(LOGGER, "expression $expr_1 not found in expression graph"))
-                        depth_1, position_1 = dag_lookup[expr_1]
-                        if depth_1 == depth && position_1 == position
+                        (fname == :constant_part) && (sum_interval += coeff_1; continue)
+                        if fname_1 == :linear_part 
+                            var_id = expr_1.args[2].value 
+                            var_interval = model.inner.variable_bound_tightened[var_id]
+                            sum_interval += coeff_1 * var_interval
                             continue
                         end 
-                        sum_interval = sum_interval + coeff_1..coeff * dag.vertices[depth][position].interval
+                        (~haskey(dag_lookup, expr_1)) && (error(LOGGER, "expression $expr_1 not found in expression graph"))
+                        depth_1, position_1 = dag_lookup[expr_1]
+                        if expr == expr_1
+                            continue
+                        end 
+                        sum_interval += coeff_1 * dag.vertices[depth_1][position_1].interval
                     end 
                 end 
-                dag.vertices[depth][position].interval = dag.vertices[depth][position].interval ∩ (1/coeff * (constraint_interval - sum_interval))
+                if isnan(depth) 
+                    model.inner.variable_bound_tightened[original_var_id] = original_interval ∩ (1/coeff * (constraint_interval - sum_interval))
+                else 
+                    dag.vertices[depth][position].interval = original_interval ∩ (1/coeff * (constraint_interval - sum_interval))
+                end
             end
         end 
     end 
@@ -387,33 +406,48 @@ function fbbt_backward_nl_constraints!(model::MOI.AbstractOptimizer)
     fnames = fieldnames(NLFunction)
     dag_lookup = model.inner.dag_lookup
     dag = model.inner.expression_graph
-    for i in 1:model.inner.num_quadratic_constraints 
-        nl_function = model.inner.quadratic_nl_function[i]
-        offset = quadratic_offset(model)
+    for i in 1:model.inner.num_nlp_constraints
+        nl_function = model.inner.nl_function[i]
+        offset = nlp_offset(model)
         constraint_interval = model.inner.constraint_bound_info[offset + i] 
         for fname in fnames
             (fname == :constant_part) && (continue)  
             f_value = getfield(nl_function, fname)
             (isa(f_value, Nothing)) && (continue)
             for alpine_expression in f_value
-                coeff, expr = alpine_expression.expression
-                depth, position = dag_lookup[expr]
+                coeff, expr = alpine_expression.expression 
+                original_interval = -Inf..Inf 
+                if haskey(dag_lookup, expr)
+                    depth, position = dag_lookup[expr]
+                    original_interval = original_interval ∩ 
+                        dag.vertices[depth][position].interval
+                else 
+                    var_id = expr.args[2].value 
+                    original_interval = original_interval ∩ 
+                        model.inner.variable_bound_tightened[var_id]
+                end 
                 sum_interval = 0..0
                 for fname_1 in fnames 
                     f_value_1 = getfield(nl_function, fname_1)
                     (isa(f_value_1, Nothing)) && (continue)
                     for sum_expression in f_value_1 
                         coeff_1, expr_1 = sum_expression.expression
-                        (fname == :constant_part) && (sum_interval += coeff_1..coeff_1; continue)
-                        (~haskey(dag_lookup, expr_1)) && (error(LOGGER, "expression $expr_1 not found in expression graph"))
-                        depth_1, position_1 = dag_lookup[expr_1]
-                        if depth_1 == depth && position_1 == position
+                        (fname_1 == :constant_part) && (sum_interval += coeff_1; continue)
+                        if fname_1 == :linear_part 
+                            var_id = expr_1.args[2].value 
+                            var_interval = model.inner.variable_bound_tightened[var_id]
+                            sum_interval += coeff_1 * var_interval
                             continue
                         end 
-                        sum_interval = sum_interval + coeff_1..coeff * dag.vertices[depth][position].interval
+                        (~haskey(dag_lookup, expr_1)) && (error(LOGGER, "expression $expr_1 not found in expression graph"))
+                        depth_1, position_1 = dag_lookup[expr_1]
+                        if expr == expr_1
+                            continue
+                        end 
+                        sum_interval += coeff_1 * dag.vertices[depth_1][position_1].interval
                     end 
                 end 
-                dag.vertices[depth][position].interval = dag.vertices[depth][position].interval ∩ (1/coeff * (constraint_interval - sum_interval))
+                dag.vertices[depth][position].interval = original_interval ∩ (1/coeff * (constraint_interval - sum_interval))
             end
         end 
     end 

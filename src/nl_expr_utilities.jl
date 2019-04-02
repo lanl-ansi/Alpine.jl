@@ -215,8 +215,10 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Float64, Union{Expr
     for (coeff, expr) in disaggregated_expr 
         
         # constant term
-        if isa(expr, Float64) || isa(expr, Int)
-            push!(constant_part, AlpineExpr((coeff, expr), :linear))
+        if isa(expr, Float64) || isa(expr, Int) 
+            if expr != 0.0
+                push!(constant_part, AlpineExpr((coeff, expr), :linear))
+            end
             
         # linear term
         elseif expr.head == :ref 
