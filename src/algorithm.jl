@@ -214,7 +214,7 @@ function local_solve(m::AlpineNonlinearModel; presolve = false)
     status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
     status_heuristic = [:Heuristics]
     status_reroute = [:Infeasible, :Infeasibles]
-
+    
     if local_nlp_status in status_pass
         candidate_obj = interface_get_objval(local_solve_model)
         candidate_sol = round.(interface_get_solution(local_solve_model); digits=5)
