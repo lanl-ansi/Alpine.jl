@@ -66,8 +66,11 @@
 
     optimize!(m)
 
-    @test 
+    bm = JuMP.backend(m) 
+    internal_model = bm.optimizer.model
 
-
+    @test isthin(internal_model.inner.variable_bound_tightened[1])
+    @test isthin(internal_model.inner.variable_bound_tightened[2])
+    @test isthin(internal_model.inner.variable_bound_tightened[3])
 
 end 

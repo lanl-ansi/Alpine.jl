@@ -2,6 +2,7 @@ using JuMP, MathOptInterface
 using Ipopt, Cbc
 using GLPK
 using Alpine
+using IntervalArithmetic
 
 using Test
 
