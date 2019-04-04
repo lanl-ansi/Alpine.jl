@@ -54,6 +54,19 @@
 
     @test JuMP.termination_status(m) == MOI.INFEASIBLE
 
+    # tighten bounds 
+    m = Model(with_optimizer(
+        Alpine.Optimizer, solver_options
+    ))
+    @variable(m, x)
+    @variable(m, y)
+    @variable(m, 0 <= z <= 1)
+    @NLconstraint(m, exp(x^2 + y^2)-z <= 0)
+    @NLconstraint(m, z*sqrt(x^2 + y^2) <= 1)
+
+    optimize!(m)
+
+    @test 
 
 
 
