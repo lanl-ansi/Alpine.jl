@@ -235,8 +235,8 @@ function fix_domains(m::AlpineNonlinearModel;discrete_sol=nothing, use_orig=fals
                 l_var[i] = round(m.best_bound_sol[i])
                 u_var[i] = round(m.best_bound_sol[i])
             else
-                l_var[i] = discrete_sol[i]
-                u_var[i] = discrete_sol[i]
+                l_var[i] = round(discrete_sol[i])
+                u_var[i] = round(discrete_sol[i])
             end
         end
     end

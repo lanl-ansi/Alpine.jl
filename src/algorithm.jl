@@ -158,7 +158,7 @@ function local_solve(m::AlpineNonlinearModel; presolve = false)
     do_heuristic = false
 
     var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
-
+    
     if presolve
         if !isempty(var_type_screener) && m.minlp_solver != UnsetSolver()
             local_solve_model = interface_init_nonlinear_model(m.minlp_solver)
