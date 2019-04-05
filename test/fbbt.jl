@@ -66,11 +66,11 @@
 
     optimize!(m)
 
-    bm = JuMP.backend(m) 
-    internal_model = bm.optimizer.model
+    lb_x = Alpine.lower_bound_tightened(x)
+    ub_x = Alpine.upper_bound_tightened(x)
 
-    @test isthin(internal_model.inner.variable_bound_tightened[1])
-    @test isthin(internal_model.inner.variable_bound_tightened[2])
-    @test isthin(internal_model.inner.variable_bound_tightened[3])
+    @test isthin(lb_x..ub_x)
+    @test isthin(Alpine.variable_bound_tightened(y))
+    @test isthin(Alpine.variable_bound_tightened(z))
 
 end 
