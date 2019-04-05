@@ -1,5 +1,5 @@
 """
-Convexity detection for quadratic functions 
+Convexity detection for quadratic functions (algebraic)
 """
 function get_convexity(quadratic_function::SQF)::Symbol 
 
@@ -18,7 +18,7 @@ function get_convexity(quadratic_function::SQF)::Symbol
 end 
 
 """
-Checking if a quadratic term is factorable in a quadratic function and deduce convexity
+Checking if a quadratic term is factorable in a quadratic function and deduce convexity (algebraic)
 """
 function get_convexity(quadratic_function::SQF, term::SQT)::Symbol
     

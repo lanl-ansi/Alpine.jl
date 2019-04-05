@@ -147,6 +147,11 @@ end
 
 DAG() = DAG(0, Dict{Int, Vector{DAGVertex}}())
 
+mutable struct QuadraticMatrixInfo
+    Q                               ::SparseArrays.SparseMatrixCSC{Float64,Int64}
+    index_to_variable_map           ::Dict{Int, VI}
+end
+
 mutable struct AlpineProblem 
     # variable and constraint count
     num_variables                   ::Int 
@@ -191,6 +196,11 @@ mutable struct AlpineProblem
     # quadratic constraint information
     quadratic_nl_function           ::Union{Nothing, Vector{NLFunction}}
 
+    # quadratic matrix information 
+    quadratic_matrix                ::Union{Nothing, Vector{QuadraticMatrixInfo}}
+    quadratic_matrix_nl             ::Union{Nothing, Vector{Union{Nothing, QuadraticMatrixInfo}}}
+    quadratic_matrix_objective      ::Union{Nothing, QuadraticMatrixInfo}
+
     # convexity information 
     objective_convexity             ::Union{Nothing, Symbol} 
     quadratic_function_convexity    ::Union{Nothing, Vector{Symbol}}
@@ -216,6 +226,7 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing,
+    nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 

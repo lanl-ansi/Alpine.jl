@@ -50,7 +50,10 @@ const RSOC = MOI.RotatedSecondOrderCone
 const AFF_TERM = MOI.ScalarAffineTerm{Float64}
 const QUAD_TERM = MOI.ScalarQuadraticTerm{Float64}
 
-using Compat.Printf
+using Compat.Printf 
+
+using LinearAlgebra
+using SparseArrays
 
 # Create our module level logger (this will get precompiled)
 const LOGGER = getlogger(@__MODULE__)
@@ -65,8 +68,8 @@ function silence()
     setlevel!(getlogger(Alpine), "error")
 end
 
-
 include("types.jl")
+include("utils.jl")
 include("solver_options.jl")
 include("logging.jl")
 include("expr_type_checking.jl")

@@ -3,15 +3,18 @@ init_ap_data!() for Alpine
 """ 
 function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner = AlpineProblem()
+    # populate variable/constraint statistics
     model.inner.num_variables = length(model.variable_info)
     model.inner.num_linear_constraints = length(model.linear_constraints)
     model.inner.num_quadratic_constraints = length(model.quadratic_constraints)
     model.inner.num_soc_constraints = length(model.soc_constraints)
     model.inner.num_rsoc_constraints = length(model.rsoc_constraints) 
 
+    # initialize constraint bound vectors
     model.inner.constraint_bound_info = Vector{Interval{Float64}}()
     model.inner.objective_bound_info = -Inf..Inf
 
+    # populate linear constraint bounds
     for (func, set) in model.linear_constraints 
         if isa(set, MOI.LessThan{Float64}) 
             push!(model.inner.constraint_bound_info, -Inf..set.upper)
@@ -22,6 +25,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         end 
     end 
 
+    # populate quadratic constraint bounds
     for (func, set) in model.quadratic_constraints 
         if isa(set, MOI.LessThan{Float64}) 
             push!(model.inner.constraint_bound_info, -Inf..set.upper)
@@ -41,6 +45,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         push!(model.inner.constraint_bound_info, -Inf..Inf)
     end
 
+    # initialize convexity vectors and booleans
     model.inner.quadratic_constraint_convexity = Symbol[]
     model.inner.quadratic_function_convexity = Symbol[]
 
@@ -54,10 +59,12 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         model.inner.quadratic_function_convexity = 
             [:undet for i in 1:model.inner.num_quadratic_constraints]
     end 
-
+    
+    # initialize variable bound vectors
     model.inner.variable_bound_original = Vector{Interval{Float64}}()
     model.inner.variable_bound_tightened = Vector{Interval{Float64}}()
 
+    # populate variable bound vectors
     for vi in model.variable_info
         lb = -Inf 
         ub = Inf
@@ -68,6 +75,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         push!(model.inner.variable_bound_tightened, lb..ub)
     end 
 
+    # if NLP populate NLP part 
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
         evaluator = model.nlp_data.evaluator
         MOI.initialize(evaluator, [:ExprGraph])
@@ -120,6 +128,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         end
     end 
 
+    # compute total number of constraints 
     model.inner.num_constraints = 
         model.inner.num_linear_constraints + 
         model.inner.num_quadratic_constraints +
@@ -127,12 +136,15 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         model.inner.num_rsoc_constraints + 
         model.inner.num_nlp_constraints
     
+    # print variable/constraint summary
     if model.solver_options.log_level != 0
         print_var_con_summary(model.inner)
     end 
 
+    # create NLFunction for quadratic constraints 
     create_quadratic_nl_functions!(model)
 
+    # create NLFunction for nonlinear constraints 
     clean_nl_expressions!(model)
     nl_function = NLFunction[]
     
@@ -150,7 +162,42 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         end 
     end
 
+    # create a DAG based using all the quadratic and nonlinear constraints
     create_dag!(model)
+
+    # Compute and populate quadratic matrices for the quadratic and nonlinear constraints; quadratic/nonlinear objective 
+    if model.inner.num_quadratic_constraints > 0 
+        model.inner.quadratic_matrix = Vector{QuadraticMatrixInfo}() 
+        for i in 1:model.inner.num_quadratic_constraints
+            func = model.quadratic_constraints[i][1]
+            Q, index_to_variable_map = matrix_from_quadratic_terms(func.quadratic_terms)
+            push!(model.inner.quadratic_matrix, QuadraticMatrixInfo(Q, index_to_variable_map))
+        end 
+    end 
+
+    if model.inner.num_nlp_constraints > 0
+        model.inner.quadratic_matrix_nl = Vector{Union{QuadraticMatrixInfo, Nothing}}()
+        for i in 1:model.inner.num_nlp_constraints
+            func = model.inner.nl_function[i]
+            Q, index_to_variable_map = matrix_from_nl_function(func)
+            if isa(Q, Nothing) 
+                push!(model.inner.quadratic_matrix_nl, nothing)
+            else 
+                push!(model.inner.quadratic_matrix_nl, QuadraticMatrixInfo(Q, index_to_variable_map))
+            end
+        end
+    end
+
+    if model.inner.is_objective_quadratic 
+        func = model.objective[1]
+        Q, index_to_variable_map = matrix_from_quadratic_terms(func.quadratic_terms)
+        model.inner.quadratic_matrix_objective = QuadraticMatrixInfo(Q, index_to_variable_map)
+    elseif model.inner.is_objective_nl 
+        func = model.inner.objective_nl_function 
+        Q, index_to_variable_map = matrix_from_nl_function(func)
+        (~isa(Q, Nothing)) && (model.inner.quadratic_matrix_objective = QuadraticMatrixInfo(Q, index_to_variable_map))
+    end
+    
 
     return
 end
