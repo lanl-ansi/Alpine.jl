@@ -189,7 +189,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     end
 
     if model.inner.is_objective_quadratic 
-        func = model.objective[1]
+        func = model.objective
         Q, index_to_variable_map = matrix_from_quadratic_terms(func.quadratic_terms)
         model.inner.quadratic_matrix_objective = QuadraticMatrixInfo(Q, index_to_variable_map)
     elseif model.inner.is_objective_nl 
