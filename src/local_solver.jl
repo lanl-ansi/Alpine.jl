@@ -4,6 +4,7 @@ We remark that at no point in the algorithm are the full MINLP ever solved to lo
 """
 
 function local_solve!(model::MOI.AbstractOptimizer; presolve=false)
-    
+
+    return
 
 end

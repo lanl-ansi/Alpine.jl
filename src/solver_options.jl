@@ -29,7 +29,7 @@ function get_default_solver_options()
     bp = true
     bp_max_iter = 3
     is_problem_convex = false 
-    perform_bt_only = false
+    perform_bp_only = false
     perform_bounding_solve_only = false
     
     return SolverOptions(
@@ -44,7 +44,7 @@ function get_default_solver_options()
         bt_max_iter, bt_width_tol, bt_improvement_tol,
         bt_precision, bt_algo, bt_relax, bt_mip_time_limit, 
         bp, bp_max_iter, is_problem_convex, 
-        perform_bt_only, perform_bounding_solve_only
+        perform_bp_only, perform_bounding_solve_only
     )
 end 
 

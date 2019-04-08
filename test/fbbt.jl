@@ -1,6 +1,6 @@
 
 @testset "linear constraints FBBT tests" begin
-    solver_options = DefaultTestSolver(log_level=0)
+    solver_options = DefaultTestSolver(log_level=0, perform_bp_only=true)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options)
     )
@@ -72,5 +72,31 @@
     @test isthin(lb_x..ub_x)
     @test isthin(Alpine.variable_bound_tightened(y))
     @test isthin(Alpine.variable_bound_tightened(z))
+
+    # nvs01 from MINLPLib with continuous relaxation with changed bounds
+    m = Model(with_optimizer(
+        Alpine.Optimizer, solver_options 
+    ))
+    
+    @variable(m, x[1:3])
+    @variable(m, x_obj)
+
+    JuMP.set_lower_bound(x[1], 200)
+    JuMP.set_lower_bound(x[2], 200)
+    JuMP.set_lower_bound(x[3], 0)
+    JuMP.set_upper_bound(x[1], 200)
+    JuMP.set_upper_bound(x[2], 200)
+    JuMP.set_upper_bound(x[3], 100)
+
+    @NLconstraint(m, 420.169404664517*sqrt(900 + x[2]^2) - x[3]*x[1]*x[2] == 0)
+    @NLconstraint(m, (2960.87631843 + 18505.4769901875*x[2]^2)/(7200 + x[1]^2) - x[3] >= 0)
+    @NLconstraint(m, -0.04712385*sqrt(900 + x[1]^2)*x[2] + x_obj >= 0)
+
+    optimize!(m)
+
+    @test isapprox(Alpine.lower_bound_tightened(x_obj), 1906.04, atol=1e-1)
+    @test isapprox(Alpine.lower_bound_tightened(x[3]), 2.12435, atol=1e-1)
+    @test isapprox(Alpine.upper_bound_tightened(x[3]), 2.12435, atol=1e-1)
+
 
 end 

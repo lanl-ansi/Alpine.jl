@@ -148,6 +148,9 @@ function MOI.optimize!(model::Optimizer)
             return
         end 
     end
+
+    (model.solver_options.perform_bp_only) && (return)
+    
     run_convexity_detection!(model)
 
 end 

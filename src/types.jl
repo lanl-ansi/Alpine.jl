@@ -50,7 +50,7 @@ mutable struct SolverOptions
     bp_max_iter                     ::Int
 
     is_problem_convex               ::Bool
-    perform_bt_only                 ::Bool 
+    perform_bp_only                 ::Bool 
     perform_bounding_solve_only     ::Bool
 end 
 
