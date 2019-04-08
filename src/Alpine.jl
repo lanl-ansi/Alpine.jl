@@ -77,9 +77,11 @@ include("nl_expr_utilities.jl")
 include("fbbt_utilities.jl")
 include("fbbt.jl")
 include("dag.jl")
+include("continuous_relaxation.jl")
 include("inits.jl")
 include("convexity.jl")
 include("user_functions.jl")
+include("local_solver.jl")
 include("MOI_wrapper.jl")
 
 end # module

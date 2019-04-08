@@ -190,17 +190,61 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
 end 
 
 """
-Forward propogation for objective function 
+Forward propagation for objective function 
 """
-function fbbt_forward_objective!(model)
-    fnames = fieldnames(NLFunction)
+function fbbt_forward_objective!(model::MOI.AbstractOptimizer)
     if model.inner.is_objective_linear 
-
+        func = model.objective
+        computed_bound_info = func.constant..func.constant 
+        for term in func.terms 
+            var_id = term.variable_index.value 
+            coeff = term.coefficient 
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+        end
+        model.inner.objective_bound_info = model.inner.objective_bound_info ∩ computed_bound_info
     elseif model.inner.is_objective_quadratic 
-
+        func = model.objective
+        computed_bound_info = func.constant..func.constant 
+        for term in func.affine_terms 
+            var_id = term.variable_index.value 
+            coeff = term.coefficient 
+            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+        end
+        for term in func.quadratic_terms 
+            var_id_1 = term.variable_index_1.value 
+            var_id_2 = term.variable_index_2.value 
+            coeff = term.coefficient/2.0
+            if var_id_1 == var_id_2 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1]^2 
+            else 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id_1] * 
+                    model.inner.variable_bound_tightened[var_id_2]
+            end 
+        end 
+        model.inner.objective_bound_info = model.inner.objective_bound_info ∩ computed_bound_info
     elseif model.inner.is_objective_nl 
+        fnames = fieldnames(NLFunction)
         dag_lookup = model.inner.dag_lookup
         dag = model.inner.expression_graph
+        nl_function = model.inner.objective_nl_function
+        computed_bound_info = 0..0
+        for fname in fnames
+            f_value = getfield(nl_function, fname)
+            (isa(f_value, Nothing)) && (continue)
+            for alpine_expression in f_value
+                coeff, expr = alpine_expression.expression
+                if fname == :constant_part 
+                    computed_bound_info += coeff..coeff 
+                elseif fname == :linear_part 
+                    var_id = expr.args[2].value
+                    computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+                else 
+                    depth, position = depth, position = dag_lookup[expr]
+                    computed_bound_info += coeff * dag.vertices[depth][position].interval
+                end 
+            end 
+        end 
+        model.inner.objective_bound_info = model.inner.objective_bound_info ∩ computed_bound_info
     end 
     
     return 
@@ -209,8 +253,64 @@ end
 """
 Backward propagation for objective function 
 """
-function fbbt_backward_objective!(model)
-
+function fbbt_backward_objective!(model::MOI.AbstractOptimizer)
+    if model.inner.is_objective_linear 
+        func = model.objective 
+        lb = model.inner.objective_bound_info.lo 
+        ub = model.inner.objective_bound_info.hi 
+        for term in func.terms 
+            id = term.variable_index.value 
+            var_lb = lb 
+            var_ub = ub 
+            for other_term in func.terms 
+                other_term_id = other_term.variable_index.value 
+                (other_term_id == id) && (continue)
+                other_term_coeff = other_term.coefficient 
+                other_term_lb = model.inner.variable_bound_original[other_term_id].lo 
+                other_term_ub = model.inner.variable_bound_original[other_term_id].hi 
+                var_lb -= max(other_term_coeff * other_term_lb, other_term_coeff * other_term_ub)
+                var_ub -= min(other_term_coeff * other_term_lb, other_term_coeff * other_term_ub)
+            end 
+            var_ub = var_ub/term.coefficient
+            var_lb = var_lb/term.coefficient
+    
+            if term.coefficient > 0.0 
+                model.inner.variable_bound_tightened[id] = 
+                    intersect(model.inner.variable_bound_tightened[id], var_lb..var_ub)
+            end 
+            if term.coefficient < 0.0 
+                model.inner.variable_bound_tightened[id] = 
+                    intersect(model.inner.variable_bound_tightened[id], var_ub..var_lb)
+            end
+        end 
+    elseif model.inner.is_objective_quadratic 
+        fnames = [:constant_part, :linear_part, :quadratic_part, :bilinear_part]
+        nl_function = model.inner.objective_nl_function
+        objective_interval = model.inner.objective_bound_info
+        for fname in fnames
+            (fname == :constant_part) && (continue)  
+            f_value = getfield(nl_function, fname)
+            (isa(f_value, Nothing)) && (continue)
+            for j in 1:length(f_value)
+                propagate_backward_nl_function!(model, nl_function, fname, j, objective_interval)
+            end 
+        end 
+    elseif model.inner.is_objective_nl 
+        fnames = fieldnames(NLFunction)
+        dag_lookup = model.inner.dag_lookup
+        dag = model.inner.expression_graph
+        nl_function = model.inner.objective_nl_function
+        objective_interval = model.inner.objective_bound_info
+        for fname in fnames
+            (fname == :constant_part) && (continue)  
+            f_value = getfield(nl_function, fname)
+            (isa(f_value, Nothing)) && (continue)
+            for j in 1:length(f_value)
+                propagate_backward_nl_function!(model, nl_function, fname, j, objective_interval)
+            end 
+        end 
+    end
+    
     return 
 end 
 

@@ -16,6 +16,10 @@ function print_var_con_summary(ap::AlpineProblem)
     printstyled("\nProblem statistics\n", color=:cyan)
     @printf("%-40s : %5d\n", "Number of variables", ap.num_variables)
     
+    if ap.num_binary_variables != 0 
+        @printf("%-40s : %5d\n", "Number of binary variables", ap.num_binary_variables)
+    end
+    
     @printf("%-40s : %5d\n", "Number of constraints", ap.num_constraints)
     
     if ap.num_linear_constraints != 0

@@ -163,6 +163,8 @@ mutable struct AlpineProblem
     num_soc_constraints             ::Int  
     num_rsoc_constraints            ::Int  
     num_nlp_constraints             ::Int  
+    num_binary_variables            ::Int 
+    num_integer_variables           ::Int
     
     # constraint bound information
     constraint_bound_info           ::Union{Nothing, Vector{Interval{Float64}}}
@@ -221,7 +223,7 @@ mutable struct AlpineProblem
 
 end 
 
-AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0,
+AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing,
     nothing, nothing, 

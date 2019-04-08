@@ -110,3 +110,12 @@ function matrix_from_nl_function(nl_function::NLFunction)
     
     return Q, index_to_variable_map
 end 
+
+function get_type_dict(obj)
+    T = typeof(obj)
+    type_dict = Dict{Symbol,Type}()
+    for (name, typ) in zip(fieldnames(T), T.types)
+        type_dict[name] = typ
+    end
+    return type_dict
+end

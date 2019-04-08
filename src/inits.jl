@@ -64,6 +64,11 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     model.inner.variable_bound_original = Vector{Interval{Float64}}()
     model.inner.variable_bound_tightened = Vector{Interval{Float64}}()
 
+    # populate number of binary and integer variables 
+    binary_variables = filter(i -> i == true, info_array_of_variables(model.variable_info, :is_binary))
+    model.inner.num_binary_variables = length(binary_variables)
+
+
     # populate variable bound vectors
     for vi in model.variable_info
         lb = -Inf 
@@ -198,6 +203,8 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         (~isa(Q, Nothing)) && (model.inner.quadratic_matrix_objective = QuadraticMatrixInfo(Q, index_to_variable_map))
     end
     
+    # build local solve model (MINLP -> continuous relaxation)
+
 
     return
 end
