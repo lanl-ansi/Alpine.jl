@@ -189,6 +189,31 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
     return 
 end 
 
+"""
+Forward propogation for objective function 
+"""
+function fbbt_forward_objective!(model)
+    fnames = fieldnames(NLFunction)
+    if model.inner.is_objective_linear 
+
+    elseif model.inner.is_objective_quadratic 
+
+    elseif model.inner.is_objective_nl 
+        dag_lookup = model.inner.dag_lookup
+        dag = model.inner.expression_graph
+    end 
+    
+    return 
+end 
+
+"""
+Backward propagation for objective function 
+"""
+function fbbt_backward_objective!(model)
+
+    return 
+end 
+
 """ 
 Backward propogation for DAG 
 """
