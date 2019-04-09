@@ -61,13 +61,14 @@ mutable struct VariableInfo
     has_upper_bound::Bool # Implies upper_bound == Inf
     is_fixed::Bool        # Implies lower_bound == upper_bound and !has_lower_bound and !has_upper_bound
     is_binary::Bool       # Implies lower_bound == 0, upper_bound == 1 and is MOI.ZeroOne
+    is_integer::Bool      # true if variable is MOI.Integer
     is_bounded::Bool      # has_lower_bound == true && has_upper_bound == true 
     is_in_nl_term::Bool   # true if the variable is a part of some non-linear term 
     name::String
     start::Union{Nothing, Float64}
 end
 
-VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, false, false, "", nothing)
+VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, false, false, false, "", nothing)
 
 function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symbol)
     len_var_info = length(variable_info)

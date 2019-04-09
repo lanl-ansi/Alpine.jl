@@ -10,9 +10,10 @@ MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.GreaterThan{Float64
 MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.EqualTo{Float64}}) = true
 
 """
-Binary variable support (Integer variables not supported)
+Binary variable support 
 """
 MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.ZeroOne}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.Integer}) = true
 
 """
 Linear constraints
@@ -73,6 +74,17 @@ function MOI.add_constraint(model::Optimizer, v::SVF, ::MOI.ZeroOne)
     model.variable_info[vi.value].is_bounded = true
 	
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.ZeroOne}(vi.value)
+end 
+
+"""
+Integer variable support 
+"""
+function MOI.add_constraint(model::Optimizer, v::SVF, ::MOI.Integer)
+    vi = v.variable
+	check_inbounds(model, vi)
+    model.variable_info[vi.value].is_integer = true
+	
+    return MOI.ConstraintIndex{MOI.SingleVariable, MOI.Integer}(vi.value)
 end 
 
 """

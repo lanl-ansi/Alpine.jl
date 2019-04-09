@@ -63,6 +63,9 @@ is_fixed(model::Optimizer, vi::VI) =
 is_binary(model::Optimizer, vi::VI) = 
     model.variable_info[vi.value].is_binary
 
+is_integer(model::Optimizer, vi::VI) = 
+    model.variable_info[vi.value].is_integer
+
 """ 
 Primal-start support for Alpine
 """

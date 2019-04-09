@@ -195,13 +195,19 @@ Forward propagation for objective function
 function fbbt_forward_objective!(model::MOI.AbstractOptimizer)
     if model.inner.is_objective_linear 
         func = model.objective
-        computed_bound_info = func.constant..func.constant 
-        for term in func.terms 
-            var_id = term.variable_index.value 
-            coeff = term.coefficient 
-            computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+        if isa(func, SAF)
+            computed_bound_info = func.constant..func.constant 
+            for term in func.terms 
+                var_id = term.variable_index.value 
+                coeff = term.coefficient 
+                computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
+            end
+            model.inner.objective_bound_info = model.inner.objective_bound_info ∩ computed_bound_info
+        elseif isa(func, SVF)
+            var_id = func.variable.value
+            computed_bound_info = model.inner.variable_bound_tightened[var_id]
+            model.inner.objective_bound_info = model.inner.objective_bound_info ∩ computed_bound_info
         end
-        model.inner.objective_bound_info = model.inner.objective_bound_info ∩ computed_bound_info
     elseif model.inner.is_objective_quadratic 
         func = model.objective
         computed_bound_info = func.constant..func.constant 
@@ -258,6 +264,12 @@ function fbbt_backward_objective!(model::MOI.AbstractOptimizer)
         func = model.objective 
         lb = model.inner.objective_bound_info.lo 
         ub = model.inner.objective_bound_info.hi 
+        if isa(func, SVF)
+            id = func.variable.value 
+            model.inner.variable_bound_tightened[id] = 
+                intersect(model.inner.variable_bound_tightened[id], lb..ub)
+            return
+        end 
         for term in func.terms 
             id = term.variable_index.value 
             var_lb = lb 
@@ -562,6 +574,27 @@ function propagate_backward_nl_function!(model::MOI.AbstractOptimizer, nl_functi
     return
 end 
 
+"""
+Round binary/integer variable bounds 
+""" 
+function round_discrete_variable_bounds!(model::MOI.AbstractOptimizer)
+    for i in 1:length(model.variable_info)
+        vi = VI(i)
+        if is_integer(model, vi) || is_binary(model, vi)
+            var_bound = model.inner.variable_bound_tightened[i] 
+            lb = ceil(var_bound.lo)
+            ub = ceil(var_bound.hi)
+            if lb > ub
+                warn(LOGGER, "no feasible value possible for discrete variable - infeasibility detected")
+                model.inner.variable_bound_tightened[i] = emptyinterval()
+            else
+                model.inner.variable_bound_tightened[i] = lb..ub
+            end
+        end 
+    end 
+
+    return
+end 
 
 """
 Check if problem is infeasible

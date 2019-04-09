@@ -34,13 +34,18 @@ Backward propogation
 """
 function run_backward_propagation!(model::MOI.AbstractOptimizer)
     fbbt_backward_linear_constraints!(model)
+    round_discrete_variable_bounds!(model)
     num_quadratic_constraints = model.inner.num_quadratic_constraints 
     num_nlp_constraints = model.inner.num_nlp_constraints
     if num_quadratic_constraints + num_nlp_constraints > 0
         fbbt_backward_quadratic_constraints!(model)
+        round_discrete_variable_bounds!(model)
         fbbt_backward_nl_constraints!(model)
+        round_discrete_variable_bounds!(model)
         fbbt_backward_objective!(model)
+        round_discrete_variable_bounds!(model)
         fbbt_backward_dag!(model)
+        round_discrete_variable_bounds!(model)
     end
    
     return 
