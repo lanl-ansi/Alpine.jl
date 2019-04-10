@@ -54,6 +54,13 @@ mutable struct SolverOptions
     perform_bounding_solve_only     ::Bool
 end 
 
+get_nlp_optimizer(model::MOI.AbstractOptimizer)::Union{Nothing, MOI.AbstractOptimizer} = model.solver_options.nlp_optimizer  
+
+get_mip_optimizer(model::MOI.AbstractOptimizer)::Union{Nothing, MOI.AbstractOptimizer} = model.solver_options.mip_optimizer 
+
+get_minlp_optimizer(model::MOI.AbstractOptimizer)::Union{Nothing, MOI.AbstractOptimizer} = model.solver_options.minlp_optimizer
+
+
 mutable struct VariableInfo
     lower_bound::Float64  # May be -Inf even if has_lower_bound == true
     has_lower_bound::Bool # Implies lower_bound == Inf

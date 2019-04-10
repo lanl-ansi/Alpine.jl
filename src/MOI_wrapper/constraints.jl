@@ -13,7 +13,7 @@ MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.EqualTo{Float64}}) 
 Binary variable support 
 """
 MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.ZeroOne}) = true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.Integer}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.Integer}) = false # (for now)
 
 """
 Linear constraints

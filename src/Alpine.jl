@@ -3,6 +3,7 @@ __precompile__()
 module Alpine
 
 import JuMP
+using JuMP: @variable, @constraint, @objective, Model, with_optimizer
 using Memento
 
 using IntervalArithmetic
