@@ -2,7 +2,7 @@
 name: Feature request
 about: 'Suggest an idea for Alpine. '
 title: ''
-labels: ''
+labels: 'enhancement'
 assignees: ''
 
 ---
