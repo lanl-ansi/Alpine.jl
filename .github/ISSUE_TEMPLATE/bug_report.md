@@ -2,7 +2,7 @@
 name: Bug report
 about: Help us track down bugs in Alpine.
 title: ''
-labels: ''
+labels: 'bug'
 assignees: ''
 
 ---
