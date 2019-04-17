@@ -143,7 +143,7 @@ function MOI.optimize!(model::Optimizer)
     local_solve!(model, presolve=true)
     if model.solver_options.bp == true 
         run_fbbt!(model)
-        if ~isa(model.inner.status, Nothing) && model.inner.status.alpine_status == :infeasible 
+        if ~isa(model.inner.status, Nothing) && model.inner.status.alpine_status == MOI.INFEASIBLE 
             info(LOGGER, "problem infeasibility detected using bound-propagation")
             return
         end 

@@ -31,6 +31,7 @@ function get_default_solver_options()
     is_problem_convex = false 
     perform_bp_only = false
     perform_bounding_solve_only = false
+    max_multistart_points = 5
     
     return SolverOptions(
         nlp_optimizer, minlp_optimizer, mip_optimizer, 
@@ -44,7 +45,8 @@ function get_default_solver_options()
         bt_max_iter, bt_width_tol, bt_improvement_tol,
         bt_precision, bt_algo, bt_relax, bt_mip_time_limit, 
         bp, bp_max_iter, is_problem_convex, 
-        perform_bp_only, perform_bounding_solve_only
+        perform_bp_only, perform_bounding_solve_only, 
+        max_multistart_points
     )
 end 
 
@@ -58,8 +60,8 @@ function combine_options(options)
         options_dict[kv[1]] = kv[2]
     end
 
-    if !haskey(options_dict, :nlp_optimizer) && !haskey(options_dict, :minlp_optimizer)
-        error(LOGGER, "either an NLP or a MINLP solver has to be specified using nlp_optimizer or minlp_optimizer option")
+    if !haskey(options_dict, :nlp_optimizer)
+        error(LOGGER, "NLP solver has to be specified using nlp_optimizer option")
     end
 
     if !haskey(options_dict, :mip_optimizer) 

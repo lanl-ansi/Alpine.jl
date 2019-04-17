@@ -15,8 +15,7 @@ function fbbt_forward_linear_constraints!(model::MOI.AbstractOptimizer)
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info)
         if isempty(model.inner.constraint_bound_info[offset + i])
-            model.inner.status = Status() 
-            model.inner.status.alpine_status = :infeasible
+            model.inner.status.alpine_status = MOI.INFEASIBLE
         end 
     end 
 
@@ -96,8 +95,7 @@ function fbbt_forward_quadratic_constraints!(model::MOI.AbstractOptimizer)
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info)
         if isempty(model.inner.constraint_bound_info[offset + i])
-            model.inner.status = Status() 
-            model.inner.status.alpine_status = :infeasible
+            model.inner.status.alpine_status = MOI.INFEASIBLE
         end 
     end 
 
@@ -181,8 +179,7 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info) 
         if isempty(model.inner.constraint_bound_info[offset + i])
-            (isa(model.inner.status, Nothing)) && (model.inner.status = Status())
-            model.inner.status.alpine_status = :infeasible
+            model.inner.status.alpine_status = MOI.INFEASIBLE
         end
     end 
 
@@ -600,7 +597,7 @@ end
 Check if problem is infeasible
 """
 function is_infeasible(model::MOI.AbstractOptimizer)::Bool 
-    if ~isa(model.inner.status, Nothing) && model.inner.status.alpine_status == :infeasible
+    if ~isa(model.inner.status, Nothing) && model.inner.status.alpine_status == MOI.INFEASIBLE
         return true
     end
 

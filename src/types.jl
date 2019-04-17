@@ -3,19 +3,20 @@ mutable struct Incumbent
     variable_value                  ::Vector{Float64}
     objective_value                 ::Float64 
     best_bound                      ::Float64 
-    status                          ::Symbol 
+    status                          ::MOI.TerminationStatusCode 
 end
 
-Incumbent() = Incumbent(Vector{Float64}(), NaN, NaN, :NaN)
+Incumbent() = Incumbent(Vector{Float64}(), NaN, NaN, MOI.OPTIMIZE_NOT_CALLED)
 
 mutable struct Status 
-    local_solve_status              ::Symbol 
-    mip_solve_status                ::Symbol 
-    alpine_status                   ::Symbol 
-    bt_status                       ::Symbol 
+    local_solve_status              ::MOI.TerminationStatusCode 
+    mip_solve_status                ::MOI.TerminationStatusCode
+    alpine_status                   ::MOI.TerminationStatusCode
+    bt_status                       ::MOI.TerminationStatusCode
 end 
 
-Status() = Status(:NaN, :NaN, :NaN, :NaN)
+Status() = Status(MOI.OPTIMIZE_NOT_CALLED, MOI.OPTIMIZE_NOT_CALLED, 
+    MOI.OPTIMIZE_NOT_CALLED, MOI.OPTIMIZE_NOT_CALLED)
 
 mutable struct SolverOptions 
     nlp_optimizer                   ::Union{Nothing, MOI.AbstractOptimizer}
@@ -52,6 +53,8 @@ mutable struct SolverOptions
     is_problem_convex               ::Bool
     perform_bp_only                 ::Bool 
     perform_bounding_solve_only     ::Bool
+
+    max_multistart_points           ::Int
 end 
 
 get_nlp_optimizer(model::MOI.AbstractOptimizer)::Union{Nothing, MOI.AbstractOptimizer} = model.solver_options.nlp_optimizer  

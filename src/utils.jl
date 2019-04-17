@@ -1,5 +1,7 @@
 """
-Generic utilities used in Alpine.jl 
+    matrix_from_quadratic_terms(terms::Vector{MOI.ScalarQuadraticTerm})
+
+Creates a sparse matrix from quadratic terms and returns a Q and index_to_variable_map
 """
 function matrix_from_quadratic_terms(terms::Vector{SQT})
     variable_to_index_map = Dict{VI, Int}()
@@ -37,6 +39,12 @@ function matrix_from_quadratic_terms(terms::Vector{SQT})
     
     return Q, index_to_variable_map
 end
+
+"""
+    matrix_from_nl_function(nl_function::NLFunction)
+
+Creates a sparse matrix from the quadratic part of an nonlinear function data object and returns a Q and index_to_variable_map
+"""
 
 function matrix_from_nl_function(nl_function::NLFunction)
     quadratic_part = nl_function.quadratic_part 
@@ -111,6 +119,11 @@ function matrix_from_nl_function(nl_function::NLFunction)
     return Q, index_to_variable_map
 end 
 
+"""
+    get_type_dict(obj::Dict)::Dict{Symbol,Type}() 
+
+This function returns the types of every field in a given dictionary 
+"""
 function get_type_dict(obj)
     T = typeof(obj)
     type_dict = Dict{Symbol,Type}()
@@ -118,4 +131,35 @@ function get_type_dict(obj)
         type_dict[name] = typ
     end
     return type_dict
+end
+
+"""
+    dereference_expr!(expr, m::JuMP.model)
+
+This function replaces the MOI variables in an expression tree using JuMP VariableRef 
+"""
+function dereference_expr!(expr, m)
+    for i in 2:length(expr.args)
+        if isa(expr.args[i], Union{Float64,Int64})
+            continue
+        elseif expr.args[i].head == :ref
+            @assert isa(expr.args[i].args[2], MOI.VariableIndex)
+            expr.args[i] = JuMP.VariableRef(m, expr.args[i].args[2])
+        elseif expr.args[i].head == :call
+            dereference_expr!(expr.args[i], m)
+        else
+            error(LOGGER, "dereference_expr :: Unexpected term in expression tree")
+        end
+    end
+
+    return
+end
+
+"""
+    state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
+
+Returns true if either status is optimal or locally solved. If allow_almost=true then check for `ALMOST_LOCALLY_SOLVED`
+"""
+function status_is_optimal(status::MOI.TerminationStatusCode; allow_almost=false)
+    return status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || (allow_almost && status == MOI.ALMOST_LOCALLY_SOLVED)
 end
