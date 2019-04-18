@@ -142,9 +142,9 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         model.inner.num_rsoc_constraints + 
         model.inner.num_nlp_constraints
     
-    # print variable/constraint summary
+    # print problem summary
     if model.solver_options.log_level != 0
-        print_var_con_summary(model.inner)
+        print_problem_summary(model.inner)
     end 
 
     # create NLFunction for quadratic constraints 

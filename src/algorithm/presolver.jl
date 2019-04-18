@@ -7,17 +7,18 @@ The different steps involved in the presolve part of the algorithm
 
 1. Perform a local solve of the original model. If the original 
 problem is an NLP, then the vanilla algorithm to solve the problem
-to local optimality is performed with a multi-start option. If it 
-is an MINLP and an ``minlp_optimizer`` is provided as a user option, 
-the problem is directly provided to the solver to obtain a locally
-optimal solution. If the problem is an MINLP and no MINLP solver is 
-provided, no initial local solve is performed. 
+to local optimality is performed with the default start and one 
+additional random restart. If it is an MINLP and an ``minlp_optimizer`` 
+is provided as a user option, the problem is directly provided to 
+the solver to obtain a locally optimal solution. If the problem 
+is an MINLP and no MINLP solver is provided, no initial local solve 
+is performed. 
 
 2. Once step 1 is complete, feasibility-based bound-tightenening 
 is performed to obtain tight variable bounds, objective bounds, 
 identify redundant constraints, and detect infeasibilities. 
 
-3. If original problem is an NLP, another multi-start local solve 
+3. If original problem is an NLP, a multi-start local solve 
 is performed using the tightened bounds to compute a better local 
 optimal solution, if possible. 
 
@@ -52,9 +53,9 @@ function presolve!(model::MOI.AbstractOptimizer)
             return
         end 
 
-        # update the variable bounds and perform another local solve 
+        # update the variable bounds and perform a multi-start local local solve 
         update_variable_bounds!(model)
-        local_solve!(model, num_standalone_solves=5)
+        local_solve!(model, presolve=true, standalone_solve=true)
     end
 
     # if `perform_bp_only` is set to true, the presolver exits
@@ -65,6 +66,10 @@ function presolve!(model::MOI.AbstractOptimizer)
     # convexity detection is peformed
     run_convexity_detection!(model)
 
+    # presolve summary logging 
+    if model.solver_options.log_level != 0
+        print_presolve_summary(model)
+    end 
 
     return 
 end 
