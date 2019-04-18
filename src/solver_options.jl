@@ -1,6 +1,11 @@
+"""
+    get_default_solver_options()::SolverOptions 
 
+This function sets the default solver options and returns an object of 
+the SolverOptions struct
+"""
 
-function get_default_solver_options()
+function get_default_solver_options()::SolverOptions
     nlp_optimizer = nothing 
     minlp_optimizer = nothing 
     mip_optimizer = nothing 
@@ -50,8 +55,13 @@ function get_default_solver_options()
     )
 end 
 
+"""
+    combine_options(options)::SolverOptions 
 
-function combine_options(options)
+This functions merges the default solver options with the user provided 
+solver options. 
+"""
+function combine_options(options)::SolverOptions
     options_dict = Dict{Symbol,Any}()
     for kv in options
         if !in(kv[1], fieldnames(SolverOptions))

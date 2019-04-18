@@ -139,22 +139,20 @@ variable_offset(model::Optimizer) = length(model.variable_info)
 ``MOI.optimize!()`` for Alpine 
 """ 
 function MOI.optimize!(model::Optimizer)
+    # initialize AlpineProblem data
     init_ap_data!(model)
-    
-    local_solve!(model, presolve=true)
-    if model.solver_options.bp == true 
-        run_fbbt!(model)
-        if ~isa(model.inner.status, Nothing) && model.inner.status.alpine_status == MOI.INFEASIBLE 
-            info(LOGGER, "problem infeasibility detected using bound-propagation")
-            return
-        end 
-        update_variable_bounds!(model)
-        local_solve!(model, num_standalone_solves=5)
-    end
 
+    # start the presolver 
+    presolve!(model)
+
+    # if infeasibility is detected, then return 
+    if model.inner.status.alpine_status == MOI.INFEASIBLE 
+        return 
+    end 
+
+    # if `perform_bp_only` is set to true, then return
     (model.solver_options.perform_bp_only) && (return)
-    
-    run_convexity_detection!(model)
+
 
 end 
 
