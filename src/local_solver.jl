@@ -1,5 +1,5 @@
 """
-    local_solve!(model::MOI.AbstractOptimizer; presolve=false)
+    local_solve!(model::MOI.AbstractOptimizer; presolve=false, num_standalone_solves=0)
 
 The function performs local solve of the original MINLP/NLP model. 
 If the original problem is an MINLP and if an MINLP solver is 
@@ -14,10 +14,13 @@ option. In the local solves performed during each iteration of
 the bounding solve, Alpine.jl always solves an NLP to local 
 optimality. When the original problem is an MINLP, the discrete 
 variables get fixed to the value obtained at that corresponding 
-iteration of the bounding solve. 
+iteration of the bounding solve. The optional keyword argument 
+``num_standalone_solves`` gets triggered if the ``presolve`` is 
+set to false; in this case the function performs that many number 
+of standalone solves with different starting points. 
 """
 
-function local_solve!(model::MOI.AbstractOptimizer; presolve=false)
+function local_solve!(model::MOI.AbstractOptimizer; presolve=false, num_standalone_solves=0)
     x = getindex(model.inner.continuous_relaxation, :x)
     num_variables = model.inner.num_variables
     binary_variables = filter(i -> i == true, info_array_of_variables(model.variable_info, :is_binary))
@@ -42,6 +45,14 @@ function local_solve!(model::MOI.AbstractOptimizer; presolve=false)
                 model.inner.incumbent.variable_value = JuMP.value.(x)
                 model.inner.incumbent.status = status
                 model.inner.status.alpine_status = status
+                if model.sense == MOI.MIN_SENSE
+                    model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                        -Inf..model.inner.incumbent.objective_value)
+                end 
+                if model.sense == MOI.MAX_SENSE 
+                    model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                        model.inner.incumbent.objective_value..Inf)
+                end
             end 
 
             # unset binary and integer variables
@@ -56,7 +67,6 @@ function local_solve!(model::MOI.AbstractOptimizer; presolve=false)
         
         else 
             # optimize the NLP
-            @show MOI.is_empty(model.solver_options.nlp_optimizer)
             JuMP.optimize!(model.inner.continuous_relaxation, with_optimizer(get_nlp_optimizer, model))
             status = JuMP.termination_status(model.inner.continuous_relaxation)
 
@@ -65,9 +75,16 @@ function local_solve!(model::MOI.AbstractOptimizer; presolve=false)
                 model.inner.incumbent.variable_value = JuMP.value.(x)
                 model.inner.incumbent.status = status
                 model.inner.status.alpine_status = status
+                if model.sense == MOI.MIN_SENSE
+                    model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                        -Inf..model.inner.incumbent.objective_value)
+                end 
+                if model.sense == MOI.MAX_SENSE 
+                    model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                        model.inner.incumbent.objective_value..Inf)
+                end
             end 
 
-            """
         
             # multi-start NLP for alternate local optimal solutions 
             for i in 1:max_multistart_points
@@ -75,8 +92,7 @@ function local_solve!(model::MOI.AbstractOptimizer; presolve=false)
                 for k in 1:num_variables 
                     JuMP.set_start_value(x[k], start_values[k])
                 end 
-                MOIU.drop_optimizer(JuMP.backend(model.inner.continuous_relaxation))
-                JuMP.optimize!(model.inner.continuous_relaxation, with_optimizer(get_nlp_optimizer, model))
+                JuMP.optimize!(model.inner.continuous_relaxation)
                 status = JuMP.termination_status(model.inner.continuous_relaxation)
 
                 if status_is_optimal(status) 
@@ -89,13 +105,52 @@ function local_solve!(model::MOI.AbstractOptimizer; presolve=false)
                         model.inner.incumbent.variable_value = JuMP.value.(x)
                         model.inner.incumbent.status = status
                         model.inner.status.alpine_status = status
+                        if model.sense == MOI.MIN_SENSE
+                            model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                                -Inf..model.inner.incumbent.objective_value)
+                        end 
+                        if model.sense == MOI.MAX_SENSE 
+                            model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                                model.inner.incumbent.objective_value..Inf)
+                        end
                     end
                 end
             end
-
-            """  
+            
         end 
     
+    elseif (num_standalone_solves != 0 && ~presolve && ~has_discrete_variables)
+        for i in 1:num_standalone_solves
+            start_values = generate_random_start_values(model)
+            for k in 1:num_variables 
+                JuMP.set_start_value(x[k], start_values[k])
+            end 
+            JuMP.optimize!(model.inner.continuous_relaxation)
+
+            status = JuMP.termination_status(model.inner.continuous_relaxation)
+
+            if status_is_optimal(status) 
+                current_objective_value = JuMP.objective_value(model.inner.continuous_relaxation) 
+                is_better = false 
+                (model.sense == MOI.MIN_SENSE) && (is_better = (current_objective_value < model.inner.incumbent.objective_value - 1e-4))
+                (model.sense == MOI.MAX_SENSE) && (is_vetter = (current_objective_value > model.inner.incumbent.objective_value + 1e-4))
+                if is_better 
+                    model.inner.incumbent.objective_value = JuMP.objective_value(model.inner.continuous_relaxation) 
+                    model.inner.incumbent.variable_value = JuMP.value.(x)
+                    model.inner.incumbent.status = status
+                    model.inner.status.alpine_status = status
+                    if model.sense == MOI.MIN_SENSE
+                        model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                            -Inf..model.inner.incumbent.objective_value)
+                    end 
+                    if model.sense == MOI.MAX_SENSE 
+                        model.inner.objective_bound_info = intersect(model.inner.objective_bound_info, 
+                            model.inner.incumbent.objective_value..Inf)
+                    end
+                end
+            end
+        end
+
     else 
         # called during bounding solve iterations (complete later)
     

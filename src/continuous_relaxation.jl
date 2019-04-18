@@ -62,6 +62,28 @@ function build_local_solve_model!(model::MOI.AbstractOptimizer)
     return 
 end
 
+"""
+    update_variable_bounds!(model::MOI.AbstractOptimizer; variable_bound::Union{Nothing, Vector{Interval{Float64}}}=nothing)
+
+This function updates the variable bounds in the local solve model using the variable bound vector 
+"""
+
+function update_variable_bounds!(model::MOI.AbstractOptimizer; 
+    variable_bound::Union{Nothing, Vector{Interval{Float64}}}=nothing)
+
+    x = getindex(model.inner.continuous_relaxation, :x)
+    num_variables = model.inner.num_variables
+    if isa(variable_bound, Nothing) 
+        variable_bound = model.inner.variable_bound_tightened
+    end 
+    for i in 1:num_variables 
+        JuMP.set_lower_bound(x[i], variable_bound[i].lo)
+        JuMP.set_upper_bound(x[i], variable_bound[i].hi)
+    end
+
+    return 
+end 
+
 """ 
     generate_random_start_values(model::AbstractOptimizer)::Vector{Float64}
 
@@ -76,7 +98,14 @@ function generate_random_start_values(model::MOI.AbstractOptimizer)::Vector{Floa
         lb = model.inner.variable_bound_tightened[i].lo 
         ub = model.inner.variable_bound_tightened[i].hi 
 
-        start_values[i] = round(rand() * (ub - lb) + lb, digits = 2)
+        (lb == -Inf) && (lb = -1e5)
+        (ub == Inf) && (ub = 1e5)
+
+        start = rand() 
+        while start == 0.0 
+            start = rand() 
+        end 
+        start_values[i] = round(start * (ub - lb) + lb, digits = 2)
     end 
 
     return start_values

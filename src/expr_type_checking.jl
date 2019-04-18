@@ -7,8 +7,9 @@ Check if term is quadratic
 """
 function expr_is_quadratic(expr)::Bool 
     (length(expr.args) != 3) && (return false)
-    is_quadratic = (expr.args[1] == :^ && expr.args[3] == 2.0) 
-    is_quadratic = is_quadratic || (expr.args[1] == :* && expr.args[2] == expr.args[3])
+    is_quadratic = (expr.args[1] == :^ && expr.args[2].head == :ref && expr.args[3] == 2.0) 
+    is_quadratic = is_quadratic || 
+        (expr.args[1] == :* && expr.args[2] == expr.args[3] && expr.args[2].head == :ref)
     
     if is_quadratic && expr.args[1] == :* 
         new_expr = :(expr.args[2]^2.0)

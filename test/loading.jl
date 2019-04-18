@@ -10,7 +10,7 @@
     @NLconstraint(m, x[1]*x[2] >= 8)
     @constraint(m, x[1]^2 <= -x[2]^2 + 100)
     @constraint(m, x[1]^2 == 25)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     bm = JuMP.backend(m)
     internal_model = bm.optimizer.model
@@ -40,7 +40,7 @@
     @constraint(m, y == 0.0)
     @objective(m, Min, y^2)
     @constraint(m, x * y <= 3)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     bm = JuMP.backend(m)
     internal_model = bm.optimizer.model

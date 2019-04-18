@@ -140,6 +140,7 @@ variable_offset(model::Optimizer) = length(model.variable_info)
 """ 
 function MOI.optimize!(model::Optimizer)
     init_ap_data!(model)
+    
     local_solve!(model, presolve=true)
     if model.solver_options.bp == true 
         run_fbbt!(model)
@@ -147,6 +148,8 @@ function MOI.optimize!(model::Optimizer)
             info(LOGGER, "problem infeasibility detected using bound-propagation")
             return
         end 
+        update_variable_bounds!(model)
+        local_solve!(model, num_standalone_solves=5)
     end
 
     (model.solver_options.perform_bp_only) && (return)

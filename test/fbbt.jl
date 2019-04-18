@@ -16,7 +16,7 @@
     @constraint(m, sum(y) <= 0)
     @constraint(m, sum(y) >= 0)
 
-    optimize!(m)
+    JuMP.optimize!(m)
 
     bm = JuMP.backend(m)
     internal_model = bm.optimizer.model
@@ -33,28 +33,31 @@
     @test alpine_problem.variable_bound_tightened[4].lo == -1
 
     # infeasible LP 
+    solver_options = DefaultTestSolver(log_level=0, perform_bp_only=true)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options)
     )
     @variable(m, 0 <= x[1:2] <= 1)
     @constraint(m, sum(x) >= 3)
 
-    optimize!(m) 
+    JuMP.optimize!(m) 
 
     @test JuMP.termination_status(m) == MOI.INFEASIBLE
 
     # infeasible QP 
+    solver_options = DefaultTestSolver(log_level=0, perform_bp_only=true)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options)
     )
     @variable(m, x[1:2])
     @constraint(m, x[1]^2 + x[2]^2 <= -1)
 
-    optimize!(m) 
+    JuMP.optimize!(m) 
 
     @test JuMP.termination_status(m) == MOI.INFEASIBLE
 
     # tighten bounds 
+    solver_options = DefaultTestSolver(log_level=0, perform_bp_only=true)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options
     ))
@@ -64,7 +67,7 @@
     @NLconstraint(m, exp(x^2 + y^2)-z <= 0)
     @NLconstraint(m, z*sqrt(x^2 + y^2) <= 1)
 
-    optimize!(m)
+    JuMP.optimize!(m)
 
     lb_x = Alpine.lower_bound_tightened(x)
     ub_x = Alpine.upper_bound_tightened(x)
@@ -74,6 +77,7 @@
     @test isthin(Alpine.variable_bound_tightened(z))
 
     # nvs01 from MINLPLib with continuous relaxation with changed bounds
+    solver_options = DefaultTestSolver(log_level=0, perform_bp_only=true)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options 
     ))
@@ -92,7 +96,7 @@
     @NLconstraint(m, (2960.87631843 + 18505.4769901875*x[2]^2)/(7200 + x[1]^2) - x[3] >= 0)
     @NLconstraint(m, -0.04712385*sqrt(900 + x[1]^2)*x[2] + x_obj >= 0)
 
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test isapprox(Alpine.lower_bound_tightened(x_obj), 1906.04, atol=1e-1)
     @test isapprox(Alpine.lower_bound_tightened(x[3]), 2.12435, atol=1e-1)
