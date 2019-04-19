@@ -165,6 +165,16 @@ mutable struct QuadraticMatrixInfo
     index_to_variable_map           ::Dict{Int, VI}
 end
 
+mutable struct RedundantConstraints 
+    linear_constraint_ids           ::Vector{Int}
+    quadratic_constraint_ids        ::Vector{Int}
+    soc_constraint_ids              ::Vector{Int}
+    rsoc_constraint_ids             ::Vector{Int}
+    nl_constraint_ids               ::Vector{Int}
+end 
+
+RedundantConstraints() = RedundantConstraints(Int[], Int[], Int[], Int[], Int[])
+
 mutable struct AlpineProblem 
     # variable and constraint count
     num_variables                   ::Int 
@@ -173,7 +183,7 @@ mutable struct AlpineProblem
     num_quadratic_constraints       ::Int  
     num_soc_constraints             ::Int  
     num_rsoc_constraints            ::Int  
-    num_nlp_constraints             ::Int  
+    num_nl_constraints             ::Int  
     num_binary_variables            ::Int 
     num_integer_variables           ::Int
     
@@ -224,6 +234,9 @@ mutable struct AlpineProblem
     nl_function_convexity           ::Union{Nothing, Vector{Symbol}}
     nl_constraint_convexity         ::Union{Nothing, Vector{Symbol}}
 
+    # redundant constraint information 
+    redundant_constraint_ids        ::Union{Nothing, RedundantConstraints}
+
     # Incumbent information 
     incumbent                       ::Union{Nothing, Incumbent}
 
@@ -244,6 +257,7 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing,
     nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing,
+    nothing, 
     nothing, 
     nothing, 
     0

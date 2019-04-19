@@ -53,6 +53,9 @@ function presolve!(model::MOI.AbstractOptimizer)
             return
         end 
 
+        # populate redundant constraints 
+        populate_redundant_constraint_ids!(model)
+
         # update the variable bounds and perform a multi-start local local solve 
         update_variable_bounds!(model)
         local_solve!(model, presolve=true, standalone_solve=true)
@@ -62,6 +65,8 @@ function presolve!(model::MOI.AbstractOptimizer)
     if model.solver_options.perform_bp_only 
         return
     end
+
+
 
     # convexity detection is peformed
     run_convexity_detection!(model)

@@ -1,5 +1,7 @@
 
-@testset "function convexity detection" begin
+@testset "convexity detection tests" begin
+
+    printstyled("\nTesting quadratic function convexity detection ...\n", color=:blue, bold=true)    
     Alpine.silence()
     optimizer = nlp_optimizer()
     num_variables = 4

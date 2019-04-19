@@ -19,9 +19,9 @@ function create_dag!(model::MOI.AbstractOptimizer)
             model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
     end 
 
-    for i in 1:model.inner.num_nlp_constraints
+    for i in 1:model.inner.num_nl_constraints
         nl_function = model.inner.nl_function[i]
-        id = nlp_offset(model) + i
+        id = nl_offset(model) + i
         add_to_dag!(nl_function, model.inner.expression_graph, 
             model.inner.common_sub_expression_dict, id; dag_lookup = model.inner.dag_lookup)
     end 

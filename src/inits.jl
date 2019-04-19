@@ -85,13 +85,13 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
         evaluator = model.nlp_data.evaluator
         MOI.initialize(evaluator, [:ExprGraph])
-        num_nlp_constraints = length(model.nlp_data.constraint_bounds)
-        model.inner.num_nlp_constraints = num_nlp_constraints
-        if num_nlp_constraints > 0 
+        num_nl_constraints = length(model.nlp_data.constraint_bounds)
+        model.inner.num_nl_constraints = num_nl_constraints
+        if num_nl_constraints > 0 
             model.inner.nl_constraint_expression = Vector{Expr}()
         end
 
-        for i in 1:num_nlp_constraints 
+        for i in 1:num_nl_constraints 
             lb = model.nlp_data.constraint_bounds[i].lower
             ub = model.nlp_data.constraint_bounds[i].upper
             push!(model.inner.constraint_bound_info, lb..ub)
@@ -115,14 +115,14 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
             model.inner.objective_convexity = :convex
         end
 
-        for i in 1:num_nlp_constraints
+        for i in 1:num_nl_constraints
             constraint_expr = MOI.constraint_expr(evaluator, i)
             push!(model.inner.nl_constraint_expression, constraint_expr)
         end
 
     else 
         info(LOGGER, "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros")
-        model.inner.num_nlp_constraints = 0
+        model.inner.num_nl_constraints = 0
         model.inner.is_objective_nl = false
         if isa(model.objective, SQF) 
             model.inner.is_objective_quadratic = true 
@@ -140,7 +140,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         model.inner.num_quadratic_constraints +
         model.inner.num_soc_constraints +
         model.inner.num_rsoc_constraints + 
-        model.inner.num_nlp_constraints
+        model.inner.num_nl_constraints
     
     # print problem summary
     if model.solver_options.log_level != 0
@@ -155,7 +155,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     nl_function = NLFunction[]
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
-        for i in 1:model.inner.num_nlp_constraints 
+        for i in 1:model.inner.num_nl_constraints 
             expr = model.inner.nl_constraint_expression[i]
             disaggregated_expr = expr_disaggregate(expr)
             push!(nl_function, create_nl_function(disaggregated_expr))
@@ -181,9 +181,9 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         end 
     end 
 
-    if model.inner.num_nlp_constraints > 0
+    if model.inner.num_nl_constraints > 0
         model.inner.quadratic_matrix_nl = Vector{Union{QuadraticMatrixInfo, Nothing}}()
-        for i in 1:model.inner.num_nlp_constraints
+        for i in 1:model.inner.num_nl_constraints
             func = model.inner.nl_function[i]
             Q, index_to_variable_map = matrix_from_nl_function(func)
             if isa(Q, Nothing) 
@@ -204,6 +204,9 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         (~isa(Q, Nothing)) && (model.inner.quadratic_matrix_objective = QuadraticMatrixInfo(Q, index_to_variable_map))
     end
     
+    # initialize redundant constraint information 
+    model.inner.redundant_constraint_ids = RedundantConstraints()
+
     # initialize incumbent and status 
     model.inner.incumbent = Incumbent()
     model.inner.status = Status()

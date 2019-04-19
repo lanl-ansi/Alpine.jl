@@ -41,7 +41,7 @@ function build_local_solve_model!(model::MOI.AbstractOptimizer)
     rsoc_constraints = model.rsoc_constraints
 
     # add nonlinear constraints 
-    for i in 1:model.inner.num_nlp_constraints
+    for i in 1:model.inner.num_nl_constraints
         constraint_expr = MOI.constraint_expr(model.nlp_data.evaluator, i)
         dereference_expr!(constraint_expr, m)
         JuMP.add_NL_constraint(m, constraint_expr)

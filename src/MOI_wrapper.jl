@@ -124,10 +124,10 @@ end
 ordering of constraints provided to Alpine.jl 
 """
 linear_offset(model::Optimizer) = 0
-quadratic_offset(model::Optimizer) = linear_offset(model) 
+quadratic_offset(model::Optimizer) = linear_offset(model) + length(model.linear_constraints)
 soc_offset(model::Optimizer) = quadratic_offset(model) + length(model.quadratic_constraints)
 rsoc_offset(model::Optimizer) = soc_offset(model) + length(model.soc_constraints)
-nlp_offset(model::Optimizer) = rsoc_offset(model) + length(model.rsoc_constraints)
+nl_offset(model::Optimizer) = rsoc_offset(model) + length(model.rsoc_constraints)
 
 """
 variable offset 

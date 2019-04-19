@@ -7,7 +7,7 @@ Clean the nonlinear expressions
 """
 function clean_nl_expressions!(model::MOI.AbstractOptimizer)
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
-        for i in 1:model.inner.num_nlp_constraints 
+        for i in 1:model.inner.num_nl_constraints 
             expr = model.inner.nl_constraint_expression[i]
             expr_flatten_constant_subtree(expr)
             expr_separate_sign_multilinear(expr)

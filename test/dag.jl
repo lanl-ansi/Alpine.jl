@@ -1,6 +1,9 @@
 
-@testset "testing DAG construction" begin
-    solver_options = DefaultTestSolver(log_level=0)
+@testset "DAG construction tests" begin
+    
+    printstyled("\nTesting DAG construction ...\n", color=:blue, bold=true)
+    
+    solver_options = DefaultTestSolver()
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options)
     )

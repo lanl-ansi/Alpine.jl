@@ -1,6 +1,8 @@
 
 @testset "nonlinear expression utilities" begin
     
+    printstyled("\nTesting nonlinear expression utilities ...\n", color=:blue, bold=true)
+
     solver_options = DefaultTestSolver(log_level=0)
     @test MOI.supports(Alpine.Optimizer(solver_options), MOI.NLPBlock()) == true
     

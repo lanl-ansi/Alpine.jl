@@ -26,6 +26,8 @@ function DefaultTestSolver(;
     return solver_args_dict
 end
 
+start = time() 
+
 @testset "Alpine" begin 
     include("loading.jl")
     include("convexity.jl")
@@ -33,3 +35,5 @@ end
     include("fbbt.jl")
     include("dag.jl")
 end 
+
+println("Time for all tests : ", round(time()-start, digits=2), " seconds")

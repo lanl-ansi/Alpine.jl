@@ -84,7 +84,7 @@ function local_solve!(model::MOI.AbstractOptimizer; presolve=false, standalone_s
                 current_objective_value = JuMP.objective_value(model.inner.continuous_relaxation) 
                 is_better = false 
                 (model.sense == MOI.MIN_SENSE) && (is_better = (current_objective_value < model.inner.incumbent.objective_value - 1e-4))
-                (model.sense == MOI.MAX_SENSE) && (is_vetter = (current_objective_value > model.inner.incumbent.objective_value + 1e-4))
+                (model.sense == MOI.MAX_SENSE) && (is_better = (current_objective_value > model.inner.incumbent.objective_value + 1e-4))
                 if is_better 
                     model.inner.incumbent.objective_value = JuMP.objective_value(model.inner.continuous_relaxation) 
                     model.inner.incumbent.variable_value = JuMP.value.(x)
@@ -117,7 +117,7 @@ function local_solve!(model::MOI.AbstractOptimizer; presolve=false, standalone_s
                 current_objective_value = JuMP.objective_value(model.inner.continuous_relaxation) 
                 is_better = false 
                 (model.sense == MOI.MIN_SENSE) && (is_better = (current_objective_value < model.inner.incumbent.objective_value - 1e-4))
-                (model.sense == MOI.MAX_SENSE) && (is_vetter = (current_objective_value > model.inner.incumbent.objective_value + 1e-4))
+                (model.sense == MOI.MAX_SENSE) && (is_better = (current_objective_value > model.inner.incumbent.objective_value + 1e-4))
                 if is_better 
                     model.inner.incumbent.objective_value = JuMP.objective_value(model.inner.continuous_relaxation) 
                     model.inner.incumbent.variable_value = JuMP.value.(x)

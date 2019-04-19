@@ -1,5 +1,8 @@
 
-@testset "linear constraints FBBT tests" begin
+@testset "FBBT tests" begin
+
+    printstyled("\nTesting FBBT ...\n", color=:blue, bold=true)
+
     solver_options = DefaultTestSolver(log_level=0, perform_bp_only=true)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options)
@@ -102,5 +105,26 @@
     @test isapprox(Alpine.lower_bound_tightened(x[3]), 2.12435, atol=1e-1)
     @test isapprox(Alpine.upper_bound_tightened(x[3]), 2.12435, atol=1e-1)
 
+    # redundant constraints 
+    solver_options = DefaultTestSolver(perform_bp_only=true)
+    m = Model(with_optimizer(
+        Alpine.Optimizer, solver_options 
+    ))
+
+    @variable(m, 0 <= x[1:3] <= 1)
+
+    @constraint(m, sum(x) <= 100)
+    @constraint(m, x[1]^2 + x[2]^2 + x[3]^2 >= -10)
+    @constraint(m, x[1]^2 + x[2]^2 + x[3]^2 <= 10)
+    @NLconstraint(m, x[1]^3 + x[2]^3 <= 10)
+
+    JuMP.optimize!(m)
+    bm = JuMP.backend(m)
+    internal_model = bm.optimizer.model
+    alpine_problem = internal_model.inner
+
+    @test length(alpine_problem.redundant_constraint_ids.linear_constraint_ids) == 1
+    @test length(alpine_problem.redundant_constraint_ids.quadratic_constraint_ids) == 2
+    @test length(alpine_problem.redundant_constraint_ids.nl_constraint_ids) == 1
 
 end 

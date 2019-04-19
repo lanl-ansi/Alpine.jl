@@ -156,9 +156,9 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
     fnames = fieldnames(NLFunction)
     dag_lookup = model.inner.dag_lookup
     dag = model.inner.expression_graph
-    for i in 1:model.inner.num_nlp_constraints 
+    for i in 1:model.inner.num_nl_constraints 
         nl_function = model.inner.nl_function[i]
-        offset = nlp_offset(model)
+        offset = nl_offset(model)
         computed_bound_info = 0..0
         for fname in fnames
             f_value = getfield(nl_function, fname)
@@ -166,7 +166,7 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
             for alpine_expression in f_value
                 coeff, expr = alpine_expression.expression
                 if fname == :constant_part 
-                    computed_bound_info += coeff..coeff 
+                    computed_bound_info += coeff*expr..coeff*expr
                 elseif fname == :linear_part 
                     var_id = expr.args[2].value
                     computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
@@ -176,6 +176,7 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
                 end 
             end 
         end 
+
         model.inner.constraint_bound_info[offset + i] = 
             intersect(model.inner.constraint_bound_info[offset + i], computed_bound_info) 
         if isempty(model.inner.constraint_bound_info[offset + i])
@@ -419,13 +420,13 @@ function propagate_intervals!(operation::Symbol, current_interval::Interval{Floa
                 root = sqrt(a)
                 b1 = b ∩ root
                 b2 = b ∩ (-root)
-            elseif iseven(c)
+            elseif iseven(Int(c))
                 root = a^(1//c)
                 b1 = b ∩ root
                 b2 = b ∩ (-root)
-            elseif isodd(c)
-                pos_root = (a ∩ (0..Inf)) ^ (1//c)
-                neg_root = -( ( (-a) ∩ (0..Inf) ) ^ (1//c) )
+            elseif isodd(Int(c))
+                pos_root = (a ∩ (0..Inf)) ^ (1//Int(c))
+                neg_root = -( ( (-a) ∩ (0..Inf) ) ^ (1//Int(c)) )
                 b1 = b ∩ pos_root
                 b2 = b ∩ neg_root
             end
@@ -433,7 +434,7 @@ function propagate_intervals!(operation::Symbol, current_interval::Interval{Floa
         else
             lo = max(a.lo, 0) 
             hi = a.hi 
-            children_interval[1] = children_interval[1] ∩ lo..hi^(1//c)
+            children_interval[1] = children_interval[1] ∩ lo..hi^(1/c)
             info(LOGGER, "Lower bound of a variable/expression with fractional power set to 0.0 to avoid complex number results")
         end
     # a = abs(b)
@@ -505,9 +506,9 @@ function fbbt_backward_nl_constraints!(model::MOI.AbstractOptimizer)
     fnames = fieldnames(NLFunction)
     dag_lookup = model.inner.dag_lookup
     dag = model.inner.expression_graph
-    for i in 1:model.inner.num_nlp_constraints
+    for i in 1:model.inner.num_nl_constraints
         nl_function = model.inner.nl_function[i]
-        offset = nlp_offset(model)
+        offset = nl_offset(model)
         constraint_interval = model.inner.constraint_bound_info[offset + i] 
         for fname in fnames
             (fname == :constant_part) && (continue)  
@@ -541,7 +542,7 @@ function propagate_backward_nl_function!(model::MOI.AbstractOptimizer, nl_functi
             (fname_1 == fname && i == position) && (continue)
             coeff, expr = f_value[i].expression
             if fname_1 == :constant_part 
-                sum_interval += coeff 
+                sum_interval += coeff * expr 
             elseif fname_1 == :linear_part 
                 var_id = expr.args[2].value 
                 var_interval = model.inner.variable_bound_tightened[var_id]
