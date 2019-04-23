@@ -106,7 +106,7 @@
     @test isapprox(Alpine.upper_bound_tightened(x[3]), 2.12435, atol=1e-1)
 
     # redundant constraints 
-    solver_options = DefaultTestSolver(perform_bp_only=true)
+    solver_options = DefaultTestSolver(perform_bp_only=true, log_level=1)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options 
     ))

@@ -66,8 +66,6 @@ function presolve!(model::MOI.AbstractOptimizer)
         return
     end
 
-
-
     # convexity detection is peformed
     run_convexity_detection!(model)
 
