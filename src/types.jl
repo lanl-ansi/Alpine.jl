@@ -183,7 +183,7 @@ mutable struct AlpineProblem
     num_quadratic_constraints       ::Int  
     num_soc_constraints             ::Int  
     num_rsoc_constraints            ::Int  
-    num_nl_constraints             ::Int  
+    num_nl_constraints              ::Int  
     num_binary_variables            ::Int 
     num_integer_variables           ::Int
     
@@ -231,6 +231,7 @@ mutable struct AlpineProblem
     objective_convexity             ::Union{Nothing, Symbol} 
     quadratic_function_convexity    ::Union{Nothing, Vector{Symbol}}
     quadratic_constraint_convexity  ::Union{Nothing, Vector{Symbol}}
+    nl_quadratic_matrix_convexity   ::Union{Nothing, Vector{Symbol}}
     nl_function_convexity           ::Union{Nothing, Vector{Symbol}}
     nl_constraint_convexity         ::Union{Nothing, Vector{Symbol}}
 
@@ -256,7 +257,7 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing,
     nothing, nothing, nothing,
-    nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 
     nothing, 

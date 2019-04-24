@@ -244,14 +244,17 @@ function create_nl_function(disaggregated_expr::Vector{Tuple{Float64, Union{Expr
                 quadratic_expr_dict[expr] = length(quadratic_part)
             end 
         
-        # power term x^a where a not in [2, 0]
+        # power term x^a where a not in {2, 0}
         elseif expr_is_power(expr)
+            power_value = expr.args[3] 
+            convexity = :undet 
+            (isa(power_value, Int) && iseven(power_value)) && (convexity = :convex)
             if haskey(power_expr_dict, expr)
                 index = power_expr_dict[expr] 
                 new_coeff = power_part[index].expression[1] + coeff 
-                power_part[index] = AlpineExpr((new_coeff, expr), :undet)
+                power_part[index] = AlpineExpr((new_coeff, expr), convexity)
             else 
-                push!(power_part, AlpineExpr((coeff, expr), :undet))
+                push!(power_part, AlpineExpr((coeff, expr), convexity))
                 power_expr_dict[expr] = length(power_part)
             end 
 

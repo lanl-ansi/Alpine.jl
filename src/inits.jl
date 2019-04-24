@@ -96,6 +96,18 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
             ub = model.nlp_data.constraint_bounds[i].upper
             push!(model.inner.constraint_bound_info, lb..ub)
         end 
+
+        # initialize convexity vectors and booleans for nonlinear constraints
+        model.inner.nl_constraint_convexity = Symbol[] 
+        model.inner.nl_function_convexity = Symbol[]
+        model.inner.nl_quadratic_matrix_convexity = Symbol[] 
+
+        if num_nl_constraints > 0
+            model.inner.nl_constraint_convexity = [:undet for i in 1:num_nl_constraints]
+            model.inner.nl_function_convexity = [:undet for i in 1:num_nl_constraints]
+            model.inner.nl_quadratic_matrix_convexity = [:undet for i in 1:num_nl_constraints]
+        end 
+
         
         if model.nlp_data.has_objective 
             model.inner.is_objective_nl = true 
@@ -118,6 +130,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
         for i in 1:num_nl_constraints
             constraint_expr = MOI.constraint_expr(evaluator, i)
             push!(model.inner.nl_constraint_expression, constraint_expr)
+
         end
 
     else 
