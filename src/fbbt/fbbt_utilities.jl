@@ -339,7 +339,6 @@ function fbbt_backward_dag!(model::MOI.AbstractOptimizer)
             operation = dag_vertex.vertex.args[1]
             current_interval = dag_vertex.interval
             children = dag_vertex.children 
-            children_id = Tuple{Int, Int}[]
             children_interval = Interval{Float64}[] 
             for child in children 
                 depth, position = dag_lookup[child]
@@ -421,7 +420,7 @@ function propagate_intervals!(operation::Symbol, current_interval::Interval{Floa
                 b1 = b ∩ root
                 b2 = b ∩ (-root)
             elseif iseven(Int(c))
-                root = a^(1//c)
+                root = a^(1//Int(c))
                 b1 = b ∩ root
                 b2 = b ∩ (-root)
             elseif isodd(Int(c))
@@ -605,3 +604,23 @@ function is_infeasible(model::MOI.AbstractOptimizer)::Bool
     return false
 end 
 
+"""
+Adjust DAG vertex_type field - change labels to :constant when interval is thin 
+"""
+function adjust_dag_vertex_type!(model::MOI.AbstractOptimizer)
+    dag = model.inner.expression_graph
+
+    (dag.max_depth == 0) && (return) 
+
+    for d in 0:dag.max_depth 
+        for dag_vertex in dag.vertices[d]
+            if dag_vertex.vertex_type == :constant
+                continue
+            else
+                if isthin(dag_vertex.interval)
+                    dag_vertex.vertex_type = :constant 
+                end
+            end 
+        end 
+    end 
+end 

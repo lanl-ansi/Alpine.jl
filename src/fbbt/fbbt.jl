@@ -10,6 +10,7 @@ function run_fbbt!(model::MOI.AbstractOptimizer)
         (is_infeasible(model)) && (return)
     end 
 
+    adjust_dag_vertex_type!(model)
     return
 end 
 
