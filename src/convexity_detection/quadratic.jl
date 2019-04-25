@@ -140,7 +140,7 @@ function run_quadratic_nl_convexity_detection!(model::MOI.AbstractOptimizer)
         nl_function = model.inner.nl_function[i]
         quadratic_part = nl_function.quadratic_part 
         Q = model.inner.quadratic_matrix_nl[i]
-        if isa(Q, nothing) || isa(quadratic_part, nothing)
+        if isa(Q, Nothing) || isa(quadratic_part, Nothing)
             continue 
         end
         model.inner.nl_quadratic_matrix_convexity = get_convexity(Q)
