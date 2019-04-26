@@ -1,5 +1,10 @@
 # Critical Updates for Alpine.jl
 
+## v0.1.8 
+* Bug fixes in solver recognition 
+* Updated Issue template and Readme.  
+* Rounding bug fixed for binaries 
+
 ## v0.1.7
 * Bug fixes for bounds on lifted variables representing nonlinear terms
 * Inf bound warning issue fixed 
