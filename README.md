@@ -16,7 +16,7 @@ Alpine globally solves a given MINLP by:
 
 **Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. 
 
-**Alpine currently does not support problems with**: Exponential cones, Positive Semi-Definite (PSD) cones, Nonlinear functions including exp(x), ln(x), 1/x, abs(x), x^y, a^x, trigonometric functions (sin(x), cos(x), etc), where 'a' is a constant, and 'x' and 'y' are variables. 
+**Alpine currently does not support problems with**: Exponential cones, Positive Semi-Definite (PSD) cones, Nonlinear functions including exp(x), ln(x), x/y, abs(x), x^y, a^x, trigonometric functions (sin(x), cos(x), etc), where 'a' is a constant, and 'x' and 'y' are variables. 
 
 <!-- 
  **Illustration of Alpine's dynamic partitioning and outer-approximation on simple functions** ([Source](https://arxiv.org/abs/1707.02514))
