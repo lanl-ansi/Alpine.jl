@@ -119,7 +119,7 @@ function fbbt_forward_dag!(model::MOI.AbstractOptimizer)
             dag_vertex.interval = intersect(dag_vertex.interval, variable_bound[id])
         end 
     end 
-
+    
     for d in 1:max_depth 
         for dag_vertex in dag.vertices[d]
             operation = dag_vertex.vertex.args[1]
@@ -243,7 +243,7 @@ function fbbt_forward_objective!(model::MOI.AbstractOptimizer)
                     var_id = expr.args[2].value
                     computed_bound_info += coeff * model.inner.variable_bound_tightened[var_id]
                 else 
-                    depth, position = depth, position = dag_lookup[expr]
+                    depth, position = dag_lookup[expr]
                     computed_bound_info += coeff * dag.vertices[depth][position].interval
                 end 
             end 
@@ -407,7 +407,7 @@ function propagate_intervals!(operation::Symbol, current_interval::Interval{Floa
     elseif operation == :sqrt 
         lo = max(current_interval.lo, 0.0)
         hi = current_interval.hi
-        children_interval[1] = children_interval[1] ∩ (lo..hi)^2
+        children_interval[1] = children_interval[1] ∩ (lo..hi)^2 
     # a = b^c (assuming c is always a constant interval) -- implement c::Interval{Float64} later
     elseif operation == :^ && isthin(children_interval[2])
         a = current_interval 

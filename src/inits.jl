@@ -114,17 +114,20 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
             model.inner.objective_expression = MOI.objective_expr(evaluator)
             model.inner.is_objective_linear = false 
             model.inner.is_objective_quadratic = false 
+            model.inner.objective_function_convexity = :undet
             model.inner.objective_convexity = :undet
         elseif isa(model.objective, SQF)
             model.inner.is_objective_nl = false
             model.inner.is_objective_linear = false 
             model.inner.is_objective_quadratic = true
+            model.inner.objective_function_convexity = :undet
             model.inner.objective_convexity = :undet
         elseif isa(model.objective, Union{SAF, SVF})
             model.inner.is_objective_nl = false
             model.inner.is_objective_linear = true
             model.inner.is_objective_quadratic = false
-            model.inner.objective_convexity = :convex
+            model.inner.objective_function_convexity = :linear
+            model.inner.objective_convexity = :linear
         end
 
         for i in 1:num_nl_constraints

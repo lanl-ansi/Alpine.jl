@@ -42,6 +42,24 @@ function update_max_depth!(dag::DAG)
 end 
 
 """
+Update variable bounds for DAG 
+"""
+function update_variable_bounds!(dag::DAG, variable_bounds::Vector{Interval{Float64}})
+    if dag.max_depth == 0 
+        return 
+    end 
+    vertices = dag.vertices[0]
+    for dag_vertex in vertices 
+        if dag_vertex.vertex_type == :variable 
+            variable_index = dag_vertex.vertex.args[2].value 
+            dag_vertex.interval = dag_vertex.interval ∩ variable_bounds[variable_index]
+        end 
+    end 
+    return
+end 
+
+
+"""
 Add an NLFunction to a DAG 
 """
 function add_to_dag!(nl_function::NLFunction, 

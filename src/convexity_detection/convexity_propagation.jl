@@ -18,8 +18,8 @@ function dag_convexity_propagation!(model::MOI.AbstractOptimizer)
                 push!(children_convexity, dag.vertices[depth][position].convexity)
                 push!(children_type, dag.vertices[depth][position].vertex_type)
             end 
-            convexity = get_convexity(operation, 
-                children_interval, children_convexity, children_type)
+            convexity = get_convexity(operation, children_interval, children_convexity, children_type)
+            dag_vertex.convexity = convexity
         end 
     end 
     return
@@ -40,7 +40,7 @@ function get_convexity(operation::Symbol,
     children_type::Vector{Symbol})::Symbol
     
     (:undet in children_convexity) && (return :undet)
-    all_constant = all(y -> y == first(children_type), children_type)
+    all_constant = all(y -> y == :constant, children_type)
     (all_constant) && (return :linear)
     # a = -b
     if operation == :- && length(children_interval) == 1
@@ -58,8 +58,8 @@ function get_convexity(operation::Symbol,
         is_convex = false 
         is_concave = false 
         (!all_same) && (return get_convexity(is_convex, is_concave))
-        (all_same && first(children_convexity) == :convex) && (is_convex = true)
-        (all_same && first(children_convexity) == :concave) && (is_concave = true)
+        (all_same && convex(first(children_convexity))) && (is_convex = true)
+        (all_same && concave(first(children_convexity))) && (is_concave = true)
         return get_convexity(is_convex, is_concave)
     # k-nary multiplication
     elseif operation == :* 
@@ -68,7 +68,7 @@ function get_convexity(operation::Symbol,
             return :undet 
         else 
             child_type = filter(y -> y != :constant, children_type)
-            index = findall(y -> y == first(child_type), children_type)
+            index = findall(y -> y == first(child_type), children_type)[1]
             constant_value = 1.0
             for i in 1:length(children_type)
                 (i == index) && (continue)
@@ -95,7 +95,7 @@ function get_convexity(operation::Symbol,
             is_concave = (constant_value >= 0) && 
                 (convex(children_convexity[2]) && negative(children_interval[2]))
             is_concave |= (
-                (constant_value >= 0) && 
+                (constant_value <= 0) && 
                 (concave(children_convexity[2]) && positive(children_interval[2]))
             ) 
             return get_convexity(is_convex, is_concave)
@@ -125,12 +125,11 @@ function get_convexity(operation::Symbol,
         is_integer = try isa(Int(constant_value), Int) catch y false end 
         if is_integer 
             if iseven(Int(constant_value)) && constant_value > 0
-                (linear(children_convexity[1])) && (return :linear)
                 is_convex |= (convex(children_convexity[1]) && non_negative(children_interval[1]))
                 is_convex |= (concave(children_convexity[1]) && non_positive(children_interval[1]))
             elseif iseven(Int(constant_value)) && constant_value < 0
                 is_convex |= (convex(children_convexity[1]) && non_positive(children_interval[1]))
-                is_convex |= (concave(children_convexity[1]) && non_positive(children_interval[1]))
+                is_convex |= (concave(children_convexity[1]) && non_negative(children_interval[1]))
                 is_concave |= (convex(children_convexity[1]) && non_negative(children_interval[1]))
                 is_concave |= (concave(children_convexity[1]) && non_positive(children_interval[1]))
             elseif isodd(Int(constant_value)) && constant_value > 0

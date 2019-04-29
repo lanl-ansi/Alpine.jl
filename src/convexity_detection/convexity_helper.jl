@@ -25,3 +25,19 @@ negative(interval::Interval{Float64})::Bool = interval.hi < 0
 non_negative(interval::Interval{Float64})::Bool = interval.lo >= 0
 positive(interval::Interval{Float64})::Bool = interval.lo > 0 
 non_positive(interval::Interval{Float64})::Bool = interval.hi <= 0
+
+function convex(labels::Vector{Symbol})::Bool 
+    if ~(:concave in labels) && ~(:undet in labels)
+        return true 
+    else 
+        return false 
+    end
+end 
+
+function concave(labels::Vector{Symbol})::Bool 
+    if ~(:convex in labels) && ~(:undet in labels)
+        return true 
+    else 
+        return false 
+    end
+end 

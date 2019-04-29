@@ -177,75 +177,77 @@ RedundantConstraints() = RedundantConstraints(Int[], Int[], Int[], Int[], Int[])
 
 mutable struct AlpineProblem 
     # variable and constraint count
-    num_variables                   ::Int 
-    num_constraints                 ::Int
-    num_linear_constraints          ::Int 
-    num_quadratic_constraints       ::Int  
-    num_soc_constraints             ::Int  
-    num_rsoc_constraints            ::Int  
-    num_nl_constraints              ::Int  
-    num_binary_variables            ::Int 
-    num_integer_variables           ::Int
+    num_variables                           ::Int 
+    num_constraints                         ::Int
+    num_linear_constraints                  ::Int 
+    num_quadratic_constraints               ::Int  
+    num_soc_constraints                     ::Int  
+    num_rsoc_constraints                    ::Int  
+    num_nl_constraints                      ::Int  
+    num_binary_variables                    ::Int 
+    num_integer_variables                   ::Int
     
     # constraint bound information
-    constraint_bound_info           ::Union{Nothing, Vector{Interval{Float64}}}
-    objective_bound_info            ::Union{Nothing, Interval{Float64}}
+    constraint_bound_info                   ::Union{Nothing, Vector{Interval{Float64}}}
+    objective_bound_info                    ::Union{Nothing, Interval{Float64}}
 
     # DAG 
-    expression_graph                ::Union{Nothing, DAG}
-    dag_lookup                      ::Union{Nothing, Dict{Union{Expr, Symbol, Float64, Int}, Tuple{Int, Int}}}
-    common_sub_expression_dict      ::Union{Nothing, Dict{Expr, Vector{Int}}}
+    expression_graph                        ::Union{Nothing, DAG}
+    dag_lookup                              ::Union{Nothing, Dict{Union{Expr, Symbol, Float64, Int}, Tuple{Int, Int}}}
+    common_sub_expression_dict              ::Union{Nothing, Dict{Expr, Vector{Int}}}
     
     # JuMP models 
-    mip                             ::Union{Nothing, JuMP.Model}
-    continuous_relaxation           ::Union{Nothing, JuMP.Model} 
-    obbt_model                      ::Union{Nothing, JuMP.Model}
+    mip                                     ::Union{Nothing, JuMP.Model}
+    continuous_relaxation                   ::Union{Nothing, JuMP.Model} 
+    obbt_model                              ::Union{Nothing, JuMP.Model}
 
     # Variable bounds information 
-    variable_bound_original         ::Union{Nothing, Vector{Interval{Float64}}}
-    variable_bound_tightened        ::Union{Nothing, Vector{Interval{Float64}}}
-    lifted_variable_bound           ::Union{Nothing, Vector{Interval{Float64}}}
+    variable_bound_original                 ::Union{Nothing, Vector{Interval{Float64}}}
+    variable_bound_tightened                ::Union{Nothing, Vector{Interval{Float64}}}
+    lifted_variable_bound                   ::Union{Nothing, Vector{Interval{Float64}}}
 
     # Nonlinear information 
-    is_objective_linear             ::Union{Nothing, Bool} 
-    is_objective_quadratic          ::Union{Nothing, Bool} 
-    is_objective_nl                 ::Union{Nothing, Bool} 
-    objective_expression            ::Union{Nothing, Expr} 
-    nl_constraint_expression        ::Union{Nothing, Vector{Expr}}
-    nl_function                     ::Union{Nothing, Vector{NLFunction}}
-    objective_nl_function           ::Union{Nothing, NLFunction}
-    nl_terms                        ::Union{Nothing, TermInfo}
-    constraints_with_nl_terms       ::Union{Nothing, Vector{Int}}
-    lifted_constraints              ::Union{Nothing, Vector{JuMP.ConstraintRef}}
-    lifted_var_info                 ::Union{Nothing, Dict{Int, Any}}
+    is_objective_linear                     ::Union{Nothing, Bool} 
+    is_objective_quadratic                  ::Union{Nothing, Bool} 
+    is_objective_nl                         ::Union{Nothing, Bool} 
+    objective_expression                    ::Union{Nothing, Expr} 
+    nl_constraint_expression                ::Union{Nothing, Vector{Expr}}
+    nl_function                             ::Union{Nothing, Vector{NLFunction}}
+    objective_nl_function                   ::Union{Nothing, NLFunction}
+    nl_terms                                ::Union{Nothing, TermInfo}
+    constraints_with_nl_terms               ::Union{Nothing, Vector{Int}}
+    lifted_constraints                      ::Union{Nothing, Vector{JuMP.ConstraintRef}}
+    lifted_var_info                         ::Union{Nothing, Dict{Int, Any}}
 
     # quadratic constraint information
-    quadratic_nl_function           ::Union{Nothing, Vector{NLFunction}}
+    quadratic_nl_function                   ::Union{Nothing, Vector{NLFunction}}
 
     # quadratic matrix information 
-    quadratic_matrix                ::Union{Nothing, Vector{QuadraticMatrixInfo}}
-    quadratic_matrix_nl             ::Union{Nothing, Vector{Union{Nothing, QuadraticMatrixInfo}}}
-    quadratic_matrix_objective      ::Union{Nothing, QuadraticMatrixInfo}
+    quadratic_matrix                        ::Union{Nothing, Vector{QuadraticMatrixInfo}}
+    quadratic_matrix_nl                     ::Union{Nothing, Vector{Union{Nothing, QuadraticMatrixInfo}}}
+    quadratic_matrix_objective              ::Union{Nothing, QuadraticMatrixInfo}
 
     # convexity information 
-    objective_convexity             ::Union{Nothing, Symbol} 
-    quadratic_function_convexity    ::Union{Nothing, Vector{Symbol}}
-    quadratic_constraint_convexity  ::Union{Nothing, Vector{Symbol}}
-    nl_quadratic_matrix_convexity   ::Union{Nothing, Vector{Symbol}}
-    nl_function_convexity           ::Union{Nothing, Vector{Symbol}}
-    nl_constraint_convexity         ::Union{Nothing, Vector{Symbol}}
+    objective_quadratic_matrix_convexity    ::Union{Nothing, Symbol}
+    objective_function_convexity            ::Union{Nothing, Symbol}
+    objective_convexity                     ::Union{Nothing, Symbol} 
+    quadratic_function_convexity            ::Union{Nothing, Vector{Symbol}}
+    quadratic_constraint_convexity          ::Union{Nothing, Vector{Symbol}}
+    nl_quadratic_matrix_convexity           ::Union{Nothing, Vector{Symbol}}
+    nl_function_convexity                   ::Union{Nothing, Vector{Symbol}}
+    nl_constraint_convexity                 ::Union{Nothing, Vector{Symbol}}
 
     # redundant constraint information 
-    redundant_constraint_ids        ::Union{Nothing, RedundantConstraints}
+    redundant_constraint_ids                ::Union{Nothing, RedundantConstraints}
 
     # Incumbent information 
-    incumbent                       ::Union{Nothing, Incumbent}
+    incumbent                               ::Union{Nothing, Incumbent}
 
     # Algorithm status
-    status                          ::Union{Nothing, Status}
+    status                                  ::Union{Nothing, Status}
 
     # Algorithm progress 
-    iteration                       ::Int
+    iteration                               ::Int
 
 end 
 
@@ -257,7 +259,7 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing,
     nothing, nothing, nothing,
-    nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing, 
     nothing, 
     nothing, 

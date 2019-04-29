@@ -21,7 +21,8 @@ function run_forward_propagation!(model::MOI.AbstractOptimizer)
     fbbt_forward_linear_constraints!(model)
     num_quadratic_constraints = model.inner.num_quadratic_constraints 
     num_nl_constraints = model.inner.num_nl_constraints
-    if num_quadratic_constraints + num_nl_constraints > 0
+    if num_quadratic_constraints + num_nl_constraints > 0 || 
+        model.inner.is_objective_nl || model.inner.is_objective_quadratic
         fbbt_forward_dag!(model)
         fbbt_forward_quadratic_constraints!(model)
         fbbt_forward_nl_constraints!(model)

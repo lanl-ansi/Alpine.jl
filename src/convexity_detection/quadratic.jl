@@ -119,6 +119,7 @@ function run_quadratic_convexity_detection!(model::MOI.AbstractOptimizer)
         if is_function_convex == :undet 
             is_function_convex = get_convexity(Q)
         end
+        model.inner.objective_function_convexity = is_function_convex
         if is_function_convex == :convex && model.sense == MOI.MIN_SENSE 
             model.inner.objective_convexity = :convex
         end 
@@ -145,6 +146,16 @@ function run_quadratic_nl_convexity_detection!(model::MOI.AbstractOptimizer)
         end
         model.inner.nl_quadratic_matrix_convexity = get_convexity(Q)
     end
+
+    if model.inner.is_objective_nl 
+        nl_function = model.inner.objective_nl_function 
+        quadratic_part = nl_function.quadratic_part 
+        Q = model.inner.quadratic_matrix_objective
+        if isa(Q, Nothing) || isa(quadratic_part, Nothing)
+            return 
+        end
+        model.inner.objective_quadratic_matrix_convexity = get_convexity(Q)
+    end 
     
     return 
 end 
