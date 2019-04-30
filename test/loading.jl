@@ -47,5 +47,23 @@
 
     @test internal_model.inner.num_constraints == 2 
     @test internal_model.inner.is_objective_quadratic == true
- 
+
+    # trig instance from MINLPLib2
+    solver_options = DefaultTestSolver(log_level=0, 
+        perform_bp_only=true, 
+        max_multistart_points=100)
+    
+    m = Model(with_optimizer(
+        Alpine.Optimizer, solver_options)
+    )
+
+    @variable(m, -2 <= x <= 5)
+    JuMP.set_start_value(x, 1.0)
+    
+    @NLconstraint(m, 5*sin(x) - x <= 0)
+    @NLobjective(m, Min, sin(11*x) + cos(13*x) - sin(17*x) - cos(19*x)) 
+    JuMP.optimize!(m)
+
+    @test isapprox(JuMP.objective_value(m), -3.7625, atol=1e-1)
+    
 end 
