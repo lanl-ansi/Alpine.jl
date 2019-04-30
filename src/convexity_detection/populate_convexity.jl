@@ -131,3 +131,28 @@ function populate_objective_convexity!(model::MOI.AbstractOptimizer)
     return
 
 end 
+
+"""
+    populate_problem_convexity!(model::MOI.AbstractOptimizer)
+
+This function determines if the problem is convex based on constraint convexity
+"""
+function populate_problem_convexity!(model::MOI.AbstractOptimizer)
+    is_convex = true
+    for i in 1:model.inner.num_quadratic_constraints 
+        is_convex &= convex(model.inner.quadratic_constraint_convexity[i])
+        (!is_convex) && (return)
+    end 
+
+    for i in 1:model.inner.num_nl_constraints
+        is_convex &= convex(model.inner.nl_constraint_convexity[i])
+        (!is_convex) && (return)
+    end 
+    
+    if model.sense != MOI.FEASIBILITY_SENSE
+        is_convex &= convex(model.inner.objective_convexity)
+    end
+
+    model.inner.is_problem_convex = is_convex 
+    return
+end 

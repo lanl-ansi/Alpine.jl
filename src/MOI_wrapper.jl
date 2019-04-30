@@ -145,6 +145,11 @@ function MOI.optimize!(model::Optimizer)
     # start the presolver 
     presolve!(model)
 
+    # if optimality achieved via convexity detection
+    if model.inner.status.alpine_status == MOI.OPTIMAL 
+        return 
+    end
+
     # if infeasibility is detected, then return 
     if model.inner.status.alpine_status == MOI.INFEASIBLE 
         return 

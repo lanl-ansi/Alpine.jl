@@ -45,46 +45,22 @@ include("instances/gtm.jl")
 
     JuMP.optimize!(m)
 
-    bm = JuMP.backend(m)
-    internal_model = bm.optimizer.model
-    alpine_problem = internal_model.inner
 
-    @test alpine_problem.nl_constraint_convexity[1] == :convex
+    @test Alpine.is_problem_convex(m) == true
+    @test isapprox(JuMP.objective_value(m), 0.0, atol=1e-1)
     
-    # convex objective detection 
+    # convex problem detection
     solver_options = DefaultTestSolver(log_level=1)
     m = Model(with_optimizer(
         Alpine.Optimizer, solver_options 
     ))
     
-    m = gtm1(m = m)
+    m = gtm(m = m)
 
     JuMP.optimize!(m)
 
-    bm = JuMP.backend(m)
-    internal_model = bm.optimizer.model
-    alpine_problem = internal_model.inner
+    @test Alpine.is_problem_convex(m) == true
+    @test isapprox(JuMP.objective_value(m), 543.5651, atol=1e-1)
 
-    @test alpine_problem.objective_function_convexity == :convex 
-    @test alpine_problem.objective_convexity == :convex 
-
-   # convex objective detection 
-   solver_options = DefaultTestSolver(log_level=1)
-    m = Model(with_optimizer(
-        Alpine.Optimizer, solver_options 
-    ))
-    
-    m = gtm2(m = m)
-
-    JuMP.optimize!(m)
-
-    bm = JuMP.backend(m)
-    internal_model = bm.optimizer.model
-    alpine_problem = internal_model.inner
-
-    @test alpine_problem.objective_function_convexity == :linear 
-    @test alpine_problem.objective_convexity == :linear 
-    @test alpine_problem.nl_function_convexity[1] == :convex 
-    @test alpine_problem.nl_constraint_convexity[1] == :undet
     
 end 

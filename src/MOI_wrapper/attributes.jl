@@ -18,7 +18,6 @@ struct VariableUBTightened <: MOI.AbstractVariableAttribute end
 struct VariableBoundTightened <: MOI.AbstractVariableAttribute end 
 
 MOI.is_set_by_optimize(::Union{VariableLBTightened, VariableUBTightened, VariableBoundTightened}) = true 
-
 MOI.supports(::Optimizer, ::Union{VariableLBTightened, VariableUBTightened, VariableBoundTightened}, ::Type{VI}) = true
 
 function MOI.get(model::Optimizer, attr::VariableLBTightened, vi::VI) 
@@ -46,3 +45,13 @@ end
 function variable_bound_tightened(v::JuMP.VariableRef)::Interval{Float64}
     return MOI.get(JuMP.owner_model(v), VariableBoundTightened(), v)
 end
+
+"""
+Model attributes 
+"""
+struct IsProblemConvex <: MOI.AbstractModelAttribute end
+
+MOI.is_set_by_optimize(::IsProblemConvex) = true 
+MOI.supports(::Optimizer, ::IsProblemConvex) = true 
+MOI.get(model::Optimizer, attr::IsProblemConvex) = model.inner.is_problem_convex 
+is_problem_convex(m::JuMP.Model)::Bool = MOI.get(m, IsProblemConvex())

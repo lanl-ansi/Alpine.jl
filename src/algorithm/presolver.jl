@@ -69,6 +69,10 @@ function presolve!(model::MOI.AbstractOptimizer)
     # convexity detection is peformed
     run_convexity_detection!(model)
 
+    if model.inner.is_problem_convex 
+        model.inner.status.alpine_status = MOI.OPTIMAL 
+    end
+
     # presolve summary logging 
     if model.solver_options.log_level != 0
         print_presolve_summary(model)

@@ -16,32 +16,32 @@ end
 function print_problem_summary(ap::AlpineProblem)
 
     printstyled("\nProblem statistics\n", color=:cyan)
-    @printf("%-60s : %5d\n", "Number of variables", ap.num_variables)
+    @printf("%-60s : %d\n", "Number of variables", ap.num_variables)
     
     if ap.num_binary_variables != 0 
-        @printf("%-60s : %5d\n", "Number of binary variables", ap.num_binary_variables)
+        @printf("%-60s : %d\n", "Number of binary variables", ap.num_binary_variables)
     end
     
-    @printf("%-60s : %5d\n", "Number of constraints", ap.num_constraints)
+    @printf("%-60s : %d\n", "Number of constraints", ap.num_constraints)
     
     if ap.num_linear_constraints != 0
-        @printf("%-60s : %5d\n", "Number of linear constraints", ap.num_linear_constraints )
+        @printf("%-60s : %d\n", "Number of linear constraints", ap.num_linear_constraints )
     end 
 
     if ap.num_quadratic_constraints != 0 
-        @printf("%-60s : %5d\n", "Number of quadratic constraints", ap.num_quadratic_constraints)
+        @printf("%-60s : %d\n", "Number of quadratic constraints", ap.num_quadratic_constraints)
     end 
 
     if ap.num_soc_constraints != 0
-        @printf("%-60s : %5d\n", "Number of SOC constraints", ap.num_soc_constraints)
+        @printf("%-60s : %d\n", "Number of SOC constraints", ap.num_soc_constraints)
     end 
 
     if ap.num_rsoc_constraints != 0 
-        @printf("%-60s : %5d\n", "Number of RSOC constraints", ap.num_rsoc_constraints)
+        @printf("%-60s : %d\n", "Number of RSOC constraints", ap.num_rsoc_constraints)
     end
 
     if ap.num_nl_constraints != 0
-        @printf("%-60s : %5d\n", "Number of nonlinear constraints", ap.num_nl_constraints)
+        @printf("%-60s : %d\n", "Number of nonlinear constraints", ap.num_nl_constraints)
     end 
 
     println()
@@ -61,29 +61,33 @@ function print_presolve_summary(model::MOI.AbstractOptimizer)
     has_discrete_variables = length(binary_variables) > 0 || length(integer_variables) > 0
 
     if model.inner.incumbent.status == MOI.LOCALLY_SOLVED 
-        @printf("%-60s : %10.4f\n", "Initial feasible objective value", round(model.inner.incumbent.objective_value, digits=4))
+        @printf("%-60s : %.4f\n", "Initial feasible objective value", round(model.inner.incumbent.objective_value, digits=4))
     end 
 
     if length(model.inner.redundant_constraint_ids.linear_constraint_ids) > 0 
-        @printf("%-60s : %5d\n", "Number of redundant linear constraints", length(model.inner.redundant_constraint_ids.linear_constraint_ids))
+        @printf("%-60s : %d\n", "Number of redundant linear constraints", length(model.inner.redundant_constraint_ids.linear_constraint_ids))
     end 
 
     if length(model.inner.redundant_constraint_ids.quadratic_constraint_ids) > 0 
-        @printf("%-60s : %5d\n", "Number of redundant quadratic constraints", length(model.inner.redundant_constraint_ids.quadratic_constraint_ids))
+        @printf("%-60s : %d\n", "Number of redundant quadratic constraints", length(model.inner.redundant_constraint_ids.quadratic_constraint_ids))
     end 
 
     if length(model.inner.redundant_constraint_ids.soc_constraint_ids) > 0 
-        @printf("%-60s : %5d\n", "Number of redundant SOC constraints", length(model.inner.redundant_constraint_ids.soc_constraint_ids))
+        @printf("%-60s : %d\n", "Number of redundant SOC constraints", length(model.inner.redundant_constraint_ids.soc_constraint_ids))
     end 
 
     if length(model.inner.redundant_constraint_ids.rsoc_constraint_ids) > 0 
-        @printf("%-60s : %5d\n", "Number of redundant RSOC constraints", length(model.inner.redundant_constraint_ids.rsoc_constraint_ids))
+        @printf("%-60s : %d\n", "Number of redundant RSOC constraints", length(model.inner.redundant_constraint_ids.rsoc_constraint_ids))
     end 
 
     if length(model.inner.redundant_constraint_ids.nl_constraint_ids) > 0 
-        @printf("%-60s : %5d\n", "Number of redundant nonlinear constraints", length(model.inner.redundant_constraint_ids.nl_constraint_ids))
+        @printf("%-60s : %d\n", "Number of redundant nonlinear constraints", length(model.inner.redundant_constraint_ids.nl_constraint_ids))
     end 
 
+    @printf("%-60s : %s\n", "Problem convexity", string(model.inner.is_problem_convex ))
+    if model.inner.is_problem_convex 
+        @printf("%-60s : %.4f\n", "Globally optimal objective value", round(model.inner.incumbent.objective_value, digits=4))
+    end 
 
     return
 

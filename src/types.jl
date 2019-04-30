@@ -236,6 +236,7 @@ mutable struct AlpineProblem
     nl_quadratic_matrix_convexity           ::Union{Nothing, Vector{Symbol}}
     nl_function_convexity                   ::Union{Nothing, Vector{Symbol}}
     nl_constraint_convexity                 ::Union{Nothing, Vector{Symbol}}
+    is_problem_convex                       ::Bool
 
     # redundant constraint information 
     redundant_constraint_ids                ::Union{Nothing, RedundantConstraints}
@@ -259,7 +260,7 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing,
     nothing, nothing, nothing,
-    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, false,
     nothing, 
     nothing, 
     nothing, 

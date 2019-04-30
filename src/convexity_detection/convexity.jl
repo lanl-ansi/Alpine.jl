@@ -11,6 +11,7 @@ function run_convexity_detection!(model::MOI.AbstractOptimizer)
     dag_convexity_propagation!(model)
     populate_nl_convexity!(model)
     populate_objective_convexity!(model)
+    populate_problem_convexity!(model)
     return
 end 
 
