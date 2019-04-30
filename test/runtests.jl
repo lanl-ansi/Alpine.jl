@@ -3,23 +3,12 @@ using Ipopt, Cbc, Pavito
 using GLPKMathProgInterface
 using Alpine
 
-using Compat.Test
+using Test
 
-alpine_dir = ""
-if VERSION < v"0.7.0-"
-    import Compat: round
-    import Compat: undef
-    import Compat: @warn
-    import Compat: occursin
-    import Compat: printstyled
-    alpine_dir = Pkg.dir("Alpine")
-end
+using Random
+using Pkg
+alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
 
-if VERSION > v"0.7.0-"
-    using Random
-    using Pkg
-    alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
-end
 
 examples = readdir(joinpath(alpine_dir, "test", "examples"))
 

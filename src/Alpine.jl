@@ -7,28 +7,13 @@ const ALPINE_DEBUG = false
 using JuMP
 using MathProgBase
 
-if VERSION < v"0.7.0-"
-    import Compat: undef
-    import Compat: @warn
-    import Compat: occursin
-    import Compat: printstyled
-    import Compat: round
 
-end
-
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Random
-    using Distributed
-    using Statistics
-    using Printf
-    using SparseArrays
-
-    function ind2sub(x, i)
-        return Tuple(CartesianIndices(x)[i])
-    end
-
-end
+using LinearAlgebra
+using Random
+using Distributed
+using Statistics
+using Printf
+using SparseArrays
 
 include("const.jl")
 

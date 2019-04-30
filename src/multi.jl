@@ -537,7 +537,7 @@ function collect_indices(l::Array, locator::Tuple, dim::Tuple)
     k = 0
     indices = Vector{Int}(2^length(dim))
     for i in 1:prod(dim)
-        ind = ind2sub(l, i)
+        ind = Tuple(CartesianIndices(l)[i])
         diff = [((ind[i] - locator[i] == 0) || (ind[i] - locator[i] == 1)) for i in 1:length(dim)]
         if prod(diff)
             k +=1
@@ -553,7 +553,7 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
 	k = 0
 	indices = Vector{Int}(undef, Int(prod(dim)/dim[fixed_dim]*length(fixed_partition)))
 	for i in 1:prod(dim)
-		ind = ind2sub(l, i)
+		ind = Tuple(CartesianIndices(l)[i])
 		if ind[fixed_dim] in fixed_partition
 			k += 1
 			indices[k] = i

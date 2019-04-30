@@ -189,13 +189,7 @@ end
 	Built-in Encoding methods: binary encoding
 	This is a compatible encoding
 """
-function ebd_binary(n, idx)
-	if VERSION > v"0.7.0-" 
-		return string(n, base=2, pad=idx) 
-	else 
-		return bin(n, idx)
-	end
-end
+ebd_binary(n, idx) = string(n, base=2, pad=idx) 
 
 """
 	Built-in Encoding methods: gray encoding
@@ -203,9 +197,5 @@ end
 """
 function ebd_gray(n, idx)
 	code_decimal = xor(n, n >> 1)
-	if VERSION > v"0.7.0-"  
-		return string(code_decimal, base=2, pad=idx)
-	else
-		return bin(code_decimal, idx)
-	end
+	return string(code_decimal, base=2, pad=idx)
 end
