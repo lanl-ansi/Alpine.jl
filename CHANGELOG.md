@@ -1,9 +1,17 @@
 # Critical Updates for Alpine.jl
 
+## v0.1.9
+* Drop support for Julia < v1.0. 
+* Move to the new Registrator system.
+* The last supported version for Julia v0.6 is v0.1.8 
+* The last supported version for Julia v0.7 is v0.1.7 (the bugs fixed in v0.1.8 is not ported to Julia v0.7)
+
+
 ## v0.1.8 
 * Bug fixes in solver recognition 
 * Updated Issue template and Readme.  
-* Rounding bug fixed for binaries 
+* Rounding bug fixed for binaries. 
+* This version is only available for Julia v0.6
 
 ## v0.1.7
 * Bug fixes for bounds on lifted variables representing nonlinear terms
@@ -19,7 +27,7 @@
 * Cleaner & meaningful logs
 
 ## v0.1.3
-* Finite large boudns on unbdd varaibles 
+* Finite large bounds on unbounded variables 
 
 ## Staged
 * typo fix
