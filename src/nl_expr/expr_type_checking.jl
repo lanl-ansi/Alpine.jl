@@ -125,6 +125,12 @@ function expr_is_trigonometric(expr)::Bool
     (~(expr.args[1] in operations)) && (return false)
     is_trigonometric = true
 
+    is_trigonometric &= 
+        try expr.args[2].head == :ref 
+        catch y 
+            false 
+        end 
+
     return is_trigonometric 
 end 
 
@@ -135,6 +141,11 @@ function expr_is_log(expr)::Bool
     (expr.args[1] != :log) && (return false)
     is_log = true
     
+    is_log &= 
+        try expr.args[2].head == :ref 
+        catch y 
+            false 
+        end 
     return is_log 
 end 
 
@@ -145,5 +156,10 @@ function expr_is_exp(expr)::Bool
     (expr.args[1] != :exp) && (return false)
     is_exp = true
     
+    is_exp &= 
+        try expr.args[2].head == :ref 
+        catch y 
+            false 
+        end
     return is_exp
 end 
