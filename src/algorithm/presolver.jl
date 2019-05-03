@@ -69,9 +69,17 @@ function presolve!(model::MOI.AbstractOptimizer)
     # convexity detection is peformed
     run_convexity_detection!(model)
 
-    if model.inner.is_problem_convex 
+    if model.inner.is_problem_convex && 
+        status_is_optimal(model.inner.status.local_solve_status)
         model.inner.status.alpine_status = MOI.OPTIMAL 
+        (model.solver_options.log_level != 0) && (print_presolve_summary(model))
+        return
     end
+
+    # create constraints for obbt 
+    # (Doing only BT with all discrete variables relaxed, no PBT support)
+    # create_obbt_model!(model)
+
 
     # presolve summary logging 
     if model.solver_options.log_level != 0

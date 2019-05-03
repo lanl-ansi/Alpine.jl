@@ -163,3 +163,28 @@ Returns true if either status is optimal or locally solved. If allow_almost=true
 function status_is_optimal(status::MOI.TerminationStatusCode; allow_almost=false)
     return status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || (allow_almost && status == MOI.ALMOST_LOCALLY_SOLVED)
 end
+
+"""
+    clear_optimizers!(model::MOI.AbstractOptimizer)
+
+Drops the optimizers from the models so that resolves can be peformed without re-initializing Alpine model 
+"""
+function clear_optimizers!(model::MOI.AbstractOptimizer)
+    if ~isa(model.inner.mip, Nothing)
+        if JuMP.backend(model.inner.mip).state == MOIU.ATTACHED_OPTIMIZER
+            MOIU.reset_optimizer(JuMP.backend(model.inner.mip))
+        end
+    end 
+    if ~isa(model.inner.continuous_relaxation, Nothing)
+        if JuMP.backend(model.inner.continuous_relaxation).state == MOIU.ATTACHED_OPTIMIZER
+            MOIU.reset_optimizer(JuMP.backend(model.inner.continuous_relaxation))
+        end
+    end 
+    if ~isa(model.inner.obbt_model, Nothing)
+        if JuMP.backend(model.inner.obbt_model).state == MOIU.ATTACHED_OPTIMIZER
+            MOIU.reset_optimizer(JuMP.backend(model.inner.obbt_model))
+        end
+    end
+
+    return
+end 

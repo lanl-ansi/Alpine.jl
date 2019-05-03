@@ -147,17 +147,26 @@ function MOI.optimize!(model::Optimizer)
 
     # if optimality achieved via convexity detection
     if model.inner.status.alpine_status == MOI.OPTIMAL 
+        clear_optimizers!(model)
         return 
     end
 
     # if infeasibility is detected, then return 
     if model.inner.status.alpine_status == MOI.INFEASIBLE 
+        clear_optimizers!(model)
         return 
     end 
 
     # if `perform_bp_only` is set to true, then return
-    (model.solver_options.perform_bp_only) && (return)
+    if model.solver_options.perform_bp_only
+        clear_optimizers!(model) 
+        return
+    end
 
+    
+    
+    clear_optimizers!(model)
+    return 
 
 end 
 

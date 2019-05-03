@@ -200,6 +200,7 @@ mutable struct AlpineProblem
     mip                                     ::Union{Nothing, JuMP.Model}
     continuous_relaxation                   ::Union{Nothing, JuMP.Model} 
     obbt_model                              ::Union{Nothing, JuMP.Model}
+    root_relaxation                         ::Union{Nothing, JuMP.Model}
 
     # Variable bounds information 
     variable_bound_original                 ::Union{Nothing, Vector{Interval{Float64}}}
@@ -255,7 +256,7 @@ end
 AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing,
-    nothing, nothing, nothing,
+    nothing, nothing, nothing, nothing,
     nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing,
