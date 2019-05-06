@@ -90,6 +90,16 @@ function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symb
     return result
 end
 
+mutable struct AuxiliaryProblemInformation 
+    num_auxiliary_variables         ::Int 
+    variable_info                   ::Union{Nothing, Vector{VariableInfo}}
+    variable_to_expr_lookup         ::Union{Nothing, Dict{Int, Tuple{Int, Int}}}
+    variable_nonlinearity_type      ::Union{Nothing, Vector{Symbol}}
+    convexity                       ::Union{Nothing, Vector{Symbol}}
+    oa_function                     ::Union{Nothing, Dict{Int, Any}}
+
+end 
+
 mutable struct TermInfo 
     lifted_variable_id              ::Int 
     convexity                       ::Symbol
@@ -101,15 +111,15 @@ end
 TermInfo() = TermInfo(NaN, :undet, VariableInfo(), nothing, nothing)
     
 mutable struct Terms 
-    quadratic_terms                 ::Union{Nothing, Dict{Expr, TermInfo}}
-    power_terms                     ::Union{Nothing, Dict{Expr, TermInfo}}
-    bilinear_terms                  ::Union{Nothing, Dict{Expr, TermInfo}}
-    multilinear_terms               ::Union{Nothing, Dict{Expr, TermInfo}}
-    abs_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
-    trigonometric_terms             ::Union{Nothing, Dict{Expr, TermInfo}}
-    log_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
-    exp_terms                       ::Union{Nothing, Dict{Expr, TermInfo}}
-    other_terms                     ::Union{Nothing, Dict{Expr, TermInfo}}
+    quadratic_terms                 ::Union{Nothing, Dict{Expr, Int}}
+    power_terms                     ::Union{Nothing, Dict{Expr, Int}}
+    bilinear_terms                  ::Union{Nothing, Dict{Expr, Int}}
+    multilinear_terms               ::Union{Nothing, Dict{Expr, Int}}
+    abs_terms                       ::Union{Nothing, Dict{Expr, Int}}
+    trigonometric_terms             ::Union{Nothing, Dict{Expr, Int}}
+    log_terms                       ::Union{Nothing, Dict{Expr, Int}}
+    exp_terms                       ::Union{Nothing, Dict{Expr, Int}}
+    other_terms                     ::Union{Nothing, Dict{Expr, Int}}
 end 
 
 Terms() = Terms(nothing, nothing, nothing, nothing, 
@@ -155,10 +165,10 @@ DAGVertex() = DAGVertex(:NaN, 0, nothing,
 
 mutable struct DAG 
     max_depth                       ::Int 
-    vertices                        ::Dict{Int, Vector{DAGVertex}}
+    vertices                        ::Dict{Int, Vector{Union{DAGVertex, Int}}}
 end 
 
-DAG() = DAG(0, Dict{Int, Vector{DAGVertex}}())
+DAG() = DAG(0, Dict{Int, Vector{Union{DAGVertex, Int}}}())
 
 mutable struct QuadraticMatrixInfo
     Q                               ::SparseArrays.SparseMatrixCSC{Float64,Int64}
@@ -205,7 +215,6 @@ mutable struct AlpineProblem
     # Variable bounds information 
     variable_bound_original                 ::Union{Nothing, Vector{Interval{Float64}}}
     variable_bound_tightened                ::Union{Nothing, Vector{Interval{Float64}}}
-    lifted_variable_bound                   ::Union{Nothing, Vector{Interval{Float64}}}
 
     # Nonlinear information 
     is_objective_linear                     ::Union{Nothing, Bool} 
@@ -213,12 +222,8 @@ mutable struct AlpineProblem
     is_objective_nl                         ::Union{Nothing, Bool} 
     objective_expression                    ::Union{Nothing, Expr} 
     nl_constraint_expression                ::Union{Nothing, Vector{Expr}}
-    nl_function                             ::Union{Nothing, Vector{NLFunction}}
+    constraint_nl_function                  ::Union{Nothing, Vector{NLFunction}}
     objective_nl_function                   ::Union{Nothing, NLFunction}
-    nl_terms                                ::Union{Nothing, TermInfo}
-    constraints_with_nl_terms               ::Union{Nothing, Vector{Int}}
-    lifted_constraints                      ::Union{Nothing, Vector{JuMP.ConstraintRef}}
-    lifted_var_info                         ::Union{Nothing, Dict{Int, Any}}
 
     # quadratic constraint information
     quadratic_nl_function                   ::Union{Nothing, Vector{NLFunction}}
@@ -239,6 +244,9 @@ mutable struct AlpineProblem
     nl_constraint_convexity                 ::Union{Nothing, Vector{Symbol}}
     is_problem_convex                       ::Bool
 
+    # auxiliary variable DAG 
+    auxiliary_variable_dag                  ::Union{Nothing, DAG}
+
     # redundant constraint information 
     redundant_constraint_ids                ::Union{Nothing, RedundantConstraints}
 
@@ -257,11 +265,12 @@ AlpineProblem() = AlpineProblem(0, 0, 0, 0, 0, 0, 0, 0, 0,
     nothing, nothing, 
     nothing, nothing, nothing,
     nothing, nothing, nothing, nothing,
-    nothing, nothing, nothing,
-    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing,
+    nothing, nothing, 
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing,
     nothing,
     nothing, nothing, nothing,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, false,
+    nothing, 
     nothing, 
     nothing, 
     nothing, 

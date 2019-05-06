@@ -157,7 +157,7 @@ function fbbt_forward_nl_constraints!(model::MOI.AbstractOptimizer)
     dag_lookup = model.inner.dag_lookup
     dag = model.inner.expression_graph
     for i in 1:model.inner.num_nl_constraints 
-        nl_function = model.inner.nl_function[i]
+        nl_function = model.inner.constraint_nl_function[i]
         offset = nl_offset(model)
         computed_bound_info = 0..0
         for fname in fnames
@@ -506,7 +506,7 @@ function fbbt_backward_nl_constraints!(model::MOI.AbstractOptimizer)
     dag_lookup = model.inner.dag_lookup
     dag = model.inner.expression_graph
     for i in 1:model.inner.num_nl_constraints
-        nl_function = model.inner.nl_function[i]
+        nl_function = model.inner.constraint_nl_function[i]
         offset = nl_offset(model)
         constraint_interval = model.inner.constraint_bound_info[offset + i] 
         for fname in fnames

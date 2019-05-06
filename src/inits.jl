@@ -176,7 +176,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
             disaggregated_expr = expr_disaggregate(expr)
             push!(nl_function, create_nl_function(disaggregated_expr))
         end
-        model.inner.nl_function = nl_function
+        model.inner.constraint_nl_function = nl_function
 
         if model.inner.is_objective_nl 
             disaggregated_expr = expr_disaggregate(model.inner.objective_expression)
@@ -200,7 +200,7 @@ function init_ap_data!(model::MOI.AbstractOptimizer)
     if model.inner.num_nl_constraints > 0
         model.inner.quadratic_matrix_nl = Vector{Union{QuadraticMatrixInfo, Nothing}}()
         for i in 1:model.inner.num_nl_constraints
-            func = model.inner.nl_function[i]
+            func = model.inner.constraint_nl_function[i]
             Q, index_to_variable_map = matrix_from_nl_function(func)
             if isa(Q, Nothing) 
                 push!(model.inner.quadratic_matrix_nl, nothing)

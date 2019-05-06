@@ -9,7 +9,7 @@ function populate_nl_convexity!(model::MOI.AbstractOptimizer)
     dag_lookup = model.inner.dag_lookup
     dag = model.inner.expression_graph
     for i in 1:model.inner.num_nl_constraints 
-        nl_function = model.inner.nl_function[i]
+        nl_function = model.inner.constraint_nl_function[i]
         disaggregated_convexity = Symbol[]
         if ~isa(nl_function.quadratic_part, Nothing)
             push!(disaggregated_convexity, model.inner.nl_quadratic_matrix_convexity[i])

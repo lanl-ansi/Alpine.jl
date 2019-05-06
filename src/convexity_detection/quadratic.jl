@@ -138,7 +138,7 @@ This function runs the PSD test on the quadratic parts of the nonlinear constrai
 """
 function run_quadratic_nl_convexity_detection!(model::MOI.AbstractOptimizer)
     for i in 1:model.inner.num_nl_constraints 
-        nl_function = model.inner.nl_function[i]
+        nl_function = model.inner.constraint_nl_function[i]
         quadratic_part = nl_function.quadratic_part 
         Q = model.inner.quadratic_matrix_nl[i]
         if isa(Q, Nothing) || isa(quadratic_part, Nothing)
