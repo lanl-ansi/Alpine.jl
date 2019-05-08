@@ -96,6 +96,7 @@ mutable struct AuxiliaryProblemInformation
     variable_to_expr_lookup         ::Union{Nothing, Dict{Int, Tuple{Int, Int}}}
     variable_nonlinearity_type      ::Union{Nothing, Vector{Symbol}}
     convexity                       ::Union{Nothing, Vector{Symbol}}
+    constraint_type                 ::Union{Nothing, Vector{Symbol}}
     oa_function                     ::Union{Nothing, Dict{Int, Any}}
 
 end 
