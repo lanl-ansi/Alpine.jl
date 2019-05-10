@@ -127,7 +127,7 @@ end
 """
     @docstring
 """
-function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_string_type=1)
+function update_timeleft_symbol(options, keyword::Symbol, val::Number; options_string_type=1)
 
     for i in 1:length(options)
         if options_string_type == 1
@@ -731,6 +731,8 @@ function fetch_mip_solver_identifier(m::AlpineNonlinearModel;override="")
         m.mip_solver_id = "Cbc"
     elseif occursin("GLPK", solverstring)
         m.mip_solver_id = "GLPK"
+    elseif occursin("Xpress", solverstring)
+        m.mip_solver_id = "Xpress"
     else
         error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
     end
@@ -831,6 +833,14 @@ function update_mip_time_limit(m::AlpineNonlinearModel; kwargs...)
         m.mip_solver.options = opts
     elseif m.mip_solver_id == "GLPK"
         opts = update_timeleft_symbol(opts, :tm_lim, timelimit)
+        m.mip_solver.options = opts
+    elseif m.mip_solver_id == "Xpress"
+        if timelimit == Inf
+            xprstimelimit = 0 # No time limit Xpress
+        else
+            xprstimelimit = Int(round(timelimit)) # Xpress requires integer value
+        end
+        opts = update_timeleft_symbol(opts, :MAXTIME, xprstimelimit)
         m.mip_solver.options = opts
     elseif m.mip_solver_id == "Pajarito"
         (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
