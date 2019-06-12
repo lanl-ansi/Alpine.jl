@@ -30,6 +30,13 @@ function check_inbounds(model::Optimizer, vi::VI)
 	end
 	return
 end
+
+function check_inbounds(model::Optimizer, vec::VECTOR)
+    for vi in vec.variables
+        check_inbounds(model, vi)
+    end
+    return
+end
 	
 check_inbounds(model::Optimizer, var::SVF) = check_inbounds(model, var.variable)
 	
