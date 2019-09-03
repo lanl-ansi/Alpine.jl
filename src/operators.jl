@@ -149,7 +149,7 @@ end
 
 function detect_linear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     coef_fetch = Dict(:+ => 1.0, :- => -1.0)
 
     # Re-process the expression sub-tree [REQUIRED]
@@ -287,7 +287,7 @@ linear(k, vec) = sum(k[:ref][:scalar] .+ [i[1]*vec[i[2]] for i in k[:ref][:coef_
 function detect_discretemulti_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     # Alwasy construct the binlin term after lifting
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
 
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
@@ -509,7 +509,7 @@ end
 """
 function detect_binint_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
 
     if (expr.args[1] == :*)
 
@@ -629,7 +629,7 @@ end
 """
 function detect_intprod_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-	@assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all integer variables
         var_idxs = []
@@ -759,7 +759,7 @@ end
 """
 function detect_binprod_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-	@assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
         var_idxs = []
@@ -848,7 +848,7 @@ end
 """
 function detect_bilinear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)  # confirm head (:*)
         # ----- Pattern : coefficient * x * y  ------ #
         # Collect children information for checking
@@ -889,7 +889,7 @@ end
 
 function detect_multilinear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*) # Pattern: coefficients * x * y * z ...
         var_idxs = []
         scalar = 1.0
@@ -1089,7 +1089,8 @@ end
 """
 function detect_sincos_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
+
     if expr.args[1] in [:sin, :cos]
         # Pattern: sin(a*x) or cos(a*x)
         operator = expr.args[1]
