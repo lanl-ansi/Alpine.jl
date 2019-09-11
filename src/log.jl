@@ -46,7 +46,7 @@ function logging_summary(m::AlpineNonlinearModel)
         #     cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
         # end
         println("  # of variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
-        println("  # of variables chosen to discretize = ", length(m.disc_vars))
+        println("  # of potential variables for partitioning = ", length(m.disc_vars))
 
         println("\n=======================================================================")
         printstyled("SUB-SOLVERS USED BY ALPINE\n", color=:cyan)
@@ -63,12 +63,14 @@ function logging_summary(m::AlpineNonlinearModel)
         println("  Maximum iterations =  ", m.maxiter)
         # @printf "  Relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
         @printf "  Relative optimality gap criteria = %.4f%%\n" m.relgap*100 
-        # println("  Default tolerance = ", m.tol)
         # m.recognize_convex && println("  actively recognize convex patterns")
         # println("  Basic bound propagation = ", m.presolve_bp)
-        #println("  Use piece-wise relaxation formulation on integer variables = ", m.int_enable)
-        # println("  MIP formulation = $(m.convhull_formulation) formulation")
-        println("  No. of variables chosen for discretization = $(m.disc_var_pick)")
+        if m.disc_var_pick == 0
+            println("  Potential variables chosen for partitioning = All")
+        elseif m.disc_var_pick == 1
+            println("  Potential variables chosen for partitioning = Min. vertex cover")
+        end
+
         # println("  Conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
         if m.disc_ratio_branch
             println("  Discretization ratio branch activated")

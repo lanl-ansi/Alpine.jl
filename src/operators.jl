@@ -274,7 +274,7 @@ bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
 sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
-linear(k, vec) = sum(k[:ref][:scalar] .+ [i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
+linear(k, vec) = k[:ref][:scalar] .+ sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
 """
     Recognize prodcuts of binary variables and multilinear products
