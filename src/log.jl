@@ -129,8 +129,12 @@ function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
         spc = max(0, b_len - length(objstr))
     end
     UB_block = string(" ", objstr, " " ^ spc)
+   
 
-    if isa(m.logs[:bound][end], Float64)
+    if expr_isconst(m.obj_expr_orig)
+        bdstr = eval(m.obj_expr_orig)
+        spc = b_len - length(bdstr)
+   elseif isa(m.logs[:bound][end], Float64)
         bdstr = string(round(m.logs[:bound][end]; digits=4))
         spc = max(0, b_len - length(bdstr))
     else
@@ -160,7 +164,7 @@ function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
 	end
 
 
-    haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish ")) : (ITER_block = string(" ", m.logs[:n_iter]," " ^ (7 - length(string(m.logs[:n_iter])))))
+    haskey(options, :finish_entry) ? (ITER_block = string(" ", "finish ")) : (ITER_block = string(" ", m.logs[:n_iter]," " ^ (7 - length(string(m.logs[:n_iter])))))
 
     if m.colorful_alpine == "random"
         colors = [:blue, :cyan, :green, :red, :light_red, :light_blue, :light_cyan, :light_green, :light_magenta, :light_re, :light_yellow, :white, :yellow]
