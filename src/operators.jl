@@ -4,7 +4,9 @@
 Recognize and process nonlinear terms in an expression
 """
 function expr_term_parsing(expr::Any, constr_id::Int, m::AlpineNonlinearModel, level=0; options...)
+   
 
+   isa(expr, Number) && return expr
     cnt = 0
     for node in expr.args
         cnt += 1
@@ -843,7 +845,7 @@ end
 """
     Future MONOMIAL Cluster
     Recognize bilinear terms: x * y, where x and y are continous variables
-    Recognize multilinear terms: x1 * x2 * .. * xN, where all x are continous variables
+    Recognize multilinear terms: x1 * x2 * .. * xN, where all x_i ∀ i are continous variables
     Recognize monomial terms: x^2 or x * x, where x is continuous
 """
 function detect_bilinear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
@@ -1153,10 +1155,10 @@ end
 
 """
     Recognize convex constraints
-    A scatch for type-A convex constraint expression
+    A catch for type-A convex constraint expression
 """
 function resolve_convex_constr(expr::Any, m::AlpineNonlinearModel=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
-
+   
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
         sense = expr.args[1]
@@ -1289,7 +1291,7 @@ function resolve_convex_constr(expr::Any, m::AlpineNonlinearModel=nothing, idx::
     elseif expr_orig == :obj
 
         convex_type = :Unknown
-
+        (expr_isconst(m.obj_expr_orig)) && return true
         # Follows the same mapping to convex constraints
 
         # Type-A: Convex objective function

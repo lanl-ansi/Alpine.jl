@@ -8,7 +8,7 @@ function MathProgBase.optimize!(m::AlpineNonlinearModel)
     end
     presolve(m)
     global_solve(m)
-    m.loglevel > 0 && logging_row_entry(m, finsih_entry=true)
+    m.loglevel > 0 && logging_row_entry(m, finish_entry=true)
     println("====================================================================================================")
     summary_status(m)  
     return
@@ -126,6 +126,17 @@ end
     Summarized function to determine whether to interrupt the main while loop.
 """
 function check_exit(m::AlpineNonlinearModel)
+   
+    # constant objective with feasible local solve check
+    if expr_isconst(m.obj_expr_orig) && (m.status[:local_solve] == :Optimal) 
+       m.best_bound = eval(m.obj_expr_orig)
+       m.best_rel_gap = 0.0
+       m.best_abs_gap = 0.0
+       m.status[:bounding_solve] = :Optimal
+       m.alpine_status = :Optimal
+       m.status[:bound] = :Detected
+       return true
+     end 
 
     # Infeasibility check
     m.status[:bounding_solve] == :Infeasible && return true
