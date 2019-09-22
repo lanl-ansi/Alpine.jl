@@ -315,7 +315,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     end
 end
 
-mutable struct UnsetSolver <: MathProgBase.AbstractMathProgSolver
+struct UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 const empty_solver = UnsetSolver()
