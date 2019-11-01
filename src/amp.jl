@@ -165,15 +165,18 @@ function amp_post_linear_lift_constraints(model_mip::JuMP.Model, l::Dict)
 end
 
 function amp_post_lifted_objective(m::AlpineNonlinearModel)
-
-    if m.obj_structure == :affine
+   
+#if isa(m.obj_expr_orig, Number)
+if expr_isconst(m.obj_expr_orig)
+    @objective(m.model_mip, m.sense_orig, eval(m.obj_expr_orig))
+   elseif m.obj_structure == :affine
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
     elseif m.obj_structure == :convex
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
+     @show m.obj_expr_orig
         error("Unknown structural obj type $(m.obj_structure)")
     end
-
     return
 end
 
@@ -200,9 +203,9 @@ end
     add_discretization(m::AlpineNonlinearModel; use_disc::Dict, use_solution::Vector)
 
 Basic built-in method used to add a new partition on feasible domains of discretizing variables.
-This method make modification in .discretization
+This method makes modification in .discretization
 
-Consider original partition [0, 3, 7, 9], where LB/any solution is 4.
+Consider an original partition [0, 3, 7, 9], where LB/any solution is 4.
 Use ^ as the new partition, "|" as the original partition
 
 A case when discretize ratio = 4
@@ -218,9 +221,9 @@ There are two options for this function,
     * `use_disc(default=m.discretization)`:: to regulate which is the base to add new partitions on
     * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
 
-TODO: also need to document the speical diverted cases when new partition touches both sides
+TODO: also need to document the speical diverted cases when new partition touches both corners
 
-This function belongs to the hackable group, which means it can be replaced by the user to change the behvaior of the solver.
+This function can be accordingly modified by the user to change the behvaior of the solver, and thus the convergence.
 """
 function add_adaptive_partition(m::AlpineNonlinearModel;kwargs...)
 
@@ -241,7 +244,7 @@ function add_adaptive_partition(m::AlpineNonlinearModel;kwargs...)
 
     processed = Set{Int}()
 
-    # ? Perform discretization base on type of nonlinear terms ? #
+    # ? Perform discretization based on type of nonlinear terms ? #
     for i in m.disc_vars
         point = point_vec[i]                # Original Variable
         λCnt = length(discretization[i])
@@ -274,7 +277,7 @@ function add_adaptive_partition(m::AlpineNonlinearModel;kwargs...)
 end
 
 """
-    This function targets to address unexpected numerical issues when adding partitions to tight regions.
+    This function targets to address unexpected numerical issues when adding partitions in tight regions.
 """
 function correct_point(m::AlpineNonlinearModel, partvec::Vector, point::Float64, var::Int)
 

@@ -89,7 +89,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     var_start_orig::Vector{Float64}                             # Variable warm start vector on original variables
     constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
     constr_expr_orig::Vector{Expr}                              # Constraint expressions
-    obj_expr_orig::Expr                                         # Objective expression
+    obj_expr_orig::Union{Expr,Number}                                         # Objective expression
 
     # additional user inputs useful for local solves
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
@@ -128,7 +128,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     obj_structure::Symbol                                       # A symbolic indicator of the expression type of objective function
     constr_structure::Vector{Symbol}                            # A vector indicating whether a constraint is with the special structure
-    bounding_obj_expr_mip::Expr                                 # Lifted objective expression; if linear, same as obj_expr_orig
+    bounding_obj_expr_mip::Union{Expr,Number}                                 # Lifted objective expression; if linear, same as obj_expr_orig
     bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
     bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
@@ -315,7 +315,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     end
 end
 
-mutable struct UnsetSolver <: MathProgBase.AbstractMathProgSolver
+struct UnsetSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 const empty_solver = UnsetSolver()
@@ -715,6 +715,7 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
     m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
+    isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable re-categorization

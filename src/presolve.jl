@@ -1,16 +1,14 @@
 """
-
     bound_tightening(m::AlpineNonlinearModel)
 
-Entry point for the bound-tightening algorithm. The aim of the bound-tightening algorithm
-is to tighten the variable bounds, if possible.
+    Entry point for the optimization-based bound-tightening (OBBT) algorithm. The aim of the OBBT algorithm
+is to sequentially tighten the variable bounds until a fixed point is reached.
 
-Currently, two bounding tightening method is implemented [`minmax_bound_tightening`](@ref).
+Currently, two OBBT methods are implemented [`minmax_bound_tightening`](@ref).
 
-    * Bound-tightening with basic McCormick
-    * Bound-tightening with McCormick partitions: (3 partitions around the local feasible solution)
-    If no local feasible solution is obtained, the algorithm defaults to bound-tightening with basic McCormick
-
+    * Bound-tightening with polyhedral relaxations (McCormick, Lambda for convex-hull) 
+    * Bound-tightening with piecewise polyhedral relaxations: (with three partitions around the local feasible solution)
+    If no local feasible solution is obtained, the algorithm defaults to OBBT without partitions
 """
 function bound_tightening(m::AlpineNonlinearModel; use_bound = true, kwargs...)
 
@@ -23,28 +21,30 @@ function bound_tightening(m::AlpineNonlinearModel; use_bound = true, kwargs...)
     elseif isa(m.presolve_bt_algo, Function)
         eval(m.presolve_bt_algo)(m)
     else
-        error("Unrecognized bound-tightening algorithm")
-    end
+        error("Unrecognized optimization-based bound tightening algorithm")
+    end 
 
     return
 end
 
 """
-
     minmax_bound_tightening(m:AlpineNonlinearModel; use_bound::Bool=true, use_tmc::Bool)
 
-This function implements the bound-tightening algorithm to tighten the variable bounds.
-It utilizes either the basic McCormick relaxation or the Tightened McCormick relaxation (TMC)
-to tighten the bounds. The TMC has additional binary variables for partitioning.
+This function implements the OBBT algorithm to tighten the variable bounds.
+It utilizes either the basic polyhedral relaxations or the piecewise polyhedral relaxations (TMC)
+to tighten the bounds. The TMC has additional binary variables while performing OBBT.
 
 The algorithm as two main parameters. The first is the `use_tmc`, which when set to `true`
 invokes the algorithm on the TMC relaxation. The second parameter `use_bound` takes in the
-objective value of the local solve solution stored in `best_sol`. The `use_bound` option is set
-to `true` when the local solve is successful is obtaining a feasible solution and the bound-tightening
-is to be performed using the objective value of the feasible solution, else this parameter
+objective value of the local solve solution stored in `best_sol` for performing OBBT. The `use_bound` option is set
+to `true` when the local solve is successful in obtaining a feasible solution, else this parameter
 is set to `false`
 
-Several other parameters are available for the presolve algorithm tuning.
+For details, refer to section 3.1.1 of 
+Nagarjan, Lu, Wang, Bent, Sundar, "An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs" 
+URL: https://goo.gl/89zrDf
+
+Several other parameters are available for the OBBT algorithm tuning.
 For more details, see [Parameters](@ref).
 
 """
@@ -181,7 +181,7 @@ end
 """
     create_bound_tightening_model(m::AlpineNonlinearModel, discretization::Dict, bound::Float64)
 
-This function takes in the initial discretization information and builds a bound-tightening model.
+This function takes in the initial discretization information and builds the OBBT model.
 It is an algorithm specific function called by [`minmax_bound_tightening`](@ref)
 
  """
@@ -210,7 +210,7 @@ end
 
     solve_bound_tightening_model(m::AlpineNonlinearModel)
 
-A function that solves the min and max bound-tightening model.
+A function that solves the min and max OBBT model.
 
 """
 function solve_bound_tightening_model(m::AlpineNonlinearModel; kwargs...)

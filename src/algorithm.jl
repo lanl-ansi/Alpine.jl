@@ -8,7 +8,7 @@ function MathProgBase.optimize!(m::AlpineNonlinearModel)
     end
     presolve(m)
     global_solve(m)
-    m.loglevel > 0 && logging_row_entry(m, finsih_entry=true)
+    m.loglevel > 0 && logging_row_entry(m, finish_entry=true)
     println("====================================================================================================")
     summary_status(m)  
     return
@@ -126,6 +126,17 @@ end
     Summarized function to determine whether to interrupt the main while loop.
 """
 function check_exit(m::AlpineNonlinearModel)
+   
+    # constant objective with feasible local solve check
+    if expr_isconst(m.obj_expr_orig) && (m.status[:local_solve] == :Optimal) 
+       m.best_bound = eval(m.obj_expr_orig)
+       m.best_rel_gap = 0.0
+       m.best_abs_gap = 0.0
+       m.status[:bounding_solve] = :Optimal
+       m.alpine_status = :Optimal
+       m.status[:bound] = :Detected
+       return true
+     end 
 
     # Infeasibility check
     m.status[:bounding_solve] == :Infeasible && return true
@@ -269,7 +280,7 @@ function bounding_solve(m::AlpineNonlinearModel)
     boundlocator = Dict(:Max=>:+, :Min=>:-)
     boundlocator_rev = Dict(:Max=>:-, :Max=>:+)
 
-    # Updates time metric and position solver
+    # Updates time metric and the termination bounds
     update_mip_time_limit(m)
     update_boundstop_options(m)
 
@@ -319,13 +330,12 @@ end
 
 This function helps pick the variables for discretization. The method chosen depends on user-inputs.
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
-there exist two built-in method:
+there are two built-in options for users as follows:
 
-    * `max-cover(m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
-    * `min-vertex-cover(m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+    * `max-cover (m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
+    * `min-vertex-cover (m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
-For advance usage, `m.disc_var_pick` allows `::Function` inputs. User is required to perform flexible methods in choosing the non-linear variable.
-For more information, read more details at [Hacking Solver](@ref).
+For advanced usage, `m.disc_var_pick` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
 
 """
 function pick_disc_vars(m::AlpineNonlinearModel)

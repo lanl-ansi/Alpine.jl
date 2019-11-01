@@ -191,7 +191,8 @@ function expr_constr_parsing(expr, m::AlpineNonlinearModel, idx::Int=0)
         is_strucural = eval(m.constr_patterns[i])(expr, m, idx)
         return
     end
-
+    
+      isa(expr, Number) && return false
     # Recognize built-in special structural pattern
     if m.recognize_convex
         is_convex = resolve_convex_constr(expr, m, idx)
@@ -251,6 +252,7 @@ function expr_linear_to_affine(expr)
 
 	# The input should follow :(<=, LHS, RHS)
 	affdict = Dict()
+   isa(expr, Number) && return affdict
 	if expr.args[1] in [:(==), :(>=), :(<=)] # For a constraint expression
 		@assert isa(expr.args[3], Float64) || isa(expr.args[3], Int)
 		@assert isa(expr.args[2], Expr)
@@ -377,7 +379,8 @@ end
 	By separating the structure with some dummy treatments
 """
 function expr_resolve_sign(expr, level=0; kwargs...)
-
+   
+   isa(expr, Number) && return 
 	resolver = Dict(:- => -1, :+ => 1)
 	for i in 2:length(expr.args)
 		if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 								# Skip the coefficients
@@ -410,6 +413,7 @@ end
 """
 function expr_flatten(expr, level=0; kwargs...)
 
+   isa(expr, Number) && return 
 	if level > 0  # No trivial constraint is allowed "3>5"
 		flat = expr_arrangeargs(expr.args)
 		if isa(flat, Float64) || isa(flat, Int)
@@ -531,7 +535,8 @@ end
 	Check if a sub-tree is a constant or not
 """
 function expr_resolve_const(expr)
-
+   
+   isa(expr, Number) && return 
 	for i in 1:length(expr.args)
 		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
 			continue
@@ -575,12 +580,12 @@ end
 	Check if a sub-tree(:call) is totally composed of constant values
 """
 function expr_isconst(expr)
-
-	(isa(expr, Float64) || isa(expr, Int) || isa(expr, Symbol)) && return true
-
+	(isa(expr, Number) ||  isa(expr, Symbol)) && return true
+   
+   (expr.head == :ref) && return false
 	const_tree = true
-	for i in 1:length(expr.args)
-		if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
+   for i in 1:length(expr.args)
+		if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
 			continue
 		elseif expr.args[i].head == :call
 			const_tree *= expr_isconst(expr.args[i])

@@ -1,5 +1,10 @@
 # Critical Updates for Alpine.jl
 
+## v0.1.10
+* Multiple bug fixes in expression parsing 
+* Added support for feasibility problems with constant objectives
+* Typos in comments  
+
 ## v0.1.9
 * Drop support for Julia < v1.0. 
 * Move to the new Registrator system.

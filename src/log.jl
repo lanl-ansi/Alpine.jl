@@ -46,7 +46,7 @@ function logging_summary(m::AlpineNonlinearModel)
         #     cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
         # end
         println("  # of variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
-        println("  # of variables chosen to discretize = ", length(m.disc_vars))
+        println("  # of potential variables for partitioning = ", length(m.disc_vars))
 
         println("\n=======================================================================")
         printstyled("SUB-SOLVERS USED BY ALPINE\n", color=:cyan)
@@ -63,12 +63,14 @@ function logging_summary(m::AlpineNonlinearModel)
         println("  Maximum iterations =  ", m.maxiter)
         # @printf "  Relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
         @printf "  Relative optimality gap criteria = %.4f%%\n" m.relgap*100 
-        # println("  Default tolerance = ", m.tol)
         # m.recognize_convex && println("  actively recognize convex patterns")
         # println("  Basic bound propagation = ", m.presolve_bp)
-        #println("  Use piece-wise relaxation formulation on integer variables = ", m.int_enable)
-        # println("  MIP formulation = $(m.convhull_formulation) formulation")
-        println("  No. of variables chosen for discretization = $(m.disc_var_pick)")
+        if m.disc_var_pick == 0
+            println("  Potential variables chosen for partitioning = All")
+        elseif m.disc_var_pick == 1
+            println("  Potential variables chosen for partitioning = Min. vertex cover")
+        end
+
         # println("  Conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
         if m.disc_ratio_branch
             println("  Discretization ratio branch activated")
@@ -127,8 +129,12 @@ function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
         spc = max(0, b_len - length(objstr))
     end
     UB_block = string(" ", objstr, " " ^ spc)
+   
 
-    if isa(m.logs[:bound][end], Float64)
+    if expr_isconst(m.obj_expr_orig)
+        bdstr = eval(m.obj_expr_orig)
+        spc = b_len - length(bdstr)
+   elseif isa(m.logs[:bound][end], Float64)
         bdstr = string(round(m.logs[:bound][end]; digits=4))
         spc = max(0, b_len - length(bdstr))
     else
@@ -158,7 +164,7 @@ function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
 	end
 
 
-    haskey(options, :finsih_entry) ? (ITER_block = string(" ", "finish ")) : (ITER_block = string(" ", m.logs[:n_iter]," " ^ (7 - length(string(m.logs[:n_iter])))))
+    haskey(options, :finish_entry) ? (ITER_block = string(" ", "finish ")) : (ITER_block = string(" ", m.logs[:n_iter]," " ^ (7 - length(string(m.logs[:n_iter])))))
 
     if m.colorful_alpine == "random"
         colors = [:blue, :cyan, :green, :red, :light_red, :light_blue, :light_cyan, :light_green, :light_magenta, :light_re, :light_yellow, :white, :yellow]

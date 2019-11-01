@@ -4,7 +4,9 @@
 Recognize and process nonlinear terms in an expression
 """
 function expr_term_parsing(expr::Any, constr_id::Int, m::AlpineNonlinearModel, level=0; options...)
+   
 
+   isa(expr, Number) && return expr
     cnt = 0
     for node in expr.args
         cnt += 1
@@ -149,7 +151,7 @@ end
 
 function detect_linear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     coef_fetch = Dict(:+ => 1.0, :- => -1.0)
 
     # Re-process the expression sub-tree [REQUIRED]
@@ -274,7 +276,7 @@ bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
 sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
-linear(k, vec) = sum(k[:ref][:scalar] .+ [i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
+linear(k, vec) = k[:ref][:scalar] .+ sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
 """
     Recognize prodcuts of binary variables and multilinear products
@@ -287,7 +289,7 @@ linear(k, vec) = sum(k[:ref][:scalar] .+ [i[1]*vec[i[2]] for i in k[:ref][:coef_
 function detect_discretemulti_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
     # Alwasy construct the binlin term after lifting
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
 
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
@@ -509,7 +511,7 @@ end
 """
 function detect_binint_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
 
     if (expr.args[1] == :*)
 
@@ -629,7 +631,7 @@ end
 """
 function detect_intprod_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-	@assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all integer variables
         var_idxs = []
@@ -759,7 +761,7 @@ end
 """
 function detect_binprod_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-	@assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
         var_idxs = []
@@ -843,12 +845,12 @@ end
 """
     Future MONOMIAL Cluster
     Recognize bilinear terms: x * y, where x and y are continous variables
-    Recognize multilinear terms: x1 * x2 * .. * xN, where all x are continous variables
+    Recognize multilinear terms: x1 * x2 * .. * xN, where all x_i ∀ i are continous variables
     Recognize monomial terms: x^2 or x * x, where x is continuous
 """
 function detect_bilinear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)  # confirm head (:*)
         # ----- Pattern : coefficient * x * y  ------ #
         # Collect children information for checking
@@ -889,7 +891,7 @@ end
 
 function detect_multilinear_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*) # Pattern: coefficients * x * y * z ...
         var_idxs = []
         scalar = 1.0
@@ -1089,7 +1091,8 @@ end
 """
 function detect_sincos_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 
-    @assert expr.head == :call
+    @assert (expr.head == :call || expr.head == :ref)
+
     if expr.args[1] in [:sin, :cos]
         # Pattern: sin(a*x) or cos(a*x)
         operator = expr.args[1]
@@ -1152,10 +1155,10 @@ end
 
 """
     Recognize convex constraints
-    A scatch for type-A convex constraint expression
+    A catch for type-A convex constraint expression
 """
 function resolve_convex_constr(expr::Any, m::AlpineNonlinearModel=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
-
+   
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
         sense = expr.args[1]
@@ -1288,7 +1291,7 @@ function resolve_convex_constr(expr::Any, m::AlpineNonlinearModel=nothing, idx::
     elseif expr_orig == :obj
 
         convex_type = :Unknown
-
+        (expr_isconst(m.obj_expr_orig)) && return true
         # Follows the same mapping to convex constraints
 
         # Type-A: Convex objective function
