@@ -291,8 +291,8 @@ function bounding_solve(m::AlpineNonlinearModel)
     m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
     # ================= Solve End ================ #
 
-    status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
-    status_maynosolution = [:UserObjLimit, :UserLimit]  # Watch out for these cases
+    status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal, :Unfinished]
+    status_maynosolution = [:UserObjLimit, :UserLimit, :Unfinished]  # Watch out for these cases
     status_infeasible = [:Infeasible, :InfeasibleOrUnbounded]
     if status in status_solved
         (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
