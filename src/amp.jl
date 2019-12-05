@@ -5,7 +5,7 @@
 Set up a JuMP MILP bounding model base on variable domain partitioning information stored in `use_disc`.
 By default, if `use_disc is` not provided, it will use `m.discretizations` store in the Alpine model.
 The basic idea of this MILP bounding model is to use Tighten McCormick to convexify the original Non-convex region.
-Among all presented partitionings, the bounding model will choose one specific partition as the lower bound solution.
+Among all presented partitions, the bounding model will choose one specific partition as the lower bound solution.
 The more partitions there are, the better or finer bounding model relax the original MINLP while the more
 efforts required to solve this MILP is required.
 
@@ -14,9 +14,9 @@ This function is implemented in the following manner:
     * [`amp_post_vars`](@ref): post original and lifted variables
     * [`amp_post_lifted_constraints`](@ref): post original and lifted constraints
     * [`amp_post_lifted_obj`](@ref): post original or lifted objective function
-    * [`amp_post_tmc_mccormick`](@ref): post Tighen McCormick variables and constraints base on `discretization` information
+    * [`amp_post_tmc_mccormick`](@ref): post Tighten McCormick variables and constraints base on `discretization` information
 
-More specifically, the Tightening McCormick used here can be genealized in the following mathematcial formulation. Consider a nonlinear term
+More specifically, the Tightening McCormick used here can be generalized in the following mathematical formulation. Consider a nonlinear term
 ```math
 \\begin{subequations}
 \\begin{align}
@@ -55,7 +55,7 @@ end
 """
     amp_post_convexification(m::AlpineNonlinearModel; kwargs...)
 
-warpper function to convexify the problem for a bounding model. This function talks to nonconvex_terms and convexification methods
+wrapper function to convexify the problem for a bounding model. This function talks to nonconvex_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
 function amp_post_convexification(m::AlpineNonlinearModel; use_disc=nothing)
@@ -69,7 +69,7 @@ function amp_post_convexification(m::AlpineNonlinearModel; use_disc=nothing)
     amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
     amp_post_convhull(m, use_disc=discretization)           # convex hull representation
 
-    is_fully_convexified(m) # Exam to see if all non-linear terms have been convexificed
+    is_fully_convexified(m) # Ensure if  all the non-linear terms are convexified
 
     return
 end
@@ -172,6 +172,8 @@ if expr_isconst(m.obj_expr_orig)
    elseif m.obj_structure == :affine
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
     elseif m.obj_structure == :convex
+        # This works only when the original objective is convex quadratic. 
+        # Higher-order convex monomials need implementation of outer-approximation (check resolve_convex_constr in operators.jl)
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
      @show m.obj_expr_orig
@@ -203,7 +205,7 @@ end
     add_discretization(m::AlpineNonlinearModel; use_disc::Dict, use_solution::Vector)
 
 Basic built-in method used to add a new partition on feasible domains of discretizing variables.
-This method makes modification in .discretization
+This method makes modification in discretization
 
 Consider an original partition [0, 3, 7, 9], where LB/any solution is 4.
 Use ^ as the new partition, "|" as the original partition
@@ -221,9 +223,9 @@ There are two options for this function,
     * `use_disc(default=m.discretization)`:: to regulate which is the base to add new partitions on
     * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
 
-TODO: also need to document the speical diverted cases when new partition touches both corners
+TODO: also need to document the special diverted cases when new partition touches both corners
 
-This function can be accordingly modified by the user to change the behvaior of the solver, and thus the convergence.
+This function can be accordingly modified by the user to change the behavior of the solver, and thus the convergence.
 """
 function add_adaptive_partition(m::AlpineNonlinearModel;kwargs...)
 

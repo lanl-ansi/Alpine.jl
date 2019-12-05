@@ -349,7 +349,7 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::AlpineNonlinear
             isempty(bin_var_idxs) ? bp_idx = -1 : bp_idx = bin_var_idxs[1]
         end
 
-        # lift clusters of integer varis multiplication if necessary
+        # lift clusters of integer variables multiplication if necessary
         if length(int_var_idxs) > 1
             ip_term_key = [Expr(:ref, :x, idx) for idx in int_var_idxs]
             ip_term_expr = Expr(:call, :*)
@@ -543,7 +543,7 @@ function detect_binint_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
 		isempty(cont_var_idxs) || return false, expr
         isempty(int_var_idxs) && isempty(bin_var_idxs) && return false, expr
 
-        # Lift clusters of binary vars multiplication if necessary
+        # Lift clusters of binary variables multiplication if necessary
         if length(bin_var_idxs) > 1
             bp_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
             bp_term_expr = Expr(:call, :*)
@@ -556,7 +556,7 @@ function detect_binint_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel)
             bp_idx = bin_var_idxs[1]
         end
 
-        # lift clusters of integer varis multiplication if necessary
+        # lift clusters of integer variables multiplication if necessary
         if length(int_var_idxs) > 1
             ip_term_key = [Expr(:ref, :x, idx) for idx in int_var_idxs]
             ip_term_expr = Expr(:call, :*)
@@ -1003,7 +1003,7 @@ function detect_monomial_term(expr::Any, constr_id::Int, m::AlpineNonlinearModel
                 continue
             end
         end
-        # Cofirm detection of patter A and perform store & lifting procedures
+        # Confirm detection of pattern A and perform store & lifting procedures
         if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:2]
             term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial, basic_monomial_bounds, collect_monomial_discvar)
@@ -1211,7 +1211,6 @@ function resolve_convex_constr(expr::Any, m::AlpineNonlinearModel=nothing, idx::
             return false    # don't support other operators
         end
 
-        # @show rhs, scalar_bin, idxs_bin
         scalar_sign = sign(scalar_bin[1])
         if length(scalar_bin) > 1
             for i in 2:length(scalar_bin)
@@ -1289,10 +1288,14 @@ function resolve_convex_constr(expr::Any, m::AlpineNonlinearModel=nothing, idx::
 
         return true
     elseif expr_orig == :obj
-
+        minimum 
         convex_type = :Unknown
         (expr_isconst(m.obj_expr_orig)) && return true
         # Follows the same mapping to convex constraints
+
+        # Important: This is a fix to return obj is non-convex if the exponents have value greater than 2. 
+        # This is needs to be removed once outer-approximation for convex functions is implemented
+        (maximum(power_bin) > 2) && return false
 
         # Type-A: Convex objective function
         # sum_i (c_i*x_i^p) (p is an even positive integer and x_i \in R)   => Convex

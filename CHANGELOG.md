@@ -1,5 +1,13 @@
 # Critical Updates for Alpine.jl
 
+## v0.1.14
+* Bug fixes for issues 134 and 135 (fractional exponents and constants within exponents)
+* Added expr_isolate_const in nlexpr.jl
+* Typos in comments  
+* Meaningful optimality gaps for zero upper bound values
+* Dropped support for colorful_alpine
+* Ole Kroger's updates to docs/make.jl
+
 ## v0.1.10
 * Multiple bug fixes in expression parsing 
 * Added support for feasibility problems with constant objectives
