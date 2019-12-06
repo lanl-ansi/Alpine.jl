@@ -676,7 +676,7 @@ function expr_isolate_const(expr)
             end
 
          # Handle nonlinear terms with coefficients within the exponent
-         elseif (expr.args[i].head == :call && expr_i.args[1] == :^ && expr_i.args[2].head == :call) 
+      elseif (expr.args[i].head == :call && expr_i.args[1] == :^ && expr_i.args[2].head == :call && isa(expr_i.args[2].args[2], Number) && isa(expr_i.args[3], Number)) 
             expr_tmp = Expr(:call, :^, expr_i.args[2].args[3], expr_i.args[3])
             if ((expr.args[1] == :-) && (i > 2)) || (ind == 1)
                push!(expr_array, Expr(:call, :*, -expr_i.args[2].args[2] ^ expr_i.args[3], expr_tmp))
@@ -717,15 +717,19 @@ function expr_isolate_const(expr)
       end   
 
       # Construct the expression from the array
-      expr_n = Expr(:call, :+, expr_array[1], expr_array[2])
-      if length(expr_array) >= 3
-         for i = 3:length(expr_array)
-            expr_n = Expr(:call, :+, expr_n, expr_array[i])
+      if length(expr_array) == 1
+         return expr_array[1]
+      else
+         expr_n = Expr(:call, :+, expr_array[1], expr_array[2])
+         if length(expr_array) >= 3
+            for i = 3:length(expr_array)
+               expr_n = Expr(:call, :+, expr_n, expr_array[i])
+            end
          end
+         return(expr_n)
       end
-      return(expr_n)
 
-   elseif (expr.head == :call && expr.args[1] == :^ && expr.args[2].head == :call) 
+   elseif (expr.head == :call && expr.args[1] == :^ && expr.args[2].head == :call && isa(expr.args[2].args[2], Number) && isa(expr.args[3], Number)) 
       expr_tmp = Expr(:call, :^, expr.args[2].args[3], expr.args[3])
       return(Expr(:call, :*, expr.args[2].args[2] ^ expr.args[3], expr_tmp))
    else

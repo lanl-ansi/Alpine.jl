@@ -16,7 +16,7 @@ for i in examples
     include(joinpath(alpine_dir, "test", "examples", i))
 end
 
-pavito_solver=PavitoSolver(mip_solver=CbcSolver(logLevel=0), cont_solver=IpoptSolver(print_level=0), mip_solver_drives=false, log_level=0)
+pavito_solver=PavitoSolver(mip_solver=CbcSolver(logLevel=0), cont_solver=IpoptSolver(print_level=0, sb="yes"), mip_solver_drives=false, log_level=0)
 
 # Performe Tests
 include("$(alpine_dir)/test/solver.jl")
