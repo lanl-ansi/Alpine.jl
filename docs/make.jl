@@ -1,7 +1,7 @@
 using Documenter, Alpine
 
 makedocs(
-    format = :html,
+    format = Documenter.HTML(),
     sitename = "Alpine",
     pages = [
         "Introduction" => "index.md",

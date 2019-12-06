@@ -2,8 +2,7 @@ export AlpineSolver
 
 mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
 
-    # external developer parameters for testing and debugging
-    colorful_alpine::Any                                           # Colorful output (remove)
+    # Parameters for tuning Alpine
 
     # basic solver parameters
     loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
@@ -161,8 +160,8 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     alpine_status::Symbol                                       # Current Alpine's status
 
     # constructor
-    function AlpineNonlinearModel(colorful_alpine,
-                                loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
+    function AlpineNonlinearModel(loglevel, 
+                                timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                                 nlp_solver,
                                 minlp_solver,
                                 mip_solver,
@@ -206,8 +205,6 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
                                 int_fully_disc)
 
         m = new()
-
-        m.colorful_alpine = colorful_alpine
 
         m.loglevel = loglevel
         m.timeout = timeout
@@ -322,8 +319,6 @@ const empty_solver = UnsetSolver()
 
 mutable struct AlpineSolver <: MathProgBase.AbstractMathProgSolver
 
-    colorful_alpine::Any
-
     loglevel::Int
     timeout::Float64
     maxiter::Int
@@ -386,7 +381,6 @@ mutable struct AlpineSolver <: MathProgBase.AbstractMathProgSolver
 end
 
 function AlpineSolver(;
-    colorful_alpine = false,
 
     loglevel = 1,
     timeout = Inf,
@@ -479,8 +473,8 @@ function AlpineSolver(;
         disc_var_pick = 3
     end
 
-    # Deep-copy the solvers because we may change option values inside Alpine
-    AlpineSolver(colorful_alpine,
+    # Deep-copy the solver options because Alpine may modify some options
+    AlpineSolver(
         loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
         deepcopy(nlp_solver),
         deepcopy(minlp_solver),
@@ -529,8 +523,6 @@ function AlpineSolver(;
 function MathProgBase.NonlinearModel(s::AlpineSolver)
     
     # Translate options into old nonlinearmodel.jl fields
-    colorful_alpine = s.colorful_alpine
-
     loglevel = s.loglevel
     timeout = s.timeout
     maxiter = s.maxiter
@@ -589,8 +581,8 @@ function MathProgBase.NonlinearModel(s::AlpineSolver)
     int_cumulative_disc = s.int_cumulative_disc
     int_fully_disc = s.int_fully_disc
 
-    return AlpineNonlinearModel(colorful_alpine,
-                            loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
+    return AlpineNonlinearModel(loglevel, 
+                                timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                             nlp_solver,
                             minlp_solver,
                             mip_solver,
@@ -648,7 +640,7 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     println(" This package contains Alpine.jl, a global solver for nonconvex MINLPs")
     println("       If you find it useful, please cite the following paper: ")
     println("     Journal of Global Optimization, 2019, https://goo.gl/89zrDf")
-    println("***********************************************************************\n")
+    println("***********************************************************************")
     
     # Populating AlpineNonlinearModel (invoked by JuMP.build(m))
     m.num_var_orig = num_var
@@ -671,7 +663,8 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     interface_init_nonlinear_data(m.d_orig)
 
     # Collect objective & constraint expressions
-    m.obj_expr_orig = interface_get_obj_expr(m.d_orig)
+    m.obj_expr_orig = expr_isolate_const(interface_get_obj_expr(m.d_orig)) # see in nlexpr.jl if this expr isolation has any issue
+
     for i in 1:m.num_constr_orig
         push!(m.constr_expr_orig, interface_get_constr_expr(m.d_orig, i))
     end
@@ -683,7 +676,7 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
     if !isempty(m.int_vars) || !isempty(m.bin_vars) 
-        (m.minlp_solver == empty_solver) && (error("Problem is a MINLP and no MINLP local solver given; use minlp_solver to specify a MINLP local solver"))
+        (m.minlp_solver == empty_solver) && (error("No MINLP local solver specified; use minlp_solver to specify a MINLP local solver"))
     end 
 
     # Summarize constraints information in original model
@@ -711,12 +704,12 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
             m.constr_structure[i] = :generic_nonlinear
         end
     end
-
+    
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
     m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
-
+    
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable re-categorization
 
