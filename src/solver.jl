@@ -663,7 +663,7 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     interface_init_nonlinear_data(m.d_orig)
 
     # Collect objective & constraint expressions
-    m.obj_expr_orig = expr_isolate_const(interface_get_obj_expr(m.d_orig)) # see in nlexpr.jl
+    m.obj_expr_orig = expr_isolate_const(interface_get_obj_expr(m.d_orig)) # see in nlexpr.jl if this expr isolation has any issue
 
     for i in 1:m.num_constr_orig
         push!(m.constr_expr_orig, interface_get_constr_expr(m.d_orig, i))

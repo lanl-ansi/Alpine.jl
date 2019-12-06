@@ -651,75 +651,84 @@ Signs in the summation can be +/-
 Note: This function does not support terms of type (a*(x[1] + x[2]))^2 yet. 
 """
 function expr_isolate_const(expr)
-  expr_isaffine(expr) && return expr
+   expr_isaffine(expr) && return expr
 
-  # Check nonlinear expressions
-  if (expr.head == :call && expr.args[1] in [:+,:-]) 
-     expr_array = Any[]
-     for i=2:length(expr.args)
-       ind = 0 
+   # Check nonlinear expressions
+   if (expr.head == :call && expr.args[1] in [:+,:-]) 
+      expr_array = Any[]
+      for i=2:length(expr.args)
+         ind = 0 
 
-       # Handle negative sign in the first term
-       if (!isa(expr.args[i], Number)) && (expr.args[i].args[1] == :-) && (length(expr.args[i].args) == 2)
-         expr_i = expr.args[i].args[2]
-         ind = 1
-       else
-         expr_i = expr.args[i]
-       end
-
-       # Handle constant and linear terms
-       if (isa(expr_i, Number)) || (expr_i.head == :ref)
-         if ((expr.args[1] == :-) && (i == 3)) || (ind == 1)
-           push!(expr_array, :(-$(expr_i)))
+         # Handle negative sign in the first term
+         if (!isa(expr.args[i], Number)) && (expr.args[i].args[1] == :-) && (length(expr.args[i].args) == 2)
+            expr_i = expr.args[i].args[2]
+            ind = 1
          else
-           push!(expr_array, :($(expr_i)))
+            expr_i = expr.args[i]
          end
 
-       # Handle nonlinear terms with coefficients within the exponent
-       elseif (expr.args[i].head == :call && expr_i.args[1] == :^ && expr_i.args[2].head == :call) 
-         expr_tmp = Expr(:call, :^, expr_i.args[2].args[3], expr_i.args[3])
-         if ((expr.args[1] == :-) && (i == 3)) || (ind == 1)
-           push!(expr_array, Expr(:call, :*, -expr_i.args[2].args[2] ^ expr_i.args[3], expr_tmp))
-         else
-           push!(expr_array, Expr(:call, :*, expr_i.args[2].args[2] ^ expr_i.args[3], expr_tmp))
+         # Handle constant and linear terms
+         if (isa(expr_i, Number)) || (expr_i.head == :ref)
+            if ((expr.args[1] == :-) && (i > 2)) || (ind == 1)
+               push!(expr_array, :(-$(expr_i)))
+            else
+               push!(expr_array, :($(expr_i)))
+            end
+
+         # Handle nonlinear terms with coefficients within the exponent
+         elseif (expr.args[i].head == :call && expr_i.args[1] == :^ && expr_i.args[2].head == :call) 
+            expr_tmp = Expr(:call, :^, expr_i.args[2].args[3], expr_i.args[3])
+            if ((expr.args[1] == :-) && (i > 2)) || (ind == 1)
+               push!(expr_array, Expr(:call, :*, -expr_i.args[2].args[2] ^ expr_i.args[3], expr_tmp))
+            else
+               push!(expr_array, Expr(:call, :*, expr_i.args[2].args[2] ^ expr_i.args[3], expr_tmp))
+            end
+
+         # Handle no-coefficients case  
+         elseif expr_i.args[1] == :^ && expr_i.args[2].head == :ref
+            if (expr.args[1] == :- && (i > 2)) || (ind == 1) 
+               push!(expr_array, Expr(:call, :*, -1, expr_i))
+            else
+               push!(expr_array,  expr_i)
+            end
+
+         # Handle coefficients which are not part of the exponent 
+         elseif expr_i.args[1] == :* && isa(expr_i.args[2], Number)
+            if ((expr.args[1] == :-) && (i > 2)) || (ind == 1)
+               #push!(expr_array, Expr(:call, :*, -expr_i.args[2], expr_i.args[3]))
+               push!(expr_array, Expr(:call, :*, -1, expr_i))
+            else
+               push!(expr_array,  expr_i)
+            end
+
+         # Handle negative sign in the remaining terms
+         elseif (expr_i.args[1] in [:+,:-]) && (length(expr.args[i].args) > 2)
+            expr_rec = expr_isolate_const(expr_i) #recursion
+            push!(expr_array, expr_rec)
+
+         # For any other terms
+         else 
+            if (expr.args[1] == :- && (i > 2)) || (ind == 1) 
+               push!(expr_array, Expr(:call, :*, -1, expr_i))
+            else
+               push!(expr_array,  expr_i)
+            end
          end
+      end   
 
-       # Handle no-coefficients case  
-       elseif expr_i.args[1] == :^ && expr_i.args[2].head == :ref
-         if (expr.args[1] == :-) || (ind == 1)
-           push!(expr_array, Expr(:call, :*, -1, expr_i))
-         else
-           push!(expr_array,  expr_i)
+      # Construct the expression from the array
+      expr_n = Expr(:call, :+, expr_array[1], expr_array[2])
+      if length(expr_array) >= 3
+         for i = 3:length(expr_array)
+            expr_n = Expr(:call, :+, expr_n, expr_array[i])
          end
+      end
+      return(expr_n)
 
-       # Handle coefficients which are not part of the exponent 
-       elseif expr_i.args[1] == :* && isa(expr_i.args[2], Number)
-         if ((expr.args[1] == :-) && (i == 3)) || (ind == 1)
-           push!(expr_array, Expr(:call, :*, -expr_i.args[2], expr_i.args[3]))
-         else
-           push!(expr_array,  expr_i)
-         end
-
-       # Handle negative sign in the remaining terms
-       elseif (expr_i.args[1] in [:+,:-]) && (length(expr.args[i].args) > 2)
-         expr_rec = expr_isolate_const(expr_i) #recursion
-         push!(expr_array, expr_rec)
-       end
-     end   
-
-     # Construct the expression from the array
-     expr_n = Expr(:call, :+, expr_array[1], expr_array[2])
-     if length(expr_array) >= 3
-       for i = 3:length(expr_array)
-         expr_n = Expr(:call, :+, expr_n, expr_array[i])
-       end
-     end
-     return(expr_n)
-
-  elseif (expr.head == :call && expr.args[1] == :^ && expr.args[2].head == :call) 
-     expr_tmp = Expr(:call, :^, expr.args[2].args[3], expr.args[3])
-     return(Expr(:call, :*, expr.args[2].args[2] ^ expr.args[3], expr_tmp))
-  else
-     return expr
-  end
+   elseif (expr.head == :call && expr.args[1] == :^ && expr.args[2].head == :call) 
+      expr_tmp = Expr(:call, :^, expr.args[2].args[3], expr.args[3])
+      return(Expr(:call, :*, expr.args[2].args[2] ^ expr.args[3], expr_tmp))
+   else
+      return expr
+   end
 end

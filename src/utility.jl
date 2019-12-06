@@ -29,7 +29,7 @@ function update_opt_gap(m::AlpineNonlinearModel)
       end
       if m.gapref == :ub
          if isapprox(m.best_obj,0.0;atol=m.tol) # zero upper bound case
-            eps = 1.0 # shift factor
+            eps = 1 # shift factor
             m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(m.tol+(m.best_obj + eps))   
          else
             m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
