@@ -1,8 +1,9 @@
 using Documenter, Alpine
 
 makedocs(
-    format = Documenter.HTML(),
+    format = Documenter.HTML(analytics = "UA-367975-10", mathengine = Documenter.MathJax()),
     sitename = "Alpine",
+    authors = "Harsha Nagarajan, Kaarthik Sundar, Site Wang, and contributors.",
     pages = [
         "Introduction" => "index.md",
         "How to Use" => "installation.md",
@@ -11,7 +12,6 @@ makedocs(
         "Expression Guideline" => "expression.md",
         "Parameters" => "parameters.md",
         "Methods" => "functions.md",
-        "Hacking Alpine" => "hacking.md"
     ]
 )
 
