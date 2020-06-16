@@ -4,16 +4,18 @@ os:
   - osx
 julia:
   - 1.0
-  - 1.1
+  - 1.4
 script:
   - julia --project -e 'import Pkg; Pkg.build(); Pkg.instantiate()'
   - julia --project -e 'import Pkg; Pkg.test(coverage=true);'
 after_success:
   - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
 jobs:
+    allow_failures:
+    - julia: nightly
   include:
     - stage: "Documentation"
-      julia: 1.0
+      julia: 1.4
       os: linux
       script:
         - julia --project=docs/ -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'

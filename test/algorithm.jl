@@ -1,4 +1,4 @@
-@testset " Validation Test || AMP-TMC || basic solve || exampls/nlp1.jl" begin
+@testset " Validation Test || AMP-TMC || basic solve || examples/nlp1.jl" begin
 
     test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
                        mip_solver=pavito_solver,
@@ -58,25 +58,6 @@ end
     @test isapprox(m.objBound, 3647.178; atol=1e-2)
 end
 
-@testset " Validation Test || PBT-AMP-TMC || basic solve || exampls/nlp1.jl" begin
-
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-							   mip_solver=pavito_solver,
-                               bilinear_convexhull=false,
-                               monomial_convexhull=false,
-							   presolve_bt=true,
-							   presolve_bt_algo=2,
-                               presolve_bp=true,
-                               presolve_bt_output_tol=1e-1,
-							   loglevel=100)
-    m = nlp1(solver=test_solver)
-    status = solve(m)
-
-    @test status == :Optimal
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
-    @test m.internalModel.logs[:n_iter] == 2
-end
-
 @testset " Validation Test || BT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
     test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
@@ -120,7 +101,6 @@ end
     status = solve(m)
     @test status == :UserLimits
     @test m.internalModel.logs[:n_iter] == 2
-    @test m.internalModel.logs[:bt_iter] == 2
 end
 
 @testset " Validation Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
@@ -137,23 +117,6 @@ end
     @test status == :Optimal
     @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
-end
-
-@testset " Validation Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=pavito_solver,
-                       bilinear_convexhull=true,
-                       monomial_convexhull=true,
-                       presolve_bt=true,
-                       presolve_bp=true,
-                       presolve_bt_algo=2,
-                       loglevel=100)
-    m = nlp1(solver=test_solver)
-    status = solve(m)
-
-    @test status == :Optimal
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
-    @test m.internalModel.logs[:n_iter] == 1
 end
 
 @testset " Validation Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
@@ -212,23 +175,6 @@ end
                        presolve_bt=false,
                        presolve_bp=true,
                        convhull_formulation="facet",
-                       loglevel=100)
-    m = nlp1(solver=test_solver)
-    status = solve(m)
-
-    @test status == :Optimal
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
-    @test m.internalModel.logs[:n_iter] == 7
-end
-
-@testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp1.jl" begin
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=pavito_solver,
-                       bilinear_convexhull=true,
-                       monomial_convexhull=true,
-                       presolve_bt=false,
-                       presolve_bp=true,
-                       convhull_formulation="mini",
                        loglevel=100)
     m = nlp1(solver=test_solver)
     status = solve(m)
@@ -327,26 +273,6 @@ end
                        presolve_bp=false,
                        maxiter=4,
                        convhull_formulation="facet",
-                       loglevel=100)
-    m = nlp3(solver=test_solver)
-    status = solve(m)
-
-    @test status == :UserLimits
-    @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
-    @test m.objBound >= 6717.00
-    @test m.objBound <= 6718.00
-    @test m.internalModel.logs[:n_iter] == 4
-end
-
-@testset " Validation Test || AMP-CONV-MINIB || basic solve || examples/nlp3.jl" begin
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=pavito_solver,
-                       bilinear_convexhull=true,
-                       monomial_convexhull=true,
-                       presolve_bt=false,
-                       presolve_bp=false,
-                       maxiter=4,
-                       convhull_formulation="mini",
                        loglevel=100)
     m = nlp3(solver=test_solver)
     status = solve(m)
@@ -552,99 +478,6 @@ end
     @test m.internalModel.nonconvex_terms[Expr[:(x[5]), :(x[19])]][:nonlinear_type] == :BINLIN
 end
 
-@testset "Operator :: bmpl && binlin && binprod solve test II" begin
-    test_solver=AlpineSolver(minlp_solver=pavito_solver,
-                          nlp_solver=IpoptSolver(print_level=0),
-                          mip_solver=pavito_solver,
-                          loglevel=100)
-
-    m = bpml_monl(test_solver)
-    solve(m)
-
-    @test isapprox(m.objVal, 19812.920945096557;atol=1e-1)
-    @test isapprox(m.objBound, 19812.9205;atol=1e-1)
-
-    nlk1 = Expr[:(x[9]), :(x[9])]
-    nlk2 = Expr[:(x[10]), :(x[10])]
-    nlk3 = Expr[:(x[8]), :(x[8])]
-    nlk4 = Expr[:(x[3]), :(x[15])]
-    nlk5 = Expr[:(x[6]), :(x[6])]
-    nlk6 = Expr[:(x[2]), :(x[13])]
-    nlk7 = Expr[:(x[4]), :(x[17])]
-    nlk8 = Expr[:(x[5]), :(x[19])]
-    nlk9 = Expr[:(x[7]), :(x[7])]
-    nlk10 = Expr[:(x[1]), :(x[11])]
-
-    @test m.internalModel.nonconvex_terms[nlk1][:id] == 7
-    @test m.internalModel.nonconvex_terms[nlk2][:id] == 9
-    @test m.internalModel.nonconvex_terms[nlk3][:id] == 5
-    @test m.internalModel.nonconvex_terms[nlk4][:id] == 6
-    @test m.internalModel.nonconvex_terms[nlk5][:id] == 1
-    @test m.internalModel.nonconvex_terms[nlk6][:id] == 4
-    @test m.internalModel.nonconvex_terms[nlk7][:id] == 8
-    @test m.internalModel.nonconvex_terms[nlk8][:id] == 10
-    @test m.internalModel.nonconvex_terms[nlk9][:id] == 3
-    @test m.internalModel.nonconvex_terms[nlk10][:id] == 2
-
-    @test m.internalModel.nonconvex_terms[nlk1][:y_idx] == 17
-    @test m.internalModel.nonconvex_terms[nlk2][:y_idx] == 19
-    @test m.internalModel.nonconvex_terms[nlk3][:y_idx] == 15
-    @test m.internalModel.nonconvex_terms[nlk4][:y_idx] == 16
-    @test m.internalModel.nonconvex_terms[nlk5][:y_idx] == 11
-    @test m.internalModel.nonconvex_terms[nlk6][:y_idx] == 14
-    @test m.internalModel.nonconvex_terms[nlk7][:y_idx] == 18
-    @test m.internalModel.nonconvex_terms[nlk8][:y_idx] == 20
-    @test m.internalModel.nonconvex_terms[nlk9][:y_idx] == 13
-    @test m.internalModel.nonconvex_terms[nlk10][:y_idx] == 12
-
-    @test m.internalModel.nonconvex_terms[nlk1][:nonlinear_type] == :MONOMIAL
-    @test m.internalModel.nonconvex_terms[nlk2][:nonlinear_type] == :MONOMIAL
-    @test m.internalModel.nonconvex_terms[nlk3][:nonlinear_type] == :MONOMIAL
-    @test m.internalModel.nonconvex_terms[nlk4][:nonlinear_type] == :BINLIN
-    @test m.internalModel.nonconvex_terms[nlk5][:nonlinear_type] == :MONOMIAL
-    @test m.internalModel.nonconvex_terms[nlk6][:nonlinear_type] == :BINLIN
-    @test m.internalModel.nonconvex_terms[nlk7][:nonlinear_type] == :BINLIN
-    @test m.internalModel.nonconvex_terms[nlk8][:nonlinear_type] == :BINLIN
-    @test m.internalModel.nonconvex_terms[nlk9][:nonlinear_type] == :MONOMIAL
-    @test m.internalModel.nonconvex_terms[nlk10][:nonlinear_type] == :BINLIN
-end
-
-# @testset "Operator :: bmpl && binlin && binprod solve test III with negative bounds" begin
-#     test_solver=AlpineSolver(minlp_solver=pavito_solver,
-#                           nlp_solver=IpoptSolver(print_level=0),
-#                           mip_solver=pavito_solver,
-#                           disc_var_pick=1,
-#                           loglevel=100)
-
-#     m = bpml_negative(test_solver)
-#     solve(m)
-
-#     @test m.objVal <= 12789.0
-#     @test m.objBound >= 12788.0
-
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[6]), :(x[7])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[7]), :(x[8])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[8]), :(x[9])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[9]), :(x[10])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[10]), :(x[6])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[1]), :(x[11])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[2]), :(x[13])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[3]), :(x[15])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[4]), :(x[17])])
-#     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[5]), :(x[19])])
-
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[6]), :(x[7])]][:nonlinear_type] == :BILINEAR
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[7]), :(x[8])]][:nonlinear_type] == :BILINEAR
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[8]), :(x[9])]][:nonlinear_type] == :BILINEAR
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[9]), :(x[10])]][:nonlinear_type] == :BILINEAR
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[10]), :(x[6])]][:nonlinear_type] == :BILINEAR
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[1]), :(x[11])]][:nonlinear_type] == :BINLIN
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[2]), :(x[13])]][:nonlinear_type] == :BINLIN
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[3]), :(x[15])]][:nonlinear_type] == :BINLIN
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[4]), :(x[17])]][:nonlinear_type] == :BINLIN
-#     @test m.internalModel.nonconvex_terms[Expr[:(x[5]), :(x[19])]][:nonlinear_type] == :BINLIN
-# end
-
 @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
     test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
                        mip_solver=pavito_solver,
@@ -660,41 +493,6 @@ end
     @test status == :Optimal
     @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
-end
-
-@testset "Embedding Test || PBT-AMP-CONV || basic solve || examples/nlp1.jl" begin
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=pavito_solver,
-                       bilinear_convexhull=true,
-                       monomial_convexhull=true,
-                       presolve_bt=true,
-                       presolve_bp=true,
-                       presolve_bt_algo=2,
-                       convhull_ebd=true,
-                       loglevel=100)
-    m = nlp1(solver=test_solver)
-    status = solve(m)
-
-    @test status == :Optimal
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
-    @test m.internalModel.logs[:n_iter] == 1
-end
-
-@testset "Embedding Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=CbcSolver(logLevel=0),
-                       bilinear_convexhull=true,
-                       monomial_convexhull=true,
-                       presolve_bt=false,
-                       presolve_bp=false,
-                       convhull_ebd=true,
-                       loglevel=100)
-    m = nlp3(solver=test_solver)
-    status = solve(m)
-
-    @test status == :Optimal
-    @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
-    @test m.internalModel.logs[:n_iter] == 9
 end
 
 @testset "Embedding Test || AMP || special problem || ... " begin

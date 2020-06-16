@@ -398,22 +398,8 @@ function amp_post_inequalities_cont(m::AlpineNonlinearModel, discretization::Dic
             @constraint(m.model_mip, sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices]))
         end
         return
-    elseif m.convhull_formulation == "mini"
-        for j in 1:min(partition_cnt, 1) # Constraint cluster of α >= f(λ)
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1;], dim)
-            @constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [lambda_cnt;], dim)
-            @constraint(m.model_mip, sum(α[var_ind][(dim[cnt]-j):(dim[cnt]-1)]) >= sum(λ[ml_indices][:vars][sliced_indices]))
-        end
-        for j in 1:partition_cnt         # Constraint cluster of α <= f(λ)
-            for i in 1:max(1, min(partition_cnt-j+1, 1)) # At least one
-                sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j:(j+i);], dim)
-                @constraint(m.model_mip, sum(α[var_ind][j:(j+i-1)]) <= sum(λ[ml_indices][:vars][sliced_indices]))
-            end
-        end
-        return
     else
-        error("Must indicate a choice of convex hull formulation. ?(mini, sos2, facet)")
+        error("Must indicate a choice of convex hull formulation. ?(sos2, facet)")
     end
 
     return

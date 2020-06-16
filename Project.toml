@@ -4,6 +4,7 @@ repo = "https://github.com/lanl-ansi/Alpine.jl.git"
 version = "0.1.15"
 
 [deps]
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathProgBase = "fdba3010-5040-5b88-9595-932c9decdf73"
@@ -11,14 +12,13 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [compat]
+Cbc = "0.6.7"
+GLPKMathProgInterface = ">=0.4.3"
+Ipopt = ">= 0.4"
 JuMP = "< 0.19"
 MathProgBase = ">=0.6.4"
-Cbc = ">= 0.4"
-Ipopt = ">= 0.4"
-GLPKMathProgInterface = ">=0.4.3"
 Pavito = "^0.1"
 julia = "^1"
 
