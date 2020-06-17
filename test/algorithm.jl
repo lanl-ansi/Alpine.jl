@@ -119,21 +119,21 @@ end
     @test m.internalModel.logs[:n_iter] == 7
 end
 
-@testset " Validation Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-                       mip_solver=CbcSolver(logLevel=0),
-                       bilinear_convexhull=true,
-                       monomial_convexhull=true,
-                       presolve_bt=false,
-                       presolve_bp=false,
-                       loglevel=100)
-    m = nlp3(solver=test_solver)
-    status = solve(m)
+# @testset " Validation Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
+#     test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+#                        mip_solver=CbcSolver(logLevel=0),
+#                        bilinear_convexhull=true,
+#                        monomial_convexhull=true,
+#                        presolve_bt=false,
+#                        presolve_bp=false,
+#                        loglevel=100)
+#     m = nlp3(solver=test_solver)
+#     status = solve(m)
 
-    @test status == :Optimal
-    @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
-    @test m.internalModel.logs[:n_iter] == 9
-end
+#     @test status == :Optimal
+#     @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+#     @test m.internalModel.logs[:n_iter] == 9
+# end
 
 @testset " Validation Test || AMP || basic solve || examples/circle.jl" begin
     test_solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
