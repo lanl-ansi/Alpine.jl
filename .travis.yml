@@ -11,7 +11,7 @@ script:
 after_success:
   - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
 jobs:
-    allow_failures:
+  allow_failures:
     - julia: nightly
   include:
     - stage: "Documentation"
