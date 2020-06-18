@@ -1,4 +1,8 @@
 # Critical Updates for Alpine.jl
+## v0.1.16
+* Fixed CBC version to make it compatible 
+* Removed support for "Mini" Formulation for convex hulls
+* Updated tests and removed a few 
 
 ## v0.1.15
 * Bug fixes for issues 134 and 135 (fractional exponents, constants within integer exponents)
