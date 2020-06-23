@@ -5,7 +5,6 @@ Initialize internal bound vectors (placeholders) to be used in other places.
 In this case, we don't have to mess with the original bound information.
 """
 function init_tight_bound(m::AlpineNonlinearModel)
-
     m.l_var_tight = [m.l_var_orig; fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     m.u_var_tight = [m.u_var_orig; fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     for i in 1:m.num_var_orig
@@ -17,7 +16,6 @@ function init_tight_bound(m::AlpineNonlinearModel)
             m.u_var_tight[i] = ceil(m.u_var_tight[i])
         end
     end
-
     return
 end
 
@@ -109,7 +107,6 @@ x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_
 This function can potential grow to be smarter.
 """
 function bound_propagation(m::AlpineNonlinearModel)
-
     exhausted = false
     infeasible = false
     while !exhausted
@@ -144,7 +141,7 @@ function bound_propagation(m::AlpineNonlinearModel)
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
                         (m.loglevel > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_u_bound < m.u_var_tight[var_idx] - m.tol
+                    elseif eval_u_bound < m.l_var_tight[var_idx] - m.tol
                         (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
