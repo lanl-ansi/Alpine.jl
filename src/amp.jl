@@ -1,6 +1,6 @@
 """
 
-    create_bounding_mip(m::AlpineNonlinearModel; use_disc::Dict)
+    create_bounding_mip(m::Optimizer; use_disc::Dict)
 
 Set up a JuMP MILP bounding model base on variable domain partitioning information stored in `use_disc`.
 By default, if `use_disc is` not provided, it will use `m.discretizations` store in the Alpine model.
@@ -33,7 +33,7 @@ More specifically, the Tightening McCormick used here can be generalized in the 
 ```
 
 """
-function create_bounding_mip(m::AlpineNonlinearModel; use_disc=nothing)
+function create_bounding_mip(m::Optimizer; use_disc=nothing)
 
     use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
@@ -53,12 +53,12 @@ function create_bounding_mip(m::AlpineNonlinearModel; use_disc=nothing)
 end
 
 """
-    amp_post_convexification(m::AlpineNonlinearModel; kwargs...)
+    amp_post_convexification(m::Optimizer; kwargs...)
 
 wrapper function to convexify the problem for a bounding model. This function talks to nonconvex_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
-function amp_post_convexification(m::AlpineNonlinearModel; use_disc=nothing)
+function amp_post_convexification(m::Optimizer; use_disc=nothing)
 
     use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
@@ -74,7 +74,7 @@ function amp_post_convexification(m::AlpineNonlinearModel; use_disc=nothing)
     return
 end
 
-function amp_post_vars(m::AlpineNonlinearModel; kwargs...)
+function amp_post_vars(m::Optimizer; kwargs...)
 
     options = Dict(kwargs)
 
@@ -92,9 +92,9 @@ function amp_post_vars(m::AlpineNonlinearModel; kwargs...)
         # This is a tricky step, not enforcing category of lifted variables is able to improve performance
         (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
         # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
-        l_var[i] > -Inf && setlowerbound(x[i], l_var[i])
+        l_var[i] > -Inf && JuMP.set_lower_bound(x[i], l_var[i])
         # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
-        u_var[i] < Inf && setupperbound(x[i], u_var[i])
+        u_var[i] < Inf && JuMP.set_upper_bound(x[i], u_var[i])
 
         m.var_type[i] == :Int && error("Support for general integer problem is current limited...")
     end
@@ -103,7 +103,7 @@ function amp_post_vars(m::AlpineNonlinearModel; kwargs...)
 end
 
 
-function amp_post_lifted_constraints(m::AlpineNonlinearModel)
+function amp_post_lifted_constraints(m::Optimizer)
 
     for i in 1:m.num_constr_orig
         if m.constr_structure[i] == :affine
@@ -164,7 +164,7 @@ function amp_post_linear_lift_constraints(model_mip::JuMP.Model, l::Dict)
     return
 end
 
-function amp_post_lifted_objective(m::AlpineNonlinearModel)
+function amp_post_lifted_objective(m::Optimizer)
    
 #if isa(m.obj_expr_orig, Number)
 if expr_isconst(m.obj_expr_orig)
@@ -182,7 +182,7 @@ if expr_isconst(m.obj_expr_orig)
     return
 end
 
-function add_partition(m::AlpineNonlinearModel; kwargs...)
+function add_partition(m::Optimizer; kwargs...)
 
     options = Dict(kwargs)
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
@@ -202,7 +202,7 @@ function add_partition(m::AlpineNonlinearModel; kwargs...)
 end
 
 """
-    add_discretization(m::AlpineNonlinearModel; use_disc::Dict, use_solution::Vector)
+    add_discretization(m::Optimizer; use_disc::Dict, use_solution::Vector)
 
 Basic built-in method used to add a new partition on feasible domains of discretizing variables.
 This method makes modification in discretization
@@ -227,7 +227,7 @@ TODO: also need to document the special diverted cases when new partition touche
 
 This function can be accordingly modified by the user to change the behavior of the solver, and thus the convergence.
 """
-function add_adaptive_partition(m::AlpineNonlinearModel;kwargs...)
+function add_adaptive_partition(m::Optimizer;kwargs...)
 
     options = Dict(kwargs)
 
@@ -281,7 +281,7 @@ end
 """
     This function targets to address unexpected numerical issues when adding partitions in tight regions.
 """
-function correct_point(m::AlpineNonlinearModel, partvec::Vector, point::Float64, var::Int)
+function correct_point(m::Optimizer, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - m.tol || point > partvec[end] + m.tol
         @warn "  Warning: VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Taking middle point..."
@@ -311,7 +311,7 @@ function calculate_radius(partvec::Vector, part::Int, ratio::Any)
     return radius
 end
 
-function insert_partition(m::AlpineNonlinearModel, var::Int, partidx::Int, point::Number, radius::Float64, partvec::Vector)
+function insert_partition(m::Optimizer, var::Int, partidx::Int, point::Number, radius::Float64, partvec::Vector)
 
     abstol, reltol = m.disc_abs_width_tol, m.disc_rel_width_tol
 
@@ -350,7 +350,7 @@ function insert_partition(m::AlpineNonlinearModel, var::Int, partidx::Int, point
     return
 end
 
-function add_uniform_partition(m::AlpineNonlinearModel; kwargs...)
+function add_uniform_partition(m::Optimizer; kwargs...)
 
     options = Dict(kwargs)
     haskey(options, :use_disc) ? discretization = options[:use_disc] : discretization = m.discretization
@@ -368,7 +368,7 @@ function add_uniform_partition(m::AlpineNonlinearModel; kwargs...)
     return discretization
 end
 
-function update_disc_ratio(m::AlpineNonlinearModel, presolve=false)
+function update_disc_ratio(m::Optimizer, presolve=false)
 
     m.logs[:n_iter] > 2 && return m.disc_ratio # Stop branching after the second iterations
 
@@ -418,7 +418,7 @@ function update_disc_ratio(m::AlpineNonlinearModel, presolve=false)
     return incumb_ratio
 end
 
-function disc_branch_solve(m::AlpineNonlinearModel)
+function disc_branch_solve(m::Optimizer)
 
     # ================= Solve Start ================ #
     update_mip_time_limit(m)

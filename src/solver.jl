@@ -1,6 +1,6 @@
 export AlpineSolver
 
-mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
+mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # Parameters for tuning Alpine
 
@@ -34,7 +34,7 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     disc_add_partition_method::Any                              # Additional methods to add discretization
     disc_abs_width_tol::Float64                                 # Absolute tolerance used when setting up partition/discretization
     disc_rel_width_tol::Float64                                 # Relative width tolerance when setting up partition/discretization
-    disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve 
+    disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve
     disc_ratio_branch::Bool                                     # Branching tests for picking fixed the discretization ratio
 
     # MIP Formulation Parameters
@@ -63,14 +63,14 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
 
     # Features for Integer Problems (NOTE: no support for int-lin problems)
-    int_enable::Bool                                            # Convert integer problem into binary problem 
+    int_enable::Bool                                            # Convert integer problem into binary problem
     int_cumulative_disc::Bool                                   # [INACTIVE] Cumulatively involve integer variables for discretization
     int_fully_disc::Bool                                        # [INACTIVE] Construct equivalent formulation for integer variables
 
     # add all the solver options
-    nlp_solver::MathProgBase.AbstractMathProgSolver             # Local continuous NLP solver for solving NLPs at each iteration
-    minlp_solver::MathProgBase.AbstractMathProgSolver           # Local MINLP solver for solving MINLPs at each iteration
-    mip_solver::MathProgBase.AbstractMathProgSolver             # MIP solver for successive lower bound solves
+    nlp_solver                                                  # Local continuous NLP solver for solving NLPs at each iteration
+    minlp_solver                                                # Local MINLP solver for solving MINLPs at each iteration
+    mip_solver                                                  # MIP solver for successive lower bound solves
 
     # Sub-solver identifier for customized solver option
     nlp_solver_id::AbstractString                               # NLP Solver identifier string
@@ -160,109 +160,67 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     alpine_status::Symbol                                       # Current Alpine's status
 
     # constructor
-    function AlpineNonlinearModel(loglevel, 
-                                timeout, maxiter, relgap, gapref, absgap, tol, largebound,
-                                nlp_solver,
-                                minlp_solver,
-                                mip_solver,
-                                recognize_convex,
-                                bilinear_mccormick,
-                                bilinear_convexhull,
-                                monomial_convexhull,
-                                method_convexification,
-                                method_partition_injection,
-                                term_patterns,
-                                constr_patterns,
-                                disc_var_pick,
-                                disc_ratio,
-                                disc_uniform_rate,
-                                disc_add_partition_method,
-                                disc_divert_chunks,
-                                disc_abs_width_tol,
-                                disc_rel_width_tol,
-                                disc_consecutive_forbid,
-                                disc_ratio_branch,
-                                convhull_formulation,
-                                convhull_ebd,
-                                convhull_ebd_encode,
-                                convhull_ebd_ibs,
-                                convhull_ebd_link,
-                                convhull_warmstart,
-                                convhull_no_good_cuts,
-                                presolve_track_time,
-                                presolve_bt,
-                                presolve_timeout,
-                                presolve_maxiter,
-                                presolve_bt_width_tol,
-                                presolve_bt_output_tol,
-                                presolve_bt_algo,
-                                presolve_bt_relax,
-                                presolve_bt_mip_timeout,
-                                presolve_bp,
-                                user_parameters,
-                                int_enable,
-                                int_cumulative_disc,
-                                int_fully_disc)
+    function Optimizer()
 
         m = new()
 
-        m.loglevel = loglevel
-        m.timeout = timeout
-        m.maxiter = maxiter
-        m.relgap = relgap
-        m.gapref = gapref
-        m.absgap = absgap
-        m.tol = tol
-        m.largebound = largebound
+        m.loglevel = 1
+        m.timeout = Inf
+        m.maxiter = 99
+        m.relgap = 1e-4
+        m.gapref = :ub
+        m.absgap = 1e-6
+        m.tol = 1e-6
+        m.largebound = 1e4
 
-        m.recognize_convex = recognize_convex
-        m.bilinear_mccormick = bilinear_mccormick
-        m.bilinear_convexhull = bilinear_convexhull
-        m.monomial_convexhull = monomial_convexhull
+        m.nlp_solver = nothing
+        m.minlp_solver = nothing
+        m.mip_solver = nothing
 
-        m.method_convexification = method_convexification
-        m.method_partition_injection = method_partition_injection
-        m.term_patterns = term_patterns
-        m.constr_patterns = constr_patterns
+        m.recognize_convex = true
+        m.bilinear_mccormick = false
+        m.bilinear_convexhull = true
+        m.monomial_convexhull = true
 
-        m.disc_var_pick = disc_var_pick
-        m.disc_ratio = disc_ratio
-        m.disc_uniform_rate = disc_uniform_rate
-        m.disc_add_partition_method = disc_add_partition_method
-        m.disc_divert_chunks = disc_divert_chunks
-        m.disc_abs_width_tol = disc_abs_width_tol
-        m.disc_rel_width_tol = disc_rel_width_tol
-        m.disc_consecutive_forbid = disc_consecutive_forbid
-        m.disc_ratio_branch = disc_ratio_branch
+        m.method_convexification = Array{Function}(undef, 0)
+        m.method_partition_injection = Array{Function}(undef, 0)
+        m.term_patterns = Array{Function}(undef, 0)
+        m.constr_patterns = Array{Function}(undef, 0)
 
-        m.convhull_formulation = convhull_formulation
-        m.convhull_ebd = convhull_ebd
-        m.convhull_ebd_encode = convhull_ebd_encode
-        m.convhull_ebd_ibs = convhull_ebd_ibs
-        m.convhull_ebd_link = convhull_ebd_link
-        m.convhull_warmstart = convhull_warmstart
-        m.convhull_no_good_cuts = convhull_no_good_cuts
+        m.disc_var_pick = 2                      # By default use the 15-variable selective rule
+        m.disc_ratio = 4
+        m.disc_uniform_rate = 2
+        m.disc_add_partition_method = "adaptive"
+        m.disc_divert_chunks = 5
+        m.disc_abs_width_tol = 1e-4
+        m.disc_rel_width_tol = 1e-6
+        m.disc_consecutive_forbid = 0
+        m.disc_ratio_branch=false
 
-        m.presolve_track_time = presolve_track_time
-        m.presolve_bt = presolve_bt
-        m.presolve_timeout = presolve_timeout
-        m.presolve_maxiter = presolve_maxiter
-        m.presolve_bt_width_tol = presolve_bt_width_tol
-        m.presolve_bt_output_tol = presolve_bt_output_tol
-        m.presolve_bt_algo = presolve_bt_algo
-        m.presolve_bt_relax = presolve_bt_relax
-        m.presolve_bt_mip_timeout = presolve_bt_mip_timeout
+        m.convhull_formulation = "sos2"
+        m.convhull_ebd = false
+        m.convhull_ebd_encode = "default"
+        m.convhull_ebd_ibs = false
+        m.convhull_ebd_link = false
+        m.convhull_warmstart = true
+        m.convhull_no_good_cuts = true
 
-        m.presolve_bp = presolve_bp
+        m.presolve_track_time = true
+        m.presolve_bt = true
+        m.presolve_timeout = 900
+        m.presolve_maxiter = 10
+        m.presolve_bt_width_tol = 1e-3
+        m.presolve_bt_output_tol = 1e-5
+        m.presolve_bt_algo = 1
+        m.presolve_bt_relax = false
+        m.presolve_bt_mip_timeout = Inf
 
-        m.nlp_solver = nlp_solver
-        m.minlp_solver = minlp_solver
-        m.mip_solver = mip_solver
+        m.presolve_bp = true
 
-        m.user_parameters = user_parameters
-        m.int_enable = int_enable
-        m.int_cumulative_disc = int_cumulative_disc
-        m.int_fully_disc = int_fully_disc
+        m.user_parameters = Dict()
+        m.int_enable = false
+        m.int_cumulative_disc = true
+        m.int_fully_disc = false
 
         m.num_var_orig = 0
         m.num_cont_var_orig = 0
@@ -312,353 +270,68 @@ mutable struct AlpineNonlinearModel <: MathProgBase.AbstractNonlinearModel
     end
 end
 
-struct UnsetSolver <: MathProgBase.AbstractMathProgSolver
+function MOI.is_empty(model::Optimizer)
+    return iszero(model.num_var_orig)
 end
 
-const empty_solver = UnsetSolver()
-
-mutable struct AlpineSolver <: MathProgBase.AbstractMathProgSolver
-
-    loglevel::Int
-    timeout::Float64
-    maxiter::Int
-    relgap::Float64
-    gapref::Symbol
-    absgap::Float64
-    tol::Float64
-    largebound::Float64
-
-    nlp_solver::MathProgBase.AbstractMathProgSolver
-    minlp_solver::MathProgBase.AbstractMathProgSolver
-    mip_solver::MathProgBase.AbstractMathProgSolver
-
-    recognize_convex::Bool
-    bilinear_mccormick::Bool
-    bilinear_convexhull::Bool
-    monomial_convexhull::Bool
-
-    method_convexification::Array{Function}
-    method_partition_injection::Array{Function}
-    term_patterns::Array{Function}
-    constr_patterns::Array{Function}
-
-    disc_var_pick::Any
-    disc_ratio::Any
-    disc_uniform_rate::Int
-    disc_add_partition_method::Any
-    disc_divert_chunks::Int
-    disc_abs_width_tol::Float64
-    disc_rel_width_tol::Float64
-    disc_consecutive_forbid::Int
-    disc_ratio_branch::Bool
-
-    convhull_formulation::String
-    convhull_ebd::Bool
-    convhull_ebd_encode::Any
-    convhull_ebd_ibs::Bool
-    convhull_ebd_link::Bool
-    convhull_warmstart::Bool
-    convhull_no_good_cuts::Bool
-
-    presolve_track_time::Bool
-    presolve_bt::Bool
-    presolve_timeout::Float64
-    presolve_maxiter::Int
-    presolve_bt_width_tol::Float64
-    presolve_bt_output_tol::Float64
-    presolve_bt_algo::Any
-    presolve_bt_relax::Bool
-    presolve_bt_mip_timeout::Float64
-
-    presolve_bp::Bool
-
-    user_parameters::Dict
-    int_enable::Bool
-    int_cumulative_disc::Bool
-    int_fully_disc::Bool
-
-    # other options to be added later on
+function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
+    setproperty!(model, Symbol(param.name), value)
 end
 
-function AlpineSolver(;
+function MOI.add_variables(model::Optimizer, n::Int)
+    return [MOI.add_variable(model) for i in 1:n]
+end
+function MOI.add_variable(model::Optimizer)
+    model.num_var_orig += 1
+    push!(model.l_var_orig, -Inf)
+    push!(model.u_var_orig, Inf)
+    return MOI.VariableIndex(model.num_var_orig)
+end
 
-    loglevel = 1,
-    timeout = Inf,
-    maxiter = 99,
-    relgap = 1e-4,
-    gapref = :ub,
-    absgap = 1e-6,
-    tol = 1e-6,
-    largebound = 1e4,
+const SCALAR_SET = Union{MOI.EqualTo{Float64}, MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.Interval{Float64}}
 
-    nlp_solver = empty_solver,
-    minlp_solver = empty_solver,
-    mip_solver = empty_solver,
+_lower(set::MOI.EqualTo) = set.value
+_upper(set::MOI.EqualTo) = set.value
+_lower(set::MOI.LessThan) = nothing
+_upper(set::MOI.LessThan) = set.upper
+_lower(set::MOI.GreaterThan) = set.lower
+_upper(set::MOI.GreaterThan) = nothing
+_lower(set::MOI.Interval) = set.lower
+_upper(set::MOI.Interval) = set.upper
 
-    recognize_convex = true,
-    bilinear_mccormick = false,
-    bilinear_convexhull = true,
-    monomial_convexhull = true,
-
-    method_convexification = Array{Function}(undef, 0),
-    method_partition_injection = Array{Function}(undef, 0),
-    term_patterns = Array{Function}(undef, 0),
-    constr_patterns = Array{Function}(undef, 0),
-
-    disc_var_pick = 2,                      # By default use the 15-variable selective rule
-    disc_ratio = 4,
-    disc_uniform_rate = 2,
-    disc_add_partition_method = "adaptive",
-    disc_divert_chunks = 5,
-    disc_abs_width_tol = 1e-4,
-    disc_rel_width_tol = 1e-6,
-    disc_consecutive_forbid = 0,
-    disc_ratio_branch=false,
-
-    convhull_formulation = "sos2",
-    convhull_ebd = false,
-    convhull_ebd_encode = "default",
-    convhull_ebd_ibs = false,
-    convhull_ebd_link = false,
-    convhull_warmstart = true,
-    convhull_no_good_cuts = true,
-
-    presolve_track_time = true,
-    presolve_maxiter = 10,
-    presolve_bt = true,
-    presolve_timeout = 900,
-    presolve_bt_width_tol = 1e-3,
-    presolve_bt_output_tol = 1e-5,
-    presolve_bt_algo = 1,
-    presolve_bt_relax = false,
-    presolve_bt_mip_timeout = Inf,
-
-    presolve_bp = true,
-
-    user_parameters = Dict(),
-    int_enable = false,
-    int_cumulative_disc = true,
-    int_fully_disc = false,
-
-    kwargs...
-    )
-
-    # Keyword arguments screening
-    unsupported_kwargs = Dict(kwargs)
-    !isempty(keys(unsupported_kwargs)) && error("Detected unsupported keyword arguments: $(keys(unsupport_opts))")
-
-    if nlp_solver == empty_solver && minlp_solver == empty_solver
-        error("No NLP and MINLP local solver specified; use nlp_solver or minlp_solver to set a local solver dependening on the problem type\n")
-    end 
-    mip_solver == empty_solver && error("No MIP solver specififed; use mip_solver to set a mip solver\n")
-
-    if nlp_solver != empty_solver && !applicable(MathProgBase.NonlinearModel, nlp_solver)
-        error("NLP local solver $(s.nlp_solver) is not supported by JuMP; use a JuMP-supoorted NLP local solver\n")
-    end 
-
-    if minlp_solver != empty_solver && !applicable(MathProgBase.NonlinearModel, minlp_solver)
-        error("MINLP local solver $(s.minlp_solver) is not supported by JuMP; use a JuMP-supoorted MINLP local solver\n")
-    end 
-
-    gapref in [:ub, :lb] || error("the option gapref can take a value only in [:ub, :lb]")
-
-    # String Code Conversion (have to change this to consistently use Symbols and not give user many options)
-    if disc_var_pick in ["ncvar_collect_nodes", "all", "max"]
-        disc_var_pick = 0
-    elseif disc_var_pick in ["min_vertex_cover","min"]
-        disc_var_pick = 1
-    elseif disc_var_pick == "selective"
-        disc_var_pick = 2
-    elseif disc_var_pick == "dynamic"
-        disc_var_pick = 3
+function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR_SET)
+    vi = f.variable
+    l = _lower(set)
+    if l !== nothing
+        model.l_var_orig[vi.value] = l
     end
-
-    # Deep-copy the solver options because Alpine may modify some options
-    AlpineSolver(
-        loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
-        deepcopy(nlp_solver),
-        deepcopy(minlp_solver),
-        deepcopy(mip_solver),
-        recognize_convex,
-        bilinear_mccormick,
-        bilinear_convexhull,
-        monomial_convexhull,
-        method_convexification,
-        method_partition_injection,
-        term_patterns,
-        constr_patterns,
-        disc_var_pick,
-        disc_ratio,
-        disc_uniform_rate,
-        disc_add_partition_method,
-        disc_divert_chunks,
-        disc_abs_width_tol,
-        disc_rel_width_tol,
-        disc_consecutive_forbid,
-        disc_ratio_branch,
-        convhull_formulation,
-        convhull_ebd,
-        convhull_ebd_encode,
-        convhull_ebd_ibs,
-        convhull_ebd_link,
-        convhull_warmstart,
-        convhull_no_good_cuts,
-        presolve_track_time,
-        presolve_bt,
-        presolve_timeout,
-        presolve_maxiter,
-        presolve_bt_width_tol,
-        presolve_bt_output_tol,
-        presolve_bt_algo,
-        presolve_bt_relax,
-        presolve_bt_mip_timeout,
-        presolve_bp,
-        user_parameters,
-        int_enable,
-        int_cumulative_disc,
-        int_fully_disc)
+    u = _upper(set)
+    if u !== nothing
+        model.u_var_orig[vi.value] = u
     end
-
-# Create Alpine's nonlinear model -- can solve with nonlinear algorithm only
-function MathProgBase.NonlinearModel(s::AlpineSolver)
-    
-    # Translate options into old nonlinearmodel.jl fields
-    loglevel = s.loglevel
-    timeout = s.timeout
-    maxiter = s.maxiter
-    relgap = s.relgap
-    gapref = s.gapref
-    absgap = s.absgap
-    tol = s.tol
-    largebound = s.largebound
-
-    recognize_convex = s.recognize_convex
-    bilinear_mccormick = s.bilinear_mccormick
-    bilinear_convexhull = s.bilinear_convexhull
-    monomial_convexhull = s.monomial_convexhull
-
-    method_convexification = s.method_convexification
-    method_partition_injection = s.method_partition_injection
-    term_patterns = s.term_patterns
-    constr_patterns = s.constr_patterns
-
-    nlp_solver = s.nlp_solver
-    minlp_solver = s.minlp_solver
-    mip_solver = s.mip_solver
-
-    disc_var_pick = s.disc_var_pick
-    disc_ratio = s.disc_ratio
-    disc_uniform_rate = s.disc_uniform_rate
-    disc_add_partition_method = s.disc_add_partition_method
-    disc_divert_chunks = s.disc_divert_chunks
-    disc_abs_width_tol = s.disc_abs_width_tol
-    disc_rel_width_tol = s.disc_rel_width_tol
-    disc_consecutive_forbid = s.disc_consecutive_forbid
-    disc_ratio_branch = s.disc_ratio_branch
-
-    convhull_formulation = s.convhull_formulation
-    convhull_ebd = s.convhull_ebd
-    convhull_ebd_encode = s.convhull_ebd_encode
-    convhull_ebd_ibs = s.convhull_ebd_ibs
-    convhull_ebd_link = s.convhull_ebd_link
-    convhull_warmstart = s.convhull_warmstart
-    convhull_no_good_cuts = s.convhull_no_good_cuts
-
-    presolve_track_time = s.presolve_track_time
-    presolve_bt = s.presolve_bt
-    presolve_timeout = s.presolve_timeout
-    presolve_maxiter = s.presolve_maxiter
-    presolve_bt_width_tol = s.presolve_bt_width_tol
-    presolve_bt_output_tol = s.presolve_bt_output_tol
-    presolve_bt_algo = s.presolve_bt_algo
-    presolve_bt_relax = s.presolve_bt_relax
-    presolve_bt_mip_timeout = s.presolve_bt_mip_timeout
-
-    presolve_bp = s.presolve_bp
-
-    user_parameters = s.user_parameters
-    int_enable = s.int_enable
-    int_cumulative_disc = s.int_cumulative_disc
-    int_fully_disc = s.int_fully_disc
-
-    return AlpineNonlinearModel(loglevel, 
-                                timeout, maxiter, relgap, gapref, absgap, tol, largebound,
-                            nlp_solver,
-                            minlp_solver,
-                            mip_solver,
-                            recognize_convex,
-                            bilinear_mccormick,
-                            bilinear_convexhull,
-                            monomial_convexhull,
-                            method_convexification,
-                            method_partition_injection,
-                            term_patterns,
-                            constr_patterns,
-                            disc_var_pick,
-                            disc_ratio,
-                            disc_uniform_rate,
-                            disc_add_partition_method,
-                            disc_divert_chunks,
-                            disc_abs_width_tol,
-                            disc_rel_width_tol,
-                            disc_consecutive_forbid,
-                            disc_ratio_branch,
-                            convhull_formulation,
-                            convhull_ebd,
-                            convhull_ebd_encode,
-                            convhull_ebd_ibs,
-                            convhull_ebd_link,
-                            convhull_warmstart,
-                            convhull_no_good_cuts,
-                            presolve_track_time,
-                            presolve_bt,
-                            presolve_timeout,
-                            presolve_maxiter,
-                            presolve_bt_width_tol,
-                            presolve_bt_output_tol,
-                            presolve_bt_algo,
-                            presolve_bt_relax,
-                            presolve_bt_mip_timeout,
-                            presolve_bp,
-                            user_parameters,
-                            int_enable,
-                            int_cumulative_disc,
-                            int_fully_disc)
+    return MOI.ConstraintIndex{typeof(f), typeof(set)}(vi.value)
 end
 
-function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
-                                   num_var::Int,
-                                   num_constr::Int,
-                                   l_var::Vector{Float64},
-                                   u_var::Vector{Float64},
-                                   l_constr::Vector{Float64},
-                                   u_constr::Vector{Float64},
-                                   sense::Symbol,
-                                   d::MathProgBase.AbstractNLPEvaluator)
-
-    println("***********************************************************************")
-    println(" This package contains Alpine.jl, a global solver for nonconvex MINLPs")
-    println("       If you find it useful, please cite the following paper: ")
-    println("     Journal of Global Optimization, 2019, https://goo.gl/89zrDf")
-    println("***********************************************************************")
-    
-    # Populating AlpineNonlinearModel (invoked by JuMP.build(m))
-    m.num_var_orig = num_var
-    m.num_constr_orig = num_constr
-    m.l_var_orig = l_var
-    m.u_var_orig = u_var
-    m.l_constr_orig = l_constr
-    m.u_constr_orig = u_constr
-    m.sense_orig = sense
-    if m.sense_orig == :Max
+function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
+    if sense == MOI.MAX_SENSE
+        model.sense_orig = :Max
         m.best_obj = -Inf
         m.best_bound = Inf
     else
+        model.sense_orig = :Min
         m.best_obj = Inf
         m.best_bound = -Inf
     end
-    m.d_orig = d
+end
+function MOI.set(model::Optimizer, ::MOI.NLPBlock, block)
+    m.d_orig = block.evaluator
+    m.num_constr_orig = length(block.constraint_bounds)
+    m.l_constr_orig = [p.lower for p in block.constraint_bounds]
+    m.u_constr_orig = [p.upper for p in block.constraint_bounds]
+    return
+end
 
+function MOI.optimize!(m::Optimizer)
     # Initialize NLP interface
     interface_init_nonlinear_data(m.d_orig)
 
@@ -675,9 +348,9 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
     m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
-    if !isempty(m.int_vars) || !isempty(m.bin_vars) 
-        (m.minlp_solver == empty_solver) && (error("No MINLP local solver specified; use minlp_solver to specify a MINLP local solver"))
-    end 
+    if !isempty(m.int_vars) || !isempty(m.bin_vars)
+        (m.minlp_solver === nothing) && (error("No MINLP local solver specified; use minlp_solver to specify a MINLP local solver"))
+    end
 
     # Summarize constraints information in original model
     m.constr_type_orig = Array{Symbol}(undef, m.num_constr_orig)
@@ -704,12 +377,12 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
             m.constr_structure[i] = :generic_nonlinear
         end
     end
-    
+
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
     m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
-    
+
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable re-categorization
 
@@ -758,6 +431,8 @@ function MathProgBase.loadproblem!(m::AlpineNonlinearModel,
 
     # Initialize log
     logging_summary(m)
+
+    optimize!(m)
 
     return
 end

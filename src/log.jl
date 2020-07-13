@@ -22,13 +22,13 @@ function create_logs!(m)
    m.logs = logs
 end
 
-function reset_timer(m::AlpineNonlinearModel)
+function reset_timer(m::Optimizer)
    m.logs[:total_time] = 0.
    m.logs[:time_left] = m.timeout
    return m
 end
 
-function logging_summary(m::AlpineNonlinearModel)
+function logging_summary(m::Optimizer)
 
    if m.loglevel > 0
       # println("Problem sense $(m.sense_orig)")
@@ -92,7 +92,7 @@ function logging_summary(m::AlpineNonlinearModel)
    m.mip_solver_id == "Gurobi" && @warn "Alpine only supports Gurobi v7.0+ ..."
 end
 
-function logging_head(m::AlpineNonlinearModel)  
+function logging_head(m::Optimizer)  
    if m.sense_orig == :Min
       printstyled("LOWER-BOUNDING ITERATIONS", color=:cyan)
       UB_iter = "Incumbent"
@@ -112,7 +112,7 @@ function logging_head(m::AlpineNonlinearModel)
    end
 end
 
-function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
+function logging_row_entry(m::Optimizer; kwargs...)
 
    options = Dict(kwargs)
 
@@ -188,7 +188,7 @@ This function summarizes the eventual solver status based on all available infor
 recorded in the solver. The output status is self-defined which requires users to
 read our documentation to understand the details behind every status symbols.
 """
-function summary_status(m::AlpineNonlinearModel)
+function summary_status(m::Optimizer)
 
    # Alpine Solver Status Definition
    # :Optimal : normal termination with optimality gap closed within time limits

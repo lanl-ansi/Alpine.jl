@@ -43,7 +43,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 	return m
 end
 
-function max_cover_var_picker(m::Alpine.AlpineNonlinearModel)
+function max_cover_var_picker(m::Alpine.Optimizer)
 	nodes = Set()
 	for pair in keys(m.nonconvex_terms)
 		for i in pair
@@ -60,7 +60,7 @@ end
 
 function nlp3(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:8])
 

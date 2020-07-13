@@ -3,7 +3,7 @@
     Ranked based on the absolute gap between each variable's solution from the lower-bounding MIP and the best feasible solution to the MINLP. 
     Currently doesn't support recursive convexification
 """
-function update_disc_cont_var(m::AlpineNonlinearModel)
+function update_disc_cont_var(m::Optimizer)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
@@ -43,7 +43,7 @@ function update_disc_cont_var(m::AlpineNonlinearModel)
     return
 end
 
-function update_disc_int_var(m::AlpineNonlinearModel)
+function update_disc_int_var(m::Optimizer)
 
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
@@ -57,7 +57,7 @@ end
     One-time rounding heuristic to obtain a feasible solution
     For integer solutions
 """
-function heu_basic_rounding(m::AlpineNonlinearModel, local_model)
+function heu_basic_rounding(m::Optimizer, local_model)
 
     println("Basic Rounding Heuristic Activated...")
 
@@ -91,7 +91,7 @@ end
 """
     Use solutions from the MIP solution pool as starting points
 """
-function heu_pool_multistart(m::AlpineNonlinearModel)
+function heu_pool_multistart(m::Optimizer)
 
     convertor = Dict(:Max=>:>, :Min=>:<)
     m.sense_orig == :Min ? incumb_obj = Inf : incumb_obj = -Inf

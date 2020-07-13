@@ -111,7 +111,7 @@ end
 	This is the function that translate the bounding constraints (α¹b⁰+α²b¹ <= x <= α¹b¹+α²b²)
 	with log # of binary variables, i.e., generate these constraints using log # of binary variables.
 """
-function ebd_link_xα(m::AlpineNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
+function ebd_link_xα(m::Optimizer, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
 
 	lifters = Dict()
 	exprs = Dict()

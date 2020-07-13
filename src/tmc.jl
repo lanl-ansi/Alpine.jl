@@ -1,7 +1,7 @@
 """
     TODO: docstring
 """
-function amp_post_mccormick(m::AlpineNonlinearModel; kwargs...)
+function amp_post_mccormick(m::Optimizer; kwargs...)
 
     options = Dict(kwargs)
 
@@ -124,8 +124,8 @@ function amp_post_tmc_λλ(m::JuMP.Model, λλ::Dict, dim_a::Int, dim_b::Int, id
         λλ[(idx_a,idx_b)] = @variable(m, [1:dim_a, 1:dim_b], basename=string("L",idx_a,"L",idx_b))
         for i in 1:dim_a
     		for j in 1:dim_b
-    			setlowerbound(λλ[(idx_a, idx_b)][i,j], 0);
-    			setupperbound(λλ[(idx_a, idx_b)][i,j], 1);
+    			JuMP.set_lower_bound(λλ[(idx_a, idx_b)][i,j], 0);
+    			JuMP.set_upper_bound(λλ[(idx_a, idx_b)][i,j], 1);
     		end
     	end
         λλ[(idx_b,idx_a)] = λλ[(idx_a,idx_b)]'
@@ -186,8 +186,8 @@ function amp_post_tmc_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, 
 	dim_B = length(λ[ind_B])
 	for i in 1:dim_A
 		for j in 1:dim_B
-			setlowerbound(λλ[(ind_A,ind_B)][i,j],0)
-			setupperbound(λλ[(ind_A,ind_B)][i,j],1)
+			JuMP.set_lower_bound(λλ[(ind_A,ind_B)][i,j],0)
+			JuMP.set_upper_bound(λλ[(ind_A,ind_B)][i,j],1)
 		end
 	end
 
@@ -205,7 +205,7 @@ end
 
 Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
 """
-function mccormick(m::JuMP.Model,xy::JuMP.Variable,x::JuMP.Variable,y::JuMP.Variable,xˡ,xᵘ,yˡ,yᵘ)
+function mccormick(m::JuMP.Model,xy::JuMP.VariableRef,x::JuMP.VariableRef,y::JuMP.VariableRef,xˡ,xᵘ,yˡ,yᵘ)
 
     @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
     @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
@@ -215,7 +215,7 @@ function mccormick(m::JuMP.Model,xy::JuMP.Variable,x::JuMP.Variable,y::JuMP.Vari
     return
 end
 
-function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable,lin::JuMP.Variable,lb,ub)
+function mccormick_binlin(m::JuMP.Model,binlin::JuMP.VariableRef,bin::JuMP.VariableRef,lin::JuMP.VariableRef,lb,ub)
 
     # TODO think about how to address this issue
     warnuser = false
@@ -248,7 +248,7 @@ function mccormick_binlin(m::JuMP.Model,binlin::JuMP.Variable,bin::JuMP.Variable
     return
 end
 
-function mccormick_bin(m::JuMP.Model,xy::JuMP.Variable,x::JuMP.Variable,y::JuMP.Variable)
+function mccormick_bin(m::JuMP.Model,xy::JuMP.VariableRef,x::JuMP.VariableRef,y::JuMP.VariableRef)
     @constraint(m, xy <= x)
     @constraint(m, xy <= y)
     @constraint(m, xy >= x+y-1)

@@ -1,5 +1,5 @@
 """
-    bound_tightening(m::AlpineNonlinearModel)
+    bound_tightening(m::Optimizer)
 
     Entry point for the optimization-based bound-tightening (OBBT) algorithm. The aim of the OBBT algorithm
 is to sequentially tighten the variable bounds until a fixed point is reached.
@@ -10,7 +10,7 @@ Currently, two OBBT methods are implemented [`minmax_bound_tightening`](@ref).
     * Bound-tightening with piecewise polyhedral relaxations: (with three partitions around the local feasible solution)
     If no local feasible solution is obtained, the algorithm defaults to OBBT without partitions
 """
-function bound_tightening(m::AlpineNonlinearModel; use_bound = true, kwargs...)
+function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
 
     m.presolve_bt || return
 
@@ -28,7 +28,7 @@ function bound_tightening(m::AlpineNonlinearModel; use_bound = true, kwargs...)
 end
 
 """
-    minmax_bound_tightening(m:AlpineNonlinearModel; use_bound::Bool=true, use_tmc::Bool)
+    minmax_bound_tightening(m:Optimizer; use_bound::Bool=true, use_tmc::Bool)
 
 This function implements the OBBT algorithm to tighten the variable bounds.
 It utilizes either the basic polyhedral relaxations or the piecewise polyhedral relaxations (TMC)
@@ -48,7 +48,7 @@ Several other parameters are available for the OBBT algorithm tuning.
 For more details, see [Parameters](@ref).
 
 """
-function minmax_bound_tightening(m::AlpineNonlinearModel; use_bound = true, timelimit = Inf, kwargs...)
+function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf, kwargs...)
 
     # Some functinal constants
     both_senses = [:Min, :Max]             # Senses during bound tightening procedures
@@ -179,13 +179,13 @@ function minmax_bound_tightening(m::AlpineNonlinearModel; use_bound = true, time
 end
 
 """
-    create_bound_tightening_model(m::AlpineNonlinearModel, discretization::Dict, bound::Float64)
+    create_bound_tightening_model(m::Optimizer, discretization::Dict, bound::Float64)
 
 This function takes in the initial discretization information and builds the OBBT model.
 It is an algorithm specific function called by [`minmax_bound_tightening`](@ref)
 
  """
-function create_bound_tightening_model(m::AlpineNonlinearModel, discretization, bound; kwargs...)
+function create_bound_tightening_model(m::Optimizer, discretization, bound; kwargs...)
 
     options = Dict(kwargs)
 
@@ -208,12 +208,12 @@ end
 
 """
 
-    solve_bound_tightening_model(m::AlpineNonlinearModel)
+    solve_bound_tightening_model(m::Optimizer)
 
 A function that solves the min and max OBBT model.
 
 """
-function solve_bound_tightening_model(m::AlpineNonlinearModel; kwargs...)
+function solve_bound_tightening_model(m::Optimizer; kwargs...)
 
     # ========= MILP Solve ========= #
     if m.presolve_bt_mip_timeout < Inf
@@ -235,7 +235,7 @@ end
 """
     TODO: docstring
 """
-function post_obj_bounds(m::AlpineNonlinearModel, bound::Float64; kwargs...)
+function post_obj_bounds(m::Optimizer, bound::Float64; kwargs...)
     if m.sense_orig == :Max
         @constraint(m.model_mip,
             sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) >= bound)

@@ -3,7 +3,7 @@ process_expr(expr; kwargs...)
 
 High-level wrapper for processing expression with sub-tree operators
 """
-function process_expr(m::AlpineNonlinearModel)
+function process_expr(m::Optimizer)
 
    expr_initialization(m)      # S0 : initialize the space for parsing and analyzing
    expr_preprocess(m)          # S1 : pre-process the negative sign in expressions
@@ -17,7 +17,7 @@ end
 """
 STEP 1: initialize the expression/ space
 """
-function expr_initialization(m::AlpineNonlinearModel)
+function expr_initialization(m::Optimizer)
 
    # 0 : deepcopy data into mip lifted expr place holders
    m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
@@ -34,7 +34,7 @@ end
 """
 STEP 2: preprocess expression for trivial sub-trees and nasty pieces for easier later process
 """
-function expr_preprocess(m::AlpineNonlinearModel)
+function expr_preprocess(m::Optimizer)
 
    expr_resolve_const(m.bounding_obj_expr_mip)
    expr_resolve_sign(m.bounding_obj_expr_mip)
@@ -51,7 +51,7 @@ end
 """
 STEP 3: parse expression for patterns on either the generic level or term level
 """
-function expr_parsing(m::AlpineNonlinearModel)
+function expr_parsing(m::Optimizer)
 
    # Throw an error if obj. expression has non-integer exponents
    expr_isfracexp(m.bounding_obj_expr_mip)
@@ -78,7 +78,7 @@ end
 """
 STEP 4: convert the parsed expressions into affine-based function that can be used for adding JuMP constraints
 """
-function expr_conversion(m::AlpineNonlinearModel)
+function expr_conversion(m::Optimizer)
 
    if m.obj_structure == :generic_linear
       m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
@@ -114,7 +114,7 @@ end
 """
 STEP 5: collect measurements and information as needed for handy operations in the algorithm section
 """
-function expr_finalized(m::AlpineNonlinearModel)
+function expr_finalized(m::Optimizer)
 
    collect_nonconvex_vars(m)
    m.candidate_disc_vars = sort(m.candidate_disc_vars)
@@ -125,7 +125,7 @@ function expr_finalized(m::AlpineNonlinearModel)
    return m
 end
 
-function collect_nonconvex_vars(m::AlpineNonlinearModel)
+function collect_nonconvex_vars(m::Optimizer)
 
    # Walk through all nonconvex terms
    for i in keys(m.nonconvex_terms)
@@ -183,11 +183,11 @@ function build_constr_block(y_idx::Int, var_idxs::Vector, operator::Symbol)
 end
 
 """
-expr_constr_parsing(expr, m::AlpineNonlinearModel)
+expr_constr_parsing(expr, m::Optimizer)
 
 Recognize structural constraints.
 """
-function expr_constr_parsing(expr, m::AlpineNonlinearModel, idx::Int=0)
+function expr_constr_parsing(expr, m::Optimizer, idx::Int=0)
 
    # First process user-defined structures in-cases of over-ride
    for i in 1:length(m.constr_patterns)

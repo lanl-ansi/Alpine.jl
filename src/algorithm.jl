@@ -1,7 +1,7 @@
 """
 High-level Function
 """
-function MathProgBase.optimize!(m::AlpineNonlinearModel)
+function optimize!(m::Optimizer)
    if m.presolve_infeasible
       summary_status(m)
       return
@@ -15,7 +15,7 @@ function MathProgBase.optimize!(m::AlpineNonlinearModel)
 end
 
 """
-global_solve(m::AlpineNonlinearModel)
+global_solve(m::Optimizer)
 
 Perform global optimization algorithm that is based on the adaptive piecewise convexification.
 This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) until the optimality gap between the lower bound (relaxed problem with min. objective) and the upper bound (feasible problem) is within the user prescribed limits.
@@ -23,7 +23,7 @@ Each [`bounding_solve`](@ref) provides a lower bound that serves as the partitio
 Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorithm terminates when atleast one of these conditions are satisfied: time limit, optimality condition, or iteration limit.
 
 """
-function global_solve(m::AlpineNonlinearModel)
+function global_solve(m::Optimizer)
 
    m.loglevel > 0 && logging_head(m)
    m.presolve_track_time || reset_timer(m)
@@ -45,7 +45,7 @@ function global_solve(m::AlpineNonlinearModel)
    return
 end
 
-function run_bounding_iteration(m::AlpineNonlinearModel)
+function run_bounding_iteration(m::Optimizer)
    m.loglevel > 0 && logging_head(m)
    m.presolve_track_time || reset_timer(m)
 
@@ -66,9 +66,9 @@ function run_bounding_iteration(m::AlpineNonlinearModel)
 end 
 
 """
-presolve(m::AlpineNonlinearModel)
+presolve(m::Optimizer)
 """
-function presolve(m::AlpineNonlinearModel)
+function presolve(m::Optimizer)
 
    start_presolve = time()
    m.loglevel > 0 && printstyled("PRESOLVE \n", color=:cyan)
@@ -110,7 +110,7 @@ end
 """
 A wrapper function that collects some automated solver adjustments within the main while loop.
 """
-function algorithm_automation(m::AlpineNonlinearModel)
+function algorithm_automation(m::Optimizer)
 
    m.disc_var_pick == 3 && update_disc_cont_var(m)
    m.int_cumulative_disc && update_disc_int_var(m)
@@ -125,7 +125,7 @@ end
 """
 Summarized function to determine whether to interrupt the main while loop.
 """
-function check_exit(m::AlpineNonlinearModel)
+function check_exit(m::Optimizer)
 
    # constant objective with feasible local solve check
    if expr_isconst(m.obj_expr_orig) && (m.status[:local_solve] == :Optimal) 
@@ -156,13 +156,13 @@ function check_exit(m::AlpineNonlinearModel)
 end
 
 """
-local_solve(m::AlpineNonlinearModel, presolve::Bool=false)
+local_solve(m::Optimizer, presolve::Bool=false)
 
 Perform a local NLP or MINLP solve to obtain a feasible solution.
 The `presolve` option is set to `true` when the function is invoked in [`presolve`](@ref).
 Otherwise, the function is invoked from [`bounding_solve`](@ref).
 """
-function local_solve(m::AlpineNonlinearModel; presolve = false)
+function local_solve(m::Optimizer; presolve = false)
 
    convertor = Dict(:Max=>:>, :Min=>:<)
    local_nlp_status = :Unknown
@@ -266,7 +266,7 @@ end
 
 """
 
-bounding_solve(m::AlpineNonlinearModel; kwargs...)
+bounding_solve(m::Optimizer; kwargs...)
 
 This process usually deals with a MILP or a MIQCP/MIQCQP problem for lower bounding the given problem.
 It solves the problem built upon a convexification base on a discretization Dictionary of some variables.
@@ -274,7 +274,7 @@ The convexification utilized is Tighten McCormick scheme.
 See `create_bounding_mip` for more details of the problem solved here.
 
 """
-function bounding_solve(m::AlpineNonlinearModel)
+function bounding_solve(m::Optimizer)
 
    convertor = Dict(:Max=>:<, :Min=>:>)
    boundlocator = Dict(:Max=>:+, :Min=>:-)
@@ -326,7 +326,7 @@ function bounding_solve(m::AlpineNonlinearModel)
 end
 
 """
-pick_disc_vars(m::AlpineNonlinearModel)
+pick_disc_vars(m::Optimizer)
 
 This function helps pick the variables for discretization. The method chosen depends on user-inputs.
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
@@ -338,7 +338,7 @@ there are two built-in options for users as follows:
 For advanced usage, `m.disc_var_pick` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
 
 """
-function pick_disc_vars(m::AlpineNonlinearModel)
+function pick_disc_vars(m::Optimizer)
 
    if isa(m.disc_var_pick, Function)
       eval(m.disc_var_pick)(m)

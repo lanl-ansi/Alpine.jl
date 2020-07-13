@@ -1,33 +1,37 @@
 #=
-@testset "AlpineNonlinearModel loading tests" begin
+@testset "Optimizer loading tests" begin
     # Random Model 1
     test_solver = AlpineSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
     m = operator_c(solver=test_solver)
 
     status = JuMP.build(m)
-    @test isa(m.internalModel, Alpine.AlpineNonlinearModel)
+    @test isa(m.internalModel, Alpine.Optimizer)
 
     # Expression Model 1
     test_solver = AlpineSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
     m = exprstest(solver=test_solver)
     status = JuMP.build(m)
-    @test isa(m.internalModel, Alpine.AlpineNonlinearModel)
+    @test isa(m.internalModel, Alpine.Optimizer)
 end
 =#
+
+const IPOPT = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true)
+const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 
 @testset "Partitioning variable selection tests :: nlp3" begin
 
     # Select all NL variable
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=0,
-                            disc_uniform_rate=10,
-                            presolve_bp = false,
-                            presolve_bt = false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => CBC,
+        "disc_var_pick" => 0,
+        "disc_uniform_rate" => 10,
+        "presolve_bp" => false,
+        "presolve_bt" => false,
+        "maxiter" => 1,
+        "loglevel" => 100)
     m = nlp3(solver=test_solver)
-    status = solve(m)
+    status = MOI.optimize!(m)
 
     @test status == :UserLimits
     @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
@@ -35,6 +39,7 @@ end
     @test length(m.internalModel.disc_vars) == 8
     @test m.internalModel.disc_var_pick == 0
 
+#=
     # Select all NL variable
     test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
@@ -87,8 +92,10 @@ end
     @test length(m.internalModel.candidate_disc_vars) == 8
     @test length(m.internalModel.disc_vars) == 8
     @test m.internalModel.disc_var_pick == 3
+=#
 end
 
+#=
 @testset "Partitioning variable selection tests :: castro2m2" begin
 
     # Select all NL variable
@@ -270,3 +277,4 @@ end
     status = solve(m)
     @test getsolvetime(m) > 0.
 end
+=#

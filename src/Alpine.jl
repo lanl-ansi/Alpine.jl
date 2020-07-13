@@ -5,8 +5,7 @@ module Alpine
 const ALPINE_DEBUG = false
 
 using JuMP
-using MathProgBase
-
+import MathOptInterface
 
 using LinearAlgebra
 using Random
@@ -19,7 +18,8 @@ include("const.jl")
 
 # Engine for High-level Algorithmic Control and User-interface
 include("solver.jl")
-include("mpb2moi.jl") # Transition file
+#include("mpb2moi.jl") # Transition file
+#include("MOI_wrapper/MOI_wrapper.jl")
 
 # Engine for expression handling
 include("nlexpr.jl")
