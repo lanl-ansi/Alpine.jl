@@ -96,7 +96,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     l_constr_orig::Vector{Float64}                              # Constraint lower bounds
     u_constr_orig::Vector{Float64}                              # Constraint upper bounds
     sense_orig::Symbol                                          # Problem type (:Min, :Max)
-    d_orig::JuMP.NLPEvaluator                                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
+    d_orig::Union{Nothing, JuMP.NLPEvaluator}                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
 
     # additional initial data that may be useful later (not populated)
     A_orig::Any                                                 # Linear constraint matrix
@@ -222,49 +222,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         m.int_cumulative_disc = true
         m.int_fully_disc = false
 
-        m.num_var_orig = 0
-        m.num_cont_var_orig = 0
-        m.num_int_var_orig = 0
-        m.num_constr_orig = 0
-        m.num_lconstr_orig = 0
-        m.num_nlconstr_orig = 0
-        m.var_type_orig = Symbol[]
-        m.var_start_orig = Float64[]
-        m.constr_type_orig = Symbol[]
-        m.constr_expr_orig = Expr[]
-        m.num_lconstr_updated = 0
-        m.num_nlconstr_updated = 0
-        m.indexes_lconstr_updated = Int[]
-
-        m.linear_terms = Dict()
-        m.nonconvex_terms = Dict()
-        m.term_seq = Dict()
-        m.nonlinear_constrs = Dict()
-        m.candidate_disc_vars = Int[]
-        m.bounding_constr_expr_mip = []
-        m.bounding_constr_mip = []
-        m.disc_vars = []
-        m.int_vars = []
-        m.bin_vars = []
-        m.discretization = Dict()
-        m.num_var_linear_mip = 0
-        m.num_var_nonlinear_mip = 0
-        m.num_var_disc_mip = 0
-        m.num_constr_convex = 0
-        m.constr_structure = []
-        m.best_bound_sol = []
-        m.bound_sol_history = []
-        m.presolve_infeasible = false
-        m.bound_sol_history = Vector{Vector{Float64}}(undef, m.disc_consecutive_forbid)
-
-        m.best_obj = Inf
-        m.best_bound = -Inf
-        m.best_rel_gap = Inf
-        m.best_abs_gap = Inf
-        m.alpine_status = :NotLoaded
-
-        create_status!(m)
-        create_logs!(m)
+        MOI.empty!(m)
 
         return m
     end
@@ -273,6 +231,65 @@ end
 function MOI.is_empty(model::Optimizer)
     return iszero(model.num_var_orig)
 end
+
+function MOI.empty!(m::Optimizer)
+    m.num_var_orig = 0
+    m.num_cont_var_orig = 0
+    m.num_int_var_orig = 0
+    m.num_constr_orig = 0
+    m.num_lconstr_orig = 0
+    m.num_nlconstr_orig = 0
+    m.var_type_orig = Symbol[]
+    m.var_start_orig = Float64[]
+    m.constr_type_orig = Symbol[]
+    m.constr_expr_orig = Expr[]
+    m.num_lconstr_updated = 0
+    m.num_nlconstr_updated = 0
+    m.indexes_lconstr_updated = Int[]
+
+    m.l_var_orig = Float64[]
+    m.u_var_orig = Float64[]
+
+    m.d_orig = nothing
+
+    m.linear_terms = Dict()
+    m.nonconvex_terms = Dict()
+    m.term_seq = Dict()
+    m.nonlinear_constrs = Dict()
+    m.candidate_disc_vars = Int[]
+    m.bounding_constr_expr_mip = []
+    m.bounding_constr_mip = []
+    m.disc_vars = []
+    m.int_vars = []
+    m.bin_vars = []
+    m.discretization = Dict()
+    m.num_var_linear_mip = 0
+    m.num_var_nonlinear_mip = 0
+    m.num_var_disc_mip = 0
+    m.num_constr_convex = 0
+    m.constr_structure = []
+    m.best_bound_sol = []
+    m.bound_sol_history = []
+    m.presolve_infeasible = false
+    m.bound_sol_history = Vector{Vector{Float64}}(undef, m.disc_consecutive_forbid)
+
+    m.best_obj = Inf
+    m.best_bound = -Inf
+    m.best_rel_gap = Inf
+    m.best_abs_gap = Inf
+    m.alpine_status = :NotLoaded
+
+    create_status!(m)
+    create_logs!(m)
+end
+
+MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
+
+function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; copy_names = false)
+    return MOIU.default_copy_to(model, src, copy_names)
+end
+
+MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
     setproperty!(model, Symbol(param.name), value)
@@ -315,15 +332,15 @@ end
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     if sense == MOI.MAX_SENSE
         model.sense_orig = :Max
-        m.best_obj = -Inf
-        m.best_bound = Inf
+        model.best_obj = -Inf
+        model.best_bound = Inf
     else
         model.sense_orig = :Min
-        m.best_obj = Inf
-        m.best_bound = -Inf
+        model.best_obj = Inf
+        model.best_bound = -Inf
     end
 end
-function MOI.set(model::Optimizer, ::MOI.NLPBlock, block)
+function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
     m.num_constr_orig = length(block.constraint_bounds)
     m.l_constr_orig = [p.lower for p in block.constraint_bounds]
@@ -331,19 +348,19 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, block)
     return
 end
 
-function MOI.optimize!(m::Optimizer)
+function load!(m::Optimizer)
     # Initialize NLP interface
-    interface_init_nonlinear_data(m.d_orig)
+    MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
 
     # Collect objective & constraint expressions
-    m.obj_expr_orig = expr_isolate_const(interface_get_obj_expr(m.d_orig)) # see in nlexpr.jl if this expr isolation has any issue
+    m.obj_expr_orig = expr_isolate_const(MOI.objective_expr(m.d_orig)) # see in nlexpr.jl if this expr isolation has any issue
 
     for i in 1:m.num_constr_orig
-        push!(m.constr_expr_orig, interface_get_constr_expr(m.d_orig, i))
+        push!(m.constr_expr_orig, MOI.constraint_expr(m.d_orig, i))
     end
 
     # Collect original variable type and build dynamic variable type space
-    m.var_type_orig = [getcategory(Variable(d.m, i)) for i in 1:m.num_var_orig]
+    m.var_type_orig = [getcategory(JuMP.VariableRef(m.d_orig.m, MOI.VariableIndex(i))) for i in 1:m.num_var_orig]
     m.var_type = copy(m.var_type_orig)
     m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]

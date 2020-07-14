@@ -1,17 +1,18 @@
 """
 High-level Function
 """
-function optimize!(m::Optimizer)
-   if m.presolve_infeasible
-      summary_status(m)
-      return
-   end
-   presolve(m)
-   global_solve(m)
-   m.loglevel > 0 && logging_row_entry(m, finish_entry=true)
-   println("====================================================================================================")
-   summary_status(m)  
-   return
+function MOI.optimize!(m::Optimizer)
+    load!(m)
+    if m.presolve_infeasible
+        summary_status(m)
+        return
+    end
+    presolve(m)
+    global_solve(m)
+    m.loglevel > 0 && logging_row_entry(m, finish_entry=true)
+    println("====================================================================================================")
+    summary_status(m)  
+    return
 end
 
 """
