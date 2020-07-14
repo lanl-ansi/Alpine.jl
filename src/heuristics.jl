@@ -39,7 +39,7 @@ function update_disc_cont_var(m::Optimizer)
     distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    (m.loglevel > 100) && println("updated partition var selection => $(m.disc_vars)")
+    (get_option(m, :loglevel) > 100) && println("updated partition var selection => $(m.disc_vars)")
     return
 end
 
@@ -66,20 +66,20 @@ function heu_basic_rounding(m::Optimizer, local_model)
     rounded_sol = round_sol(m, nlp_model=local_model)
     l_var, u_var = fix_domains(m, discrete_sol = rounded_sol)
 
-    heuristic_model = interface_init_nonlinear_model(m.nlp_solver)
+    heuristic_model = interface_init_nonlinear_model(get_option(m, :nlp_solver))
     interface_load_nonlinear_model(m, heuristic_model, l_var, u_var)
     interface_optimize(heuristic_model)
     heuristic_model_status = interface_get_status(heuristic_model)
 
     if heuristic_model_status in [:Infeasible, :Error]
-        m.loglevel > 0 && println("Rounding obtained an Infeasible point.")
+        get_option(m, :loglevel) > 0 && println("Rounding obtained an Infeasible point.")
         push!(m.logs[:obj], "INF")
         return :Infeasibles
     elseif heuristic_model_status in [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
         candidate_obj = interface_get_objval(heuristic_model)
         candidate_sol = round.(interface_get_solution(heuristic_model), 5)
         update_incumb_objective(m, candidate_obj, candidate_sol)
-        m.loglevel > 0 && println("Rounding obtained a feasible solution OBJ = $(m.best_obj)")
+        get_option(m, :loglevel) > 0 && println("Rounding obtained a feasible solution OBJ = $(m.best_obj)")
         return :LocalOptimal
     else
         error("[EXCEPTION] Unknown NLP solver status.")
@@ -102,7 +102,7 @@ function heu_pool_multistart(m::Optimizer)
         if !m.bound_sol_pool[:ubstart][i]
             rounded_sol = round_sol(m, nlp_sol=m.bound_sol_pool[:sol][i])
             l_var, u_var = fix_domains(m, discrete_sol=rounded_sol, use_orig=true)
-            heuristic_model = interface_init_nonlinear_model(m.nlp_solver)
+            heuristic_model = interface_init_nonlinear_model(get_option(m, :nlp_solver))
             interface_load_nonlinear_model(m, heuristic_model, l_var, u_var)
             interface_optimize(heuristic_model)
             heuristic_model_status = interface_get_status(heuristic_model)
@@ -111,11 +111,11 @@ function heu_pool_multistart(m::Optimizer)
                 if eval(convertor[m.sense_orig])(candidate_obj, incumb_obj)
                     incumb_obj = candidate_obj
                     incumb_sol = round.(interface_get_solution(heuristic_model), 5)
-                    m.loglevel > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)] [OBJ=$(incumb_obj)]")
+                    get_option(m, :loglevel) > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)] [OBJ=$(incumb_obj)]")
                 end
                 found_feasible = true
             else
-                m.loglevel > 99 && println("Multi-start heuristic returns $(heuristic_model_status) [SOL:$(i)]")
+                get_option(m, :loglevel) > 99 && println("Multi-start heuristic returns $(heuristic_model_status) [SOL:$(i)]")
             end
             m.bound_sol_pool[:ubstart][i] = true
         end

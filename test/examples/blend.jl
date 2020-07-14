@@ -1,6 +1,6 @@
 function blend029(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     @variable(m, x[1:102])
     for i=67:102
@@ -238,7 +238,7 @@ end
 
 function blend029_gl(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     @variable(m, x[1:102])
     for i=67:102

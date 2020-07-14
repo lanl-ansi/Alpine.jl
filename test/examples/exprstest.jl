@@ -1,6 +1,6 @@
 function exprstest(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, px[i=1:6]>=1) # At some point if an initial value is given, keep them
 
@@ -21,7 +21,7 @@ end
 
 function operator_b(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:4]>=0)
 	@variable(m, y[1:3]<=0)
@@ -66,7 +66,7 @@ end
 
 function operator_basic(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:4]>=0)
 
@@ -169,7 +169,7 @@ end
 
 function operator_c(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, px[i=1:6]>=1) # At some point if an initial value is given, keep them
 

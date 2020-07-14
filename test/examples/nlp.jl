@@ -1,7 +1,7 @@
 function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
@@ -10,7 +10,7 @@ function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   presolve_bt_output_tol=1e-1,
 								   loglevel=10000))
 	else
-		m = Model(solver=solver)
+		m = Model(solver)
 	end
 
     @variable(m, 1<=x[1:2]<=10)
@@ -24,7 +24,7 @@ end
 function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
@@ -33,7 +33,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   presolve_bt_output_tol=1e-1,
 								   loglevel=10000))
 	else
-		m = Model(solver=solver)
+		m = Model(solver)
 	end
 
 	@variable(m, -500<=x[1:2]<=500)

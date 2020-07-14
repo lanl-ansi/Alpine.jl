@@ -1,14 +1,14 @@
 #=
 @testset "Optimizer loading tests" begin
     # Random Model 1
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
-    m = operator_c(solver=test_solver)
+    test_solver = () -> Alpine.Optimizer(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    m = operator_c(solver = test_solver)
 
     status = JuMP.build(m)
     @test isa(m.internalModel, Alpine.Optimizer)
 
     # Expression Model 1
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
     m = exprstest(solver=test_solver)
     status = JuMP.build(m)
     @test isa(m.internalModel, Alpine.Optimizer)
@@ -41,7 +41,7 @@ const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 
 #=
     # Select all NL variable
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=2,
                             disc_uniform_rate=10,
@@ -59,7 +59,7 @@ const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
     @test m.internalModel.disc_var_pick == 2
 
     # Minimum vertex cover algorithm
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=1,
                             disc_uniform_rate=10,
@@ -77,7 +77,7 @@ const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
     @test m.internalModel.disc_var_pick == 1
 
     # Adaptive variable selection scheme :: disc_var_pick = 3
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=3,
                             presolve_bp = false,
@@ -99,7 +99,7 @@ end
 @testset "Partitioning variable selection tests :: castro2m2" begin
 
     # Select all NL variable
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
                             disc_uniform_rate=10,
@@ -119,7 +119,7 @@ end
     @test m.internalModel.disc_var_pick == 0
 
     # Select minimum vertex cover
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=1,
                             disc_uniform_rate=10,
@@ -138,7 +138,7 @@ end
     @test m.internalModel.disc_var_pick == 1
 
     # Criteria 15 static selection
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=2,
                             disc_uniform_rate=15,
@@ -161,7 +161,7 @@ end
 @testset "Partitioning variable selection tests :: blend029" begin
 
     # Select all NL variable
-    test_solver = AlpineSolver(minlp_solver=pavito_solver,
+    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,
                             nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
@@ -179,7 +179,7 @@ end
     @test m.internalModel.disc_var_pick == 0
 
     # Minimum vertex cover
-    test_solver = AlpineSolver(minlp_solver=pavito_solver,
+    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,
                             nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=1,
@@ -198,7 +198,7 @@ end
     @test m.internalModel.disc_var_pick == 1
 
     # Adaptive Scheme vertex cover
-    test_solver = AlpineSolver(minlp_solver=pavito_solver,
+    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,
                             nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=2,
@@ -221,7 +221,7 @@ end
 @testset "Partitioning variable selection tests :: castro6m2" begin
 
     # Dynamic Scheme step 2
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=3,
                             presolve_bp=true,
@@ -242,7 +242,7 @@ end
     @test m.internalModel.disc_var_pick == 3
 
     # Dynamic Scheme step 2
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=3,
                             presolve_bp=true,
@@ -264,7 +264,7 @@ end
 end
 
 @testset "Test getsolvetime for time tracking" begin
-    test_solver = AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
                             mip_solver=CbcSolver(logLevel=0),
                             disc_var_pick=0,
                             disc_uniform_rate=10,

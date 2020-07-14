@@ -1,6 +1,6 @@
 function sincos_p1(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     @variable(m, 0.1<=x[1:10]<=10)
     @NLconstraint(m, [i in 1:9], x[i]*x[i+1]*sin(x[i])>=0.32)
@@ -12,7 +12,7 @@ end
 
 function trig(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -33,7 +33,7 @@ end
 
 function specialopts(;verbose=false, solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[i=1:6]) # At some point if an initial value is given, keep them
 

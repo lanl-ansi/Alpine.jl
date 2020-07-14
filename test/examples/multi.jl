@@ -21,7 +21,7 @@
 
 function multi4(;verbose=false,solver=nothing, exprmode=1)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(1)
     @variable(m, 0.1<=x[1:4]<=rand()*100)
@@ -61,7 +61,7 @@ end
 
 function multi3(;verbose=false, solver=nothing, exprmode=1)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(1)
 	ub = rand()
@@ -87,7 +87,7 @@ end
 
 function multi2(;verbose=false,solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(1)
     @variable(m, 0.1<=x[1:2]<=rand()*10)
@@ -103,7 +103,7 @@ end
 
 function multi4N(;verbose=false, exprmode=1, solver=nothing, N=1, randomub=true)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	M = 1+3*N
 	Random.seed!(100)
@@ -146,7 +146,7 @@ end
 
 function multi3N(;verbose=false, randomub=nothing, solver=nothing, exprmode=1, N=1, delta=4)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	M = 1+2*N
 	Random.seed!(100)
@@ -172,7 +172,7 @@ end
 
 function multiKND(;verbose=false, solver=nothing, exprmode=1, randomub=true, N=1, K=2, D=1)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	M = K+(K-D)*(N-1)
 	Random.seed!(100)

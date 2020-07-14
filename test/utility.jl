@@ -1,6 +1,6 @@
 @testset "Utility Function Tests: Solver identifier fetch" begin
 
-    test_solver=AlpineSolver(minlp_solver=pavito_solver,
+    test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,
                           nlp_solver=IpoptSolver(print_level=0),
                           mip_solver=CbcSolver(logLevel=0),
                           presolve_bp=true,

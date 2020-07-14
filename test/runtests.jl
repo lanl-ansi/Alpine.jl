@@ -1,4 +1,5 @@
-using JuMP, MathProgBase
+using JuMP, MathOptInterface
+const MOI = MathOptInterface
 using Ipopt, Cbc #, Pavito
 using GLPK
 using Alpine

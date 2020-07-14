@@ -37,8 +37,8 @@ Specific structure pattern information will be described formally.
 function detect_nonconvex_terms(expr::Any, constr_id::Int, m::Optimizer; kwargs...)
 
     # First process user-defined structures in-cases of over-ride
-    for i in 1:length(m.term_patterns)
-        skip, expr = eval(m.term_patterns[i])(expr, constr_id, m)
+    for i in 1:length(get_option(m, :term_patterns))
+        skip, expr = eval(get_option(m, :term_patterns)[i])(expr, constr_id, m)
         skip && return expr
     end
 
@@ -100,7 +100,7 @@ function store_nonconvex_term(m::Optimizer, nl_key::Any, var_idxs::Any, term_typ
 
     # push!(m.var_type, :Cont)  # TODO check if this replacement is good since additional constraints should be able to sufficiently constraint the type
     push!(m.var_type, m.nonconvex_terms[nl_key][:y_type])            # Keep track of the lifted var type
-    m.loglevel > 199 && println("found lifted $(term_type) term $(lifted_constr_ref)")
+    get_option(m, :loglevel) > 199 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
@@ -126,7 +126,7 @@ function store_linear_term(m::Optimizer, term_key::Any, expr::Any)#, bound_resol
 
     m.term_seq[l_cnt+nl_cnt + 1] = term_key
     push!(m.var_type, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-    m.loglevel > 199 && println("found lifted linear term $(lifted_var_ref) = $expr")
+    get_option(m, :loglevel) > 199 && println("found lifted linear term $(lifted_var_ref) = $expr")
 
     return y_idx
 end
@@ -231,10 +231,10 @@ function basic_linear_bounds(m::Optimizer, k::Any, linear_terms=nothing)
     end
     lb += linear_terms[k][:ref][:scalar]
     ub += linear_terms[k][:ref][:scalar]
-    if lb > m.l_var_tight[lifted_idx] + m.tol
+    if lb > m.l_var_tight[lifted_idx] + get_option(m, :tol)
         m.l_var_tight[lifted_idx] = lb
     end
-    if ub < m.u_var_tight[lifted_idx] - m.tol
+    if ub < m.u_var_tight[lifted_idx] - get_option(m, :tol)
         m.u_var_tight[lifted_idx] = ub
     end
 
@@ -253,10 +253,10 @@ function basic_linear_bounds(m::Optimizer, k::Any, d::Dict)
     lb += m.linear_terms[k][:ref][:scalar]
     ub += m.linear_terms[k][:ref][:scalar]
 
-    if lb > d[lifted_idx][1] + m.tol
+    if lb > d[lifted_idx][1] + get_option(m, :tol)
         d[lifted_idx][1] = lb
     end
-    if ub < d[lifted_idx][end] - m.tol
+    if ub < d[lifted_idx][end] - get_option(m, :tol)
         d[lifted_idx][end] = ub
     end
 
@@ -708,10 +708,10 @@ function basic_intprod_bounds(m::Optimizer, k::Any)
         end
     end
 
-    if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
+    if minimum(bound) > m.l_var_tight[lifted_idx] + get_option(m, :tol)
         m.l_var_tight[lifted_idx] = minimum(bound)
     end
-    if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
+    if maximum(bound) < m.u_var_tight[lifted_idx] - get_option(m, :tol)
         m.u_var_tight[lifted_idx] = maximum(bound)
     end
 
@@ -734,10 +734,10 @@ function basic_intprod_bounds(m::Optimizer, k::Any, d::Dict)
             bound = vec(bound) * var_bounds'
         end
     end
-    if minimum(bound) > d[lifted_idx][1] + m.tol
+    if minimum(bound) > d[lifted_idx][1] + get_option(m, :tol)
         d[lifted_idx][1] = minimum(bound)
     end
-    if maximum(bound) < d[lifted_idx][end] - m.tol
+    if maximum(bound) < d[lifted_idx][end] - get_option(m, :tol)
         d[lifted_idx][end] = maximum(bound)
     end
 
@@ -1031,13 +1031,13 @@ function basic_monomial_bounds(m::Optimizer, k::Any)
             bound = vec(bound) * var_bounds'
         end
     end
-    if minimum(bound) > m.l_var_tight[lifted_idx] + m.tol
+    if minimum(bound) > m.l_var_tight[lifted_idx] + get_option(m, :tol)
         m.l_var_tight[lifted_idx] = minimum(bound)
         if m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
             m.l_var_tight[lifted_idx] = 0.0
         end
     end
-    if maximum(bound) < m.u_var_tight[lifted_idx] - m.tol
+    if maximum(bound) < m.u_var_tight[lifted_idx] - get_option(m, :tol)
         m.u_var_tight[lifted_idx] = maximum(bound)
     end
 
@@ -1062,11 +1062,11 @@ function basic_monomial_bounds(m::Optimizer, nlk::Any, d::Dict)
         end
     end
 
-    if minimum(bound) > d[lifted_idx][1] + m.tol
+    if minimum(bound) > d[lifted_idx][1] + get_option(m, :tol)
         d[lifted_idx][1] = minimum(bound)
     end
 
-    if maximum(bound) < d[lifted_idx][end] - m.tol
+    if maximum(bound) < d[lifted_idx][end] - get_option(m, :tol)
         d[lifted_idx][end] = maximum(bound)
     end
 
@@ -1284,7 +1284,7 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
                                           :cnt => length(idxs_bin),
                                           :powers => power_bin)
 
-        m.loglevel > 99 && println("CONVEX Constraint $(idx): $(expr)")
+        get_option(m, :loglevel) > 99 && println("CONVEX Constraint $(idx): $(expr)")
 
         return true
     elseif expr_orig == :obj
@@ -1338,7 +1338,7 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
                                   :cnt => length(idxs_bin),
                                   :powers => power_bin)
 
-        m.loglevel > 99 && println("CONVEX Objective: $(expr)")
+        get_option(m, :loglevel) > 99 && println("CONVEX Objective: $(expr)")
         return true
     end
 

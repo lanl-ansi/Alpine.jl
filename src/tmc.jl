@@ -16,7 +16,7 @@ function amp_post_mccormick(m::Optimizer; kwargs...)
 
     for bi in keys(m.nonconvex_terms)
         nl_type = m.nonconvex_terms[bi][:nonlinear_type]
-        if ((!m.monomial_convexhull)*(nl_type == :MONOMIAL) || (!m.bilinear_convexhull)*(nl_type == :BILINEAR)) && (m.nonconvex_terms[bi][:convexified] == false)
+        if ((!get_option(m, :monomial_convexhull))*(nl_type == :MONOMIAL) || (!get_option(m, :bilinear_convexhull))*(nl_type == :BILINEAR)) && (m.nonconvex_terms[bi][:convexified] == false)
             @assert length(bi) == 2
             m.nonconvex_terms[bi][:convexified] = true  # Bookeeping the examined terms
             idx_a = bi[1].args[2]

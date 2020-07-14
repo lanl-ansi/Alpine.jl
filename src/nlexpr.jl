@@ -61,7 +61,7 @@ function expr_parsing(m::Optimizer)
       m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
       m.obj_structure = :generic_linear
    end
-   (m.loglevel > 199) && println("[OBJ] $(m.obj_expr_orig)")
+   (get_option(m, :loglevel) > 199) && println("[OBJ] $(m.obj_expr_orig)")
 
    for i in 1:m.num_constr_orig
       is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
@@ -69,7 +69,7 @@ function expr_parsing(m::Optimizer)
          m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], i, m)
          m.constr_structure[i] = :generic_linear
       end
-      (m.loglevel > 199) && println("[CONSTR] $(m.constr_expr_orig[i])")
+      (get_option(m, :loglevel) > 199) && println("[CONSTR] $(m.constr_expr_orig[i])")
    end
 
    return
@@ -84,13 +84,13 @@ function expr_conversion(m::Optimizer)
       m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
       m.obj_structure = :affine
    end
-   m.loglevel > 199 && println("type :: ", m.obj_structure)
-   m.loglevel > 199 && println("lifted ::", m.bounding_obj_expr_mip)
-   m.loglevel > 199 && println("coeffs ::", m.bounding_obj_mip[:coefs])
-   m.loglevel > 199 && println("vars ::", m.bounding_obj_mip[:vars])
-   m.loglevel > 199 && println("sense ::", m.bounding_obj_mip[:sense])
-   m.loglevel > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
-   m.loglevel > 199 && println("----------------")
+   get_option(m, :loglevel) > 199 && println("type :: ", m.obj_structure)
+   get_option(m, :loglevel) > 199 && println("lifted ::", m.bounding_obj_expr_mip)
+   get_option(m, :loglevel) > 199 && println("coeffs ::", m.bounding_obj_mip[:coefs])
+   get_option(m, :loglevel) > 199 && println("vars ::", m.bounding_obj_mip[:vars])
+   get_option(m, :loglevel) > 199 && println("sense ::", m.bounding_obj_mip[:sense])
+   get_option(m, :loglevel) > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
+   get_option(m, :loglevel) > 199 && println("----------------")
 
 
    for i in 1:m.num_constr_orig
@@ -98,13 +98,13 @@ function expr_conversion(m::Optimizer)
          m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
          m.constr_structure[i] = :affine
       end
-      m.loglevel > 199 && println("type :: ", m.constr_structure[i])
-      m.loglevel > 199 && println("lifted ::", m.bounding_constr_expr_mip[i])
-      m.loglevel > 199 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-      m.loglevel > 199 && println("vars ::", m.bounding_constr_mip[i][:vars])
-      m.loglevel > 199 && println("sense ::", m.bounding_constr_mip[i][:sense])
-      m.loglevel > 199 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-      m.loglevel > 199 && println("----------------")
+      get_option(m, :loglevel) > 199 && println("type :: ", m.constr_structure[i])
+      get_option(m, :loglevel) > 199 && println("lifted ::", m.bounding_constr_expr_mip[i])
+      get_option(m, :loglevel) > 199 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+      get_option(m, :loglevel) > 199 && println("vars ::", m.bounding_constr_mip[i][:vars])
+      get_option(m, :loglevel) > 199 && println("sense ::", m.bounding_constr_mip[i][:sense])
+      get_option(m, :loglevel) > 199 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+      get_option(m, :loglevel) > 199 && println("----------------")
    end
 
    return
@@ -190,14 +190,14 @@ Recognize structural constraints.
 function expr_constr_parsing(expr, m::Optimizer, idx::Int=0)
 
    # First process user-defined structures in-cases of over-ride
-   for i in 1:length(m.constr_patterns)
-      is_strucural = eval(m.constr_patterns[i])(expr, m, idx)
+   for i in 1:length(get_option(m, :constr_patterns))
+      is_strucural = eval(get_option(m, :constr_patterns)[i])(expr, m, idx)
       return
    end
 
    isa(expr, Number) && return false
    # Recognize built-in special structural pattern
-   if m.recognize_convex
+   if get_option(m, :recognize_convex)
       is_convex = resolve_convex_constr(expr, m, idx)
       is_convex && return true
    end

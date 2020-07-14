@@ -1,6 +1,6 @@
 function div(;verbose=false,solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
     @variable(m, 1<=x[1:2]<=10)
 

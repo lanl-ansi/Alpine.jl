@@ -20,22 +20,22 @@ function update_opt_gap(m::Optimizer)
       m.best_rel_gap = Inf
       return
    else
-      p = convert(Int, round(abs(log(10,m.relgap))))
+      p = convert(Int, round(abs(log(10,get_option(m, :relgap)))))
       n = round(abs(m.best_obj-m.best_bound); digits=p)
       dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
-      if isapprox(n, 0.0;atol=m.tol) && isapprox(m.best_obj,0.0;atol=m.tol)
+      if isapprox(n, 0.0;atol=get_option(m, :tol)) && isapprox(m.best_obj,0.0;atol=get_option(m, :tol))
          m.best_rel_gap = 0.0
          return
       end
-      if m.gapref == :ub
-         if isapprox(m.best_obj,0.0;atol=m.tol) # zero upper bound case
+      if get_option(m, :gapref) == :ub
+         if isapprox(m.best_obj,0.0;atol=get_option(m, :tol)) # zero upper bound case
             eps = 1 # shift factor
-            m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(m.tol+(m.best_obj + eps))   
+            m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(get_option(m, :tol)+(m.best_obj + eps))   
          else
-            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(get_option(m, :tol)+abs(m.best_obj))
          end
       else
-         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_bound))
+         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(get_option(m, :tol)+abs(m.best_bound))
       end
    end
 
@@ -60,7 +60,7 @@ function measure_relaxed_deviation(m::Optimizer;sol=nothing)
    sort!(dev, by=x->x[1])
 
    for i in dev
-      m.loglevel > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
+      get_option(m, :loglevel) > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
    end
 
    return
@@ -164,19 +164,19 @@ An utility function used to recognize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::Optimizer)
 
-   if m.mip_solver_id == "Gurobi"
+   if get_option(m, :mip_solver_id) == "Gurobi"
       # Calculation of the bound
       if m.sense_orig == :Min
-         m.gapref == :ub ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
+         get_option(m, :gapref) == :ub ? stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_obj) : stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_bound)
       elseif m.sense_orig == :Max
-         m.gapref == :ub ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
+         get_option(m, :gapref) == :ub ? stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_obj) : stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_bound)
       end
 
-      for i in 1:length(m.mip_solver.options)
-         if m.mip_solver.options[i][1] == :BestBdStop
-            deleteat!(m.mip_solver.options, i)
-            if m.mip_solver_id == "Gurobi"
-               push!(m.mip_solver.options, (:BestBdStop, stopbound))
+      for i in 1:length(get_option(m, :mip_solver).options)
+         if get_option(m, :mip_solver).options[i][1] == :BestBdStop
+            deleteat!(get_option(m, :mip_solver).options, i)
+            if get_option(m, :mip_solver_id) == "Gurobi"
+               push!(get_option(m, :mip_solver).options, (:BestBdStop, stopbound))
             else
                return
             end
@@ -195,16 +195,16 @@ Check if the solution is alwasy the same within the last disc_consecutive_forbid
 """
 function check_solution_history(m::Optimizer, ind::Int)
 
-   m.disc_consecutive_forbid == 0 && return false
-   (m.logs[:n_iter] < m.disc_consecutive_forbid) && return false
+   get_option(m, :disc_consecutive_forbid) == 0 && return false
+   (m.logs[:n_iter] < get_option(m, :disc_consecutive_forbid)) && return false
 
-   sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1][ind]
-   for i in 1:(m.disc_consecutive_forbid-1)
-      search_pos = mod(m.logs[:n_iter]-1-i, m.disc_consecutive_forbid)+1
-      !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=m.disc_rel_width_tol) && return false
+   sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, get_option(m, :disc_consecutive_forbid))+1][ind]
+   for i in 1:(get_option(m, :disc_consecutive_forbid)-1)
+      search_pos = mod(m.logs[:n_iter]-1-i, get_option(m, :disc_consecutive_forbid))+1
+      !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=get_option(m, :disc_rel_width_tol)) && return false
    end
 
-   m.loglevel > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
+   get_option(m, :loglevel) > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
    return true
 end
 
@@ -228,7 +228,7 @@ function fix_domains(m::Optimizer;discrete_sol=nothing, use_orig=false)
          discrete_sol == nothing ? point = m.best_bound_sol[i] : point = discrete_sol[i]
          PCnt = length(m.discretization[i]) - 1
          for j in 1:PCnt
-            if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
+            if point >= (m.discretization[i][j] - get_option(m, :tol)) && (point <= m.discretization[i][j+1] + get_option(m, :tol))
                @assert j < length(m.discretization[i])
                use_orig ? l_var[i] = m.discretization[i][1] : l_var[i] = m.discretization[i][j]
                use_orig ? u_var[i] = m.discretization[i][end] : u_var[i] = m.discretization[i][j+1]
@@ -276,7 +276,7 @@ function collect_lb_pool(m::Optimizer)
    # Always stick to the structural .discretization for algorithm consideration info
    # If in need, the scheme need to be refreshed with customized discretization info
 
-   if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
+   if get_option(m, :mip_solver_id) != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
       @warn "  Warning: Skipping collecting solution pool procedure",
       return
    end
@@ -287,11 +287,11 @@ function collect_lb_pool(m::Optimizer)
 
    # Collect Solution and corresponding objective values
    for i in 1:s[:cnt]
-      if m.mip_solver_id == "Gurobi"
+      if get_option(m, :mip_solver_id) == "Gurobi"
          Gurobi.set_int_param!(m.model_mip.internalModel.inner, "SolutionNumber", i-1)
          s[:sol][i] = Gurobi.get_dblattrarray(m.model_mip.internalModel.inner, "Xn", 1, s[:len])
          s[:obj][i] = Gurobi.get_dblattr(m.model_mip.internalModel.inner, "PoolObjVal")
-      elseif m.mip_solver_id == "Cplex"
+      elseif get_option(m, :mip_solver_id) == "Cplex"
          error("No implementation for Cplex")
       end
       s[:disc][i] = Dict(j=>get_active_partition_idx(m.discretization, s[:sol][i][j],j) for j in s[:vars])
@@ -339,7 +339,7 @@ function merge_solution_pool(m::Optimizer, s::Dict)
          act || break
       end
       # Reject solutions that is around best bound to avoid traps
-      if isapprox(s[:obj][i], m.best_bound;atol=m.tol)
+      if isapprox(s[:obj][i], m.best_bound;atol=get_option(m, :tol))
          s[:stat][i] = :Dead
       end
       push!(m.bound_sol_pool[:sol], s[:sol][i])
@@ -355,9 +355,9 @@ function merge_solution_pool(m::Optimizer, s::Dict)
    m.bound_sol_pool[:vars] = var_idxs
 
    # Show the summary
-   m.loglevel > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
+   get_option(m, :loglevel) > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
    for i in 1:m.bound_sol_pool[:cnt]
-      m.loglevel > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
+      get_option(m, :loglevel) > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
    end
 
    return
@@ -596,7 +596,7 @@ function min_vertex_cover(m::Optimizer)
 
    # Collecting required information
    m.num_var_disc_mip = Int(sum(xVal))
-   m.disc_vars = [i for i in nodes if xVal[i] > m.tol && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= m.tol]
+   m.disc_vars = [i for i in nodes if xVal[i] > get_option(m, :tol) && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= get_option(m, :tol)]
 
    return
 end
@@ -613,7 +613,7 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    weights = Dict()
    for i in m.candidate_disc_vars
       isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-      (m.loglevel > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
+      (get_option(m, :loglevel) > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
    end
 
    # Set up minimum vertex cover problem
@@ -630,8 +630,8 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
 
    xVal = getvalue(x)
    m.num_var_disc_mip = Int(sum(xVal))
-   m.disc_vars = [i for i in nodes if xVal[i] > 0 && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= m.tol]
-   m.loglevel >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
+   m.disc_vars = [i for i in nodes if xVal[i] > 0 && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= get_option(m, :tol)]
+   get_option(m, :loglevel) >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
 
    return
 end
@@ -675,13 +675,13 @@ function eval_feasibility(m::Optimizer, sol::Vector)
    for i in 1:m.num_var_orig
       # Check solution category and bounds
       if m.var_type[i] == :Bin
-         isapprox(sol[i], 1.0;atol=m.tol) || isapprox(sol[i], 0.0;atol=m.tol) || return false
+         isapprox(sol[i], 1.0;atol=get_option(m, :tol)) || isapprox(sol[i], 0.0;atol=get_option(m, :tol)) || return false
       elseif m.var_type[i] == :Int
-         isapprox(mod(sol[i], 1.0), 0.0;atol=m.tol) || return false
+         isapprox(mod(sol[i], 1.0), 0.0;atol=get_option(m, :tol)) || return false
       end
       # Check solution bounds (with tight bounds)
-      sol[i] <= m.l_var_tight[i] - m.tol || return false
-      sol[i] >= m.u_var_tight[i] + m.tol || return false
+      sol[i] <= m.l_var_tight[i] - get_option(m, :tol) || return false
+      sol[i] >= m.u_var_tight[i] + get_option(m, :tol) || return false
    end
 
    # Check constraint violation
@@ -690,22 +690,22 @@ function eval_feasibility(m::Optimizer, sol::Vector)
    feasible = true
    for i in 1:m.num_constr_orig
       if m.constr_type_orig[i] == :(==)
-         if !isapprox(eval_rhs[i], m.l_constr_orig[i]; atol=m.tol)
+         if !isapprox(eval_rhs[i], m.l_constr_orig[i]; atol=get_option(m, :tol))
             feasible = false
-            m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.l_constr_orig[i])")
-            m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.l_constr_orig[i])")
+            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(>=)
-         if !(eval_rhs[i] >= m.l_constr_orig[i] - m.tol)
-            m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.l_constr_orig[i])")
-            m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+         if !(eval_rhs[i] >= m.l_constr_orig[i] - get_option(m, :tol))
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.l_constr_orig[i])")
+            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(<=)
-         if !(eval_rhs[i] <= m.u_constr_orig[i] + m.tol)
-            m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.u_constr_orig[i])")
-            m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+         if !(eval_rhs[i] <= m.u_constr_orig[i] + get_option(m, :tol))
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.u_constr_orig[i])")
+            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       end
@@ -716,26 +716,26 @@ end
 
 function fetch_mip_solver_identifier(m::Optimizer;override="")
 
-   isempty(override) ? solverstring = string(m.mip_solver) : solverstring = override
+    isempty(override) ? solverstring = string(get_option(m, :mip_solver)) : solverstring = override
 
    # Higher-level solvers: that can use sub-solvers
    if occursin("Pajarito", solverstring)
-      m.mip_solver_id = "Pajarito"
+       set_option(m, :mip_solver_id, "Pajarito")
       return
    elseif occursin("Pavito", solverstring)
-      m.mip_solver_id = "Pavito"
+       set_option(m, :mip_solver_id, "Pavito")
       return
    end
 
    # Lower level solvers
    if occursin("Gurobi", solverstring)
-      m.mip_solver_id = "Gurobi"
+       set_option(m, :mip_solver_id, "Gurobi")
    elseif occursin("Cplex", solverstring)
-      m.mip_solver_id = "Cplex"
+       set_option(m, :mip_solver_id, "Cplex")
    elseif occursin("Cbc", solverstring)
-      m.mip_solver_id = "Cbc"
+       set_option(m, :mip_solver_id, "Cbc")
    elseif occursin("GLPK", solverstring)
-      m.mip_solver_id = "GLPK"
+       set_option(m, :mip_solver_id, "GLPK")
    else
       error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
    end
@@ -745,26 +745,26 @@ end
 
 function fetch_nlp_solver_identifier(m::Optimizer;override="")
 
-   isempty(override) ? solverstring = string(m.nlp_solver) : solverstring = override
+   isempty(override) ? solverstring = string(get_option(m, :nlp_solver)) : solverstring = override
 
    # Higher-level solver
    if occursin("Pajarito", solverstring)
-      m.nlp_solver_id = "Pajarito"
+       set_option(m, :nlp_solver_id,  "Pajarito")
       return
    elseif occursin("Pavito", solverstring)
-      m.nlp_solver_id = "Pavito"
+       set_option(m, :nlp_solver_id, "Pavito")
       return
    end
 
    # Lower-level solver
    if occursin("Ipopt", solverstring)
-      m.nlp_solver_id = "Ipopt"
+       set_option(m, :nlp_solver_id, "Ipopt")
    elseif occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-      m.nlp_solver_id = "Bonmin"
+       set_option(m, :nlp_solver_id, "Bonmin")
    elseif occursin("KNITRO", solverstring)
-      m.nlp_solver_id = "Knitro"
+       set_option(m, :nlp_solver_id, "Knitro")
    elseif occursin("NLopt", solverstring)
-      m.nlp_solver_id = "NLopt"
+       set_option(m, :nlp_solver_id, "NLopt")
    else
       error("Unsupported NLP local solver $solverstring; use a Alpine-supported NLP local solver")
    end
@@ -774,30 +774,30 @@ end
 
 function fetch_minlp_solver_identifier(m::Optimizer;override="")
 
-   (m.minlp_solver == empty_solver) && return
+   (get_option(m, :minlp_solver) == empty_solver) && return
 
-   isempty(override) ? solverstring = string(m.minlp_solver) : solverstring = override
+   isempty(override) ? solverstring = string(get_option(m, :minlp_solver)) : solverstring = override
 
    # Higher-level solver
    if occursin("Pajarito", solverstring)
-      m.minlp_solver_id = "Pajarito"
+       set_option(m, :minlp_solver_id, "Pajarito")
       return
    elseif occursin("Pavito", solverstring)
-      m.minlp_solver_id = "Pavito"
+       set_option(m, :minlp_solver_id, "Pavito")
       return
    end
 
    # Lower-level Solver
    if occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-      m.minlp_solver_id = "Bonmin"
+       set_option(m, :minlp_solver_id, "Bonmin")
    elseif occursin("KNITRO", solverstring)
-      m.minlp_solver_id = "Knitro"
+       set_option(m, :minlp_solver_id, "Knitro")
    elseif occursin("NLopt", solverstring)
-      m.minlp_solver_id = "NLopt"
+       set_option(m, :minlp_solver_id, "NLopt")
    elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
-      m.minlp_solver_id = "Bonmin"
+       set_option(m, :minlp_solver_id, "Bonmin")
    elseif occursin("Juniper", solverstring)
-      m.minlp_solver_id = "Juniper"
+       set_option(m, :minlp_solver_id, "Juniper")
    else
       @show solverstring
       error("Unsupported MINLP local solver $solverstring; use a Alpine-supported MINLP local solver")
@@ -814,30 +814,30 @@ function update_mip_time_limit(m::Optimizer; kwargs...)
 
    options = Dict(kwargs)
    timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
 
    opts = Vector{Any}(undef, 0)
-   if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
+   if get_option(m, :mip_solver_id) != "Pavito" && get_option(m, :mip_solver_id) != "Pajarito"
       for i in collect(m.mip_solver.options)
          push!(opts, i)
       end
    end
 
-   if m.mip_solver_id == "Cplex"
+   if get_option(m, :mip_solver_id) == "Cplex"
       opts = update_timeleft_symbol(opts, :CPX_PARAM_TILIM, timelimit)
       m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Pavito"
+   elseif get_option(m, :mip_solver_id) == "Pavito"
       (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
-   elseif m.mip_solver_id == "Gurobi"
+   elseif get_option(m, :mip_solver_id) == "Gurobi"
       opts = update_timeleft_symbol(opts, :TimeLimit, timelimit)  
       m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Cbc"
+   elseif get_option(m, :mip_solver_id) == "Cbc"
       opts = update_timeleft_symbol(opts, :seconds, timelimit)
       m.mip_solver.options = opts
-   elseif m.mip_solver_id == "GLPK"
+   elseif get_option(m, :mip_solver_id) == "GLPK"
       opts = update_timeleft_symbol(opts, :tm_lim, timelimit)
       m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Pajarito"
+   elseif get_option(m, :mip_solver_id) == "Pajarito"
       (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
    else
       error("Needs support for this MIP solver")
@@ -854,26 +854,26 @@ function update_nlp_time_limit(m::Optimizer; kwargs...)
 
    options = Dict(kwargs)
    timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
 
    opts = Vector{Any}(undef, 0)
-   if m.nlp_solver_id != "Pavito" && m.nlp_solver_id != "Pajarito"
-      opts = collect(m.nlp_solver.options)
+   if get_option(m, :nlp_solver_id) != "Pavito" && get_option(m, :nlp_solver_id) != "Pajarito"
+      opts = collect(get_option(m, :nlp_solver).options)
    end
 
 
-   if m.nlp_solver_id == "Ipopt"
+   if get_option(m, :nlp_solver_id) == "Ipopt"
       opts = update_timeleft_symbol(opts, :max_cpu_time, timelimit)
-      m.nlp_solver.options = opts
-   elseif m.nlp_solver_id == "Pajarito"
-      (timelimit < Inf) && (m.nlp_solver.timeout = timelimit)
-   elseif m.nlp_solver_id == "AmplNL"
+      get_option(m, :nlp_solver).options = opts
+   elseif get_option(m, :nlp_solver_id) == "Pajarito"
+      (timelimit < Inf) && (get_option(m, :nlp_solver).timeout = timelimit)
+   elseif get_option(m, :nlp_solver_id) == "AmplNL"
       opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
-      m.nlp_solver.options = opts
-   elseif m.nlp_solver_id == "Knitro"
+      get_option(m, :nlp_solver).options = opts
+   elseif get_option(m, :nlp_solver_id) == "Knitro"
       error("You never tell me anything about knitro. Probably because they have a very short trail length.")
-   elseif m.nlp_solver_id == "NLopt"
-      m.nlp_solver.maxtime = timelimit
+   elseif get_option(m, :nlp_solver_id) == "NLopt"
+      get_option(m, :nlp_solver).maxtime = timelimit
    else
       error("Needs support for this MIP solver")
    end
@@ -889,25 +889,25 @@ function update_minlp_time_limit(m::Optimizer; kwargs...)
 
    options = Dict(kwargs)
    timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
+   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
 
    opts = Vector{Any}(undef, 0)
-   if m.minlp_solver_id != "Pavito" && m.minlp_solver_id != "Pajarito"
-      opts = collect(m.minlp_solver.options)
+   if get_option(m, :minlp_solver_id) != "Pavito" && get_option(m, :minlp_solver_id) != "Pajarito"
+      opts = collect(get_option(m, :minlp_solver).options)
    end
 
 
-   if m.minlp_solver_id == "Pajarito"
-      (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
-   elseif m.minlp_solver_id == "Pavito"
-      (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
-   elseif m.minlp_solver_id == "AmplNL"
+   if get_option(m, :minlp_solver_id) == "Pajarito"
+      (timelimit < Inf) && (get_option(m, :minlp_solver).timeout = timelimit)
+   elseif get_option(m, :minlp_solver_id) == "Pavito"
+      (timelimit < Inf) && (get_option(m, :minlp_solver).timeout = timelimit)
+   elseif get_option(m, :minlp_solver_id) == "AmplNL"
       opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
-      m.minlp_solver.options = opts
-   elseif m.minlp_solver_id == "Knitro"
+      get_option(m, :minlp_solver).options = opts
+   elseif get_option(m, :minlp_solver_id) == "Knitro"
       error("You never tell me anything about knitro. Probably because they charge everything they own.")
-   elseif m.minlp_solver_id == "NLopt"
-      m.minlp_solver.maxtime = timelimit
+   elseif get_option(m, :minlp_solver_id) == "NLopt"
+      get_option(m, :minlp_solver).maxtime = timelimit
    else
       error("Needs support for this MIP solver")
    end
@@ -941,7 +941,7 @@ end
 
 function adjust_branch_priority(m::Optimizer)
 
-   if m.mip_solver_id == "Gurobi"
+   if get_option(m, :mip_solver_id) == "Gurobi"
       !m.model_mip.internalModelLoaded && return
       len = length(m.model_mip.colVal)
       prior = Cint[] # priorities
@@ -949,7 +949,7 @@ function adjust_branch_priority(m::Optimizer)
          push!(prior, i)
       end
       Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
-   elseif m.mip_solver_id == "Cplex"
+   elseif get_option(m, :mip_solver_id) == "Cplex"
       !m.model_mip.internalModelLoaded && return
       n = length(m.model_mip.colVal)
       idxlist = Cint[1:n;] # variable indices

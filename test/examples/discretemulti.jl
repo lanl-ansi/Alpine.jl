@@ -1,6 +1,6 @@
 function binprod_nlp3(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:8])
 	@variable(m, y[1:5], Bin)
@@ -41,7 +41,7 @@ end
 
 function circlebin(;verbose=false, solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
     @variable(m, x[1:5], Bin)
     @NLconstraint(m, x[1]^2 + x[2]^2 >= 2)
@@ -52,7 +52,7 @@ end
 
 function bpml(;verbose=false, solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:5], Bin)
 	@variable(m, y[1:5]>=0)
@@ -73,7 +73,7 @@ end
 
 function bmpl_linearlifting(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:5], Bin)
 	@variable(m, y[1:5]>=0)
@@ -89,7 +89,7 @@ end
 
 function bpml_lnl(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
@@ -102,7 +102,7 @@ end
 
 function bpml_binl(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
@@ -115,7 +115,7 @@ end
 
 function bpml_monl(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
@@ -128,7 +128,7 @@ end
 
 function bpml_negative(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
@@ -145,7 +145,7 @@ function bpml_negative(solver=nothing)
 end
 
 function intprod_basic(;solver=nothing)
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, 1 <= Z[1:10] <= 10, Int)
 	@NLconstraint(m, (Z[1]+Z[2])*(Z[3]+Z[4]) >= 25)
@@ -159,7 +159,7 @@ end
 
 function discretemulti_basic(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)

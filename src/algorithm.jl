@@ -2,13 +2,13 @@
 High-level Function
 """
 function optimize!(m::Optimizer)
-   if m.presolve_infeasible
+   if get_option(m, :presolve_infeasible)
       summary_status(m)
       return
    end
    presolve(m)
    global_solve(m)
-   m.loglevel > 0 && logging_row_entry(m, finish_entry=true)
+   get_option(m, :loglevel) > 0 && logging_row_entry(m, finish_entry=true)
    println("====================================================================================================")
    summary_status(m)  
    return
@@ -25,8 +25,8 @@ Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorith
 """
 function global_solve(m::Optimizer)
 
-   m.loglevel > 0 && logging_head(m)
-   m.presolve_track_time || reset_timer(m)
+   get_option(m, :loglevel) > 0 && logging_head(m)
+   get_option(m, :presolve_track_time) || reset_timer(m)
 
    while !check_exit(m)
       m.logs[:n_iter] += 1
@@ -34,7 +34,7 @@ function global_solve(m::Optimizer)
       bounding_solve(m)                       # Solve the relaxation model
       update_opt_gap(m)                       # Update optimality gap
       check_exit(m) && break                  # Feasibility check
-      m.loglevel > 0 && logging_row_entry(m)  # Logging
+      get_option(m, :loglevel) > 0 && logging_row_entry(m)  # Logging
       local_solve(m)                          # Solve local model for feasible solution
       update_opt_gap(m)                       # Update optimality gap
       check_exit(m) && break                  # Detect optimality termination
@@ -46,15 +46,15 @@ function global_solve(m::Optimizer)
 end
 
 function run_bounding_iteration(m::Optimizer)
-   m.loglevel > 0 && logging_head(m)
-   m.presolve_track_time || reset_timer(m)
+   get_option(m, :loglevel) > 0 && logging_head(m)
+   get_option(m, :presolve_track_time) || reset_timer(m)
 
    m.logs[:n_iter] += 1
    create_bounding_mip(m)                  # Build the relaxation model
    bounding_solve(m)                       # Solve the relaxation model
    update_opt_gap(m)                       # Update optimality gap
    check_exit(m) && return                 # Feasibility check
-   m.loglevel > 0 && logging_row_entry(m)  # Logging
+   get_option(m, :loglevel) > 0 && logging_row_entry(m)  # Logging
    local_solve(m)                          # Solve local model for feasible solution
    update_opt_gap(m)                       # Update optimality gap
    check_exit(m) && return                 # Detect optimality termination
@@ -71,8 +71,8 @@ presolve(m::Optimizer)
 function presolve(m::Optimizer)
 
    start_presolve = time()
-   m.loglevel > 0 && printstyled("PRESOLVE \n", color=:cyan)
-   m.loglevel > 0 && println("  Doing local search")
+   get_option(m, :loglevel) > 0 && printstyled("PRESOLVE \n", color=:cyan)
+   get_option(m, :loglevel) > 0 && println("  Doing local search")
    local_solve(m, presolve = true)
 
    # Solver status - returns error when see different
@@ -80,18 +80,18 @@ function presolve(m::Optimizer)
    status_reroute = [:Infeasible, :Infeasibles]
 
    if m.status[:local_solve] in status_pass
-      m.loglevel > 0 && println("  Local solver returns a feasible point")
+      get_option(m, :loglevel) > 0 && println("  Local solver returns a feasible point")
       bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-      m.presolve_bt && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
-      m.disc_ratio_branch && (m.disc_ratio = update_disc_ratio(m, true))
+      get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
+      get_option(m, :disc_ratio_branch) && (set_option(m, :disc_ratio, update_disc_ratio(m, true)))
       add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
-      # m.loglevel > 0 && println("Ending the presolve")
+      # get_option(m, :loglevel) > 0 && println("Ending the presolve")
    elseif m.status[:local_solve] in status_reroute
-      (m.loglevel > 0) && println("  Bound tightening without objective bounds (OBBT)")
+      (get_option(m, :loglevel) > 0) && println("  Bound tightening without objective bounds (OBBT)")
       bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-      (m.disc_ratio_branch) && (m.disc_ratio = update_disc_ratio(m))
-      m.presolve_bt && init_disc(m)
-      # m.loglevel > 0 && println("Ending the presolve")
+      (get_option(m, :disc_ratio_branch)) && (set_option(m, :disc_ratio, update_disc_ratio(m, true)))
+      get_option(m, :presolve_bt) && init_disc(m)
+      # get_option(m, :loglevel) > 0 && println("Ending the presolve")
    elseif m.status[:local_solve] == :Not_Enough_Degrees_Of_Freedom
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n Consider more replace equality constraints with >= and <= to resolve this."
    else
@@ -102,8 +102,8 @@ function presolve(m::Optimizer)
    m.logs[:presolve_time] += cputime_presolve
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
-   # (m.loglevel > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-   (m.loglevel > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations).")
+   # (get_option(m, :loglevel) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
+   (get_option(m, :loglevel) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations).")
    return
 end
 
@@ -112,11 +112,11 @@ A wrapper function that collects some automated solver adjustments within the ma
 """
 function algorithm_automation(m::Optimizer)
 
-   m.disc_var_pick == 3 && update_disc_cont_var(m)
-   m.int_cumulative_disc && update_disc_int_var(m)
+   get_option(m, :disc_var_pick) == 3 && update_disc_cont_var(m)
+   get_option(m, :int_cumulative_disc) && update_disc_int_var(m)
 
-   if m.disc_ratio_branch
-      m.disc_ratio = update_disc_ratio(m)    # Only perform for a maximum three times
+   if get_option(m, :disc_ratio_branch)
+      set_option(m, :disc_ratio, update_disc_ratio(m, true))    # Only perform for a maximum three times
    end
 
    return
@@ -145,12 +145,12 @@ function check_exit(m::Optimizer)
    m.status[:bounding_solve] == :Unbounded && return true
 
    # Optimality check
-   m.best_rel_gap <= m.relgap && return true
-   m.logs[:n_iter] >= m.maxiter && return true
-   m.best_abs_gap <= m.absgap && return true
+   m.best_rel_gap <= get_option(m, :relgap) && return true
+   m.logs[:n_iter] >= get_option(m, :maxiter) && return true
+   m.best_abs_gap <= get_option(m, :absgap) && return true
 
    # Userlimits check
-   m.logs[:time_left] < m.tol && return true
+   m.logs[:time_left] < get_option(m, :tol) && return true
 
    return false
 end
@@ -171,8 +171,8 @@ function local_solve(m::Optimizer; presolve = false)
    var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
 
    if presolve
-      if !isempty(var_type_screener) && m.minlp_solver != UnsetSolver()
-         local_solve_model = interface_init_nonlinear_model(m.minlp_solver)
+      if !isempty(var_type_screener) && get_option(m, :minlp_solver) != UnsetSolver()
+         local_solve_model = interface_init_nonlinear_model(get_option(m, :minlp_solver))
       elseif !isempty(var_type_screener)
          local_solve_model = interface_init_nonlinear_model(m.nlp_solver)
       else
@@ -204,9 +204,9 @@ function local_solve(m::Optimizer; presolve = false)
 
    # The only case when MINLP solver is actually used
    if presolve && !isempty(var_type_screener)
-      m.minlp_solver == UnsetSolver() || interface_set_vartype(local_solve_model, m.var_type_orig)
+      get_option(m, :minlp_solver) == UnsetSolver() || interface_set_vartype(local_solve_model, m.var_type_orig)
       interface_optimize(local_solve_model)
-      if m.minlp_solver == UnsetSolver()
+      if get_option(m, :minlp_solver) == UnsetSolver()
          do_heuristic = true
          local_nlp_status = :Heuristics
       else
@@ -220,7 +220,7 @@ function local_solve(m::Optimizer; presolve = false)
 
    cputime_local_solve = time() - start_local_solve
    m.logs[:total_time] += cputime_local_solve
-   m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
+   m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
 
    status_pass = [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
    status_heuristic = [:Heuristics]
@@ -288,7 +288,7 @@ function bounding_solve(m::Optimizer)
    start_bounding_solve = time()
    status = solve(m.model_mip, suppress_warnings=true)
    m.logs[:total_time] += time() - start_bounding_solve
-   m.logs[:time_left] = max(0.0, m.timeout - m.logs[:total_time])
+   m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
    # ================= Solve End ================ #
 
    status_solved = [:Optimal, :UserObjLimit, :UserLimit, :Suboptimal]
@@ -299,8 +299,8 @@ function bounding_solve(m::Optimizer)
       candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
       # Experimental code
       measure_relaxed_deviation(m, sol=candidate_bound_sol)
-      if m.disc_consecutive_forbid > 0
-         m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1] = copy(candidate_bound_sol) # Requires proper offseting
+      if get_option(m, :disc_consecutive_forbid) > 0
+         m.bound_sol_history[mod(m.logs[:n_iter]-1, get_option(m, :disc_consecutive_forbid))+1] = copy(candidate_bound_sol) # Requires proper offseting
       end
       push!(m.logs[:bound], candidate_bound)
       if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound)
@@ -332,25 +332,25 @@ This function helps pick the variables for discretization. The method chosen dep
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
 there are two built-in options for users as follows:
 
-* `max-cover (m.disc_var_pick=0, default)`: pick all variables involved in the non-linear term for discretization
-* `min-vertex-cover (m.disc_var_pick=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+* `max-cover (get_option(m, :disc_var_pick)=0, default)`: pick all variables involved in the non-linear term for discretization
+* `min-vertex-cover (get_option(m, :disc_var_pick)=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
-For advanced usage, `m.disc_var_pick` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
+For advanced usage, `get_option(m, :disc_var_pick)` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
 
 """
 function pick_disc_vars(m::Optimizer)
 
-   if isa(m.disc_var_pick, Function)
-      eval(m.disc_var_pick)(m)
+   if isa(get_option(m, :disc_var_pick), Function)
+      eval(get_option(m, :disc_var_pick))(m)
       length(m.disc_vars) == 0 && length(m.nonconvex_terms) > 0 && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
-   elseif isa(m.disc_var_pick, Int)
-      if m.disc_var_pick == 0
+   elseif isa(get_option(m, :disc_var_pick), Int)
+      if get_option(m, :disc_var_pick) == 0
          ncvar_collect_nodes(m)
-      elseif m.disc_var_pick == 1
+      elseif get_option(m, :disc_var_pick) == 1
          min_vertex_cover(m)
-      elseif m.disc_var_pick == 2
+      elseif get_option(m, :disc_var_pick) == 2
          (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
-      elseif m.disc_var_pick == 3 # Initial
+      elseif get_option(m, :disc_var_pick) == 3 # Initial
          (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
       else
          error("Unsupported default indicator for picking variables for discretization")

@@ -1,6 +1,6 @@
 function ex1225a(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -116,7 +116,7 @@ end
 function ex1264a(;solver=nothing)
 
     # 8.6
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -257,7 +257,7 @@ end
 
 function prob03(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -288,7 +288,7 @@ end
 
 function prob10(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -319,7 +319,7 @@ end
 function st_miqp1(;solver=nothing)
 
     # 281.0000
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -361,7 +361,7 @@ end
 function st_miqp2(;solver=nothing)
 
     # 2.0000
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -401,7 +401,7 @@ end
 function st_miqp3(;solver=nothing)
 
     # -6.0000
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -431,7 +431,7 @@ end
 function st_miqp4(;solver=nothing)
 
     # -4574.0000
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -476,7 +476,7 @@ end
 function st_miqp5(;solver=nothing)
 
     # -333.88888890
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)

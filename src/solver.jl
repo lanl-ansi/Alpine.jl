@@ -1,7 +1,4 @@
-export AlpineSolver
-
-mutable struct Optimizer <: MOI.AbstractOptimizer
-
+mutable struct OptimizerOptions
     # Parameters for tuning Alpine
 
     # basic solver parameters
@@ -14,24 +11,35 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     tol::Float64                                                # Numerical tol used in the algorithmic process
     largebound::Float64                                         # Large bounds for problems with unbounded variables
 
+    # add all the solver options
+    nlp_solver                                                  # Local continuous NLP solver for solving NLPs at each iteration
+    minlp_solver                                                # Local MINLP solver for solving MINLPs at each iteration
+    mip_solver                                                  # MIP solver for successive lower bound solves
+
+    # Sub-solver identifier for customized solver option
+    nlp_solver_id::AbstractString                               # NLP Solver identifier string
+    minlp_solver_id::AbstractString                             # MINLP local solver identifier string
+    mip_solver_id::AbstractString                               # MIP solver identifier string
+
+
     # convexification method tuning
     recognize_convex::Bool                                      # Recognize convex expressions in parsing objective functions and constraints
-    bilinear_mccormick::Bool                                    # Convexify bilinear terms using piecwise McCormick representation
+    bilinear_mccormick::Bool                                    # [INACTIVE] Convexify bilinear terms using piecwise McCormick representation
     bilinear_convexhull::Bool                                   # Convexify bilinear terms using lambda representation
     monomial_convexhull::Bool                                   # Convexify monomial terms using convex-hull representation
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user can choose to convexify specific non-linear terms : no over-ride privilege
-    method_partition_injection::Array{Function}                 # Array of functions for special methods to add partitions to variables under complex conditions
+    method_partition_injection::Array{Function}                 # [INACTIVE] Array of functions for special methods to add partitions to variables under complex conditions
     term_patterns::Array{Function}                              # Array of functions that user can choose to parse/recognize nonlinear terms in constraint expressions
     constr_patterns::Array{Function}                            # Array of functions that user can choose to parse/recognize structural constraint from expressions
 
     # parameters used in the partitioning algorithm
+    disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     disc_ratio::Any                                             # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
-    disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
-    disc_divert_chunks::Int                                     # How many uniform partitions to construct
     disc_add_partition_method::Any                              # Additional methods to add discretization
+    disc_divert_chunks::Int                                     # How many uniform partitions to construct
     disc_abs_width_tol::Float64                                 # Absolute tolerance used when setting up partition/discretization
     disc_rel_width_tol::Float64                                 # Relative width tolerance when setting up partition/discretization
     disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve
@@ -39,12 +47,12 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # MIP Formulation Parameters
     convhull_formulation::String                                # MIP Formulation for the relaxation
-    convhull_warmstart::Bool                                    # Warm start the bounding MIP
-    convhull_no_good_cuts::Bool                                 # Add no-good cuts to MIP based on the pool solutions
     convhull_ebd::Bool                                          # Enable embedding formulation
     convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
     convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
     convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 uses hierarchical and type 2 uses big-m
+    convhull_warmstart::Bool                                    # Warm start the bounding MIP
+    convhull_no_good_cuts::Bool                                 # Add no-good cuts to MIP based on the pool solutions
 
     # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
@@ -60,22 +68,105 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
     presolve_infeasible::Bool                                   # Presolve infeasibility detection flag
-    user_parameters::Dict                                       # Additional parameters used for user-defined functional inputs
+    user_parameters::Dict                                       # [INACTIVE] Additional parameters used for user-defined functional inputs
 
     # Features for Integer Problems (NOTE: no support for int-lin problems)
     int_enable::Bool                                            # Convert integer problem into binary problem
-    int_cumulative_disc::Bool                                   # [INACTIVE] Cumulatively involve integer variables for discretization
+    int_cumulative_disc::Bool                                   #  Cumulatively involve integer variables for discretization
     int_fully_disc::Bool                                        # [INACTIVE] Construct equivalent formulation for integer variables
+end
 
-    # add all the solver options
-    nlp_solver                                                  # Local continuous NLP solver for solving NLPs at each iteration
-    minlp_solver                                                # Local MINLP solver for solving MINLPs at each iteration
-    mip_solver                                                  # MIP solver for successive lower bound solves
+function default_options()
+        loglevel = 1
+        timeout = Inf
+        maxiter = 99
+        relgap = 1e-4
+        gapref = :ub
+        absgap = 1e-6
+        tol = 1e-6
+        largebound = 1e4
 
-    # Sub-solver identifier for customized solver option
-    nlp_solver_id::AbstractString                               # NLP Solver identifier string
-    minlp_solver_id::AbstractString                             # MINLP local solver identifier string
-    mip_solver_id::AbstractString                               # MIP solver identifier string
+        nlp_solver = nothing
+        minlp_solver = nothing
+        mip_solver = nothing
+        
+        nlp_solver_id = ""
+        minlp_solver_id = ""
+        mip_solver_id = ""
+
+        recognize_convex = true
+        bilinear_mccormick = false
+        bilinear_convexhull = true
+        monomial_convexhull = true
+
+        method_convexification = Array{Function}(undef, 0)
+        method_partition_injection = Array{Function}(undef, 0)
+        term_patterns = Array{Function}(undef, 0)
+        constr_patterns = Array{Function}(undef, 0)
+
+        disc_var_pick = 2                      # By default use the 15-variable selective rule
+        disc_ratio = 4
+        disc_uniform_rate = 2
+        disc_add_partition_method = "adaptive"
+        disc_divert_chunks = 5
+        disc_abs_width_tol = 1e-4
+        disc_rel_width_tol = 1e-6
+        disc_consecutive_forbid = 0
+        disc_ratio_branch=false
+
+        convhull_formulation = "sos2"
+        convhull_ebd = false
+        convhull_ebd_encode = "default"
+        convhull_ebd_ibs = false
+        convhull_ebd_link = false
+        convhull_warmstart = true
+        convhull_no_good_cuts = true
+
+        presolve_track_time = true
+        presolve_bt = true
+        presolve_timeout = 900
+        presolve_maxiter = 10
+        presolve_bt_width_tol = 1e-3
+        presolve_bt_output_tol = 1e-5
+        presolve_bt_algo = 1
+        presolve_bt_relax = false
+        presolve_bt_mip_timeout = Inf
+        presolve_bp = true
+        presolve_infeasible = false
+
+        user_parameters = Dict()
+        int_enable = false
+        int_cumulative_disc = true
+        int_fully_disc = false
+
+    return OptimizerOptions(loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
+                             nlp_solver, minlp_solver, mip_solver, nlp_solver_id, minlp_solver_id, mip_solver_id,
+                             recognize_convex, bilinear_mccormick, bilinear_convexhull, monomial_convexhull, 
+                             method_convexification, method_partition_injection, term_patterns, constr_patterns,
+                             disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks, 
+                             disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch, 
+                             convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts, 
+                             presolve_track_time, presolve_bt, presolve_timeout, presolve_maxiter, presolve_bt_width_tol, presolve_bt_output_tol, 
+                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_timeout, presolve_bp,  presolve_infeasible, 
+                             user_parameters, int_enable, int_cumulative_disc, int_fully_disc)
+end
+
+function custom_options(;kwargs...)
+    options = default_options()
+    for (kw, val) in kwargs
+        if kw in fieldnames(OptimizerOptions)
+            setfield!(options, kw, val)
+        else
+            @warn "Unrecognized keyword $kw has been ignored!"
+        end
+    end
+    return options
+end
+
+
+mutable struct Optimizer <: MOI.AbstractOptimizer
+
+    options::OptimizerOptions                                   # Options set by user
 
     # user provided inputs
     num_var_orig::Int                                           # Initial number of variables
@@ -88,7 +179,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     var_start_orig::Vector{Float64}                             # Variable warm start vector on original variables
     constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
     constr_expr_orig::Vector{Expr}                              # Constraint expressions
-    obj_expr_orig::Union{Expr,Number}                                         # Objective expression
+    obj_expr_orig::Union{Expr,Number}                           # Objective expression
 
     # additional user inputs useful for local solves
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
@@ -160,67 +251,11 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     alpine_status::Symbol                                       # Current Alpine's status
 
     # constructor
-    function Optimizer()
+    function Optimizer(;kwargs...)
 
         m = new()
 
-        m.loglevel = 1
-        m.timeout = Inf
-        m.maxiter = 99
-        m.relgap = 1e-4
-        m.gapref = :ub
-        m.absgap = 1e-6
-        m.tol = 1e-6
-        m.largebound = 1e4
-
-        m.nlp_solver = nothing
-        m.minlp_solver = nothing
-        m.mip_solver = nothing
-
-        m.recognize_convex = true
-        m.bilinear_mccormick = false
-        m.bilinear_convexhull = true
-        m.monomial_convexhull = true
-
-        m.method_convexification = Array{Function}(undef, 0)
-        m.method_partition_injection = Array{Function}(undef, 0)
-        m.term_patterns = Array{Function}(undef, 0)
-        m.constr_patterns = Array{Function}(undef, 0)
-
-        m.disc_var_pick = 2                      # By default use the 15-variable selective rule
-        m.disc_ratio = 4
-        m.disc_uniform_rate = 2
-        m.disc_add_partition_method = "adaptive"
-        m.disc_divert_chunks = 5
-        m.disc_abs_width_tol = 1e-4
-        m.disc_rel_width_tol = 1e-6
-        m.disc_consecutive_forbid = 0
-        m.disc_ratio_branch=false
-
-        m.convhull_formulation = "sos2"
-        m.convhull_ebd = false
-        m.convhull_ebd_encode = "default"
-        m.convhull_ebd_ibs = false
-        m.convhull_ebd_link = false
-        m.convhull_warmstart = true
-        m.convhull_no_good_cuts = true
-
-        m.presolve_track_time = true
-        m.presolve_bt = true
-        m.presolve_timeout = 900
-        m.presolve_maxiter = 10
-        m.presolve_bt_width_tol = 1e-3
-        m.presolve_bt_output_tol = 1e-5
-        m.presolve_bt_algo = 1
-        m.presolve_bt_relax = false
-        m.presolve_bt_mip_timeout = Inf
-
-        m.presolve_bp = true
-
-        m.user_parameters = Dict()
-        m.int_enable = false
-        m.int_cumulative_disc = true
-        m.int_fully_disc = false
+        m.options = custom_options(;kwargs...)
 
         m.num_var_orig = 0
         m.num_cont_var_orig = 0
@@ -254,8 +289,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         m.constr_structure = []
         m.best_bound_sol = []
         m.bound_sol_history = []
-        m.presolve_infeasible = false
-        m.bound_sol_history = Vector{Vector{Float64}}(undef, m.disc_consecutive_forbid)
+        m.bound_sol_history = Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
 
         m.best_obj = Inf
         m.best_bound = -Inf
@@ -270,12 +304,20 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     end
 end
 
+function get_option(m::Optimizer, s::Symbol)
+    return @eval $m.options.$s
+end
+
+function set_option(m::Optimizer, s::Symbol, val )
+    return @eval $m.options.$s = $val
+end
+
 function MOI.is_empty(model::Optimizer)
     return iszero(model.num_var_orig)
 end
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
-    setproperty!(model, Symbol(param.name), value)
+    setproperty!(model.options, Symbol(param.name), value)
 end
 
 function MOI.add_variables(model::Optimizer, n::Int)
@@ -349,7 +391,7 @@ function MOI.optimize!(m::Optimizer)
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
     if !isempty(m.int_vars) || !isempty(m.bin_vars)
-        (m.minlp_solver === nothing) && (error("No MINLP local solver specified; use minlp_solver to specify a MINLP local solver"))
+        (get_option(m, :minlp_solver) === nothing) && (error("No MINLP local solver specified; use minlp_solver to specify a MINLP local solver"))
     end
 
     # Summarize constraints information in original model
@@ -387,17 +429,17 @@ function MOI.optimize!(m::Optimizer)
     recategorize_var(m)             # Initial round of variable re-categorization
 
     :Int in m.var_type_orig && @warn "Alpine's support for integer variables is experimental"
-    :Int in m.var_type_orig ? m.int_enable = true : m.int_enable = false # Separator for safer runs
+    :Int in m.var_type_orig ? set_option(m, :int_enable, true) : set_option(m, :int_enable, false) # Separator for safer runs
 
     # Conduct solver-dependent detection
     fetch_mip_solver_identifier(m)
-    (m.nlp_solver != empty_solver) && (fetch_nlp_solver_identifier(m))
-    (m.minlp_solver != empty_solver) && (fetch_minlp_solver_identifier(m))
+    (get_option(m, :nlp_solver) != empty_solver) && (fetch_nlp_solver_identifier(m))
+    (get_option(m, :minlp_solver) != empty_solver) && (fetch_minlp_solver_identifier(m))
 
     # Solver Dependent Options
     if m.mip_solver_id != :Gurobi
-        m.convhull_warmstart == false
-        m.convhull_no_good_cuts == false
+        get_option(m, :convhull_warmstart) == false
+        get_option(m, :convhull_no_good_cuts) == false
     end
 
     # Main Algorithmic Initialization
@@ -408,16 +450,16 @@ function MOI.optimize!(m::Optimizer)
     init_disc(m)                            # Initialize discretization dictionaries
 
     # Turn-on bt presolver if variables are not discrete
-    if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && m.presolve_bt == nothing
-        m.presolve_bt = true
+    if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && get_option(m, :presolve_bt) == nothing
+        set_option(m, :presolve_bt, true)
         println("Automatically turning on bound-tightening presolver...")
-    elseif m.presolve_bt == nothing  # If no use indication
-        m.presolve_bt = false
+    elseif get_option(m, :presolve_bt) == nothing  # If no use indication
+        set_option(m, :presolve_bt, false)
     end
 
     if length(m.bin_vars) > 200 || m.num_var_orig > 2000
         println("Automatically turning OFF ratio branching due to the size of the problem")
-        m.disc_ratio_branch=false
+        set_option(m, :disc_ratio_branch, false)
     end
 
     # Initialize the solution pool
