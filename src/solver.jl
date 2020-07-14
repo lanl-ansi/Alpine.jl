@@ -218,7 +218,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
     obj_structure::Symbol                                       # A symbolic indicator of the expression type of objective function
     constr_structure::Vector{Symbol}                            # A vector indicating whether a constraint is with the special structure
-    bounding_obj_expr_mip::Union{Expr,Number}                                 # Lifted objective expression; if linear, same as obj_expr_orig
+    bounding_obj_expr_mip::Union{Expr,Number}                   # Lifted objective expression; if linear, same as obj_expr_orig
     bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
     bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
