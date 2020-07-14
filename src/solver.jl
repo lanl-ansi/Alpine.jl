@@ -67,7 +67,6 @@ mutable struct OptimizerOptions
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
-    presolve_infeasible::Bool                                   # Presolve infeasibility detection flag
     user_parameters::Dict                                       # [INACTIVE] Additional parameters used for user-defined functional inputs
 
     # Features for Integer Problems (NOTE: no support for int-lin problems)
@@ -132,7 +131,6 @@ function default_options()
         presolve_bt_relax = false
         presolve_bt_mip_timeout = Inf
         presolve_bp = true
-        presolve_infeasible = false
 
         user_parameters = Dict()
         int_enable = false
@@ -147,20 +145,8 @@ function default_options()
                              disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch, 
                              convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts, 
                              presolve_track_time, presolve_bt, presolve_timeout, presolve_maxiter, presolve_bt_width_tol, presolve_bt_output_tol, 
-                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_timeout, presolve_bp,  presolve_infeasible, 
+                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_timeout, presolve_bp, 
                              user_parameters, int_enable, int_cumulative_disc, int_fully_disc)
-end
-
-function custom_options(;kwargs...)
-    options = default_options()
-    for (kw, val) in kwargs
-        if kw in fieldnames(OptimizerOptions)
-            setfield!(options, kw, val)
-        else
-            @warn "Unrecognized keyword $kw has been ignored!"
-        end
-    end
-    return options
 end
 
 
@@ -236,6 +222,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     var_type::Vector{Symbol}                                    # Updated variable type for local solve
 
     # Solution information
+    presolve_infeasible::Bool                                   # Presolve infeasibility detection flag
     best_bound::Float64                                         # Best bound from MIP
     best_obj::Float64                                           # Best feasible objective value
     best_sol::Vector{Float64}                                   # Best feasible solution
@@ -251,10 +238,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     alpine_status::Symbol                                       # Current Alpine's status
 
     # constructor
-    function Optimizer(;kwargs...)
+    function Optimizer()
 
         m = new()
-        m.options = custom_options(;kwargs...)
+        m.options = default_options()
         MOI.empty!(m)
 
         return m
@@ -262,11 +249,11 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 end
 
 function get_option(m::Optimizer, s::Symbol)
-    return @eval $m.options.$s
+    getproperty(m.options, s)
 end
 
 function set_option(m::Optimizer, s::Symbol, val )
-    return @eval $m.options.$s = $val
+    setproperty!(m.options, s, val)
 end
 
 function MOI.is_empty(model::Optimizer)

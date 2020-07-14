@@ -3,7 +3,7 @@ High-level Function
 """
 function MOI.optimize!(m::Optimizer)
     load!(m)
-    if get_option(m, :presolve_infeasible)
+    if getproperty(m, :presolve_infeasible)
         summary_status(m)
         return
     end

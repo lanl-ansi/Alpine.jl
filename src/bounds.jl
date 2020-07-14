@@ -261,7 +261,7 @@ function resolve_var_bounds(m::Optimizer)
 
     # Basic Bound propagation
     if get_option(m, :presolve_bp)
-        set_option(m, :presolve_infeasible, bound_propagation(m)) # Fetch bounds from constraints
+        setproperty!(m, :presolve_infeasible, bound_propagation(m)) # Fetch bounds from constraints
     end
 
     # Resolve unbounded variables in the original formulation 
