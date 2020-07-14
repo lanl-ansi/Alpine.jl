@@ -376,6 +376,21 @@ function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     return
 end
 
+"""
+    getcategory(vref::JuMP.VariableRef)
+
+Return `:Bin`, `:Cont`, or `:Int`, depending on the variable information of vref.
+"""
+function getcategory(vref::JuMP.VariableRef)
+    if is_integer(vref) 
+        return :Int
+    elseif is_binary(vref)
+        return :Bin
+    else
+        return :Cont
+    end
+end
+
 function load!(m::Optimizer)
     # Initialize NLP interface
     MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
