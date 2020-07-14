@@ -299,7 +299,7 @@ function MOI.empty!(m::Optimizer)
     m.best_bound_sol = []
     m.bound_sol_history = []
     m.presolve_infeasible = false
-    m.bound_sol_history = Vector{Vector{Float64}}(undef, m.disc_consecutive_forbid)
+    m.bound_sol_history = Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
 
     m.best_obj = Inf
     m.best_bound = -Inf

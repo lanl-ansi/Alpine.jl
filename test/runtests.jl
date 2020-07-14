@@ -13,7 +13,7 @@ alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
 
 #examples = readdir(joinpath(alpine_dir, "test", "examples"))
 
-include("examples/brainpc3.jl")
+include(joinpath(alpine_dir, "test", "examples/brainpc3.jl"))
 #for i in examples
 #    include(joinpath(alpine_dir, "test", "examples", i))
 #end

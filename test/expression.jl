@@ -1426,14 +1426,7 @@ end
             "mip_solver" =>  CBC,
             "disc_ratio" =>  8,
             "loglevel" =>  100)
-        #=
-        test_solver = optimizer_with_attributes(
-            Alpine.Optimizer,
-            "nlp_solver" => IPOPT_SB,
-            "mip_solver" => CBC,
-            "disc_ratio" => 8,
-            "loglevel" => 100)
-        =#
+
 
         m = brainpc3(solver=test_solver)
 
