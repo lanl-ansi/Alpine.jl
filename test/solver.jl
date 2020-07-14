@@ -15,9 +15,6 @@
 end
 =#
 
-const IPOPT = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true)
-const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
-
 @testset "Partitioning variable selection tests :: nlp3" begin
 
     # Select all NL variable

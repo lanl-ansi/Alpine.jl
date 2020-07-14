@@ -1,6 +1,10 @@
+#=
 @testset "Expression Parsing || bilinear || Affine || exprs.jl" begin
 
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
+=======
+    test_solver = AlpineSolver(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
+>>>>>>> a180b5ee09974994dd7dadb787928823ee6bdf11
 
     m=exprstest(solver=test_solver)
 
@@ -113,8 +117,8 @@
 end
 
 @testset "Expression Parsing || bilinear || Affine || nlp1.jl" begin
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-                           mip_solver=CbcSolver(logLevel=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,
+                           mip_solver=CBC,
                            loglevel=100)
     m=nlp1(solver=test_solver)
 
@@ -134,7 +138,7 @@ end
 
 @testset "Expression Parsing || bilinear || Affine || nlp3.jl" begin
 
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
 
     m=nlp3(solver=test_solver)
 
@@ -209,8 +213,8 @@ end
 
 @testset "Expression Parsing || bilinear || Simple || bi1.jl " begin
 
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-                           mip_solver=CbcSolver(logLevel=0),
+    test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,
+                           mip_solver=CBC,
                            loglevel=100)
 
     m = operator_c(solver=test_solver)
@@ -230,7 +234,7 @@ end
 
 @testset "Expression Parsing || bilinear || Complex || blend029.jl " begin
 
-    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,mip_solver=CBC,loglevel=100)
 
     m = blend029(solver=test_solver)
 
@@ -342,7 +346,7 @@ end
 
 @testset "Expression Parsing || multilinear || Simple || multi.jl " begin
 
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
 
     m = multi3(solver=test_solver, exprmode=1)
 
@@ -650,7 +654,7 @@ end
 end
 
 @testset "Expression Parsing || bilinear || Complex-div || div.jl" begin
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
 
     m = div(solver=test_solver)
 
@@ -739,7 +743,7 @@ end
 end
 
 @testset "Expression Parsing || part1 " begin
-    m = Model(solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100))
+    m = Model(solver=Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100))
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, x[1]^2 >= 1)  				  # Basic monomial x[5]=x[1]^2
     @NLconstraint(m, x[1]*x[2] <= 1)				  # x[6] <= 1 : x[6] = x[1]*x[2]
@@ -776,7 +780,7 @@ end
 end
 
 @testset "Expression Parsing || part2" begin
-    m = Model(solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100))
+    m = Model(solver=Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100))
 
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, (x[1]*x[2]) * x[3] >= 1)
@@ -830,7 +834,7 @@ end
 end
 
 @testset "Expression Parsing || part3" begin
-    m = Model(solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100))
+    m = Model(solver=Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100))
 
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, ((x[1]*x[2])*x[3])*x[4] >= 1)
@@ -891,7 +895,7 @@ end
 end
 
 @testset "Expression Parsing || part7" begin
-    m = Model(solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100))
+    m = Model(solver=Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100))
     @variable(m, x[1:4]>=0)
 
     @NLconstraint(m, x[1]*x[2]*x[3]*x[4] >= 1)
@@ -938,8 +942,8 @@ end
 end
 
 @testset "Expression Parsing || part8" begin
-    m = Model(solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-           mip_solver=CbcSolver(logLevel=0),
+    m = Model(solver=Alpine.Optimizer(nlp_solver=IPOPT_SB,
+           mip_solver=CBC,
            loglevel=100))
     @variable(m, x[1:4]>=0)
 
@@ -991,7 +995,7 @@ end
 
     @testset "Convex Parsing :: PART I" begin
 
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
         m = convex_test(test_solver)
 
         JuMP.build(m)
@@ -1192,10 +1196,12 @@ end
         @test m.internalModel.bounding_constr_mip[26][:cnt] == 2
     end
 end
+=#
 
 @testset "Expression Prasing || Linear Lifting" begin
+    #=
     @testset "Expression Parsing || Linear Lifting || nlp2" begin
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,
                                mip_solver=CbcSolver(),
                                disc_ratio=8,
                                loglevel=100)
@@ -1244,8 +1250,8 @@ end
     end
 
     @testset "Expression Parsing || Linear Lifting || general" begin
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-                               mip_solver=CbcSolver(logLevel=0),
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,
+                               mip_solver=CBC,
                                loglevel=100)
 
         m = basic_linear_lift(solver=test_solver)
@@ -1323,11 +1329,12 @@ end
         @test m.internalModel.nonconvex_terms[nlk8][:var_idxs] == [16, 15]
         @test m.internalModel.nonconvex_terms[nlk9][:var_idxs] == [14]
     end
+    =#
 
     #=
     @testset "Expression Parsing || complex || Affine || operator_b" begin
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                                mip_solver=CbcSolver(logLevel=0),
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT,
+                                mip_solver=CBC,
                                 loglevel=100)
 
         m=operator_b(solver=test_solver)
@@ -1413,653 +1420,666 @@ end
         end
     end
     =#
-	
+
     @testset "Expression Parsing || Linear Lifting || brainpc3" begin
 
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-                            mip_solver=CbcSolver(logLevel=0),
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,
+                            mip_solver=CBC,
                             disc_ratio=8,
                             loglevel=100)
+        #=
+        test_solver = optimizer_with_attributes(
+            Alpine.Optimizer,
+            "nlp_solver" => IPOPT_SB,
+            "mip_solver" => CBC,
+            "disc_ratio" => 8,
+            "loglevel" => 100)
+        =#
 
         m = brainpc3(solver=test_solver)
 
-        JuMP.build(m)
+        MOI.Utilities.attach_optimizer(m)
+        MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
 
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:y_idx] == 6913
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:id] == 2
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:lifted_constr_ref] == :(x[6913] == (*)(x[6912]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:y_idx] == 6970
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:id] == 25
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:lifted_constr_ref] == :(x[6970] == x[6903] * x[6969])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:y_idx] == 6915
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:id] == 3
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:lifted_constr_ref] == :(x[6915] == x[6903] * x[6914])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:y_idx] == 6920
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:id] == 5
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:lifted_constr_ref] == :(x[6920] == x[6903] * x[6919])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:y_idx] == 6928
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:id] == 8
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:lifted_constr_ref] == :(x[6928] == (*)(x[6927]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:y_idx] == 6953
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:id] == 18
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:lifted_constr_ref] == :(x[6953] == (*)(x[6952]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:y_idx] == 6963
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:id] == 22
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:lifted_constr_ref] == :(x[6963] == (*)(x[6962]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:y_idx] == 6975
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:id] == 27
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:lifted_constr_ref] == :(x[6975] == x[6903] * x[6974])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:y_idx] == 6935
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:id] == 11
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:lifted_constr_ref] == :(x[6935] == x[6903] * x[6934])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:y_idx] == 6960
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:id] == 21
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:lifted_constr_ref] == :(x[6960] == x[6903] * x[6959])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:y_idx] == 7015
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:id] == 43
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:lifted_constr_ref] == :(x[7015] == x[6903] * x[7014])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:y_idx] == 6940
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:id] == 13
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:lifted_constr_ref] == :(x[6940] == x[6903] * x[6939])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:y_idx] == 7018
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:id] == 44
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:lifted_constr_ref] == :(x[7018] == (*)(x[7017]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:y_idx] == 6930
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:id] == 9
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:lifted_constr_ref] == :(x[6930] == x[6903] * x[6929])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:y_idx] == 7013
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:id] == 42
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:lifted_constr_ref] == :(x[7013] == (*)(x[7012]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:y_idx] == 6948
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:id] == 16
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:lifted_constr_ref] == :(x[6948] == (*)(x[6947]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:y_idx] == 7033
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:id] == 50
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:lifted_constr_ref] == :(x[7033] == (*)(x[7032]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:y_idx] == 6998
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:id] == 36
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:lifted_constr_ref] == :(x[6998] == (*)(x[6997]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:y_idx] == 7028
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:id] == 48
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:lifted_constr_ref] == :(x[7028] == (*)(x[7027]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:y_idx] == 7038
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:id] == 52
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:lifted_constr_ref] == :(x[7038] == (*)(x[7037]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:y_idx] == 7008
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:id] == 40
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:lifted_constr_ref] == :(x[7008] == (*)(x[7007]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:y_idx] == 6965
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:id] == 23
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:lifted_constr_ref] == :(x[6965] == x[6903] * x[6964])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:y_idx] == 6925
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:id] == 7
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:lifted_constr_ref] == :(x[6925] == x[6903] * x[6924])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:y_idx] == 6980
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:id] == 29
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:lifted_constr_ref] == :(x[6980] == x[6903] * x[6979])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:y_idx] == 6995
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:id] == 35
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:lifted_constr_ref] == :(x[6995] == x[6903] * x[6994])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:y_idx] == 6973
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:id] == 26
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:lifted_constr_ref] == :(x[6973] == (*)(x[6972]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:y_idx] == 7020
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:id] == 45
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:lifted_constr_ref] == :(x[7020] == x[6903] * x[7019])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:y_idx] == 6993
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:id] == 34
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:lifted_constr_ref] == :(x[6993] == (*)(x[6992]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:y_idx] == 7003
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:id] == 38
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:lifted_constr_ref] == :(x[7003] == (*)(x[7002]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:y_idx] == 7023
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:id] == 46
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:lifted_constr_ref] == :(x[7023] == (*)(x[7022]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:y_idx] == 6909
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:id] == 1
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:lifted_constr_ref] == :(x[6909] == x[6903] * x[6908])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:y_idx] == 6950
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:id] == 17
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:lifted_constr_ref] == :(x[6950] == x[6903] * x[6949])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:y_idx] == 7005
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:id] == 39
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:lifted_constr_ref] == :(x[7005] == x[6903] * x[7004])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:y_idx] == 6918
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:id] == 4
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:lifted_constr_ref] == :(x[6918] == (*)(x[6917]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:y_idx] == 6938
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:id] == 12
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:lifted_constr_ref] == :(x[6938] == (*)(x[6937]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:y_idx] == 6933
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:id] == 10
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:lifted_constr_ref] == :(x[6933] == (*)(x[6932]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:y_idx] == 6990
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:id] == 33
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:lifted_constr_ref] == :(x[6990] == x[6903] * x[6989])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:y_idx] == 6978
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:id] == 28
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:lifted_constr_ref] == :(x[6978] == (*)(x[6977]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:y_idx] == 6988
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:id] == 32
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:lifted_constr_ref] == :(x[6988] == (*)(x[6987]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:y_idx] == 7035
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:id] == 51
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:lifted_constr_ref] == :(x[7035] == x[6903] * x[7034])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:y_idx] == 6968
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:id] == 24
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:lifted_constr_ref] == :(x[6968] == (*)(x[6967]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:y_idx] == 6958
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:id] == 20
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:lifted_constr_ref] == :(x[6958] == (*)(x[6957]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:y_idx] == 7010
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:id] == 41
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:lifted_constr_ref] == :(x[7010] == x[6903] * x[7009])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:y_idx] == 6943
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:id] == 14
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:lifted_constr_ref] == :(x[6943] == (*)(x[6942]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:y_idx] == 6983
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:id] == 30
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:lifted_constr_ref] == :(x[6983] == (*)(x[6982]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:y_idx] == 7000
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:id] == 37
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:lifted_constr_ref] == :(x[7000] == x[6903] * x[6999])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:y_idx] == 6945
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:id] == 15
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:lifted_constr_ref] == :(x[6945] == x[6903] * x[6944])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:y_idx] == 7025
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:id] == 47
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:lifted_constr_ref] == :(x[7025] == x[6903] * x[7024])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:y_idx] == 6955
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:id] == 19
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:lifted_constr_ref] == :(x[6955] == x[6903] * x[6954])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:y_idx] == 6923
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:id] == 6
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:lifted_constr_ref] == :(x[6923] == (*)(x[6922]))
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:nonlinear_type] == :MONOMIAL
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:y_idx] == 6985
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:id] == 31
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:lifted_constr_ref] == :(x[6985] == x[6903] * x[6984])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:constr_id] == Set(Any[0])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:y_idx] == 7030
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:id] == 49
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:lifted_constr_ref] == :(x[7030] == x[6903] * x[7029])
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:nonlinear_type] == :BILINEAR
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:y_type] == :Cont
-        @test m.internalModel.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:constr_id] == Set(Any[0])
+        alpine = JuMP.backend(m).optimizer.model
+        Alpine.load!(alpine)
+
+        @test alpine.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:y_idx] == 6913
+        @test alpine.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:id] == 2
+        @test alpine.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:lifted_constr_ref] == :(x[6913] == (*)(x[6912]))
+        @test alpine.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6912]), :(x[6912])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:y_idx] == 6970
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:id] == 25
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:lifted_constr_ref] == :(x[6970] == x[6903] * x[6969])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6969])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:y_idx] == 6915
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:id] == 3
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:lifted_constr_ref] == :(x[6915] == x[6903] * x[6914])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6914])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:y_idx] == 6920
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:id] == 5
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:lifted_constr_ref] == :(x[6920] == x[6903] * x[6919])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6919])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:y_idx] == 6928
+        @test alpine.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:id] == 8
+        @test alpine.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:lifted_constr_ref] == :(x[6928] == (*)(x[6927]))
+        @test alpine.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6927]), :(x[6927])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:y_idx] == 6953
+        @test alpine.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:id] == 18
+        @test alpine.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:lifted_constr_ref] == :(x[6953] == (*)(x[6952]))
+        @test alpine.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6952]), :(x[6952])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:y_idx] == 6963
+        @test alpine.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:id] == 22
+        @test alpine.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:lifted_constr_ref] == :(x[6963] == (*)(x[6962]))
+        @test alpine.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6962]), :(x[6962])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:y_idx] == 6975
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:id] == 27
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:lifted_constr_ref] == :(x[6975] == x[6903] * x[6974])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6974])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:y_idx] == 6935
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:id] == 11
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:lifted_constr_ref] == :(x[6935] == x[6903] * x[6934])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6934])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:y_idx] == 6960
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:id] == 21
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:lifted_constr_ref] == :(x[6960] == x[6903] * x[6959])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6959])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:y_idx] == 7015
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:id] == 43
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:lifted_constr_ref] == :(x[7015] == x[6903] * x[7014])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7014])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:y_idx] == 6940
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:id] == 13
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:lifted_constr_ref] == :(x[6940] == x[6903] * x[6939])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6939])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:y_idx] == 7018
+        @test alpine.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:id] == 44
+        @test alpine.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:lifted_constr_ref] == :(x[7018] == (*)(x[7017]))
+        @test alpine.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7017]), :(x[7017])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:y_idx] == 6930
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:id] == 9
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:lifted_constr_ref] == :(x[6930] == x[6903] * x[6929])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6929])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:y_idx] == 7013
+        @test alpine.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:id] == 42
+        @test alpine.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:lifted_constr_ref] == :(x[7013] == (*)(x[7012]))
+        @test alpine.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7012]), :(x[7012])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:y_idx] == 6948
+        @test alpine.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:id] == 16
+        @test alpine.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:lifted_constr_ref] == :(x[6948] == (*)(x[6947]))
+        @test alpine.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6947]), :(x[6947])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:y_idx] == 7033
+        @test alpine.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:id] == 50
+        @test alpine.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:lifted_constr_ref] == :(x[7033] == (*)(x[7032]))
+        @test alpine.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7032]), :(x[7032])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:y_idx] == 6998
+        @test alpine.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:id] == 36
+        @test alpine.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:lifted_constr_ref] == :(x[6998] == (*)(x[6997]))
+        @test alpine.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6997]), :(x[6997])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:y_idx] == 7028
+        @test alpine.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:id] == 48
+        @test alpine.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:lifted_constr_ref] == :(x[7028] == (*)(x[7027]))
+        @test alpine.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7027]), :(x[7027])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:y_idx] == 7038
+        @test alpine.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:id] == 52
+        @test alpine.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:lifted_constr_ref] == :(x[7038] == (*)(x[7037]))
+        @test alpine.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7037]), :(x[7037])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:y_idx] == 7008
+        @test alpine.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:id] == 40
+        @test alpine.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:lifted_constr_ref] == :(x[7008] == (*)(x[7007]))
+        @test alpine.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7007]), :(x[7007])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:y_idx] == 6965
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:id] == 23
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:lifted_constr_ref] == :(x[6965] == x[6903] * x[6964])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6964])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:y_idx] == 6925
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:id] == 7
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:lifted_constr_ref] == :(x[6925] == x[6903] * x[6924])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6924])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:y_idx] == 6980
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:id] == 29
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:lifted_constr_ref] == :(x[6980] == x[6903] * x[6979])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6979])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:y_idx] == 6995
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:id] == 35
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:lifted_constr_ref] == :(x[6995] == x[6903] * x[6994])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6994])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:y_idx] == 6973
+        @test alpine.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:id] == 26
+        @test alpine.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:lifted_constr_ref] == :(x[6973] == (*)(x[6972]))
+        @test alpine.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6972]), :(x[6972])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:y_idx] == 7020
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:id] == 45
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:lifted_constr_ref] == :(x[7020] == x[6903] * x[7019])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7019])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:y_idx] == 6993
+        @test alpine.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:id] == 34
+        @test alpine.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:lifted_constr_ref] == :(x[6993] == (*)(x[6992]))
+        @test alpine.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6992]), :(x[6992])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:y_idx] == 7003
+        @test alpine.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:id] == 38
+        @test alpine.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:lifted_constr_ref] == :(x[7003] == (*)(x[7002]))
+        @test alpine.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7002]), :(x[7002])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:y_idx] == 7023
+        @test alpine.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:id] == 46
+        @test alpine.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:lifted_constr_ref] == :(x[7023] == (*)(x[7022]))
+        @test alpine.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[7022]), :(x[7022])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:y_idx] == 6909
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:id] == 1
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:lifted_constr_ref] == :(x[6909] == x[6903] * x[6908])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6908])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:y_idx] == 6950
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:id] == 17
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:lifted_constr_ref] == :(x[6950] == x[6903] * x[6949])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6949])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:y_idx] == 7005
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:id] == 39
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:lifted_constr_ref] == :(x[7005] == x[6903] * x[7004])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7004])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:y_idx] == 6918
+        @test alpine.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:id] == 4
+        @test alpine.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:lifted_constr_ref] == :(x[6918] == (*)(x[6917]))
+        @test alpine.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6917]), :(x[6917])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:y_idx] == 6938
+        @test alpine.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:id] == 12
+        @test alpine.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:lifted_constr_ref] == :(x[6938] == (*)(x[6937]))
+        @test alpine.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6937]), :(x[6937])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:y_idx] == 6933
+        @test alpine.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:id] == 10
+        @test alpine.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:lifted_constr_ref] == :(x[6933] == (*)(x[6932]))
+        @test alpine.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6932]), :(x[6932])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:y_idx] == 6990
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:id] == 33
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:lifted_constr_ref] == :(x[6990] == x[6903] * x[6989])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6989])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:y_idx] == 6978
+        @test alpine.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:id] == 28
+        @test alpine.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:lifted_constr_ref] == :(x[6978] == (*)(x[6977]))
+        @test alpine.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6977]), :(x[6977])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:y_idx] == 6988
+        @test alpine.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:id] == 32
+        @test alpine.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:lifted_constr_ref] == :(x[6988] == (*)(x[6987]))
+        @test alpine.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6987]), :(x[6987])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:y_idx] == 7035
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:id] == 51
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:lifted_constr_ref] == :(x[7035] == x[6903] * x[7034])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7034])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:y_idx] == 6968
+        @test alpine.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:id] == 24
+        @test alpine.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:lifted_constr_ref] == :(x[6968] == (*)(x[6967]))
+        @test alpine.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6967]), :(x[6967])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:y_idx] == 6958
+        @test alpine.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:id] == 20
+        @test alpine.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:lifted_constr_ref] == :(x[6958] == (*)(x[6957]))
+        @test alpine.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6957]), :(x[6957])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:y_idx] == 7010
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:id] == 41
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:lifted_constr_ref] == :(x[7010] == x[6903] * x[7009])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7009])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:y_idx] == 6943
+        @test alpine.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:id] == 14
+        @test alpine.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:lifted_constr_ref] == :(x[6943] == (*)(x[6942]))
+        @test alpine.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6942]), :(x[6942])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:y_idx] == 6983
+        @test alpine.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:id] == 30
+        @test alpine.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:lifted_constr_ref] == :(x[6983] == (*)(x[6982]))
+        @test alpine.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6982]), :(x[6982])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:y_idx] == 7000
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:id] == 37
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:lifted_constr_ref] == :(x[7000] == x[6903] * x[6999])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6999])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:y_idx] == 6945
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:id] == 15
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:lifted_constr_ref] == :(x[6945] == x[6903] * x[6944])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6944])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:y_idx] == 7025
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:id] == 47
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:lifted_constr_ref] == :(x[7025] == x[6903] * x[7024])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7024])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:y_idx] == 6955
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:id] == 19
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:lifted_constr_ref] == :(x[6955] == x[6903] * x[6954])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6954])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:y_idx] == 6923
+        @test alpine.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:id] == 6
+        @test alpine.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:lifted_constr_ref] == :(x[6923] == (*)(x[6922]))
+        @test alpine.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:nonlinear_type] == :MONOMIAL
+        @test alpine.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6922]), :(x[6922])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:y_idx] == 6985
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:id] == 31
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:lifted_constr_ref] == :(x[6985] == x[6903] * x[6984])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[6984])]][:constr_id] == Set(Any[0])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:y_idx] == 7030
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:id] == 49
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:lifted_constr_ref] == :(x[7030] == x[6903] * x[7029])
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:nonlinear_type] == :BILINEAR
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:y_type] == :Cont
+        @test alpine.nonconvex_terms[Expr[:(x[6903]), :(x[7029])]][:constr_id] == Set(Any[0])
         lk1 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6910), (-1.0, 6909)])))
-        @test m.internalModel.linear_terms[lk1][:y_idx] == 6911
-        @test m.internalModel.linear_terms[lk1][:id] == 3
-        @test m.internalModel.linear_terms[lk1][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk1][:y_idx] == 6911
+        @test alpine.linear_terms[lk1][:id] == 3
+        @test alpine.linear_terms[lk1][:y_type] == :(Cont)
         lk2 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3467), (1.0, 16)])))
-        @test m.internalModel.linear_terms[lk2][:y_idx] == 6908
-        @test m.internalModel.linear_terms[lk2][:id] == 1
-        @test m.internalModel.linear_terms[lk2][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk2][:y_idx] == 6908
+        @test alpine.linear_terms[lk2][:id] == 1
+        @test alpine.linear_terms[lk2][:y_type] == :(Cont)
         lk3 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.001548, 6903), (1.0, 7016), (1.0, 5702)])))
-        @test m.internalModel.linear_terms[lk3][:y_idx] == 7017
-        @test m.internalModel.linear_terms[lk3][:id] == 67
-        @test m.internalModel.linear_terms[lk3][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk3][:y_idx] == 7017
+        @test alpine.linear_terms[lk3][:id] == 67
+        @test alpine.linear_terms[lk3][:y_type] == :(Cont)
         lk4 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 5162), (1.0, 1711)])))
-        @test m.internalModel.linear_terms[lk4][:y_idx] == 7004
-        @test m.internalModel.linear_terms[lk4][:id] == 59
-        @test m.internalModel.linear_terms[lk4][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk4][:y_idx] == 7004
+        @test alpine.linear_terms[lk4][:id] == 59
+        @test alpine.linear_terms[lk4][:y_type] == :(Cont)
         lk5 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 7021), (0.001435, 6903), (1.0, 6002)])))
-        @test m.internalModel.linear_terms[lk5][:y_idx] == 7022
-        @test m.internalModel.linear_terms[lk5][:id] == 70
-        @test m.internalModel.linear_terms[lk5][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk5][:y_idx] == 7022
+        @test alpine.linear_terms[lk5][:id] == 70
+        @test alpine.linear_terms[lk5][:y_type] == :(Cont)
         lk6 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6935), (1.0, 166)])))
-        @test m.internalModel.linear_terms[lk6][:y_idx] == 6936
-        @test m.internalModel.linear_terms[lk6][:id] == 18
-        @test m.internalModel.linear_terms[lk6][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk6][:y_idx] == 6936
+        @test alpine.linear_terms[lk6][:id] == 18
+        @test alpine.linear_terms[lk6][:y_type] == :(Cont)
         lk7 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 4262), (0.00247, 6903), (1.0, 6981)])))
-        @test m.internalModel.linear_terms[lk7][:y_idx] == 6982
-        @test m.internalModel.linear_terms[lk7][:id] == 46
-        @test m.internalModel.linear_terms[lk7][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk7][:y_idx] == 6982
+        @test alpine.linear_terms[lk7][:id] == 46
+        @test alpine.linear_terms[lk7][:y_type] == :(Cont)
         lk8 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 7005), (1.0, 1711)])))
-        @test m.internalModel.linear_terms[lk8][:y_idx] == 7006
-        @test m.internalModel.linear_terms[lk8][:id] == 60
-        @test m.internalModel.linear_terms[lk8][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk8][:y_idx] == 7006
+        @test alpine.linear_terms[lk8][:id] == 60
+        @test alpine.linear_terms[lk8][:y_type] == :(Cont)
         lk9 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1951), (1.0, 5402)])))
-        @test m.internalModel.linear_terms[lk9][:y_idx] == 7009
-        @test m.internalModel.linear_terms[lk9][:id] == 62
-        @test m.internalModel.linear_terms[lk9][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk9][:y_idx] == 7009
+        @test alpine.linear_terms[lk9][:id] == 62
+        @test alpine.linear_terms[lk9][:y_type] == :(Cont)
         lk10 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 226), (-1.0, 6945)])))
-        @test m.internalModel.linear_terms[lk10][:y_idx] == 6946
-        @test m.internalModel.linear_terms[lk10][:id] == 24
-        @test m.internalModel.linear_terms[lk10][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk10][:y_idx] == 6946
+        @test alpine.linear_terms[lk10][:id] == 24
+        @test alpine.linear_terms[lk10][:y_type] == :(Cont)
         lk11 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 7030), (1.0, 3151)])))
-        @test m.internalModel.linear_terms[lk11][:y_idx] == 7031
-        @test m.internalModel.linear_terms[lk11][:id] == 75
-        @test m.internalModel.linear_terms[lk11][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk11][:y_idx] == 7031
+        @test alpine.linear_terms[lk11][:id] == 75
+        @test alpine.linear_terms[lk11][:y_type] == :(Cont)
         lk12 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6991), (1.0, 4622), (0.002066, 6903)])))
-        @test m.internalModel.linear_terms[lk12][:y_idx] == 6992
-        @test m.internalModel.linear_terms[lk12][:id] == 52
-        @test m.internalModel.linear_terms[lk12][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk12][:y_idx] == 6992
+        @test alpine.linear_terms[lk12][:id] == 52
+        @test alpine.linear_terms[lk12][:y_type] == :(Cont)
         lk13 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 7026), (1.0, 6302), (0.001323, 6903)])))
-        @test m.internalModel.linear_terms[lk13][:y_idx] == 7027
-        @test m.internalModel.linear_terms[lk13][:id] == 73
-        @test m.internalModel.linear_terms[lk13][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk13][:y_idx] == 7027
+        @test alpine.linear_terms[lk13][:id] == 73
+        @test alpine.linear_terms[lk13][:y_type] == :(Cont)
         lk14 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 46), (1.0, 3497)])))
-        @test m.internalModel.linear_terms[lk14][:y_idx] == 6914
-        @test m.internalModel.linear_terms[lk14][:id] == 5
-        @test m.internalModel.linear_terms[lk14][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk14][:y_idx] == 6914
+        @test alpine.linear_terms[lk14][:id] == 5
+        @test alpine.linear_terms[lk14][:y_type] == :(Cont)
         lk15 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6960), (1.0, 391)])))
-        @test m.internalModel.linear_terms[lk15][:y_idx] == 6961
-        @test m.internalModel.linear_terms[lk15][:id] == 33
-        @test m.internalModel.linear_terms[lk15][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk15][:y_idx] == 6961
+        @test alpine.linear_terms[lk15][:id] == 33
+        @test alpine.linear_terms[lk15][:y_type] == :(Cont)
         lk16 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 631), (-1.0, 6975)])))
-        @test m.internalModel.linear_terms[lk16][:y_idx] == 6976
-        @test m.internalModel.linear_terms[lk16][:id] == 42
-        @test m.internalModel.linear_terms[lk16][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk16][:y_idx] == 6976
+        @test alpine.linear_terms[lk16][:id] == 42
+        @test alpine.linear_terms[lk16][:y_type] == :(Cont)
         lk17 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1351), (-1.0, 6995)])))
-        @test m.internalModel.linear_terms[lk17][:y_idx] == 6996
-        @test m.internalModel.linear_terms[lk17][:id] == 54
-        @test m.internalModel.linear_terms[lk17][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk17][:y_idx] == 6996
+        @test alpine.linear_terms[lk17][:id] == 54
+        @test alpine.linear_terms[lk17][:y_type] == :(Cont)
         lk18 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3557), (1.0, 106)])))
-        @test m.internalModel.linear_terms[lk18][:y_idx] == 6924
-        @test m.internalModel.linear_terms[lk18][:id] == 11
-        @test m.internalModel.linear_terms[lk18][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk18][:y_idx] == 6924
+        @test alpine.linear_terms[lk18][:id] == 11
+        @test alpine.linear_terms[lk18][:y_type] == :(Cont)
         lk19 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3647), (1.0, 6941), (0.004795, 6903)])))
-        @test m.internalModel.linear_terms[lk19][:y_idx] == 6942
-        @test m.internalModel.linear_terms[lk19][:id] == 22
-        @test m.internalModel.linear_terms[lk19][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk19][:y_idx] == 6942
+        @test alpine.linear_terms[lk19][:id] == 22
+        @test alpine.linear_terms[lk19][:y_type] == :(Cont)
         lk20 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3722), (1.0, 271)])))
-        @test m.internalModel.linear_terms[lk20][:y_idx] == 6949
-        @test m.internalModel.linear_terms[lk20][:id] == 26
-        @test m.internalModel.linear_terms[lk20][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk20][:y_idx] == 6949
+        @test alpine.linear_terms[lk20][:id] == 26
+        @test alpine.linear_terms[lk20][:y_type] == :(Cont)
         lk21 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3647), (1.0, 196)])))
-        @test m.internalModel.linear_terms[lk21][:y_idx] == 6939
-        @test m.internalModel.linear_terms[lk21][:id] == 20
-        @test m.internalModel.linear_terms[lk21][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk21][:y_idx] == 6939
+        @test alpine.linear_terms[lk21][:id] == 20
+        @test alpine.linear_terms[lk21][:y_type] == :(Cont)
         lk22 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3467), (1.0, 6911), (6.34e-6, 6903)])))
-        @test m.internalModel.linear_terms[lk22][:y_idx] == 6912
-        @test m.internalModel.linear_terms[lk22][:id] == 4
-        @test m.internalModel.linear_terms[lk22][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk22][:y_idx] == 6912
+        @test alpine.linear_terms[lk22][:id] == 4
+        @test alpine.linear_terms[lk22][:y_type] == :(Cont)
         lk23 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1531), (1.0, 4982)])))
-        @test m.internalModel.linear_terms[lk23][:y_idx] == 6999
-        @test m.internalModel.linear_terms[lk23][:id] == 56
-        @test m.internalModel.linear_terms[lk23][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk23][:y_idx] == 6999
+        @test alpine.linear_terms[lk23][:id] == 56
+        @test alpine.linear_terms[lk23][:y_type] == :(Cont)
         lk24 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 106), (-1.0, 6925)])))
-        @test m.internalModel.linear_terms[lk24][:y_idx] == 6926
-        @test m.internalModel.linear_terms[lk24][:id] == 12
-        @test m.internalModel.linear_terms[lk24][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk24][:y_idx] == 6926
+        @test alpine.linear_terms[lk24][:id] == 12
+        @test alpine.linear_terms[lk24][:y_type] == :(Cont)
         lk25 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2251), (-1.0, 7015)])))
-        @test m.internalModel.linear_terms[lk25][:y_idx] == 7016
-        @test m.internalModel.linear_terms[lk25][:id] == 66
-        @test m.internalModel.linear_terms[lk25][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk25][:y_idx] == 7016
+        @test alpine.linear_terms[lk25][:id] == 66
+        @test alpine.linear_terms[lk25][:y_type] == :(Cont)
         lk26 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6936), (0.004985, 6903), (1.0, 3617)])))
-        @test m.internalModel.linear_terms[lk26][:y_idx] == 6937
-        @test m.internalModel.linear_terms[lk26][:id] == 19
-        @test m.internalModel.linear_terms[lk26][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk26][:y_idx] == 6937
+        @test alpine.linear_terms[lk26][:id] == 19
+        @test alpine.linear_terms[lk26][:y_type] == :(Cont)
         lk27 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6915), (1.0, 46)])))
-        @test m.internalModel.linear_terms[lk27][:y_idx] == 6916
-        @test m.internalModel.linear_terms[lk27][:id] == 6
-        @test m.internalModel.linear_terms[lk27][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk27][:y_idx] == 6916
+        @test alpine.linear_terms[lk27][:id] == 6
+        @test alpine.linear_terms[lk27][:y_type] == :(Cont)
         lk28 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3557), (0.005968, 6903), (1.0, 6926)])))
-        @test m.internalModel.linear_terms[lk28][:y_idx] == 6927
-        @test m.internalModel.linear_terms[lk28][:id] == 13
-        @test m.internalModel.linear_terms[lk28][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk28][:y_idx] == 6927
+        @test alpine.linear_terms[lk28][:id] == 13
+        @test alpine.linear_terms[lk28][:y_type] == :(Cont)
         lk29 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 271), (-1.0, 6950)])))
-        @test m.internalModel.linear_terms[lk29][:y_idx] == 6951
-        @test m.internalModel.linear_terms[lk29][:id] == 27
-        @test m.internalModel.linear_terms[lk29][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk29][:y_idx] == 6951
+        @test alpine.linear_terms[lk29][:id] == 27
+        @test alpine.linear_terms[lk29][:y_type] == :(Cont)
         lk30 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.002971, 6903), (1.0, 6971), (1.0, 3962)])))
-        @test m.internalModel.linear_terms[lk30][:y_idx] == 6972
-        @test m.internalModel.linear_terms[lk30][:id] == 40
-        @test m.internalModel.linear_terms[lk30][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk30][:y_idx] == 6972
+        @test alpine.linear_terms[lk30][:id] == 40
+        @test alpine.linear_terms[lk30][:y_type] == :(Cont)
         lk31 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 511), (-1.0, 6970)])))
-        @test m.internalModel.linear_terms[lk31][:y_idx] == 6971
-        @test m.internalModel.linear_terms[lk31][:id] == 39
-        @test m.internalModel.linear_terms[lk31][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk31][:y_idx] == 6971
+        @test alpine.linear_terms[lk31][:id] == 39
+        @test alpine.linear_terms[lk31][:y_type] == :(Cont)
         lk32 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 7031), (1.0, 6602), (0.00121, 6903)])))
-        @test m.internalModel.linear_terms[lk32][:y_idx] == 7032
-        @test m.internalModel.linear_terms[lk32][:id] == 76
-        @test m.internalModel.linear_terms[lk32][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk32][:y_idx] == 7032
+        @test alpine.linear_terms[lk32][:id] == 76
+        @test alpine.linear_terms[lk32][:y_type] == :(Cont)
         lk33 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.00166, 6903), (1.0, 7011), (1.0, 5402)])))
-        @test m.internalModel.linear_terms[lk33][:y_idx] == 7012
-        @test m.internalModel.linear_terms[lk33][:id] == 64
-        @test m.internalModel.linear_terms[lk33][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk33][:y_idx] == 7012
+        @test alpine.linear_terms[lk33][:id] == 64
+        @test alpine.linear_terms[lk33][:y_type] == :(Cont)
         lk34 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, -0.003214),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 16)])))
-        @test m.internalModel.linear_terms[lk34][:y_idx] == 6910
-        @test m.internalModel.linear_terms[lk34][:id] == 2
-        @test m.internalModel.linear_terms[lk34][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk34][:y_idx] == 6910
+        @test alpine.linear_terms[lk34][:id] == 2
+        @test alpine.linear_terms[lk34][:y_type] == :(Cont)
         lk35 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 7035), (1.0, 3451)])))
-        @test m.internalModel.linear_terms[lk35][:y_idx] == 7036
-        @test m.internalModel.linear_terms[lk35][:id] == 78
-        @test m.internalModel.linear_terms[lk35][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk35][:y_idx] == 7036
+        @test alpine.linear_terms[lk35][:id] == 78
+        @test alpine.linear_terms[lk35][:y_type] == :(Cont)
         lk36 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2551), (1.0, 6002)])))
-        @test m.internalModel.linear_terms[lk36][:y_idx] == 7019
-        @test m.internalModel.linear_terms[lk36][:id] == 68
-        @test m.internalModel.linear_terms[lk36][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk36][:y_idx] == 7019
+        @test alpine.linear_terms[lk36][:id] == 68
+        @test alpine.linear_terms[lk36][:y_type] == :(Cont)
         lk37 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3842), (1.0, 391)])))
-        @test m.internalModel.linear_terms[lk37][:y_idx] == 6959
-        @test m.internalModel.linear_terms[lk37][:id] == 32
-        @test m.internalModel.linear_terms[lk37][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk37][:y_idx] == 6959
+        @test alpine.linear_terms[lk37][:id] == 32
+        @test alpine.linear_terms[lk37][:y_type] == :(Cont)
         lk38 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6966), (0.00307, 6903), (1.0, 3902)])))
-        @test m.internalModel.linear_terms[lk38][:y_idx] == 6967
-        @test m.internalModel.linear_terms[lk38][:id] == 37
-        @test m.internalModel.linear_terms[lk38][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk38][:y_idx] == 6967
+        @test alpine.linear_terms[lk38][:id] == 37
+        @test alpine.linear_terms[lk38][:y_type] == :(Cont)
         lk39 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3722), (0.003829, 6903), (1.0, 6951)])))
-        @test m.internalModel.linear_terms[lk39][:y_idx] == 6952
-        @test m.internalModel.linear_terms[lk39][:id] == 28
-        @test m.internalModel.linear_terms[lk39][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk39][:y_idx] == 6952
+        @test alpine.linear_terms[lk39][:id] == 28
+        @test alpine.linear_terms[lk39][:y_type] == :(Cont)
         lk40 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 451), (1.0, 3902)])))
-        @test m.internalModel.linear_terms[lk40][:y_idx] == 6964
-        @test m.internalModel.linear_terms[lk40][:id] == 35
-        @test m.internalModel.linear_terms[lk40][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk40][:y_idx] == 6964
+        @test alpine.linear_terms[lk40][:id] == 35
+        @test alpine.linear_terms[lk40][:y_type] == :(Cont)
         lk41 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 7006), (1.0, 5162), (0.001713, 6903)])))
-        @test m.internalModel.linear_terms[lk41][:y_idx] == 7007
-        @test m.internalModel.linear_terms[lk41][:id] == 61
-        @test m.internalModel.linear_terms[lk41][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk41][:y_idx] == 7007
+        @test alpine.linear_terms[lk41][:id] == 61
+        @test alpine.linear_terms[lk41][:y_type] == :(Cont)
         lk42 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 811), (-1.0, 6980)])))
-        @test m.internalModel.linear_terms[lk42][:y_idx] == 6981
-        @test m.internalModel.linear_terms[lk42][:id] == 45
-        @test m.internalModel.linear_terms[lk42][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk42][:y_idx] == 6981
+        @test alpine.linear_terms[lk42][:id] == 45
+        @test alpine.linear_terms[lk42][:y_type] == :(Cont)
         lk43 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 7001), (1.0, 4982), (0.00173, 6903)])))
-        @test m.internalModel.linear_terms[lk43][:y_idx] == 7002
-        @test m.internalModel.linear_terms[lk43][:id] == 58
-        @test m.internalModel.linear_terms[lk43][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk43][:y_idx] == 7002
+        @test alpine.linear_terms[lk43][:id] == 58
+        @test alpine.linear_terms[lk43][:y_type] == :(Cont)
         lk44 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6920), (1.0, 76)])))
-        @test m.internalModel.linear_terms[lk44][:y_idx] == 6921
-        @test m.internalModel.linear_terms[lk44][:id] == 9
-        @test m.internalModel.linear_terms[lk44][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk44][:y_idx] == 6921
+        @test alpine.linear_terms[lk44][:id] == 9
+        @test alpine.linear_terms[lk44][:y_type] == :(Cont)
         lk45 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 4622), (1.0, 1171)])))
-        @test m.internalModel.linear_terms[lk45][:y_idx] == 6989
-        @test m.internalModel.linear_terms[lk45][:id] == 50
-        @test m.internalModel.linear_terms[lk45][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk45][:y_idx] == 6989
+        @test alpine.linear_terms[lk45][:id] == 50
+        @test alpine.linear_terms[lk45][:y_type] == :(Cont)
         lk46 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 991), (1.0, 4442)])))
-        @test m.internalModel.linear_terms[lk46][:y_idx] == 6984
-        @test m.internalModel.linear_terms[lk46][:id] == 47
-        @test m.internalModel.linear_terms[lk46][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk46][:y_idx] == 6984
+        @test alpine.linear_terms[lk46][:id] == 47
+        @test alpine.linear_terms[lk46][:y_type] == :(Cont)
         lk47 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6930), (1.0, 136)])))
-        @test m.internalModel.linear_terms[lk47][:y_idx] == 6931
-        @test m.internalModel.linear_terms[lk47][:id] == 15
-        @test m.internalModel.linear_terms[lk47][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk47][:y_idx] == 6931
+        @test alpine.linear_terms[lk47][:id] == 15
+        @test alpine.linear_terms[lk47][:y_type] == :(Cont)
         lk48 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 4802), (0.001891, 6903), (1.0, 6996)])))
-        @test m.internalModel.linear_terms[lk48][:y_idx] == 6997
-        @test m.internalModel.linear_terms[lk48][:id] == 55
-        @test m.internalModel.linear_terms[lk48][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk48][:y_idx] == 6997
+        @test alpine.linear_terms[lk48][:id] == 55
+        @test alpine.linear_terms[lk48][:y_type] == :(Cont)
         lk49 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 511), (1.0, 3962)])))
-        @test m.internalModel.linear_terms[lk49][:y_idx] == 6969
-        @test m.internalModel.linear_terms[lk49][:id] == 38
-        @test m.internalModel.linear_terms[lk49][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk49][:y_idx] == 6969
+        @test alpine.linear_terms[lk49][:id] == 38
+        @test alpine.linear_terms[lk49][:y_type] == :(Cont)
         lk50 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 811), (1.0, 4262)])))
-        @test m.internalModel.linear_terms[lk50][:y_idx] == 6979
-        @test m.internalModel.linear_terms[lk50][:id] == 44
-        @test m.internalModel.linear_terms[lk50][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk50][:y_idx] == 6979
+        @test alpine.linear_terms[lk50][:id] == 44
+        @test alpine.linear_terms[lk50][:y_type] == :(Cont)
         lk51 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.01551, 6903), (1.0, 6916), (1.0, 3497)])))
-        @test m.internalModel.linear_terms[lk51][:y_idx] == 6917
-        @test m.internalModel.linear_terms[lk51][:id] == 7
-        @test m.internalModel.linear_terms[lk51][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk51][:y_idx] == 6917
+        @test alpine.linear_terms[lk51][:id] == 7
+        @test alpine.linear_terms[lk51][:y_type] == :(Cont)
         lk52 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 451), (-1.0, 6965)])))
-        @test m.internalModel.linear_terms[lk52][:y_idx] == 6966
-        @test m.internalModel.linear_terms[lk52][:id] == 36
-        @test m.internalModel.linear_terms[lk52][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk52][:y_idx] == 6966
+        @test alpine.linear_terms[lk52][:id] == 36
+        @test alpine.linear_terms[lk52][:y_type] == :(Cont)
         lk53 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.005773, 6903), (1.0, 3587), (1.0, 6931)])))
-        @test m.internalModel.linear_terms[lk53][:y_idx] == 6932
-        @test m.internalModel.linear_terms[lk53][:id] == 16
-        @test m.internalModel.linear_terms[lk53][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk53][:y_idx] == 6932
+        @test alpine.linear_terms[lk53][:id] == 16
+        @test alpine.linear_terms[lk53][:y_type] == :(Cont)
         lk54 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 631), (1.0, 4082)])))
-        @test m.internalModel.linear_terms[lk54][:y_idx] == 6974
-        @test m.internalModel.linear_terms[lk54][:id] == 41
-        @test m.internalModel.linear_terms[lk54][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk54][:y_idx] == 6974
+        @test alpine.linear_terms[lk54][:id] == 41
+        @test alpine.linear_terms[lk54][:y_type] == :(Cont)
         lk55 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 991), (-1.0, 6985)])))
-        @test m.internalModel.linear_terms[lk55][:y_idx] == 6986
-        @test m.internalModel.linear_terms[lk55][:id] == 48
-        @test m.internalModel.linear_terms[lk55][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk55][:y_idx] == 6986
+        @test alpine.linear_terms[lk55][:id] == 48
+        @test alpine.linear_terms[lk55][:y_type] == :(Cont)
         lk56 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 4802), (1.0, 1351)])))
-        @test m.internalModel.linear_terms[lk56][:y_idx] == 6994
-        @test m.internalModel.linear_terms[lk56][:id] == 53
-        @test m.internalModel.linear_terms[lk56][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk56][:y_idx] == 6994
+        @test alpine.linear_terms[lk56][:id] == 53
+        @test alpine.linear_terms[lk56][:y_type] == :(Cont)
         lk57 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6946), (0.004409, 6903), (1.0, 3677)])))
-        @test m.internalModel.linear_terms[lk57][:y_idx] == 6947
-        @test m.internalModel.linear_terms[lk57][:id] == 25
-        @test m.internalModel.linear_terms[lk57][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk57][:y_idx] == 6947
+        @test alpine.linear_terms[lk57][:id] == 25
+        @test alpine.linear_terms[lk57][:y_type] == :(Cont)
         lk58 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 2251), (1.0, 5702)])))
-        @test m.internalModel.linear_terms[lk58][:y_idx] == 7014
-        @test m.internalModel.linear_terms[lk58][:id] == 65
-        @test m.internalModel.linear_terms[lk58][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk58][:y_idx] == 7014
+        @test alpine.linear_terms[lk58][:id] == 65
+        @test alpine.linear_terms[lk58][:y_type] == :(Cont)
         lk59 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 7020), (1.0, 2551)])))
-        @test m.internalModel.linear_terms[lk59][:y_idx] == 7021
-        @test m.internalModel.linear_terms[lk59][:id] == 69
-        @test m.internalModel.linear_terms[lk59][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk59][:y_idx] == 7021
+        @test alpine.linear_terms[lk59][:id] == 69
+        @test alpine.linear_terms[lk59][:y_type] == :(Cont)
         lk60 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6940), (1.0, 196)])))
-        @test m.internalModel.linear_terms[lk60][:y_idx] == 6941
-        @test m.internalModel.linear_terms[lk60][:id] == 21
-        @test m.internalModel.linear_terms[lk60][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk60][:y_idx] == 6941
+        @test alpine.linear_terms[lk60][:id] == 21
+        @test alpine.linear_terms[lk60][:y_type] == :(Cont)
         lk61 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3527), (1.0, 6921), (0.008919, 6903)])))
-        @test m.internalModel.linear_terms[lk61][:y_idx] == 6922
-        @test m.internalModel.linear_terms[lk61][:id] == 10
-        @test m.internalModel.linear_terms[lk61][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk61][:y_idx] == 6922
+        @test alpine.linear_terms[lk61][:id] == 10
+        @test alpine.linear_terms[lk61][:y_type] == :(Cont)
         lk62 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 7025), (1.0, 2851)])))
-        @test m.internalModel.linear_terms[lk62][:y_idx] == 7026
-        @test m.internalModel.linear_terms[lk62][:id] == 72
-        @test m.internalModel.linear_terms[lk62][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk62][:y_idx] == 7026
+        @test alpine.linear_terms[lk62][:id] == 72
+        @test alpine.linear_terms[lk62][:y_type] == :(Cont)
         lk63 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6986), (1.0, 4442), (0.002252, 6903)])))
-        @test m.internalModel.linear_terms[lk63][:y_idx] == 6987
-        @test m.internalModel.linear_terms[lk63][:id] == 49
-        @test m.internalModel.linear_terms[lk63][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk63][:y_idx] == 6987
+        @test alpine.linear_terms[lk63][:id] == 49
+        @test alpine.linear_terms[lk63][:y_type] == :(Cont)
         lk64 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(0.002765, 6903), (1.0, 6976), (1.0, 4082)])))
-        @test m.internalModel.linear_terms[lk64][:y_idx] == 6977
-        @test m.internalModel.linear_terms[lk64][:id] == 43
-        @test m.internalModel.linear_terms[lk64][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk64][:y_idx] == 6977
+        @test alpine.linear_terms[lk64][:id] == 43
+        @test alpine.linear_terms[lk64][:y_type] == :(Cont)
         lk65 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6956), (0.003269, 6903), (1.0, 3782)])))
-        @test m.internalModel.linear_terms[lk65][:y_idx] == 6957
-        @test m.internalModel.linear_terms[lk65][:id] == 31
-        @test m.internalModel.linear_terms[lk65][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk65][:y_idx] == 6957
+        @test alpine.linear_terms[lk65][:id] == 31
+        @test alpine.linear_terms[lk65][:y_type] == :(Cont)
         lk66 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3587), (1.0, 136)])))
-        @test m.internalModel.linear_terms[lk66][:y_idx] == 6929
-        @test m.internalModel.linear_terms[lk66][:id] == 14
-        @test m.internalModel.linear_terms[lk66][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk66][:y_idx] == 6929
+        @test alpine.linear_terms[lk66][:id] == 14
+        @test alpine.linear_terms[lk66][:y_type] == :(Cont)
         lk67 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 166), (1.0, 3617)])))
-        @test m.internalModel.linear_terms[lk67][:y_idx] == 6934
-        @test m.internalModel.linear_terms[lk67][:id] == 17
-        @test m.internalModel.linear_terms[lk67][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk67][:y_idx] == 6934
+        @test alpine.linear_terms[lk67][:id] == 17
+        @test alpine.linear_terms[lk67][:y_type] == :(Cont)
         lk68 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 7010), (1.0, 1951)])))
-        @test m.internalModel.linear_terms[lk68][:y_idx] == 7011
-        @test m.internalModel.linear_terms[lk68][:id] == 63
-        @test m.internalModel.linear_terms[lk68][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk68][:y_idx] == 7011
+        @test alpine.linear_terms[lk68][:id] == 63
+        @test alpine.linear_terms[lk68][:y_type] == :(Cont)
         lk69 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 7036), (0.001098, 6903), (1.0, 6902)])))
-        @test m.internalModel.linear_terms[lk69][:y_idx] == 7037
-        @test m.internalModel.linear_terms[lk69][:id] == 79
-        @test m.internalModel.linear_terms[lk69][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk69][:y_idx] == 7037
+        @test alpine.linear_terms[lk69][:id] == 79
+        @test alpine.linear_terms[lk69][:y_type] == :(Cont)
         lk70 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3527), (1.0, 76)])))
-        @test m.internalModel.linear_terms[lk70][:y_idx] == 6919
-        @test m.internalModel.linear_terms[lk70][:id] == 8
-        @test m.internalModel.linear_terms[lk70][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk70][:y_idx] == 6919
+        @test alpine.linear_terms[lk70][:id] == 8
+        @test alpine.linear_terms[lk70][:y_type] == :(Cont)
         lk71 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6961), (1.0, 3842), (0.00317, 6903)])))
-        @test m.internalModel.linear_terms[lk71][:y_idx] == 6962
-        @test m.internalModel.linear_terms[lk71][:id] == 34
-        @test m.internalModel.linear_terms[lk71][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk71][:y_idx] == 6962
+        @test alpine.linear_terms[lk71][:id] == 34
+        @test alpine.linear_terms[lk71][:y_type] == :(Cont)
         lk72 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6990), (1.0, 1171)])))
-        @test m.internalModel.linear_terms[lk72][:y_idx] == 6991
-        @test m.internalModel.linear_terms[lk72][:id] == 51
-        @test m.internalModel.linear_terms[lk72][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk72][:y_idx] == 6991
+        @test alpine.linear_terms[lk72][:id] == 51
+        @test alpine.linear_terms[lk72][:y_type] == :(Cont)
         lk73 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3451), (1.0, 6902)])))
-        @test m.internalModel.linear_terms[lk73][:y_idx] == 7034
-        @test m.internalModel.linear_terms[lk73][:id] == 77
-        @test m.internalModel.linear_terms[lk73][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk73][:y_idx] == 7034
+        @test alpine.linear_terms[lk73][:id] == 77
+        @test alpine.linear_terms[lk73][:y_type] == :(Cont)
         lk74 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 6302), (1.0, 2851)])))
-        @test m.internalModel.linear_terms[lk74][:y_idx] == 7024
-        @test m.internalModel.linear_terms[lk74][:id] == 71
-        @test m.internalModel.linear_terms[lk74][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk74][:y_idx] == 7024
+        @test alpine.linear_terms[lk74][:id] == 71
+        @test alpine.linear_terms[lk74][:y_type] == :(Cont)
         lk75 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 1531), (-1.0, 7000)])))
-        @test m.internalModel.linear_terms[lk75][:y_idx] == 7001
-        @test m.internalModel.linear_terms[lk75][:id] == 57
-        @test m.internalModel.linear_terms[lk75][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk75][:y_idx] == 7001
+        @test alpine.linear_terms[lk75][:id] == 57
+        @test alpine.linear_terms[lk75][:y_type] == :(Cont)
         lk76 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3151), (1.0, 6602)])))
-        @test m.internalModel.linear_terms[lk76][:y_idx] == 7029
-        @test m.internalModel.linear_terms[lk76][:id] == 74
-        @test m.internalModel.linear_terms[lk76][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk76][:y_idx] == 7029
+        @test alpine.linear_terms[lk76][:id] == 74
+        @test alpine.linear_terms[lk76][:y_type] == :(Cont)
         lk77 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 3782), (1.0, 331)])))
-        @test m.internalModel.linear_terms[lk77][:y_idx] == 6954
-        @test m.internalModel.linear_terms[lk77][:id] == 29
-        @test m.internalModel.linear_terms[lk77][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk77][:y_idx] == 6954
+        @test alpine.linear_terms[lk77][:id] == 29
+        @test alpine.linear_terms[lk77][:y_type] == :(Cont)
         lk78 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(-1.0, 6955), (1.0, 331)])))
-        @test m.internalModel.linear_terms[lk78][:y_idx] == 6956
-        @test m.internalModel.linear_terms[lk78][:id] == 30
-        @test m.internalModel.linear_terms[lk78][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk78][:y_idx] == 6956
+        @test alpine.linear_terms[lk78][:id] == 30
+        @test alpine.linear_terms[lk78][:y_type] == :(Cont)
         lk79 = Dict{Symbol,Any}(Pair{Symbol,Any}(:sign, :+),Pair{Symbol,Any}(:scalar, 0.0),Pair{Symbol,Any}(:coef_var, Set(Any[(1.0, 226), (1.0, 3677)])))
-        @test m.internalModel.linear_terms[lk79][:y_idx] == 6944
-        @test m.internalModel.linear_terms[lk79][:id] == 23
-        @test m.internalModel.linear_terms[lk79][:y_type] == :(Cont)
+        @test alpine.linear_terms[lk79][:y_idx] == 6944
+        @test alpine.linear_terms[lk79][:id] == 23
+        @test alpine.linear_terms[lk79][:y_type] == :(Cont)
     end
 end
 
+#=
 @testset "Expression Parsing || Basic Multiplication Operators (Machine Generated for diffs)" begin
 
-    test_solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-                           mip_solver=CbcSolver(logLevel=0),
+    test_solver=Alpine.Optimizer(nlp_solver=IPOPT_SB,
+                           mip_solver=CBC,
                            loglevel=100)
 
     m = operator_basic(solver=test_solver)
@@ -2565,8 +2585,8 @@ end
 
 @testset "Expression Parsing || corner cases" begin
     @testset "Corner Cases - 1 : sign convertor special case" begin
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-                                mip_solver=CbcSolver(logLevel=0),
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,
+                                mip_solver=CBC,
                                 minlp_solver=pavito_solver,
                                 loglevel=100)
 
@@ -2584,8 +2604,8 @@ end
     end
 
     @testset "Corner Cases - 2 : full sub-expression" begin
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                                mip_solver=CbcSolver(logLevel=0),
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT,
+                                mip_solver=CBC,
                                 loglevel=100)
 
         m = Model(solver=test_solver)
@@ -2608,8 +2628,8 @@ end
     end
 
     @testset "Corner Cases - 2 : full sub-expression" begin
-        test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0, sb="yes"),
-                                mip_solver=CbcSolver(logLevel=0),
+        test_solver = Alpine.Optimizer(nlp_solver=IPOPT_SB,
+                                mip_solver=CBC,
                                 loglevel=100)
 
         m = Model(solver=test_solver)
@@ -2636,7 +2656,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod" begin
 
-        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
 
         m = bpml(solver=test_solver)
 
@@ -2687,7 +2707,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod with linear lifting and coefficients" begin
 
-        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
 
         m = bmpl_linearlifting(solver=test_solver)
 
@@ -2813,7 +2833,7 @@ end
     end
 
     @testset "Expression Parsing || INTPROD Operators" begin
-        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0, sb="yes"),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT_SB,mip_solver=CBC,loglevel=100)
         m = intprod_basic(solver=test_solver)
 
         JuMP.build(m) # Setup internal model
@@ -2897,7 +2917,7 @@ end
     end
 
     @testset "Expression Parsing || ex1225a" begin
-        test_solver = Alpine.Optimizer(minlp_solver=pavito_solver, nlp_solver=IpoptSolver(print_level=0, sb="yes"), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = Alpine.Optimizer(minlp_solver=pavito_solver, nlp_solver=IPOPT_SB, mip_solver=CBC,loglevel=100)
         m = ex1225a(solver=test_solver)
 
         JuMP.build(m)
@@ -3278,7 +3298,7 @@ end
     end
 
     @testset "Expression Parsing || prob03" begin
-        test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0, sb="yes"), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT_SB, mip_solver=CBC,loglevel=100)
         m = prob03(solver=test_solver)
 
         JuMP.build(m)
@@ -3302,7 +3322,7 @@ end
     end
 
     @testset "Expression Parsing || st_miqp5" begin
-        test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0, sb="yes"), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT_SB, mip_solver=CBC,loglevel=100)
         m = st_miqp5(solver=test_solver)
 
         JuMP.build(m)
@@ -3393,7 +3413,7 @@ end
 
     @testset "Expression Parsing || discretemulti_basic" begin
 
-		test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0, sb="yes"), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+		test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT_SB, mip_solver=CBC,loglevel=100)
 		m = discretemulti_basic(solver=test_solver)
 
 		JuMP.build(m)
@@ -3739,12 +3759,13 @@ end
 		@test m.internalModel.bounding_constr_mip[21][:cnt] == 1
     end
 end
+=#
 
 #=
 @testset "Expression Parsing || sin/cos" begin
     @testset "Expression Parsing || sin/cos || specialopts " begin
 
-        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT, mip_solver=CBC,loglevel=100)
 
         m = specialopts(solver=test_solver)
         JuMP.build(m)
@@ -3784,7 +3805,7 @@ end
 
     @testset "Expression Parsing || sin/cos || sincos_p1" begin
 
-        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT, mip_solver=CBC,loglevel=100)
         m = sincos_p1(solver=test_solver)
         JuMP.build(m)
 
@@ -4055,7 +4076,7 @@ end
     end
 
     @testset "Expression Parsing || sin/cos || trig" begin
-        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IpoptSolver(print_level=0), mip_solver=CbcSolver(logLevel=0),loglevel=100)
+        test_solver=Alpine.Optimizer(minlp_solver=pavito_solver,nlp_solver=IPOPT, mip_solver=CBC,loglevel=100)
         m = trig(solver=test_solver)
         JuMP.build(m)
         @test m.internalModel.nonconvex_terms[Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[7]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))][:y_idx] == 8
