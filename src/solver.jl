@@ -88,7 +88,7 @@ function default_options()
         nlp_solver = nothing
         minlp_solver = nothing
         mip_solver = nothing
-        
+
         nlp_solver_id = ""
         minlp_solver_id = ""
         mip_solver_id = ""
@@ -139,13 +139,13 @@ function default_options()
 
     return OptimizerOptions(loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
                              nlp_solver, minlp_solver, mip_solver, nlp_solver_id, minlp_solver_id, mip_solver_id,
-                             recognize_convex, bilinear_mccormick, bilinear_convexhull, monomial_convexhull, 
+                             recognize_convex, bilinear_mccormick, bilinear_convexhull, monomial_convexhull,
                              method_convexification, method_partition_injection, term_patterns, constr_patterns,
-                             disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks, 
-                             disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch, 
-                             convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts, 
-                             presolve_track_time, presolve_bt, presolve_timeout, presolve_maxiter, presolve_bt_width_tol, presolve_bt_output_tol, 
-                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_timeout, presolve_bp, 
+                             disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
+                             disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch,
+                             convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts,
+                             presolve_track_time, presolve_bt, presolve_timeout, presolve_maxiter, presolve_bt_width_tol, presolve_bt_output_tol,
+                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_timeout, presolve_bp,
                              user_parameters, int_enable, int_cumulative_disc, int_fully_disc)
 end
 
@@ -330,6 +330,7 @@ function MOI.add_variable(model::Optimizer)
     model.num_var_orig += 1
     push!(model.l_var_orig, -Inf)
     push!(model.u_var_orig, Inf)
+    push!(model.var_type_orig, :Cont)
     return MOI.VariableIndex(model.num_var_orig)
 end
 
@@ -357,6 +358,10 @@ function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR
     return MOI.ConstraintIndex{typeof(f), typeof(set)}(vi.value)
 end
 
+function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.Integer)
+    model.var_type_orig[f.variable.index] = :Int
+end
+
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     if sense == MOI.MAX_SENSE
         model.sense_orig = :Max
@@ -376,21 +381,6 @@ function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     return
 end
 
-"""
-    getcategory(vref::JuMP.VariableRef)
-
-Return `:Bin`, `:Cont`, or `:Int`, depending on the variable information of vref.
-"""
-function getcategory(vref::JuMP.VariableRef)
-    if is_integer(vref) 
-        return :Int
-    elseif is_binary(vref)
-        return :Bin
-    else
-        return :Cont
-    end
-end
-
 function load!(m::Optimizer)
     # Initialize NLP interface
     MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
@@ -403,7 +393,6 @@ function load!(m::Optimizer)
     end
 
     # Collect original variable type and build dynamic variable type space
-    m.var_type_orig = [getcategory(JuMP.VariableRef(m.d_orig.m, MOI.VariableIndex(i))) for i in 1:m.num_var_orig]
     m.var_type = copy(m.var_type_orig)
     m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
