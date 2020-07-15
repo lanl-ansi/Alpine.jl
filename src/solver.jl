@@ -174,6 +174,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     u_constr_orig::Vector{Float64}                              # Constraint upper bounds
     sense_orig::Symbol                                          # Problem type (:Min, :Max)
     d_orig::Union{Nothing, JuMP.NLPEvaluator}                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
+    objective_function::Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
 
     # additional initial data that may be useful later (not populated)
     A_orig::Any                                                 # Linear constraint matrix
@@ -362,6 +363,9 @@ function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.In
     model.var_type_orig[f.variable.index] = :Int
 end
 
+function MOI.supports(model::Optimizer, ::Union{MOI.ObjectiveSense, MOI.ObjectiveFunction{F}}) where F<:Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
+    return true
+end
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     if sense == MOI.MAX_SENSE
         model.sense_orig = :Max
@@ -372,6 +376,9 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
         model.best_obj = Inf
         model.best_bound = -Inf
     end
+end
+function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction{F}, func::F) where F
+    model.objective_function = func
 end
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
@@ -428,7 +435,7 @@ function load!(m::Optimizer)
     end
 
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
-    m.is_obj_linear_orig = interface_is_obj_linear(m.d_orig)
+    m.is_obj_linear_orig = !m.d_orig.has_objective && m.objective_function isa MOI.ScalarAffineFunction{Float64}
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
