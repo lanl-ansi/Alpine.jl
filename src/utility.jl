@@ -30,7 +30,7 @@ function update_opt_gap(m::Optimizer)
       if get_option(m, :gapref) == :ub
          if isapprox(m.best_obj,0.0;atol=get_option(m, :tol)) # zero upper bound case
             eps = 1 # shift factor
-            m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(get_option(m, :tol)+(m.best_obj + eps))   
+            m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(get_option(m, :tol)+(m.best_obj + eps))
          else
             m.best_rel_gap = abs(m.best_obj - m.best_bound)/(get_option(m, :tol)+abs(m.best_obj))
          end
@@ -164,7 +164,7 @@ An utility function used to recognize different sub-solvers and return the bound
 """
 function update_boundstop_options(m::Optimizer)
 
-   if get_option(m, :mip_solver_id) == "Gurobi"
+   if m.mip_solver_id == "Gurobi"
       # Calculation of the bound
       if m.sense_orig == :Min
          get_option(m, :gapref) == :ub ? stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_obj) : stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_bound)
@@ -175,7 +175,7 @@ function update_boundstop_options(m::Optimizer)
       for i in 1:length(get_option(m, :mip_solver).options)
          if get_option(m, :mip_solver).options[i][1] == :BestBdStop
             deleteat!(get_option(m, :mip_solver).options, i)
-            if get_option(m, :mip_solver_id) == "Gurobi"
+            if m.mip_solver_id == "Gurobi"
                push!(get_option(m, :mip_solver).options, (:BestBdStop, stopbound))
             else
                return
@@ -276,7 +276,7 @@ function collect_lb_pool(m::Optimizer)
    # Always stick to the structural .discretization for algorithm consideration info
    # If in need, the scheme need to be refreshed with customized discretization info
 
-   if get_option(m, :mip_solver_id) != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
+   if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
       @warn "  Warning: Skipping collecting solution pool procedure",
       return
    end
@@ -287,11 +287,11 @@ function collect_lb_pool(m::Optimizer)
 
    # Collect Solution and corresponding objective values
    for i in 1:s[:cnt]
-      if get_option(m, :mip_solver_id) == "Gurobi"
+      if m.mip_solver_id == "Gurobi"
          Gurobi.set_int_param!(m.model_mip.internalModel.inner, "SolutionNumber", i-1)
          s[:sol][i] = Gurobi.get_dblattrarray(m.model_mip.internalModel.inner, "Xn", 1, s[:len])
          s[:obj][i] = Gurobi.get_dblattr(m.model_mip.internalModel.inner, "PoolObjVal")
-      elseif get_option(m, :mip_solver_id) == "Cplex"
+      elseif m.mip_solver_id == "Cplex"
          error("No implementation for Cplex")
       end
       s[:disc][i] = Dict(j=>get_active_partition_idx(m.discretization, s[:sol][i][j],j) for j in s[:vars])
@@ -720,22 +720,22 @@ function fetch_mip_solver_identifier(m::Optimizer;override="")
 
    # Higher-level solvers: that can use sub-solvers
    if occursin("Pajarito", solverstring)
-       set_option(m, :mip_solver_id, "Pajarito")
+       m.mip_solver_id = "Pajarito"
       return
    elseif occursin("Pavito", solverstring)
-       set_option(m, :mip_solver_id, "Pavito")
+       m.mip_solver_id = "Pavito"
       return
    end
 
    # Lower level solvers
    if occursin("Gurobi", solverstring)
-       set_option(m, :mip_solver_id, "Gurobi")
-   elseif occursin("Cplex", solverstring)
-       set_option(m, :mip_solver_id, "Cplex")
-   elseif occursin("Cbc", solverstring)
-       set_option(m, :mip_solver_id, "Cbc")
+       m.mip_solver_id = "Gurobi"
+   elseif occursin("CPLEX", solverstring)
+       m.mip_solver_id = "Cplex"
+   elseif occursin("Cbc", solverstring) # /!\ the `SolverName()` is "COIN Branch-and-Cut (Cbc)"
+       m.mip_solver_id = "Cbc"
    elseif occursin("GLPK", solverstring)
-       set_option(m, :mip_solver_id, "GLPK")
+       m.mip_solver_id = "GLPK"
    else
       error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
    end
@@ -745,26 +745,26 @@ end
 
 function fetch_nlp_solver_identifier(m::Optimizer;override="")
 
-   isempty(override) ? solverstring = string(get_option(m, :nlp_solver)) : solverstring = override
+    isempty(override) ? solverstring = string(get_option(m, :nlp_solver)) : solverstring = override
 
    # Higher-level solver
    if occursin("Pajarito", solverstring)
-       set_option(m, :nlp_solver_id,  "Pajarito")
+       m.nlp_solver_id =  "Pajarito"
       return
    elseif occursin("Pavito", solverstring)
-       set_option(m, :nlp_solver_id, "Pavito")
+       m.nlp_solver_id = "Pavito"
       return
    end
 
    # Lower-level solver
    if occursin("Ipopt", solverstring)
-       set_option(m, :nlp_solver_id, "Ipopt")
+       m.nlp_solver_id = "Ipopt"
    elseif occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-       set_option(m, :nlp_solver_id, "Bonmin")
-   elseif occursin("KNITRO", solverstring)
-       set_option(m, :nlp_solver_id, "Knitro")
+       m.nlp_solver_id = "Bonmin"
+   elseif occursin("KNITRO", solverstring) # /!\ the `SolverName()` is "Knitro"
+       m.nlp_solver_id = "Knitro"
    elseif occursin("NLopt", solverstring)
-       set_option(m, :nlp_solver_id, "NLopt")
+       m.nlp_solver_id = "NLopt"
    else
       error("Unsupported NLP local solver $solverstring; use a Alpine-supported NLP local solver")
    end
@@ -774,30 +774,30 @@ end
 
 function fetch_minlp_solver_identifier(m::Optimizer;override="")
 
-   (get_option(m, :minlp_solver) == empty_solver) && return
+   (get_option(m, :minlp_solver) === nothing) && return
 
    isempty(override) ? solverstring = string(get_option(m, :minlp_solver)) : solverstring = override
 
    # Higher-level solver
    if occursin("Pajarito", solverstring)
-       set_option(m, :minlp_solver_id, "Pajarito")
+       m.minlp_solver_id = "Pajarito"
       return
    elseif occursin("Pavito", solverstring)
-       set_option(m, :minlp_solver_id, "Pavito")
+       m.minlp_solver_id = "Pavito"
       return
    end
 
    # Lower-level Solver
    if occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-       set_option(m, :minlp_solver_id, "Bonmin")
+       m.minlp_solver_id = "Bonmin"
    elseif occursin("KNITRO", solverstring)
-       set_option(m, :minlp_solver_id, "Knitro")
+       m.minlp_solver_id = "Knitro"
    elseif occursin("NLopt", solverstring)
-       set_option(m, :minlp_solver_id, "NLopt")
+       m.minlp_solver_id = "NLopt"
    elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
-       set_option(m, :minlp_solver_id, "Bonmin")
+       m.minlp_solver_id = "Bonmin"
    elseif occursin("Juniper", solverstring)
-       set_option(m, :minlp_solver_id, "Juniper")
+       m.minlp_solver_id = "Juniper"
    else
       @show solverstring
       error("Unsupported MINLP local solver $solverstring; use a Alpine-supported MINLP local solver")
@@ -817,27 +817,27 @@ function update_mip_time_limit(m::Optimizer; kwargs...)
    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
 
    opts = Vector{Any}(undef, 0)
-   if get_option(m, :mip_solver_id) != "Pavito" && get_option(m, :mip_solver_id) != "Pajarito"
+   if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
       for i in collect(m.mip_solver.options)
          push!(opts, i)
       end
    end
 
-   if get_option(m, :mip_solver_id) == "Cplex"
+   if m.mip_solver_id == "Cplex"
       opts = update_timeleft_symbol(opts, :CPX_PARAM_TILIM, timelimit)
       m.mip_solver.options = opts
-   elseif get_option(m, :mip_solver_id) == "Pavito"
+   elseif m.mip_solver_id == "Pavito"
       (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
-   elseif get_option(m, :mip_solver_id) == "Gurobi"
-      opts = update_timeleft_symbol(opts, :TimeLimit, timelimit)  
+   elseif m.mip_solver_id == "Gurobi"
+      opts = update_timeleft_symbol(opts, :TimeLimit, timelimit)
       m.mip_solver.options = opts
-   elseif get_option(m, :mip_solver_id) == "Cbc"
+   elseif m.mip_solver_id == "Cbc"
       opts = update_timeleft_symbol(opts, :seconds, timelimit)
       m.mip_solver.options = opts
-   elseif get_option(m, :mip_solver_id) == "GLPK"
+   elseif m.mip_solver_id == "GLPK"
       opts = update_timeleft_symbol(opts, :tm_lim, timelimit)
       m.mip_solver.options = opts
-   elseif get_option(m, :mip_solver_id) == "Pajarito"
+   elseif m.mip_solver_id == "Pajarito"
       (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
    else
       error("Needs support for this MIP solver")
@@ -857,22 +857,22 @@ function update_nlp_time_limit(m::Optimizer; kwargs...)
    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
 
    opts = Vector{Any}(undef, 0)
-   if get_option(m, :nlp_solver_id) != "Pavito" && get_option(m, :nlp_solver_id) != "Pajarito"
+   if m.nlp_solver_id != "Pavito" && m.nlp_solver_id != "Pajarito"
       opts = collect(get_option(m, :nlp_solver).options)
    end
 
 
-   if get_option(m, :nlp_solver_id) == "Ipopt"
+   if m.nlp_solver_id == "Ipopt"
       opts = update_timeleft_symbol(opts, :max_cpu_time, timelimit)
       get_option(m, :nlp_solver).options = opts
-   elseif get_option(m, :nlp_solver_id) == "Pajarito"
+   elseif m.nlp_solver_id == "Pajarito"
       (timelimit < Inf) && (get_option(m, :nlp_solver).timeout = timelimit)
-   elseif get_option(m, :nlp_solver_id) == "AmplNL"
+   elseif m.nlp_solver_id == "AmplNL"
       opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
       get_option(m, :nlp_solver).options = opts
-   elseif get_option(m, :nlp_solver_id) == "Knitro"
+   elseif m.nlp_solver_id == "Knitro"
       error("You never tell me anything about knitro. Probably because they have a very short trail length.")
-   elseif get_option(m, :nlp_solver_id) == "NLopt"
+   elseif m.nlp_solver_id == "NLopt"
       get_option(m, :nlp_solver).maxtime = timelimit
    else
       error("Needs support for this MIP solver")
@@ -892,21 +892,21 @@ function update_minlp_time_limit(m::Optimizer; kwargs...)
    haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
 
    opts = Vector{Any}(undef, 0)
-   if get_option(m, :minlp_solver_id) != "Pavito" && get_option(m, :minlp_solver_id) != "Pajarito"
+   if m.minlp_solver_id != "Pavito" && m.minlp_solver_id != "Pajarito"
       opts = collect(get_option(m, :minlp_solver).options)
    end
 
 
-   if get_option(m, :minlp_solver_id) == "Pajarito"
+   if m.minlp_solver_id == "Pajarito"
       (timelimit < Inf) && (get_option(m, :minlp_solver).timeout = timelimit)
-   elseif get_option(m, :minlp_solver_id) == "Pavito"
+   elseif m.minlp_solver_id == "Pavito"
       (timelimit < Inf) && (get_option(m, :minlp_solver).timeout = timelimit)
-   elseif get_option(m, :minlp_solver_id) == "AmplNL"
+   elseif m.minlp_solver_id == "AmplNL"
       opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
       get_option(m, :minlp_solver).options = opts
-   elseif get_option(m, :minlp_solver_id) == "Knitro"
+   elseif m.minlp_solver_id == "Knitro"
       error("You never tell me anything about knitro. Probably because they charge everything they own.")
-   elseif get_option(m, :minlp_solver_id) == "NLopt"
+   elseif m.minlp_solver_id == "NLopt"
       get_option(m, :minlp_solver).maxtime = timelimit
    else
       error("Needs support for this MIP solver")
@@ -941,7 +941,7 @@ end
 
 function adjust_branch_priority(m::Optimizer)
 
-   if get_option(m, :mip_solver_id) == "Gurobi"
+   if m.mip_solver_id == "Gurobi"
       !m.model_mip.internalModelLoaded && return
       len = length(m.model_mip.colVal)
       prior = Cint[] # priorities
@@ -949,7 +949,7 @@ function adjust_branch_priority(m::Optimizer)
          push!(prior, i)
       end
       Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
-   elseif get_option(m, :mip_solver_id) == "Cplex"
+   elseif m.mip_solver_id == "Cplex"
       !m.model_mip.internalModelLoaded && return
       n = length(m.model_mip.colVal)
       idxlist = Cint[1:n;] # variable indices

@@ -16,12 +16,6 @@ mutable struct OptimizerOptions
     minlp_solver                                                # Local MINLP solver for solving MINLPs at each iteration
     mip_solver                                                  # MIP solver for successive lower bound solves
 
-    # Sub-solver identifier for customized solver option
-    nlp_solver_id::AbstractString                               # NLP Solver identifier string
-    minlp_solver_id::AbstractString                             # MINLP local solver identifier string
-    mip_solver_id::AbstractString                               # MIP solver identifier string
-
-
     # convexification method tuning
     recognize_convex::Bool                                      # Recognize convex expressions in parsing objective functions and constraints
     bilinear_mccormick::Bool                                    # [INACTIVE] Convexify bilinear terms using piecwise McCormick representation
@@ -89,10 +83,6 @@ function default_options()
         minlp_solver = nothing
         mip_solver = nothing
 
-        nlp_solver_id = ""
-        minlp_solver_id = ""
-        mip_solver_id = ""
-
         recognize_convex = true
         bilinear_mccormick = false
         bilinear_convexhull = true
@@ -138,7 +128,7 @@ function default_options()
         int_fully_disc = false
 
     return OptimizerOptions(loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
-                             nlp_solver, minlp_solver, mip_solver, nlp_solver_id, minlp_solver_id, mip_solver_id,
+                             nlp_solver, minlp_solver, mip_solver,
                              recognize_convex, bilinear_mccormick, bilinear_convexhull, monomial_convexhull,
                              method_convexification, method_partition_injection, term_patterns, constr_patterns,
                              disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
@@ -153,6 +143,11 @@ end
 mutable struct Optimizer <: MOI.AbstractOptimizer
 
     options::OptimizerOptions                                   # Options set by user
+
+    # Sub-solver identifier for customized solver option
+    nlp_solver_id::AbstractString                               # NLP Solver identifier string
+    minlp_solver_id::AbstractString                             # MINLP local solver identifier string
+    mip_solver_id::AbstractString                               # MIP solver identifier string
 
     # user provided inputs
     num_var_orig::Int                                           # Initial number of variables
@@ -174,6 +169,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     u_constr_orig::Vector{Float64}                              # Constraint upper bounds
     sense_orig::Symbol                                          # Problem type (:Min, :Max)
     d_orig::Union{Nothing, JuMP.NLPEvaluator}                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
+    has_nlp_objective::Bool
     objective_function::Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
 
     # additional initial data that may be useful later (not populated)
@@ -262,6 +258,10 @@ function MOI.is_empty(model::Optimizer)
 end
 
 function MOI.empty!(m::Optimizer)
+    m.nlp_solver_id = ""
+    m.minlp_solver_id = ""
+    m.mip_solver_id = ""
+
     m.num_var_orig = 0
     m.num_cont_var_orig = 0
     m.num_int_var_orig = 0
@@ -280,6 +280,8 @@ function MOI.empty!(m::Optimizer)
     m.u_var_orig = Float64[]
 
     m.d_orig = nothing
+    m.has_nlp_objective = false
+    m.objective_function = nothing
 
     m.linear_terms = Dict()
     m.nonconvex_terms = Dict()
@@ -303,6 +305,7 @@ function MOI.empty!(m::Optimizer)
     m.bound_sol_history = Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
 
     m.best_obj = Inf
+    m.best_sol = Float64[]
     m.best_bound = -Inf
     m.best_rel_gap = Inf
     m.best_abs_gap = Inf
@@ -321,7 +324,7 @@ end
 MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
-    setproperty!(model.options, Symbol(param.name), value)
+    set_option(model, Symbol(param.name), value)
 end
 
 function MOI.add_variables(model::Optimizer, n::Int)
@@ -332,7 +335,18 @@ function MOI.add_variable(model::Optimizer)
     push!(model.l_var_orig, -Inf)
     push!(model.u_var_orig, Inf)
     push!(model.var_type_orig, :Cont)
+    push!(model.best_sol, 0.0)
     return MOI.VariableIndex(model.num_var_orig)
+end
+
+function MOI.supports(::Optimizer, ::MOI.VariablePrimalStart,
+                      ::Type{MOI.VariableIndex})
+    return true
+end
+function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart,
+                 vi::MOI.VariableIndex, value::Union{Real, Nothing})
+    model.best_sol[vi.value] = something(value, 0.0)
+    return
 end
 
 const SCALAR_SET = Union{MOI.EqualTo{Float64}, MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.Interval{Float64}}
@@ -382,6 +396,7 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction{F}, func::F) where F
 end
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
+    m.has_nlp_objective = block.has_objective
     m.num_constr_orig = length(block.constraint_bounds)
     m.l_constr_orig = [p.lower for p in block.constraint_bounds]
     m.u_constr_orig = [p.upper for p in block.constraint_bounds]
@@ -435,7 +450,7 @@ function load!(m::Optimizer)
     end
 
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
-    m.is_obj_linear_orig = !m.d_orig.has_objective && m.objective_function isa MOI.ScalarAffineFunction{Float64}
+    m.is_obj_linear_orig = !m.has_nlp_objective && m.objective_function isa MOI.ScalarAffineFunction{Float64}
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
@@ -447,8 +462,8 @@ function load!(m::Optimizer)
 
     # Conduct solver-dependent detection
     fetch_mip_solver_identifier(m)
-    (get_option(m, :nlp_solver) != empty_solver) && (fetch_nlp_solver_identifier(m))
-    (get_option(m, :minlp_solver) != empty_solver) && (fetch_minlp_solver_identifier(m))
+    (get_option(m, :nlp_solver) !== nothing) && (fetch_nlp_solver_identifier(m))
+    (get_option(m, :minlp_solver) !== nothing) && (fetch_minlp_solver_identifier(m))
 
     # Solver Dependent Options
     if m.mip_solver_id != :Gurobi
@@ -478,9 +493,6 @@ function load!(m::Optimizer)
 
     # Initialize the solution pool
     m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
-
-    # Record the initial solution from the warm-starting value, if any
-    m.best_sol = m.d_orig.m.colVal
 
     # Check if any illegal term exist in the warm-solution
     any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))

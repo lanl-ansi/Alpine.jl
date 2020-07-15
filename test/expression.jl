@@ -1422,7 +1422,7 @@ end
 
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
-            "minlp_solver" =>  IPOPT_SB,
+            "nlp_solver" =>  IPOPT_SB,
             "mip_solver" =>  CBC,
             "disc_ratio" =>  8,
             "loglevel" =>  100)
