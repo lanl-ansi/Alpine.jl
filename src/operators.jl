@@ -28,9 +28,9 @@ end
     detect_nonconvex_terms(expr, m::Optimizer)
 
 This function recognizes, stores, and replaces a sub-tree `expr` with available
-user-defined/built-in structures patterns. The procedure is creates the required number
-of lifted variables based on the patterns that it it trying to recognize.
-Then, go through all built-in structures and perform operatins to convexify the problem.
+user-defined/built-in structures patterns. The procedure creates the required number
+of lifted variables based on the patterns that it is trying to recognize.
+Then, it goes through all built-in structures and performs operatins to convexify the problem.
 
 Specific structure pattern information will be described formally.
 """
