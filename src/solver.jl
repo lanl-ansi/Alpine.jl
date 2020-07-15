@@ -377,9 +377,14 @@ function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.In
     model.var_type_orig[f.variable.index] = :Int
 end
 
+function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.ZeroOne)
+    model.var_type_orig[f.variable.index] = :Bin
+end
+
 function MOI.supports(model::Optimizer, ::Union{MOI.ObjectiveSense, MOI.ObjectiveFunction{F}}) where F<:Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
     return true
 end
+
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     if sense == MOI.MAX_SENSE
         model.sense_orig = :Max
@@ -391,9 +396,11 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
         model.best_bound = -Inf
     end
 end
+
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction{F}, func::F) where F
     model.objective_function = func
 end
+
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
     m.has_nlp_objective = block.has_objective
