@@ -143,6 +143,9 @@ function collect_nonconvex_vars(m::Optimizer)
    return
 end
 
+isa_variable_index(expr::Expr) = length(expr.args == 2) && expr.args[2] == :(MathOptInterface.VariableIndex)
+get_index(expr::Expr) = expr.args[2]
+
 function expr_strip_const(expr, subs=[], rhs=0.0)
 
    exhaust_const = [!(expr.args[1] in [:+, :-]) || !(isa(expr.args[i], Float64) || isa(expr.args[i], Int)) for i in 2:length(expr.args)]
