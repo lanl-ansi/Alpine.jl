@@ -1,3 +1,4 @@
+#=
 @testset " Validation Test || AMP-TMC || basic solve || examples/nlp1.jl" begin
 
     test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
@@ -134,23 +135,30 @@ end
 #     @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
 #     @test m.internalModel.logs[:n_iter] == 9
 # end
-
+=#
 @testset " Validation Test || AMP || basic solve || examples/circle.jl" begin
-    test_solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                           mip_solver=pavito_solver,
-                           disc_abs_width_tol=1e-2,
-                           disc_ratio=8,
-                           maxiter=6,
-                           presolve_bt = false,
-                           presolve_bt_algo = 1,
-                           presolve_bt_output_tol = 1e-1,
-                           loglevel=100)
+    test_solver=optimizer_with_attributes(Alpine.Optimizer,
+                           "nlp_solver" => IPOPT,
+                           "mip_solver" => JUNIPER,
+                           "disc_abs_width_tol" => 1e-2,
+                           "disc_ratio" => 8,
+                           "maxiter" => 6,
+                           "presolve_bt" => false,
+                           "presolve_bt_algo" => 1,
+                           "presolve_bt_output_tol" => 1e-1,
+                           "loglevel" => 100)
 
     m = circle(solver=test_solver)
-    solve(m)
+    MOI.Utilities.attach_optimizer(m)
+    MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
 
-    @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    alpine = JuMP.backend(m).optimizer.model
+    Alpine.load!(alpine)
+
+    #solve(m)
+    #@test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
 end
+#=
 
 @testset " Validation Test || AMP || basic solve || examples/circleN.jl" begin
     test_solver=Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
@@ -821,3 +829,4 @@ end
     @test m.internalModel.bounding_constr_mip[9][:sense] == :(<=)
     @test m.internalModel.bounding_constr_mip[9][:cnt] == 2
 end
+=#

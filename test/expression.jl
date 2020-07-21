@@ -349,7 +349,7 @@ end
     @test m.internalModel.nonconvex_terms[[:(x[47]), :(x[36])]][:convexified] == false
     @test m.internalModel.nonconvex_terms[[:(x[47]), :(x[36])]][:nonlinear_type] == :BILINEAR
 end
-#=
+
 @testset "Expression Parsing || multilinear || Simple || multi.jl " begin
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
@@ -1204,7 +1204,7 @@ end
 end
 
 @testset "Expression Prasing || Linear Lifting" begin
-    #=
+    
     @testset "Expression Parsing || Linear Lifting || nlp2" begin
         test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  IPOPT_SB,
                                "mip_solver" =>  CBC,
@@ -1334,9 +1334,9 @@ end
         @test m.internalModel.nonconvex_terms[nlk8][:var_idxs] == [16, 15]
         @test m.internalModel.nonconvex_terms[nlk9][:var_idxs] == [14]
     end
-    =#
+    
 
-    #=
+    
     @testset "Expression Parsing || complex || Affine || operator_b" begin
         test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  IPOPT,
                                 "mip_solver" =>  CBC,
@@ -1424,8 +1424,8 @@ end
             end
         end
     end
-    =#
-
+    
+=#
     @testset "Expression Parsing || Linear Lifting || brainpc3" begin
 
         test_solver = optimizer_with_attributes(
@@ -2073,9 +2073,10 @@ end
         @test alpine.linear_terms[lk79][:id] == 23
         @test alpine.linear_terms[lk79][:y_type] == :(Cont)
     end
+    #=
 end
 
-#=
+
 @testset "Expression Parsing || Basic Multiplication Operators (Machine Generated for diffs)" begin
 
     test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" => JUNIPER,
@@ -3763,9 +3764,9 @@ end
 		@test m.internalModel.bounding_constr_mip[21][:cnt] == 1
     end
 end
-=#
 
-#=
+
+
 @testset "Expression Parsing || sin/cos" begin
     @testset "Expression Parsing || sin/cos || specialopts " begin
 

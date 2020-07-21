@@ -5,14 +5,14 @@ function _moi_function_to_expr(t::MOI.ScalarAffineTerm)
 end
 
 function _moi_function_to_expr(f::MOI.ScalarAffineFunction)
-    if length(terms(f)) == 1
-        return Expr(:call, :+, _moi_function_to_expr(first(terms(f))), constant(f))
+    if length(f.terms) == 1
+        return Expr(:call, :+, _moi_function_to_expr(first(f.terms)), f.constant)
     else
         return Expr(:call, 
                     :+, 
-                    _moi_function_to_expr(first(terms(f))),
+                    _moi_function_to_expr(first(f.terms)),
                     _moi_function_to_expr(
-                                 MOI.ScalarAffineFunction(terms(f)[2:end], constant(f)))
+                                 MOI.ScalarAffineFunction(f.terms[2:end], f.constant))
                    )
     end
 end
@@ -31,7 +31,7 @@ function _moi_function_to_expr(f::MOI.ScalarQuadraticFunction)
     if length(f.quadratic_terms) == 1
         return Expr(:call, :+, 
                     _moi_function_to_expr(first(f.quadratic_terms)),
-                    _moi_function_to_expr(MOI.ScalarAffineFunction(f.affine_terms, constant(f)))
+                    _moi_function_to_expr(MOI.ScalarAffineFunction(f.affine_terms, f.constant))
                    )
                 else
         return Expr(:call, 
@@ -41,7 +41,7 @@ function _moi_function_to_expr(f::MOI.ScalarQuadraticFunction)
                                  MOI.ScalarQuadraticFunction(
                                              f.affine_terms, 
                                              f.quadratic_terms[2:end], 
-                                             constant(f)
+                                             f.constant
                                             )
                                  )
                    )

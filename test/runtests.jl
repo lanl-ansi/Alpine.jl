@@ -31,5 +31,5 @@ const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => tru
 # Perform Tests
 #include("$(alpine_dir)/test/solver.jl")
 include("$(alpine_dir)/test/expression.jl")
-#include("$(alpine_dir)/test/algorithm.jl")
+include("$(alpine_dir)/test/algorithm.jl")
 #include("$(alpine_dir)/test/utility.jl")

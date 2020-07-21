@@ -380,21 +380,29 @@ function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR
     return MOI.ConstraintIndex{typeof(f), typeof(set)}(vi.value)
 end
 
+MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.Integer}) = true
+
 function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.Integer)
     model.var_type_orig[f.variable.index] = :Int
 end
+MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.ZeroOne}) = true
 
 function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.ZeroOne)
     model.var_type_orig[f.variable.index] = :Bin
 end
 
 
-function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR_SET)
+function MOI.add_constraint(model::Optimizer, f::MOI.ScalarAffineFunction, set::SCALAR_SET)
+    model.num_constr_orig += 1
 
 
+    return MOI.ConstraintIndex{typeof(f), typeof(set)}(model.num_const_orig)
+end
+
+#=
     constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
     constr_expr_orig::Vector{Expr}                              # Constraint expressions
-
+=#
 
 
 
@@ -425,7 +433,7 @@ end
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
     m.has_nlp_objective = block.has_objective
-    m.num_constr_orig = length(block.constraint_bounds)
+    m.num_constr_orig += length(block.constraint_bounds)
     m.constraint_bounds_orig = block.constraint_bounds
     return
 end
@@ -455,6 +463,7 @@ function load!(m::Optimizer)
     else
         m.obj_expr_orig = _moi_function_to_expr(m.objective_function)
     end
+
     for i in 1:m.num_constr_orig
         push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
     end

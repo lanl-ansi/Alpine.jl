@@ -16,7 +16,7 @@ end
 =#
 
 @testset "Partitioning variable selection tests :: nlp3" begin
-
+#=
     # Select all NL variable
     test_solver = optimizer_with_attributes(Alpine.Optimizer,
         "nlp_solver" => IPOPT,
@@ -28,6 +28,13 @@ end
         "maxiter" => 1,
         "loglevel" => 100)
     m = nlp3(solver=test_solver)
+
+        MOI.Utilities.attach_optimizer(m)
+        MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
+
+        alpine = JuMP.backend(m).optimizer.model
+        Alpine.load!(alpine)
+   #= 
     status = MOI.optimize!(m)
 
     @test status == :UserLimits
@@ -36,6 +43,8 @@ end
     @test length(m.internalModel.disc_vars) == 8
     @test m.internalModel.disc_var_pick == 0
 
+    =#
+#
 #=
     # Select all NL variable
     test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
