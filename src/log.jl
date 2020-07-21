@@ -49,8 +49,8 @@ function logging_summary(m::Optimizer)
       println("  #Potential variables for partitioning = ", length(m.disc_vars))
 
       printstyled("SUB-SOLVERS USED BY ALPINE\n", color=:cyan)
-      # get_option(m, :minlp_solver) != UnsetSolver() && println("MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
-      if string(get_option(m, :minlp_solver)) == "Alpine.UnsetSolver()"
+      # get_option(m, :minlp_solver) !== nothing && println("MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
+      if get_option(m, :minlp_solver) === nothing
           println("  NLP local solver = ", split(string(get_option(m, :nlp_solver)),"S")[1])
       else
           println("  MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
