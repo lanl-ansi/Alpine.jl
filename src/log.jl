@@ -52,7 +52,7 @@ function logging_summary(m::Optimizer)
       # get_option(m, :minlp_solver) != UnsetSolver() && println("MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
       if string(get_option(m, :minlp_solver)) == "Alpine.UnsetSolver()"
           println("  NLP local solver = ", split(string(get_option(m, :nlp_solver)),"S")[1])
-      else 
+      else
           println("  MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
       end
       println("  MIP solver = ", split(string(get_option(m, :mip_solver)),"S")[1])
@@ -60,7 +60,7 @@ function logging_summary(m::Optimizer)
       println("  Maximum solution time = ", get_option(m, :timeout))
       println("  Maximum iterations =  ", get_option(m, :maxiter))
       # @printf "  Relative optimality gap criteria = %.5f (%.4f %%)\n" get_option(m, :relgap) (get_option(m, :relgap)*100)
-      @printf "  Relative optimality gap criteria = %.4f%%\n" get_option(m, :relgap)*100 
+      @printf "  Relative optimality gap criteria = %.4f%%\n" get_option(m, :relgap)*100
       # get_option(m, :recognize_convex) && println("  actively recognize convex patterns")
       # println("  Basic bound propagation = ", get_option(m, :presolve_bp))
       if get_option(m, :disc_var_pick) == 0
@@ -92,13 +92,13 @@ function logging_summary(m::Optimizer)
    #get_option(m, :mip_solver_id) == "Gurobi" && @warn "Alpine only supports Gurobi v7.0+ ..."
 end
 
-function logging_head(m::Optimizer)  
-   if m.sense_orig == :Min
+function logging_head(m::Optimizer)
+   if is_min_sense(m)
       printstyled("LOWER-BOUNDING ITERATIONS", color=:cyan)
       UB_iter = "Incumbent"
       UB = "Best Incumbent"
       LB = "Lower Bound"
-   elseif m.sense_orig == :Max
+   elseif is_max_sense(m)
       printstyled("UPPER-BOUNDING ITERATIONS", color=:cyan)
       UB_iter = "Incumbent"
       UB = "Best Incumbent"
@@ -172,13 +172,12 @@ end
 # Create dictionary of statuses for Alpine algorithm
 function create_status!(m)
 
-   status = Dict{Symbol,Symbol}()
+   status = Dict{Symbol,MOI.TerminationStatusCode}()
 
-   status[:presolve] = :none                   # Status of presolve
-   status[:local_solve] = :none                # Status of local solve
-   status[:bounding_solve] = :none             # Status of bounding solve
-   status[:feasible_solution] = :none          # Status of whether a upper bound is detected or not
-   status[:bound] = :none                      # Status of whether a bound has been detected
+   status[:local_solve]    = MOI.OPTIMIZE_NOT_CALLED # Status of local solve
+   status[:bounding_solve] = MOI.OPTIMIZE_NOT_CALLED # Status of bounding solve
+   feasible_solution_detected = false
+   bound_detected = false
 
    m.status = status
 end
@@ -199,13 +198,13 @@ function summary_status(m::Optimizer)
    #               happens when lower bound problem is extremely hard to solve
    # :Unknown : termination with no exception recorded
 
-   if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
-      m.best_rel_gap > get_option(m, :relgap) ? m.alpine_status = :UserLimits : m.alpine_status = :Optimal
-   elseif m.status[:bounding_solve] == :Infeasible
+   if m.detected_bound && m.detected_feasible_solution
+      m.alpine_status = m.best_rel_gap > get_option(m, :relgap) ? :UserLimits : :Optimal
+   elseif m.status[:bounding_solve] == MOI.INFEASIBLE
       m.alpine_status = :Infeasible
-   elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
+   elseif m.detected_bound && !m.detected_feasible_solution
       m.alpine_status = :UserLimits
-   elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
+   elseif !m.detected_bound && m.detected_feasible_solution
       m.alpine_status = :Heuristic
    else
       @warn "  [EXCEPTION] Indefinite Alpine status. Please report your instance (& solver configuration) as an issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."

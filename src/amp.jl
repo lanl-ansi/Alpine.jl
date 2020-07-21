@@ -165,14 +165,14 @@ function amp_post_linear_lift_constraints(model_mip::JuMP.Model, l::Dict)
 end
 
 function amp_post_lifted_objective(m::Optimizer)
-   
+
 #if isa(m.obj_expr_orig, Number)
 if expr_isconst(m.obj_expr_orig)
     @objective(m.model_mip, m.sense_orig, eval(m.obj_expr_orig))
    elseif m.obj_structure == :affine
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
     elseif m.obj_structure == :convex
-        # This works only when the original objective is convex quadratic. 
+        # This works only when the original objective is convex quadratic.
         # Higher-order convex monomials need implementation of outer-approximation (check resolve_convex_constr in operators.jl)
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
@@ -373,11 +373,11 @@ function update_disc_ratio(m::Optimizer, presolve=false)
     m.logs[:n_iter] > 2 && return get_option(m, :disc_ratio) # Stop branching after the second iterations
 
     ratio_pool = [8:2:20;]  # Built-in try range
-    convertor = Dict(:Max=>:<, :Min=>:>)
-    revconvertor = Dict(:Max=>:>, :Min=>:<)
+    convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
+    revconvertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
 
     incumb_ratio = ratio_pool[1]
-    m.sense_orig == :Min ? incumb_res = -Inf : incumb_res = Inf
+    is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
     res_collector = Float64[]
 
     for r in ratio_pool
@@ -436,7 +436,7 @@ function disc_branch_solve(m::Optimizer)
     end
 
     # Safety scheme
-    if m.sense_orig == :Min
+    if is_min_sense(m)
         return -Inf
     else
         return Inf

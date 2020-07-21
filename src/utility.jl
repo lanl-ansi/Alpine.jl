@@ -78,7 +78,7 @@ Update the data structure with feasible solution and its associated objective (i
 """
 function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
 
-   convertor = Dict(:Max=>:>, :Min=>:<)
+   convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
    push!(m.logs[:obj], objval)
    if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
       m.best_obj = objval
@@ -93,8 +93,8 @@ end
 Utility function for debugging.
 """
 function show_solution(m::JuMP.Model)
-   for i in 1:length(m.colNames)
-      println("$(m.colNames[i])=$(m.colVal[i])")
+   for var in all_variables(m)
+      println("$var=$(JuMP.value(var))")
    end
    return
 end
@@ -166,9 +166,9 @@ function update_boundstop_options(m::Optimizer)
 
    if m.mip_solver_id == "Gurobi"
       # Calculation of the bound
-      if m.sense_orig == :Min
+      if is_min_sense(m)
          get_option(m, :gapref) == :ub ? stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_obj) : stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_bound)
-      elseif m.sense_orig == :Max
+      elseif is_max_sense(m)
          get_option(m, :gapref) == :ub ? stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_obj) : stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_bound)
       end
 
@@ -431,7 +431,7 @@ end
 function eval_objective(m::Optimizer; svec::Vector=[])
 
    isempty(svec) ? svec = m.best_bound_sol : svec = svec
-   m.sense_orig == :Min ? obj = Inf : obj=-Inf
+   is_min_sense(m) ? obj = Inf : obj = -Inf
 
    if m.obj_structure == :affine
       obj = m.bounding_obj_mip[:rhs]
@@ -636,20 +636,7 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    return
 end
 
-function round_sol(m::Optimizer;nlp_model=nothing, nlp_sol=[])
-
-   if nlp_model != nothing
-      relaxed_sol = interface_get_solution(nlp_model)
-   end
-
-   if !isempty(nlp_sol)
-      relaxed_sol = nlp_sol
-   end
-
-   if nlp_model != nothing && !isempty(nlp_sol)
-      error("In function collision. Special usage")
-   end
-
+function round_sol(m::Optimizer, relaxed_sol)
    rounded_sol = copy(relaxed_sol)
    for i in 1:m.num_var_orig
       if m.var_type_orig[i] == :Bin
@@ -690,21 +677,21 @@ function eval_feasibility(m::Optimizer, sol::Vector)
    feasible = true
    for i in 1:m.num_constr_orig
       if m.constr_type_orig[i] == :(==)
-         if !isapprox(eval_rhs[i], m.l_constr_orig[i]; atol=get_option(m, :tol))
+         if !isapprox(eval_rhs[i], m.constraint_bounds_orig[i].lower; atol=get_option(m, :tol))
             feasible = false
-            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.l_constr_orig[i])")
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.constraint_bounds_orig[i].lower)")
             get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(>=)
-         if !(eval_rhs[i] >= m.l_constr_orig[i] - get_option(m, :tol))
-            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.l_constr_orig[i])")
+         if !(eval_rhs[i] >= m.constraint_bounds_orig[i].lower - get_option(m, :tol))
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.constraint_bounds_orig[i].lower)")
             get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(<=)
-         if !(eval_rhs[i] <= m.u_constr_orig[i] + get_option(m, :tol))
-            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.u_constr_orig[i])")
+         if !(eval_rhs[i] <= m.constraint_bounds_orig[i].upper + get_option(m, :tol))
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.constraint_bounds_orig[i].upper)")
             get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
@@ -818,7 +805,7 @@ function update_mip_time_limit(m::Optimizer; kwargs...)
 
    opts = Vector{Any}(undef, 0)
    if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
-      for i in collect(m.mip_solver.options)
+      for i in collect(get_option(m, :mip_solver).options)
          push!(opts, i)
       end
    end

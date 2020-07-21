@@ -1,6 +1,6 @@
 """
-    Ranking of variables involved in nonlinear terms for piecewise adaptive partitioning: 
-    Ranked based on the absolute gap between each variable's solution from the lower-bounding MIP and the best feasible solution to the MINLP. 
+    Ranking of variables involved in nonlinear terms for piecewise adaptive partitioning:
+    Ranked based on the absolute gap between each variable's solution from the lower-bounding MIP and the best feasible solution to the MINLP.
     Currently doesn't support recursive convexification
 """
 function update_disc_cont_var(m::Optimizer)
@@ -57,30 +57,30 @@ end
     One-time rounding heuristic to obtain a feasible solution
     For integer solutions
 """
-function heu_basic_rounding(m::Optimizer, local_model)
+function heu_basic_rounding(m::Optimizer, relaxed_sol)
 
     println("Basic Rounding Heuristic Activated...")
 
-    convertor = Dict(:Max=>:>, :Min=>:<)
+    convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
 
-    rounded_sol = round_sol(m, nlp_model=local_model)
+    rounded_sol = round_sol(m, relaxed_sol)
     l_var, u_var = fix_domains(m, discrete_sol = rounded_sol)
 
-    heuristic_model = interface_init_nonlinear_model(get_option(m, :nlp_solver))
-    interface_load_nonlinear_model(m, heuristic_model, l_var, u_var)
-    interface_optimize(heuristic_model)
-    heuristic_model_status = interface_get_status(heuristic_model)
+    heuristic_model = MOI.instantiate(get_option(m, :nlp_solver), with_bridge_type=Float64)
+    x = load_nonlinear_model(m, heuristic_model, l_var, u_var)
+    MOI.optimize!(heuristic_model)
+    heuristic_model_status = MOI.get(heuristic_model, MOI.TerminationStatus())
 
-    if heuristic_model_status in [:Infeasible, :Error]
+    if heuristic_model_status == MOI.OTHER_ERROR || heuristic_model_status in STATUS_INF
         get_option(m, :loglevel) > 0 && println("Rounding obtained an Infeasible point.")
         push!(m.logs[:obj], "INF")
-        return :Infeasibles
-    elseif heuristic_model_status in [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
-        candidate_obj = interface_get_objval(heuristic_model)
-        candidate_sol = round.(interface_get_solution(heuristic_model), 5)
+        return MOI.LOCALLY_INFEASIBLE
+    elseif heuristic_model_status in STATUS_OPT || heuristic_model_status in STATUS_LIMIT
+        candidate_obj = MOI.get(heuristic_model, MOI.ObjectiveValue())
+        candidate_sol = round.(MOI.get(heuristic_model, MOI.VariablePrimal(), x), 5)
         update_incumb_objective(m, candidate_obj, candidate_sol)
         get_option(m, :loglevel) > 0 && println("Rounding obtained a feasible solution OBJ = $(m.best_obj)")
-        return :LocalOptimal
+        return MOI.LOCALLY_SOLVED
     else
         error("[EXCEPTION] Unknown NLP solver status.")
     end
@@ -93,24 +93,24 @@ end
 """
 function heu_pool_multistart(m::Optimizer)
 
-    convertor = Dict(:Max=>:>, :Min=>:<)
-    m.sense_orig == :Min ? incumb_obj = Inf : incumb_obj = -Inf
+    convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
+    is_min_sense(m) ? incumb_obj = Inf : incumb_obj = -Inf
     incumb_sol = []
     found_feasible = false
 
     for i in 1:m.bound_sol_pool[:cnt]
         if !m.bound_sol_pool[:ubstart][i]
-            rounded_sol = round_sol(m, nlp_sol=m.bound_sol_pool[:sol][i])
+            rounded_sol = round_sol(m, m.bound_sol_pool[:sol][i])
             l_var, u_var = fix_domains(m, discrete_sol=rounded_sol, use_orig=true)
-            heuristic_model = interface_init_nonlinear_model(get_option(m, :nlp_solver))
-            interface_load_nonlinear_model(m, heuristic_model, l_var, u_var)
-            interface_optimize(heuristic_model)
-            heuristic_model_status = interface_get_status(heuristic_model)
-            if heuristic_model_status in [:Optimal, :Suboptimal, :UserLimit, :LocalOptimal]
-                candidate_obj = interface_get_objval(heuristic_model)
+            heuristic_model = MOI.instantiate(get_option(m, :nlp_solver), with_bridge_type=Float64)
+            x = load_nonlinear_model(m, heuristic_model, l_var, u_var)
+            MOI.optimize!(heuristic_model)
+            heuristic_model_status = MOI.get(heuristic_model, MOI.TerminationStatus())
+            if heuristic_model_status in STATUS_OPT || heuristic_model_status in STATUS_LIMIT
+                candidate_obj = MOI.get(heuristic_model, MOI.ObjectiveValue())
                 if eval(convertor[m.sense_orig])(candidate_obj, incumb_obj)
                     incumb_obj = candidate_obj
-                    incumb_sol = round.(interface_get_solution(heuristic_model), 5)
+                    incumb_sol = round.(MOI.get(heuristic_model, MOI.VariablePrimal(), x), 5)
                     get_option(m, :loglevel) > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)] [OBJ=$(incumb_obj)]")
                 end
                 found_feasible = true
@@ -123,8 +123,8 @@ function heu_pool_multistart(m::Optimizer)
 
     if found_feasible
         update_incumb_objective(m, incumb_obj, incumb_sol)
-        return :LocalOptimal
+        return MOI.LOCALLY_SOLVED
     end
 
-    return :Infeasible
+    return MOI.LOCALLY_INFEASIBLE
 end

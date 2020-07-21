@@ -165,9 +165,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # additional user inputs useful for local solves
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
     u_var_orig::Vector{Float64}                                 # Variable upper bounds
-    l_constr_orig::Vector{Float64}                              # Constraint lower bounds
-    u_constr_orig::Vector{Float64}                              # Constraint upper bounds
-    sense_orig::Symbol                                          # Problem type (:Min, :Max)
+    constraint_bounds_orig::Vector{MOI.NLPBoundsPair}           # Constraint lower bounds
+    sense_orig::MOI.OptimizationSense                           # Problem type (:Min, :Max)
     d_orig::Union{Nothing, JuMP.NLPEvaluator}                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
     has_nlp_objective::Bool
     objective_function::Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
@@ -222,6 +221,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     presolve_infeasible::Bool                                   # Presolve infeasibility detection flag
     best_bound::Float64                                         # Best bound from MIP
     best_obj::Float64                                           # Best feasible objective value
+    initial_warmval::Vector{Float64}                            # Warmstart values set to Alpine
     best_sol::Vector{Float64}                                   # Best feasible solution
     best_bound_sol::Vector{Float64}                             # Best bound solution (arg-min)
     best_rel_gap::Float64                                       # Relative optimality gap = |best_obj - best_bound|/|best_obj|*100
@@ -231,7 +231,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
-    status::Dict{Symbol,Symbol}                                 # Detailed status of every iteration in the algorithm
+    feasible_solution_detected::Bool
+    bound_detected::Bool
+    status::Dict{Symbol, MOI.TerminationStatusCode}             # Detailed status of every iteration in the algorithm
     alpine_status::Symbol                                       # Current Alpine's status
 
     # constructor
@@ -278,6 +280,7 @@ function MOI.empty!(m::Optimizer)
 
     m.l_var_orig = Float64[]
     m.u_var_orig = Float64[]
+    m.sense_orig = MOI.FEASIBILITY_SENSE
 
     m.d_orig = nothing
     m.has_nlp_objective = false
@@ -305,6 +308,7 @@ function MOI.empty!(m::Optimizer)
     m.bound_sol_history = Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
 
     m.best_obj = Inf
+    m.initial_warmval = Float64[]
     m.best_sol = Float64[]
     m.best_bound = -Inf
     m.best_rel_gap = Inf
@@ -335,6 +339,7 @@ function MOI.add_variable(model::Optimizer)
     push!(model.l_var_orig, -Inf)
     push!(model.u_var_orig, Inf)
     push!(model.var_type_orig, :Cont)
+    push!(model.initial_warmval, 0.0)
     push!(model.best_sol, 0.0)
     return MOI.VariableIndex(model.num_var_orig)
 end
@@ -345,7 +350,7 @@ function MOI.supports(::Optimizer, ::MOI.VariablePrimalStart,
 end
 function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart,
                  vi::MOI.VariableIndex, value::Union{Real, Nothing})
-    model.best_sol[vi.value] = something(value, 0.0)
+    model.best_sol[vi.value] = model.initial_warmval[vi.value] = something(value, 0.0)
     return
 end
 
@@ -385,15 +390,18 @@ function MOI.supports(model::Optimizer, ::Union{MOI.ObjectiveSense, MOI.Objectiv
     return true
 end
 
+is_min_sense(model::Optimizer) = model.sense_orig == MOI.MAX_SENSE
+is_max_sense(model::Optimizer) = model.sense_orig == MOI.MIN_SENSE
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
-    if sense == MOI.MAX_SENSE
-        model.sense_orig = :Max
+    model.sense_orig = sense
+    if is_max_sense(model)
         model.best_obj = -Inf
         model.best_bound = Inf
-    else
-        model.sense_orig = :Min
+    elseif is_min_sense(sense)
         model.best_obj = Inf
         model.best_bound = -Inf
+    else
+        error("Feasibility sense not supported yet by Alpine.")
     end
 end
 
@@ -405,9 +413,20 @@ function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
     m.has_nlp_objective = block.has_objective
     m.num_constr_orig = length(block.constraint_bounds)
-    m.l_constr_orig = [p.lower for p in block.constraint_bounds]
-    m.u_constr_orig = [p.upper for p in block.constraint_bounds]
+    m.constraint_bounds_orig = block.constraint_bounds
     return
+end
+
+# In JuMP v0.18/MathProgBase, the 5th decision variable would be `:(x[5])`.
+# In JuMP v0.19/MathOptInterface, it is now `:(x[MOI.VariableIndex(5)])`.
+# To ease the transition, we simply transform it back to what it used to be.
+_variable_index_to_index(expr::Union{Number, Symbol}) = expr
+_variable_index_to_index(expr::MOI.VariableIndex) = expr.value
+function _variable_index_to_index(expr::Expr)
+    for i in eachindex(expr.args)
+        expr.args[i] = _variable_index_to_index(expr.args[i])
+    end
+    return expr
 end
 
 function load!(m::Optimizer)
@@ -415,10 +434,10 @@ function load!(m::Optimizer)
     MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
 
     # Collect objective & constraint expressions
-    m.obj_expr_orig = expr_isolate_const(MOI.objective_expr(m.d_orig)) # see in nlexpr.jl if this expr isolation has any issue
+    m.obj_expr_orig = expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
 
     for i in 1:m.num_constr_orig
-        push!(m.constr_expr_orig, MOI.constraint_expr(m.d_orig, i))
+        push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
     end
 
     # Collect original variable type and build dynamic variable type space
@@ -434,9 +453,9 @@ function load!(m::Optimizer)
     m.constr_type_orig = Array{Symbol}(undef, m.num_constr_orig)
 
     for i in 1:m.num_constr_orig
-        if l_constr[i] > -Inf && u_constr[i] < Inf
+        if m.constraint_bounds_orig[i].lower > -Inf && m.constraint_bounds_orig[i].upper < Inf
             m.constr_type_orig[i] = :(==)
-        elseif l_constr[i] > -Inf
+        elseif m.constraint_bounds_orig[i].lower > -Inf
             m.constr_type_orig[i] = :(>=)
         else
             m.constr_type_orig[i] = :(<=)
@@ -507,7 +526,11 @@ function load!(m::Optimizer)
     # Initialize log
     logging_summary(m)
 
-    optimize!(m)
-
     return
+end
+
+function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableIndex)
+    MOI.check_result_index_bounds(model, attr)
+    MOI.throw_if_not_valid(model, vi)
+    return model.best_sol[vi.value]
 end

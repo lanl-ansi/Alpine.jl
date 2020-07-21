@@ -640,7 +640,7 @@ function expr_isaffine(expr)
             k+=1 
          elseif expr.args[i].head == :call
             status = expr_isaffine(expr.args[i])
-            (status == true) && (k+=1)
+            status && (k += 1)
          end
       end
       (k == length(expr.args)) && (is_affine = true)

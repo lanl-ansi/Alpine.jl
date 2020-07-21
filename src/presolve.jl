@@ -6,7 +6,7 @@ is to sequentially tighten the variable bounds until a fixed point is reached.
 
 Currently, two OBBT methods are implemented [`minmax_bound_tightening`](@ref).
 
-    * Bound-tightening with polyhedral relaxations (McCormick, Lambda for convex-hull) 
+    * Bound-tightening with polyhedral relaxations (McCormick, Lambda for convex-hull)
     * Bound-tightening with piecewise polyhedral relaxations: (with three partitions around the local feasible solution)
     If no local feasible solution is obtained, the algorithm defaults to OBBT without partitions
 """
@@ -22,7 +22,7 @@ function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
         eval(get_option(m, :presolve_bt_algo))(m)
     else
         error("Unrecognized optimization-based bound tightening algorithm")
-    end 
+    end
 
     return
 end
@@ -40,8 +40,8 @@ objective value of the local solve solution stored in `best_sol` for performing 
 to `true` when the local solve is successful in obtaining a feasible solution, else this parameter
 is set to `false`
 
-For details, refer to section 3.1.1 of 
-Nagarjan, Lu, Wang, Bent, Sundar, "An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs" 
+For details, refer to section 3.1.1 of
+Nagarjan, Lu, Wang, Bent, Sundar, "An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs"
 URL: https://goo.gl/89zrDf
 
 Several other parameters are available for the OBBT algorithm tuning.
@@ -51,11 +51,9 @@ For more details, see [Parameters](@ref).
 function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf, kwargs...)
 
     # Some functinal constants
-    both_senses = [:Min, :Max]             # Senses during bound tightening procedures
-    tell_side = Dict(:Min=>1, :Max=>2)     # Positional information
-    tell_round = Dict(:Min=>floor, :Max=>ceil)
-    status_pass = [:Optimal]
-    status_reroute = [:UserLimits]
+    both_senses = [MOI.MIN_SENSE, MOI.MAX_SENSE]             # Senses during bound tightening procedures
+    tell_side = Dict(MOI.MIN_SENSE => 1, MOI.MAX_SENSE=>2)     # Positional information
+    tell_round = Dict(MOI.MIN_SENSE => floor, MOI.MAX_SENSE => ceil)
 
     options = Dict(kwargs)
 
@@ -99,9 +97,9 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
                 for sense in both_senses
                     @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
                     status = solve_bound_tightening_model(m)
-                    if status in status_pass
+                    if status in STATUS_OPT
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
-                    elseif status in status_reroute
+                    elseif status in STATUS_LIMIT
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjbound(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)
                     else
                         print("!")
@@ -109,36 +107,36 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
                 end
             end
 
-            if (temp_bounds[var_idx][tell_side[:Min]] > temp_bounds[var_idx][tell_side[:Max]]) 
+            if (temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] > temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]])
                 temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
             end
-            if (temp_bounds[var_idx][tell_side[:Min]] > discretization[var_idx][end])
-                temp_bounds[var_idx][tell_side[:Min]] = discretization[var_idx][1]
-            end 
-            if (temp_bounds[var_idx][tell_side[:Max]] < discretization[var_idx][1])
-                temp_bounds[var_idx][tell_side[:Max]] = discretization[var_idx][end]
+            if (temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] > discretization[var_idx][end])
+                temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = discretization[var_idx][1]
+            end
+            if (temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] < discretization[var_idx][1])
+                temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = discretization[var_idx][end]
             end
 
             bound_reduction = 0.0
-            if (temp_bounds[var_idx][tell_side[:Max]] - temp_bounds[var_idx][tell_side[:Min]]) > get_option(m, :presolve_bt_width_tol)
-                new_range = temp_bounds[var_idx][tell_side[:Max]] - temp_bounds[var_idx][tell_side[:Min]]
+            if (temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]) > get_option(m, :presolve_bt_width_tol)
+                new_range = temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]
                 old_range = discretization[var_idx][end] - discretization[var_idx][1]
                 bound_reduction = old_range - new_range
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
                 discretization[var_idx][end] = temp_bounds[var_idx][end]
-            else 
+            else
                 midpoint = (temp_bounds[var_idx][1] + temp_bounds[var_idx][end])/2
-                if (midpoint - discretization[var_idx][1] < get_option(m, :presolve_bt_width_tol)/2) 
-                    temp_bounds[var_idx][tell_side[:Min]] = discretization[var_idx][1]
-                    temp_bounds[var_idx][tell_side[:Max]] = discretization[var_idx][1] + (get_option(m, :presolve_bt_width_tol))
-                elseif (discretization[var_idx][end] - midpoint < get_option(m, :presolve_bt_width_tol)/2) 
-                    temp_bounds[var_idx][tell_side[:Min]] = discretization[var_idx][end] - (get_option(m, :presolve_bt_width_tol))
-                    temp_bounds[var_idx][tell_side[:Max]] = discretization[var_idx][end]
-                else 
-                    temp_bounds[var_idx][tell_side[:Min]] = midpoint - (get_option(m, :presolve_bt_width_tol)/2)
-                    temp_bounds[var_idx][tell_side[:Max]] = midpoint + (get_option(m, :presolve_bt_width_tol)/2)
-                end 
-                new_range = temp_bounds[var_idx][tell_side[:Max]] - temp_bounds[var_idx][tell_side[:Min]]
+                if (midpoint - discretization[var_idx][1] < get_option(m, :presolve_bt_width_tol)/2)
+                    temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = discretization[var_idx][1]
+                    temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = discretization[var_idx][1] + (get_option(m, :presolve_bt_width_tol))
+                elseif (discretization[var_idx][end] - midpoint < get_option(m, :presolve_bt_width_tol)/2)
+                    temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = discretization[var_idx][end] - (get_option(m, :presolve_bt_width_tol))
+                    temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = discretization[var_idx][end]
+                else
+                    temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = midpoint - (get_option(m, :presolve_bt_width_tol)/2)
+                    temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = midpoint + (get_option(m, :presolve_bt_width_tol)/2)
+                end
+                new_range = temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]
                 old_range = discretization[var_idx][end] - discretization[var_idx][1]
                 bound_reduction = old_range - new_range
                 discretization[var_idx][1] = temp_bounds[var_idx][1]
@@ -153,7 +151,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
 
         avg_reduction = total_reduction/length(keys(temp_bounds))
         keeptightening = (avg_reduction > 1e-3)
-        
+
         discretization = resolve_var_bounds(m, discretization)
         if haskey(options, :use_tmc)
             discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization))
@@ -236,10 +234,10 @@ end
     TODO: docstring
 """
 function post_obj_bounds(m::Optimizer, bound::Float64; kwargs...)
-    if m.sense_orig == :Max
+    if is_max_sense(m)
         @constraint(m.model_mip,
             sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) >= bound)
-    elseif m.sense_orig == :Min
+    elseif is_min_sense(m)
         @constraint(m.model_mip,
             sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) <= bound)
     end
