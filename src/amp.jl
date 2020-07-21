@@ -90,7 +90,13 @@ function amp_post_vars(m::Optimizer; kwargs...)
 
     for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         # This is a tricky step, not enforcing category of lifted variables is able to improve performance
-        (i <= m.num_var_orig) && setcategory(x[i], m.var_type_orig[i])
+        if i <= m.num_var_orig
+            if m.var_type_orig[i] == :Bin
+                set_binary(x[i])
+            elseif m.var_type_orig[i] == :Int
+                set_integer(x[i])
+            end
+        end
         # Changed to tight bound, if no bound tightening is performed, will be just .l_var_orig
         l_var[i] > -Inf && JuMP.set_lower_bound(x[i], l_var[i])
         # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
@@ -126,13 +132,13 @@ function amp_post_affine_constraint(model_mip::JuMP.Model, affine::Dict)
 
     if affine[:sense] == :(>=)
         @constraint(model_mip,
-            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) >= affine[:rhs])
+            sum(affine[:coefs][j]*_index_to_variable_ref(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) >= affine[:rhs])
     elseif affine[:sense] == :(<=)
         @constraint(model_mip,
-            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) <= affine[:rhs])
+            sum(affine[:coefs][j]*_index_to_variable_ref(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) <= affine[:rhs])
     elseif affine[:sense] == :(==)
         @constraint(model_mip,
-            sum(affine[:coefs][j]*Variable(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) == affine[:rhs])
+            sum(affine[:coefs][j]*_index_to_variable_ref(model_mip, affine[:vars][j].args[2]) for j in 1:affine[:cnt]) == affine[:rhs])
     else
         error("Unkown sense.")
     end
@@ -146,10 +152,10 @@ function amp_post_convex_constraint(model_mip::JuMP.Model, convex::Dict)
 
     if convex[:sense] == :(<=)
         @constraint(model_mip,
-            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) <= convex[:rhs])
+            sum(convex[:coefs][j]*_index_to_variable_ref(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) <= convex[:rhs])
     elseif convex[:sense] == :(>=)
         @constraint(model_mip,
-            sum(convex[:coefs][j]*Variable(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
+            sum(convex[:coefs][j]*_index_to_variable_ref(model_mip, convex[:vars][j].args[2])^2 for j in 1:convex[:cnt]) >= convex[:rhs])
     else
         error("No equality constraints should be recognized as supported convex constriants")
     end
@@ -160,7 +166,7 @@ end
 function amp_post_linear_lift_constraints(model_mip::JuMP.Model, l::Dict)
 
     @assert l[:ref][:sign] == :+
-    @constraint(model_mip, Variable(model_mip, l[:y_idx]) == sum(i[1]*Variable(model_mip, i[2]) for i in l[:ref][:coef_var]) + l[:ref][:scalar])
+    @constraint(model_mip, _index_to_variable_ref(model_mip, l[:y_idx]) == sum(i[1]*_index_to_variable_ref(model_mip, i[2]) for i in l[:ref][:coef_var]) + l[:ref][:scalar])
     return
 end
 
@@ -170,11 +176,11 @@ function amp_post_lifted_objective(m::Optimizer)
 if expr_isconst(m.obj_expr_orig)
     @objective(m.model_mip, m.sense_orig, eval(m.obj_expr_orig))
    elseif m.obj_structure == :affine
-        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
+        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*_index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][i].args[2]) for i in 1:m.bounding_obj_mip[:cnt]))
     elseif m.obj_structure == :convex
         # This works only when the original objective is convex quadratic.
         # Higher-order convex monomials need implementation of outer-approximation (check resolve_convex_constr in operators.jl)
-        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*Variable(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
+        @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*_index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
      @show m.obj_expr_orig
         error("Unknown structural obj type $(m.obj_structure)")
@@ -421,9 +427,10 @@ end
 function disc_branch_solve(m::Optimizer)
 
     # ================= Solve Start ================ #
-    update_mip_time_limit(m)
+    set_mip_time_limit(m)
     start_bounding_solve = time()
-    status = solve(m.model_mip, suppress_warnings=true)
+    MOI.optimize!(m.model_mip)
+    status = MOI.get(m.model_mip, MOI.TerminationStatus())
     cputime_branch_bounding_solve = time() - start_bounding_solve
     m.logs[:total_time] += cputime_branch_bounding_solve
     m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])

@@ -38,9 +38,9 @@ function amp_post_mccormick(m::Optimizer; kwargs...)
 
             if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
                 if m.nonconvex_terms[bi][:nonlinear_type] == :MONOMIAL
-                    mccormick_monomial(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
+                    mccormick_monomial(m.model_mip, _index_to_variable_ref(m.model_mip, idx_ab), _index_to_variable_ref(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
                 elseif m.nonconvex_terms[bi][:nonlinear_type] == :BILINEAR
-                    mccormick(m.model_mip, Variable(m.model_mip, idx_ab), Variable(m.model_mip, idx_a), Variable(m.model_mip, idx_b),
+                    mccormick(m.model_mip, _index_to_variable_ref(m.model_mip, idx_ab), _index_to_variable_ref(m.model_mip, idx_a), _index_to_variable_ref(m.model_mip, idx_b),
                         lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
                 end
             else                                                    # Tighten McCormick
@@ -56,7 +56,7 @@ function amp_post_mccormick(m::Optimizer; kwargs...)
                     if (idx_a in m.disc_vars) && !(idx_b in m.disc_vars) && (part_cnt_b == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-                        λX[(idx_b,idx_a)] = [Variable(m.model_mip, idx_a)]
+                        λX[(idx_b,idx_a)] = [_index_to_variable_ref(m.model_mip, idx_a)]
                         λλ = amp_post_tmc_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
                         amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
                         amp_post_tmc_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
@@ -66,7 +66,7 @@ function amp_post_mccormick(m::Optimizer; kwargs...)
                     if !(idx_a in m.disc_vars) && (idx_b in m.disc_vars) && (part_cnt_a == 1)
                         λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
                         λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
-                        λX[(idx_a,idx_b)] = [Variable(m.model_mip, idx_b)]
+                        λX[(idx_a,idx_b)] = [_index_to_variable_ref(m.model_mip, idx_b)]
                         λλ = amp_post_tmc_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
                         amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
                         amp_post_tmc_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
@@ -100,15 +100,15 @@ function amp_post_tmc_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, 
     if !haskey(λ, idx)
         λ[idx] = @variable(m, [1:dim], Bin, basename=string("L",idx))
         @constraint(m, sum(λ[idx]) == 1) # The SOS-1 Constraints, not all MIP solver has SOS feature
-        @constraint(m, Variable(m, idx) >= dot(lb[idx], λ[idx]))
-        @constraint(m, Variable(m, idx) <= dot(ub[idx], λ[idx]))
+        @constraint(m, _index_to_variable_ref(m, idx) >= dot(lb[idx], λ[idx]))
+        @constraint(m, _index_to_variable_ref(m, idx) <= dot(ub[idx], λ[idx]))
     end
     return λ
 end
 
 function amp_post_tmc_monomial_mc(m::JuMP.Model, idx_aa::Int, λ::Dict, λX::Dict, LB::Dict, UB::Dict, dim::Int, idx_a::Int)
-    @constraint(m, Variable(m, idx_aa) >= Variable(m, idx_a)^(2))
-    @constraint(m, Variable(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(Matrix(Diagonal(LB[idx_a])), UB[idx_a])))
+    @constraint(m, _index_to_variable_ref(m, idx_aa) >= _index_to_variable_ref(m, idx_a)^(2))
+    @constraint(m, _index_to_variable_ref(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(Matrix(Diagonal(LB[idx_a])), UB[idx_a])))
     return
 end
 
@@ -147,10 +147,10 @@ function amp_post_tmc_XX_mc(m, ab, λX, λλ, LB, UB, a, b)
     @assert length(LB[b]) == length(UB[b])
     dim_A = length(LB[a])
     dim_B = length(LB[b])
-    @constraint(m, Variable(m, ab) .>= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],LB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
-	@constraint(m, Variable(m, ab) .>= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],UB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
-	@constraint(m, Variable(m, ab) .<= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],UB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
-	@constraint(m, Variable(m, ab) .<= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],LB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
+    @constraint(m, _index_to_variable_ref(m, ab) .>= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],LB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
+	@constraint(m, _index_to_variable_ref(m, ab) .>= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],UB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
+	@constraint(m, _index_to_variable_ref(m, ab) .<= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],UB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
+	@constraint(m, _index_to_variable_ref(m, ab) .<= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],LB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
     return
 end
 
@@ -162,12 +162,13 @@ function amp_post_tmc_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::
 
 	dim_λ = length(λ[ind_λ]) # This is how many new variables to be generated
 	for i in 1:dim_λ
-		lb_X = getlowerbound(Variable(m, ind_X))
-		ub_X = getupperbound(Variable(m, ind_X))
-		lb_λ = getlowerbound(λ[ind_λ][i])
-		ub_λ = getupperbound(λ[ind_λ][i])
+        v = _index_to_variable_ref(m, ind_X)
+		lb_X = JuMP.lower_bound(v)
+		ub_X = JuMP.upper_bound(v)
+		lb_λ = JuMP.lower_bound(λ[ind_λ][i])
+		ub_λ = JuMP.upper_bound(λ[ind_λ][i])
         @assert (lb_λ == 0.0) && (ub_λ == 1.0)
-		mccormick(m, λX[(ind_λ,ind_X)][i], λ[ind_λ][i], Variable(m, ind_X), lb_λ, ub_λ, lb_X, ub_X)
+		mccormick(m, λX[(ind_λ,ind_X)][i], λ[ind_λ][i], v, lb_λ, ub_λ, lb_X, ub_X)
 	end
     return
 end

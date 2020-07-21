@@ -428,6 +428,7 @@ function _variable_index_to_index(expr::Expr)
     end
     return expr
 end
+_index_to_variable_ref(m::JuMP.Model, idx::Int64) = JuMP.VariableRef(m, MOI.VariableIndex(idx))
 
 function load!(m::Optimizer)
     # Initialize NLP interface

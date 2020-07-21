@@ -73,7 +73,7 @@ function amp_convexify_binlin(m::Optimizer, k::Any, β::Dict)
     if haskey(β, lift_idx)
         return β
     else
-        β[lift_idx] = Variable(m.model_mip, lift_idx)
+        β[lift_idx] = _index_to_variable_ref(m.model_mip, lift_idx)
     end
 
     bin_idx = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Bin]
@@ -84,8 +84,8 @@ function amp_convexify_binlin(m::Optimizer, k::Any, β::Dict)
     bin_idx = bin_idx[1]
     cont_idx = cont_idx[1]
 
-    mccormick_binlin(m.model_mip, Variable(m.model_mip, lift_idx),
-        Variable(m.model_mip, bin_idx), Variable(m.model_mip, cont_idx),
+    mccormick_binlin(m.model_mip, _index_to_variable_ref(m.model_mip, lift_idx),
+        _index_to_variable_ref(m.model_mip, bin_idx), _index_to_variable_ref(m.model_mip, cont_idx),
         m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
 
     return β
@@ -101,11 +101,11 @@ function amp_convexify_binprod(m::Optimizer, k::Any, β::Dict)
     if haskey(β, lift_idx)
         return β    # Already constructed
     else
-        β[lift_idx] = Variable(m.model_mip, lift_idx)
+        β[lift_idx] = _index_to_variable_ref(m.model_mip, lift_idx)
     end
 
-    z = Variable(m.model_mip, m.nonconvex_terms[k][:y_idx])
-    x = [Variable(m.model_mip, i) for i in m.nonconvex_terms[k][:var_idxs]]
+    z = _index_to_variable_ref(m.model_mip, m.nonconvex_terms[k][:y_idx])
+    x = [_index_to_variable_ref(m.model_mip, i) for i in m.nonconvex_terms[k][:var_idxs]]
     for i in x
         @constraint(m.model_mip, z <= i)
     end
@@ -167,7 +167,7 @@ function amp_convhull_λ(m::Optimizer, nonlinear_key::Any, indices::Any, λ::Dic
     λ[indices] = Dict(:dim=>dim,
                      :lifted_var_idx=>y_idx,
                      :indices=>reshape([1:ext_cnt;], dim),
-                     :vars=>@variable(m.model_mip, [1:ext_cnt], lowerbound=0, basename="L$(y_idx)"),
+                     :vars=>@variable(m.model_mip, [1:ext_cnt], lower_bound=0, base_name="L$(y_idx)"),
                      :vals=>ones(dim))
 
     return λ
@@ -218,12 +218,12 @@ function amp_convhull_α(m::Optimizer, indices::Any, α::Dict, dim::Tuple, discr
             partition_cnt = length(discretization[i]) - 1
             if get_option(m, :convhull_ebd) && partition_cnt > 2
                 αCnt = Int(ceil(log(2,partition_cnt)))
-                α[i] = @variable(m.model_mip, [1:αCnt], Bin, basename=string("YL",i))
+                α[i] = @variable(m.model_mip, [1:αCnt], Bin, base_name=string("YL",i))
             else
-                α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, basename="A$(i)")
+                α[i] = @variable(m.model_mip, [1:partition_cnt], Bin, base_name="A$(i)")
                 @constraint(m.model_mip, sum(α[i]) == 1)
-                @constraint(m.model_mip, Variable(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
-                @constraint(m.model_mip, Variable(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
+                @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
+                @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
             end
         end
     end
@@ -292,7 +292,7 @@ function amp_post_convhull_constrs(m::Optimizer, λ::Dict, α::Dict, indices::An
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[indices][:vars]) == 1)
-    @constraint(m.model_mip, Variable(m.model_mip, λ[indices][:lifted_var_idx]) == dot(λ[indices][:vars], reshape(λ[indices][:vals], ext_cnt)))
+    @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, λ[indices][:lifted_var_idx]) == dot(λ[indices][:vars], reshape(λ[indices][:vals], ext_cnt)))
 
     # Add links on each dimension
     for (cnt, i) in enumerate(indices)
@@ -303,7 +303,7 @@ function amp_post_convhull_constrs(m::Optimizer, λ::Dict, α::Dict, indices::An
             error("EXCEPTION: unexpected variable type during integer related realxation")
         end
         sliced_indices = [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
-        @constraint(m.model_mip, Variable(m.model_mip, i) == sum(dot(repeat([d[i][k]],length(sliced_indices[k])), λ[indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
+        @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, i) == sum(dot(repeat([d[i][k]],length(sliced_indices[k])), λ[indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
     end
 
     return
@@ -319,8 +319,8 @@ function amp_post_convhull_constrs(m::Optimizer, λ::Dict, α::Dict, monomial_id
 
     # Adding λ constraints
     @constraint(m.model_mip, sum(λ[monomial_idx][:vars]) == 1)
-    @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) <= dot(λ[monomial_idx][:vars], λ[monomial_idx][:vals]))
-    @constraint(m.model_mip, Variable(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >= Variable(m.model_mip, monomial_idx)^2)
+    @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, λ[monomial_idx][:lifted_var_idx]) <= dot(λ[monomial_idx][:vars], λ[monomial_idx][:vals]))
+    @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >= _index_to_variable_ref(m.model_mip, monomial_idx)^2)
 
     # Add SOS-2 Constraints with basic encoding
     if get_option(m, :convhull_ebd) && partition_cnt > 2
@@ -342,12 +342,12 @@ function amp_post_convhull_constrs(m::Optimizer, λ::Dict, α::Dict, monomial_id
             end
         end
         # Add x = f(α) for regulating the domains
-        @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
-        @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
+        @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
+        @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
     end
 
     # Add x = f(λ) for convex representation
-    @constraint(m.model_mip, Variable(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
+    @constraint(m.model_mip, _index_to_variable_ref(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
 
     return
 end

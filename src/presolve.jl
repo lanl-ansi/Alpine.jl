@@ -95,7 +95,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
             if (discretization[var_idx][end] - discretization[var_idx][1]) > get_option(m, :presolve_bt_width_tol)
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
-                    @objective(m.model_mip, sense, Variable(m.model_mip, var_idx))
+                    @objective(m.model_mip, sense, _index_to_variable_ref(m.model_mip, var_idx))
                     status = solve_bound_tightening_model(m)
                     if status in STATUS_OPT
                         temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(getobjectivevalue(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
@@ -214,14 +214,20 @@ A function that solves the min and max OBBT model.
 function solve_bound_tightening_model(m::Optimizer; kwargs...)
 
     # ========= MILP Solve ========= #
-    if get_option(m, :presolve_bt_mip_timeout) < Inf
-        update_mip_time_limit(m, timelimit = max(0.0, min(get_option(m, :presolve_bt_mip_timeout), get_option(m, :timeout) - m.logs[:total_time])))
+    time_limit = max(0.0, if get_option(m, :presolve_bt_mip_timeout) < Inf
+        min(get_option(m, :presolve_bt_mip_timeout), get_option(m, :timeout) - m.logs[:total_time])
     else
-        update_mip_time_limit(m, timelimit = max(0.0, get_option(m, :timeout) - m.logs[:total_time]))
-    end
+        get_option(m, :timeout) - m.logs[:total_time]
+    end)
+    MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 
     start_solve = time()
-    status = solve(m.model_mip, suppress_warnings=true, relaxation=get_option(m, :presolve_bt_relax)) #TODO Double check here
+    if get_option(m, :presolve_bt_relax) #TODO Double check here
+        unrelax = JuMP.relax_integrality(m.model_mip)
+    end
+    status = JuMP.optimize!(m.model_mip)
+    status = MOI.get(m.model_mip, MOI.TerminationStatus())
+    unrelax() # FIXME should this be called ?
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve
     m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
@@ -236,10 +242,10 @@ end
 function post_obj_bounds(m::Optimizer, bound::Float64; kwargs...)
     if is_max_sense(m)
         @constraint(m.model_mip,
-            sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) >= bound)
+            sum(m.bounding_obj_mip[:coefs][j]*_index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) >= bound)
     elseif is_min_sense(m)
         @constraint(m.model_mip,
-            sum(m.bounding_obj_mip[:coefs][j]*Variable(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) <= bound)
+            sum(m.bounding_obj_mip[:coefs][j]*_index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) <= bound)
     end
 
     return

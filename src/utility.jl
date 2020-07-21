@@ -537,13 +537,13 @@ function print_iis_gurobi(m::JuMP.Model)
    info("Irreducible Inconsistent Subsystem (IIS)")
    info("Variable bounds:")
    for i in 1:numvar
-      v = Variable(m, i)
+      v = _index_to_variable_ref(m, i)
       if iislb[i] != 0 && iisub[i] != 0
-         println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+         println(JuMP.lower_bound(v), " <= ", JuMP.name(v), " <= ", JuMP.upper_bound(v))
       elseif iislb[i] != 0
-         println(getname(v), " >= ", getlowerbound(v))
+         println(JuMP.name(v), " >= ", JuMP.lower_bound(v))
       elseif iisub[i] != 0
-         println(getname(v), " <= ", getupperbound(v))
+         println(JuMP.name(v), " <= ", JuMP.upper_bound(v))
       end
    end
 
@@ -585,14 +585,15 @@ function min_vertex_cover(m::Optimizer)
    nodes, arcs = build_discvar_graph(m)
 
    # Set up minimum vertex cover problem
-   update_mip_time_limit(m, timelimit=60.0)  # Set a timer to avoid waste of time in proving optimality
-   minvertex = Model(solver=m.mip_solver)
+   MOI.set(minvertex, MOI.TimeLimitSet(), 60.0) # Set a timer to avoid waste of time in proving optimality
+   minvertex = Model(get_option(m, :mip_solver))
    @variable(minvertex, x[nodes], Bin)
    @constraint(minvertex, [a in arcs], x[a[1]] + x[a[2]] >= 1)
    @objective(minvertex, Min, sum(x))
 
-   status = solve(minvertex, suppress_warnings=true)
-   xVal = getvalue(x)
+   optimize!(minvertex)
+   status = MOI.get(minvertex, MOI.TerminationStatus())
+   xVal = JuMP.value(x)
 
    # Collecting required information
    m.num_var_disc_mip = Int(sum(xVal))
@@ -617,8 +618,8 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    end
 
    # Set up minimum vertex cover problem
-   update_mip_time_limit(m, timelimit=60.0)  # Set a timer to avoid waste of time in proving optimality
-   minvertex = Model(solver=m.mip_solver)
+   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0)  # Set a timer to avoid waste of time in proving optimality
+   minvertex = Model(get_option(m, :mip_solver))
    @variable(minvertex, x[nodes], Bin)
    for arc in arcs
       @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
@@ -794,112 +795,13 @@ function fetch_minlp_solver_identifier(m::Optimizer;override="")
 end
 
 """
-update_mip_time_limit(m::Optimizer)
+    set_mip_time_limit(m::Optimizer)
+
 An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
 """
-function update_mip_time_limit(m::Optimizer; kwargs...)
-
-   options = Dict(kwargs)
-   timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
-
-   opts = Vector{Any}(undef, 0)
-   if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
-      for i in collect(get_option(m, :mip_solver).options)
-         push!(opts, i)
-      end
-   end
-
-   if m.mip_solver_id == "Cplex"
-      opts = update_timeleft_symbol(opts, :CPX_PARAM_TILIM, timelimit)
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Pavito"
-      (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
-   elseif m.mip_solver_id == "Gurobi"
-      opts = update_timeleft_symbol(opts, :TimeLimit, timelimit)
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Cbc"
-      opts = update_timeleft_symbol(opts, :seconds, timelimit)
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "GLPK"
-      opts = update_timeleft_symbol(opts, :tm_lim, timelimit)
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Pajarito"
-      (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
-   else
-      error("Needs support for this MIP solver")
-   end
-
-   return
-end
-
-"""
-update_mip_time_limit(m::Optimizer)
-An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
-"""
-function update_nlp_time_limit(m::Optimizer; kwargs...)
-
-   options = Dict(kwargs)
-   timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
-
-   opts = Vector{Any}(undef, 0)
-   if m.nlp_solver_id != "Pavito" && m.nlp_solver_id != "Pajarito"
-      opts = collect(get_option(m, :nlp_solver).options)
-   end
-
-
-   if m.nlp_solver_id == "Ipopt"
-      opts = update_timeleft_symbol(opts, :max_cpu_time, timelimit)
-      get_option(m, :nlp_solver).options = opts
-   elseif m.nlp_solver_id == "Pajarito"
-      (timelimit < Inf) && (get_option(m, :nlp_solver).timeout = timelimit)
-   elseif m.nlp_solver_id == "AmplNL"
-      opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
-      get_option(m, :nlp_solver).options = opts
-   elseif m.nlp_solver_id == "Knitro"
-      error("You never tell me anything about knitro. Probably because they have a very short trail length.")
-   elseif m.nlp_solver_id == "NLopt"
-      get_option(m, :nlp_solver).maxtime = timelimit
-   else
-      error("Needs support for this MIP solver")
-   end
-
-   return
-end
-
-"""
-update_mip_time_limit(m::Optimizer)
-An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
-"""
-function update_minlp_time_limit(m::Optimizer; kwargs...)
-
-   options = Dict(kwargs)
-   timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, get_option(m, :timeout)-m.logs[:total_time])
-
-   opts = Vector{Any}(undef, 0)
-   if m.minlp_solver_id != "Pavito" && m.minlp_solver_id != "Pajarito"
-      opts = collect(get_option(m, :minlp_solver).options)
-   end
-
-
-   if m.minlp_solver_id == "Pajarito"
-      (timelimit < Inf) && (get_option(m, :minlp_solver).timeout = timelimit)
-   elseif m.minlp_solver_id == "Pavito"
-      (timelimit < Inf) && (get_option(m, :minlp_solver).timeout = timelimit)
-   elseif m.minlp_solver_id == "AmplNL"
-      opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
-      get_option(m, :minlp_solver).options = opts
-   elseif m.minlp_solver_id == "Knitro"
-      error("You never tell me anything about knitro. Probably because they charge everything they own.")
-   elseif m.minlp_solver_id == "NLopt"
-      get_option(m, :minlp_solver).maxtime = timelimit
-   else
-      error("Needs support for this MIP solver")
-   end
-
-   return
+function set_mip_time_limit(m::Optimizer)
+   time_limit = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+   MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 end
 
 """

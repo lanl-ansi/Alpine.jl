@@ -307,7 +307,7 @@ function bounding_solve(m::Optimizer)
    convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
 
    # Updates time metric and the termination bounds
-   update_mip_time_limit(m)
+   set_mip_time_limit(m)
    update_boundstop_options(m)
 
    # ================= Solve Start ================ #
@@ -320,7 +320,7 @@ function bounding_solve(m::Optimizer)
 
    if status in STATUS_OPT || status in STATUS_LIMIT
       (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
-      candidate_bound_sol = [round.(getvalue(Variable(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+      candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
       # Experimental code
       measure_relaxed_deviation(m, sol=candidate_bound_sol)
       if get_option(m, :disc_consecutive_forbid) > 0
