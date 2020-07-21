@@ -585,15 +585,15 @@ function min_vertex_cover(m::Optimizer)
    nodes, arcs = build_discvar_graph(m)
 
    # Set up minimum vertex cover problem
-   MOI.set(minvertex, MOI.TimeLimitSet(), 60.0) # Set a timer to avoid waste of time in proving optimality
    minvertex = Model(get_option(m, :mip_solver))
+   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0) # Set a timer to avoid waste of time in proving optimality
    @variable(minvertex, x[nodes], Bin)
    @constraint(minvertex, [a in arcs], x[a[1]] + x[a[2]] >= 1)
    @objective(minvertex, Min, sum(x))
 
    optimize!(minvertex)
    status = MOI.get(minvertex, MOI.TerminationStatus())
-   xVal = JuMP.value(x)
+   xVal = JuMP.value.(x)
 
    # Collecting required information
    m.num_var_disc_mip = Int(sum(xVal))
@@ -618,8 +618,8 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    end
 
    # Set up minimum vertex cover problem
-   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0)  # Set a timer to avoid waste of time in proving optimality
    minvertex = Model(get_option(m, :mip_solver))
+   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0)  # Set a timer to avoid waste of time in proving optimality
    @variable(minvertex, x[nodes], Bin)
    for arc in arcs
       @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
