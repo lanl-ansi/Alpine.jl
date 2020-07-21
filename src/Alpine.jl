@@ -18,6 +18,7 @@ include("const.jl")
 
 # Engine for High-level Algorithmic Control and User-interface
 include("matrix_opt_interface.jl")
+include("moi_function2expr.jl")
 include("solver.jl")
 #include("mpb2moi.jl") # Transition file
 #include("MOI_wrapper/MOI_wrapper.jl")

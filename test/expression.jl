@@ -228,13 +228,22 @@ end
 
     # TODO setup detailed check on this problem
 end
-
 @testset "Expression Parsing || bilinear || Complex || blend029.jl " begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"mip_solver" =>  CBC,"loglevel" =>  100)
+    test_solver = optimizer_with_attributes(
+                                            Alpine.Optimizer,
+                                            "minlp_solver" =>  JUNIPER,
+                                            "mip_solver" =>  CBC,
+                                            "loglevel" =>  100)
 
     m = blend029(solver=test_solver)
 
+    m = operator_basic(solver=test_solver)
+    MOI.Utilities.attach_optimizer(m)
+    MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
+
+    alpine = JuMP.backend(m).optimizer.model
+    Alpine.load!(alpine)
     JuMP.build(m) # Setup internal model
     @test length(keys(m.internalModel.nonconvex_terms)) == 28
     @test haskey(m.internalModel.nonconvex_terms, [Expr(:ref, :x, 37), Expr(:ref, :x, 55)])
@@ -340,7 +349,7 @@ end
     @test m.internalModel.nonconvex_terms[[:(x[47]), :(x[36])]][:convexified] == false
     @test m.internalModel.nonconvex_terms[[:(x[47]), :(x[36])]][:nonlinear_type] == :BILINEAR
 end
-
+#=
 @testset "Expression Parsing || multilinear || Simple || multi.jl " begin
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
@@ -1193,7 +1202,6 @@ end
         @test m.internalModel.bounding_constr_mip[26][:cnt] == 2
     end
 end
-=#
 
 @testset "Expression Prasing || Linear Lifting" begin
     #=
@@ -2070,12 +2078,16 @@ end
 #=
 @testset "Expression Parsing || Basic Multiplication Operators (Machine Generated for diffs)" begin
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  IPOPT_SB,
+    test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" => JUNIPER,
                            "mip_solver" =>  CBC,
                            "loglevel" =>  100)
 
     m = operator_basic(solver=test_solver)
-    JuMP.build(m)
+    MOI.Utilities.attach_optimizer(m)
+    MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
+
+    alpine = JuMP.backend(m).optimizer.model
+    Alpine.load!(alpine)
 
     @test m.internalModel.nonconvex_terms[Expr[:(x[3]), :(x[4])]][:y_idx] == 31
     @test m.internalModel.nonconvex_terms[Expr[:(x[3]), :(x[4])]][:id] == 27

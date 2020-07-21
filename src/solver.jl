@@ -356,6 +356,8 @@ end
 
 const SCALAR_SET = Union{MOI.EqualTo{Float64}, MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.Interval{Float64}}
 
+MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{<:SCALAR_SET}) = true
+
 _lower(set::MOI.EqualTo) = set.value
 _upper(set::MOI.EqualTo) = set.value
 _lower(set::MOI.LessThan) = nothing
@@ -385,6 +387,17 @@ end
 function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.ZeroOne)
     model.var_type_orig[f.variable.index] = :Bin
 end
+
+
+function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR_SET)
+
+
+    constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
+    constr_expr_orig::Vector{Expr}                              # Constraint expressions
+
+
+
+
 
 function MOI.supports(model::Optimizer, ::Union{MOI.ObjectiveSense, MOI.ObjectiveFunction{F}}) where F<:Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
     return true
@@ -435,8 +448,13 @@ function load!(m::Optimizer)
     MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
 
     # Collect objective & constraint expressions
-    m.obj_expr_orig = expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
-
+    if m.has_nlp_objective
+        m.obj_expr_orig = expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
+    elseif m.objective_function isa Nothing
+        m.obj_expr_orig = 0.0
+    else
+        m.obj_expr_orig = _moi_function_to_expr(m.objective_function)
+    end
     for i in 1:m.num_constr_orig
         push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
     end
