@@ -391,21 +391,17 @@ function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.Ze
     model.var_type_orig[f.variable.index] = :Bin
 end
 
+MOI.supports(model::Optimizer, f::Union{MOI.ScalarAffineFunction, MOI.ScalarQuadraticFunction}, set::SCALAR_SET) = true
 
-function MOI.add_constraint(model::Optimizer, f::MOI.ScalarAffineFunction, set::SCALAR_SET)
+
+function MOI.add_constraint(model::Optimizer, f::Union{MOI.ScalarAffineFunction, MOI.ScalarQuadraticFunction}, set::SCALAR_SET)
     model.num_constr_orig += 1
-
+push!(model.constr_expr_orig, _moi_function_to_expr(func))
+    push!(model.constraint_bounds_orig, MOI.NLPBoundsPair(_lower(set), _upper(set)))
+    push!(m.constr_structure, f isa MOI.ScalarAffineFunction ? :generic_linear : :generic_nonlinear)
 
     return MOI.ConstraintIndex{typeof(f), typeof(set)}(model.num_const_orig)
 end
-
-#=
-    constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
-    constr_expr_orig::Vector{Expr}                              # Constraint expressions
-=#
-
-
-
 
 function MOI.supports(model::Optimizer, ::Union{MOI.ObjectiveSense, MOI.ObjectiveFunction{F}}) where F<:Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
     return true
@@ -467,6 +463,7 @@ function load!(m::Optimizer)
     for i in 1:m.num_constr_orig
         push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
     end
+    append!(m.constraint_bounds_orig, m.block.constraint_bounds)
 
     # Collect original variable type and build dynamic variable type space
     m.var_type = copy(m.var_type_orig)

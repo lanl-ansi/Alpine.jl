@@ -20,10 +20,8 @@ end
 function _moi_function_to_expr(t::MOI.ScalarQuadraticTerm)
     return Expr(:call, :*, 
                 MOI.coefficient(t), 
-                Expr(:call, :*, 
-                     _variable_index_to_expr(t.variable_index_1),
-                     _variable_index_to_expr(t.variable_index_2)
-                    )
+                _variable_index_to_expr(t.variable_index_1),
+                _variable_index_to_expr(t.variable_index_2)
                )
 end
 
