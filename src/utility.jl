@@ -713,6 +713,9 @@ function fetch_mip_solver_identifier(m::Optimizer;override="")
    elseif occursin("Pavito", solverstring)
        m.mip_solver_id = "Pavito"
       return
+   elseif occursin("Juniper", solverstring)
+       m.mip_solver_id = "Juniper"
+      return
    end
 
    # Lower level solvers

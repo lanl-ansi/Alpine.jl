@@ -166,6 +166,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
     u_var_orig::Vector{Float64}                                 # Variable upper bounds
     constraint_bounds_orig::Vector{MOI.NLPBoundsPair}           # Constraint lower bounds
+    nonlinear_constraint_bounds_orig::Vector{MOI.NLPBoundsPair} # Constraint lower bounds
     sense_orig::MOI.OptimizationSense                           # Problem type (:Min, :Max)
     d_orig::Union{Nothing, JuMP.NLPEvaluator}                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
     has_nlp_objective::Bool
@@ -280,6 +281,8 @@ function MOI.empty!(m::Optimizer)
 
     m.l_var_orig = Float64[]
     m.u_var_orig = Float64[]
+    m.constraint_bounds_orig = MOI.NLPBoundsPair[]
+    m.nonlinear_constraint_bounds_orig = MOI.NLPBoundsPair[]
     m.sense_orig = MOI.FEASIBILITY_SENSE
 
     m.d_orig = nothing
@@ -396,8 +399,8 @@ MOI.supports(model::Optimizer, f::Union{MOI.ScalarAffineFunction, MOI.ScalarQuad
 
 function MOI.add_constraint(model::Optimizer, f::Union{MOI.ScalarAffineFunction, MOI.ScalarQuadraticFunction}, set::SCALAR_SET)
     model.num_constr_orig += 1
-push!(model.constr_expr_orig, _moi_function_to_expr(func))
     push!(model.constraint_bounds_orig, MOI.NLPBoundsPair(_lower(set), _upper(set)))
+    push!(model.constr_expr_orig, _moi_function_to_expr(func))
     push!(m.constr_structure, f isa MOI.ScalarAffineFunction ? :generic_linear : :generic_nonlinear)
 
     return MOI.ConstraintIndex{typeof(f), typeof(set)}(model.num_const_orig)
@@ -429,9 +432,12 @@ end
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
     m.has_nlp_objective = block.has_objective
-    m.num_constr_orig += length(block.constraint_bounds)
-    m.constraint_bounds_orig = block.constraint_bounds
-    return
+    # We cache it to add it in `load!` as we cannot call `MOI.constraint_expr` yet
+    # so we will add the nonlinear `constr_expr_orig` at the end so we need
+    # to add the bounds at the end too.
+    # So we can consider that the nonlinear constraints are the
+    # `length(m.nonlinear_constraint_bounds_orig)` last ones.
+    m.nonlinear_constraint_bounds_orig = m.constraint_bounds_orig
 end
 
 # In JuMP v0.18/MathProgBase, the 5th decision variable would be `:(x[5])`.
@@ -460,11 +466,6 @@ function load!(m::Optimizer)
         m.obj_expr_orig = _moi_function_to_expr(m.objective_function)
     end
 
-    for i in 1:m.num_constr_orig
-        push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
-    end
-    append!(m.constraint_bounds_orig, m.block.constraint_bounds)
-
     # Collect original variable type and build dynamic variable type space
     m.var_type = copy(m.var_type_orig)
     m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
@@ -472,6 +473,13 @@ function load!(m::Optimizer)
 
     if !isempty(m.int_vars) || !isempty(m.bin_vars)
         (get_option(m, :minlp_solver) === nothing) && (error("No MINLP local solver specified; use minlp_solver to specify a MINLP local solver"))
+    end
+
+    m.num_constr_orig += length(m.nonlinear_constraint_bounds_orig)
+    append!(m.constraint_bounds_orig, m.nonlinear_constraint_bounds_orig)
+    for i in eachindex(m.nonlinear_constraint_bounds_orig)
+        push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
+        push!(m.constr_structure, :generic_nonlinear)
     end
 
     # Summarize constraints information in original model
