@@ -790,7 +790,6 @@ function fetch_minlp_solver_identifier(m::Optimizer;override="")
    elseif occursin("Juniper", solverstring)
        m.minlp_solver_id = "Juniper"
    else
-      @show solverstring
       error("Unsupported MINLP local solver $solverstring; use a Alpine-supported MINLP local solver")
    end
 

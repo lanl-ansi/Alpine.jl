@@ -229,7 +229,7 @@ function bound_propagation(m::Optimizer)
     end
 
     if infeasible
-        m.status[:bounding_solve] = :Infeasible
+        m.status[:bounding_solve] = MOI.INFEASIBLE
         @warn "[INFEASIBLE] Infeasibility detected via bound propagation"
     end
 

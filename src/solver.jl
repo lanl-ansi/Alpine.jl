@@ -304,7 +304,7 @@ function MOI.empty!(m::Optimizer)
     m.num_var_nonlinear_mip = 0
     m.num_var_disc_mip = 0
     m.num_constr_convex = 0
-    m.constr_structure = []
+    m.constr_structure = Symbol[]
     m.best_bound_sol = []
     m.bound_sol_history = []
     m.presolve_infeasible = false
@@ -386,24 +386,32 @@ end
 MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.Integer}) = true
 
 function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.Integer)
-    model.var_type_orig[f.variable.index] = :Int
+    model.var_type_orig[f.variable.value] = :Int
+    return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.variable.value)
 end
 MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.ZeroOne}) = true
 
 function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.ZeroOne)
-    model.var_type_orig[f.variable.index] = :Bin
+    model.var_type_orig[f.variable.value] = :Bin
+    return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.variable.value)
 end
 
-MOI.supports(model::Optimizer, f::Union{MOI.ScalarAffineFunction, MOI.ScalarQuadraticFunction}, set::SCALAR_SET) = true
+MOI.supports_constraint(model::Optimizer, ::Type{<:Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}}, ::Type{<:SCALAR_SET}) = true
 
-
-function MOI.add_constraint(model::Optimizer, f::Union{MOI.ScalarAffineFunction, MOI.ScalarQuadraticFunction}, set::SCALAR_SET)
+function MOI.add_constraint(model::Optimizer, f::Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}, set::SCALAR_SET)
     model.num_constr_orig += 1
-    push!(model.constraint_bounds_orig, MOI.NLPBoundsPair(_lower(set), _upper(set)))
-    push!(model.constr_expr_orig, _moi_function_to_expr(func))
-    push!(m.constr_structure, f isa MOI.ScalarAffineFunction ? :generic_linear : :generic_nonlinear)
+    push!(model.constraint_bounds_orig, MOI.NLPBoundsPair(something(_lower(set), -Inf), something(_upper(set), Inf)))
+    iszero(f.constant) || throw(MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(set)}(f.constant))
+    push!(model.constr_expr_orig, _constraint_expr(_moi_function_to_expr(f), set))
+    if f isa MOI.ScalarAffineFunction
+        model.num_lconstr_orig += 1
+        push!(model.constr_structure, :generic_linear)
+    else
+        model.num_nlconstr_orig += 1
+        push!(model.constr_structure, :generic_nonlinear)
+    end
 
-    return MOI.ConstraintIndex{typeof(f), typeof(set)}(model.num_const_orig)
+    return MOI.ConstraintIndex{typeof(f), typeof(set)}(model.num_constr_orig)
 end
 
 function MOI.supports(model::Optimizer, ::Union{MOI.ObjectiveSense, MOI.ObjectiveFunction{F}}) where F<:Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
@@ -417,7 +425,7 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     if is_max_sense(model)
         model.best_obj = -Inf
         model.best_bound = Inf
-    elseif is_min_sense(sense)
+    elseif is_min_sense(model)
         model.best_obj = Inf
         model.best_bound = -Inf
     else
@@ -437,7 +445,7 @@ function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     # to add the bounds at the end too.
     # So we can consider that the nonlinear constraints are the
     # `length(m.nonlinear_constraint_bounds_orig)` last ones.
-    m.nonlinear_constraint_bounds_orig = m.constraint_bounds_orig
+    m.nonlinear_constraint_bounds_orig = block.constraint_bounds
 end
 
 # In JuMP v0.18/MathProgBase, the 5th decision variable would be `:(x[5])`.
@@ -461,7 +469,7 @@ function load!(m::Optimizer)
     if m.has_nlp_objective
         m.obj_expr_orig = expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
     elseif m.objective_function isa Nothing
-        m.obj_expr_orig = 0.0
+        m.obj_expr_orig = Expr(:call, :+)
     else
         m.obj_expr_orig = _moi_function_to_expr(m.objective_function)
     end
@@ -476,6 +484,7 @@ function load!(m::Optimizer)
     end
 
     m.num_constr_orig += length(m.nonlinear_constraint_bounds_orig)
+    m.num_nlconstr_orig += length(m.nonlinear_constraint_bounds_orig)
     append!(m.constraint_bounds_orig, m.nonlinear_constraint_bounds_orig)
     for i in eachindex(m.nonlinear_constraint_bounds_orig)
         push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
@@ -497,16 +506,6 @@ function load!(m::Optimizer)
 
     # Initialize recognizable structure properties with :none
     m.obj_structure = :none
-    m.constr_structure = [:none for i in 1:m.num_constr_orig]
-    for i = 1:m.num_constr_orig
-        if interface_is_constr_linear(m.d_orig, i)
-            m.num_lconstr_orig += 1
-            m.constr_structure[i] = :generic_linear
-        else
-            m.num_nlconstr_orig += 1
-            m.constr_structure[i] = :generic_nonlinear
-        end
-    end
 
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
     m.is_obj_linear_orig = !m.has_nlp_objective && m.objective_function isa MOI.ScalarAffineFunction{Float64}
