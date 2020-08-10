@@ -248,6 +248,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     end
 end
 
+MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.status[:bounding_solve]
+MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
+MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
+
 function get_option(m::Optimizer, s::Symbol)
     getproperty(m.options, s)
 end

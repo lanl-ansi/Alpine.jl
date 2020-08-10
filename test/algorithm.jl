@@ -12,7 +12,7 @@
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+    @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
 end
 
@@ -33,7 +33,7 @@ end
 
     @test termination_status(m) == :UserLimits
 
-    @test isapprox(m.objVal, 7049.247897696512; atol=1e-4)
+    @test isapprox(objective_value(m), 7049.247897696512; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 3
 end
 
@@ -53,7 +53,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == :UserLimits
-    @test isapprox(m.objVal, 7049.247897696512; atol=1e-4)
+    @test isapprox(objective_value(m), 7049.247897696512; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 3
     @test isapprox(m.objBound, 3647.178; atol=1e-2)
 end
@@ -115,7 +115,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+    @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
 end
 
@@ -131,7 +131,7 @@ end
 #     JuMP.optimize!(m)
 
 #     @test termination_status(m) == MOI.OPTIMAL
-#     @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+#     @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
 #     @test m.internalModel.logs[:n_iter] == 9
 # end
 
@@ -155,7 +155,7 @@ end
     Alpine.load!(alpine)
 
     #solve(m)
-    #@test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    #@test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 end
 #=
 
@@ -171,7 +171,7 @@ end
 
     m = circleN(solver=test_solver, N=4)
     solve(m)
-    @test isapprox(m.objVal, 2.0; atol=1e-3)
+    @test isapprox(objective_value(m), 2.0; atol=1e-3)
 end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl" begin
@@ -187,7 +187,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+    @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
 end
 
@@ -285,7 +285,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == :UserLimits
-    @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+    @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
     @test m.objBound >= 6717.00
     @test m.objBound <= 6718.00
     @test m.internalModel.logs[:n_iter] == 4
@@ -437,7 +437,7 @@ end
 
     m = bpml_lnl(test_solver)
     solve(m)
-    @test isapprox(m.objVal, 0.3; atol=1e-6)
+    @test isapprox(objective_value(m), 0.3; atol=1e-6)
     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[1]), :(x[6])])
     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[2]), :(x[7])])
     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[3]), :(x[8])])
@@ -460,7 +460,7 @@ end
 
     m = bpml_binl(test_solver)
     solve(m)
-    @test isapprox(m.objVal, 15422.058099086951; atol=1e-1)
+    @test isapprox(objective_value(m), 15422.058099086951; atol=1e-1)
 
     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[6]), :(x[7])])
     @test haskey(m.internalModel.nonconvex_terms, Expr[:(x[7]), :(x[8])])
@@ -498,7 +498,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+    @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
 end
 
@@ -517,7 +517,7 @@ end
 
     m = circle(solver=test_solver)
     solve(m)
-    @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 end
 
 @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
@@ -534,7 +534,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+    @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
 end
 
@@ -552,7 +552,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+    @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 9
 end
 
@@ -572,7 +572,7 @@ end
 
     m = circle(solver=test_solver)
     solve(m)
-    @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 end
 
 @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
@@ -589,7 +589,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 58.38367169858795; atol=1e-4)
+    @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 7
 end
 
@@ -607,7 +607,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 7049.247897696188; atol=1e-4)
+    @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
     @test m.internalModel.logs[:n_iter] == 9
 end
 
@@ -627,7 +627,7 @@ end
 
     m = circle(solver=test_solver)
     solve(m)
-    @test isapprox(m.objVal, 1.4142135534556992; atol=1e-3)
+    @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 end
 
 @testset "Algorithm Logic Test || castro4m2 || 1 iteration || Error case" begin
@@ -700,7 +700,7 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(m.objVal, 3651.020370626844;atol=1e-3)
+    @test isapprox(objective_value(m), 3651.020370626844;atol=1e-3)
     @test isapprox(m.objBound, 3650.791316892635;atol=1e-3)
 
     @test m.internalModel.nonconvex_terms[Expr[:(x[2]), :(x[4])]][:y_idx] == 19
