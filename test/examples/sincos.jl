@@ -18,8 +18,8 @@ function trig(;solver=nothing)
     @variable(m, objvar)
     x_Idx = Any[1]
     @variable(m, x[x_Idx])
-    setlowerbound(x[1], -2.0)
-    setupperbound(x[1], 5.0)
+    JuMP.set_lower_bound(x[1], -2.0)
+    JuMP.set_upper_bound(x[1], 5.0)
 
     # ----- Constraints ----- #
     @NLconstraint(m, e1, -(sin(11*x[1])+cos(13*x[1])-sin(17*x[1])-cos(19*x[1]))+objvar == 0.0)

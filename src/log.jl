@@ -176,8 +176,8 @@ function create_status!(m)
 
    status[:local_solve]    = MOI.OPTIMIZE_NOT_CALLED # Status of local solve
    status[:bounding_solve] = MOI.OPTIMIZE_NOT_CALLED # Status of bounding solve
-   feasible_solution_detected = false
-   bound_detected = false
+   m.detected_feasible_solution = false
+   m.detected_bound = false
 
    m.status = status
 end

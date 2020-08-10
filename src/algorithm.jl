@@ -145,7 +145,7 @@ function check_exit(m::Optimizer)
       m.best_abs_gap = 0.0
       m.status[:bounding_solve] = MOI.OPTIMAL
       m.alpine_status = :Optimal
-      m.status[:bound] = :Detected
+      m.detected_bound = true
       return true
    end
 
@@ -319,7 +319,7 @@ function bounding_solve(m::Optimizer)
    # ================= Solve End ================ #
 
    if status in STATUS_OPT || status in STATUS_LIMIT
-      (status == :Optimal) ? candidate_bound = m.model_mip.objVal : candidate_bound = m.model_mip.objBound
+      candidate_bound = (status == MOI.OPTIMAL) ? objective_value(m.model_mip) : objective_bound(m.model_mip)
       candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
       # Experimental code
       measure_relaxed_deviation(m, sol=candidate_bound_sol)
@@ -331,7 +331,7 @@ function bounding_solve(m::Optimizer)
          m.best_bound = candidate_bound
          m.best_bound_sol = copy(candidate_bound_sol)
          m.status[:bounding_solve] = status
-         m.status[:bound] = :Detected
+         m.detected_bound = true
       end
       collect_lb_pool(m)    # Always collect details sub-optimal solution
    elseif status in STATUS_INF || status == MOI.INFEASIBLE_OR_UNBOUNDED

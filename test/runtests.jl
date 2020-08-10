@@ -12,9 +12,8 @@ using Pkg
 alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
 
 
-#include(joinpath(alpine_dir, "test", "examples/brainpc3.jl"))
-
 examples = readdir(joinpath(alpine_dir, "test", "examples"))
+
 for i in examples
     include(joinpath(alpine_dir, "test", "examples", i))
 end
@@ -22,7 +21,7 @@ end
 const IPOPT = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true)
 const IPOPT_SB = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
 const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
-const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true)
+const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "nl_solver" => IPOPT_SB)
 
 
 

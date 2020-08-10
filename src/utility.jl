@@ -45,7 +45,7 @@ end
 
 function measure_relaxed_deviation(m::Optimizer;sol=nothing)
 
-   sol == nothing ? sol = m.best_bound_sol : sol = sol
+   sol = something(sol, m.best_bound_sol)
 
    isempty(sol) && return
 
@@ -83,7 +83,7 @@ function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
    if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
       m.best_obj = objval
       m.best_sol = sol
-      m.status[:feasible_solution] = :Detected
+      m.detected_feasible_solution = true
    end
 
    return
@@ -218,14 +218,18 @@ and discretizing variables to the active domain according to lower bound solutio
 """
 function fix_domains(m::Optimizer;discrete_sol=nothing, use_orig=false)
 
-   discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
+   discrete_sol !== nothing && @assert length(discrete_sol) >= m.num_var_orig
 
    l_var = [m.l_var_tight[i] for i in 1:m.num_var_orig]
    u_var = [m.u_var_tight[i] for i in 1:m.num_var_orig]
 
    for i in 1:m.num_var_orig
       if i in m.disc_vars && m.var_type[i] == :Cont
-         discrete_sol == nothing ? point = m.best_bound_sol[i] : point = discrete_sol[i]
+         point = if discrete_sol === nothing
+             m.best_bound_sol[i]
+         else
+             discrete_sol[i]
+         end
          PCnt = length(m.discretization[i]) - 1
          for j in 1:PCnt
             if point >= (m.discretization[i][j] - get_option(m, :tol)) && (point <= m.discretization[i][j+1] + get_option(m, :tol))

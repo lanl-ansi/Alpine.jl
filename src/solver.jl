@@ -232,8 +232,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # Logging information and status
     logs::Dict{Symbol,Any}                                      # Logging information
-    feasible_solution_detected::Bool
-    bound_detected::Bool
+    detected_feasible_solution::Bool
+    detected_bound::Bool
     status::Dict{Symbol, MOI.TerminationStatusCode}             # Detailed status of every iteration in the algorithm
     alpine_status::Symbol                                       # Current Alpine's status
 
@@ -418,8 +418,8 @@ function MOI.supports(model::Optimizer, ::Union{MOI.ObjectiveSense, MOI.Objectiv
     return true
 end
 
-is_min_sense(model::Optimizer) = model.sense_orig == MOI.MAX_SENSE
-is_max_sense(model::Optimizer) = model.sense_orig == MOI.MIN_SENSE
+is_min_sense(model::Optimizer) = model.sense_orig == MOI.MIN_SENSE
+is_max_sense(model::Optimizer) = model.sense_orig == MOI.MAX_SENSE
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     model.sense_orig = sense
     if is_max_sense(model)
@@ -431,6 +431,7 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     else
         error("Feasibility sense not supported yet by Alpine.")
     end
+    @show model.best_bound
 end
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction{F}, func::F) where F

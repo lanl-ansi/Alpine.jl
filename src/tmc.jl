@@ -98,7 +98,7 @@ end
 
 function amp_post_tmc_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, idx::Int, relax=false)
     if !haskey(λ, idx)
-        λ[idx] = @variable(m, [1:dim], Bin, basename=string("L",idx))
+        λ[idx] = @variable(m, [1:dim], Bin, base_name=string("L",idx))
         @constraint(m, sum(λ[idx]) == 1) # The SOS-1 Constraints, not all MIP solver has SOS feature
         @constraint(m, _index_to_variable_ref(m, idx) >= dot(lb[idx], λ[idx]))
         @constraint(m, _index_to_variable_ref(m, idx) <= dot(ub[idx], λ[idx]))
@@ -114,14 +114,14 @@ end
 
 function amp_post_tmc_λX(m::JuMP.Model, λX::Dict, dim::Int, idx_a::Int, idx_b::Int)
     if !haskey(λX, (idx_a,idx_b))
-        λX[(idx_a,idx_b)] = @variable(m, [1:dim], basename=string("L",idx_a,"X",idx_b))
+        λX[(idx_a,idx_b)] = @variable(m, [1:dim], base_name=string("L",idx_a,"X",idx_b))
     end
     return λX
 end
 
 function amp_post_tmc_λλ(m::JuMP.Model, λλ::Dict, dim_a::Int, dim_b::Int, idx_a::Int, idx_b::Int)
     if !haskey(λλ, (idx_a, idx_b))
-        λλ[(idx_a,idx_b)] = @variable(m, [1:dim_a, 1:dim_b], basename=string("L",idx_a,"L",idx_b))
+        λλ[(idx_a,idx_b)] = @variable(m, [1:dim_a, 1:dim_b], base_name=string("L",idx_a,"L",idx_b))
         for i in 1:dim_a
     		for j in 1:dim_b
     			JuMP.set_lower_bound(λλ[(idx_a, idx_b)][i,j], 0);
@@ -154,6 +154,9 @@ function amp_post_tmc_XX_mc(m, ab, λX, λλ, LB, UB, a, b)
     return
 end
 
+_lower_bound(x) = JuMP.is_binary(x) ? 0.0 : JuMP.lower_bound(x)
+_upper_bound(x) = JuMP.is_binary(x) ? 1.0 : JuMP.upper_bound(x)
+
 function amp_post_tmc_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::Dict, ind_λ::Int, ind_X::Int)
 
     # X_u and λ here are vectors, and X is one variable,
@@ -165,8 +168,8 @@ function amp_post_tmc_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::
         v = _index_to_variable_ref(m, ind_X)
 		lb_X = JuMP.lower_bound(v)
 		ub_X = JuMP.upper_bound(v)
-		lb_λ = JuMP.lower_bound(λ[ind_λ][i])
-		ub_λ = JuMP.upper_bound(λ[ind_λ][i])
+        lb_λ = _lower_bound(λ[ind_λ][i])
+		ub_λ = _upper_bound(λ[ind_λ][i])
         @assert (lb_λ == 0.0) && (ub_λ == 1.0)
 		mccormick(m, λX[(ind_λ,ind_X)][i], λ[ind_λ][i], v, lb_λ, ub_λ, lb_X, ub_X)
 	end
