@@ -242,7 +242,7 @@ function blend029_gl(;solver=nothing)
 
     @variable(m, x[1:102])
     for i=67:102
-      setcategory(x[i], :Bin)
+      JuMP.set_binary(x[i])
     end
 
     for i=1:48

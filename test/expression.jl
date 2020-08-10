@@ -1,12 +1,8 @@
 function _build(model::JuMP.Model)
+    MOI.set(model, MOI.NLPBlock(), JuMP._create_nlp_block_data(model))
     MOI.Utilities.attach_optimizer(model)
     alpine = JuMP.backend(model).optimizer.model
-    @show alpine.nonlinear_constraint_bounds_orig
-    MOI.set(model, MOI.NLPBlock(), JuMP._create_nlp_block_data(model))
-    @show alpine.nonlinear_constraint_bounds_orig
-
     Alpine.load!(alpine)
-    @show alpine.nonlinear_constraint_bounds_orig
     return alpine
 end
 
@@ -2077,7 +2073,6 @@ end
 end
 
 
-#=
 @testset "Expression Parsing || Basic Multiplication Operators (Machine Generated for diffs)" begin
 
     test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" => JUNIPER,
@@ -2593,7 +2588,7 @@ end
     @testset "Corner Cases - 1 : sign convertor special case" begin
         test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
                                 "mip_solver" =>  CBC,
-                                "minlp_solver" =>  pavito_solver,
+                                "minlp_solver" =>  JUNIPER,
                                 "loglevel" =>  100)
 
         m = Model(test_solver)
@@ -2662,7 +2657,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod" begin
 
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
 
         m = bpml(solver=test_solver)
 
@@ -2713,7 +2708,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod with linear lifting and coefficients" begin
 
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
 
         m = bmpl_linearlifting(solver=test_solver)
 
@@ -2839,7 +2834,7 @@ end
     end
 
     @testset "Expression Parsing || INTPROD Operators" begin
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
         m = intprod_basic(solver=test_solver)
 
         alpine = _build(m) # Setup internal model
@@ -2923,7 +2918,7 @@ end
     end
 
     @testset "Expression Parsing || ex1225a" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver, "nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER, "nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = ex1225a(solver=test_solver)
 
         alpine = _build(m)
@@ -3304,7 +3299,7 @@ end
     end
 
     @testset "Expression Parsing || prob03" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = prob03(solver=test_solver)
 
         alpine = _build(m)
@@ -3328,7 +3323,7 @@ end
     end
 
     @testset "Expression Parsing || st_miqp5" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = st_miqp5(solver=test_solver)
 
         alpine = _build(m)
@@ -3345,51 +3340,51 @@ end
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:nonlinear_type] == :MONOMIAL
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:y_type] == :Cont
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:constr_id] == Set(Any[14])
-        @test alpine.bounding_constr_mip[1][:rhs] == 60.0
-        @test alpine.bounding_constr_mip[1][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[1][:coefs],Any[-1.93415, 1.80315, 2.89696, 0.729325, 3.88374];atol=1e-3)
-        @test alpine.bounding_constr_mip[1][:sense] == :(<=)
-        @test alpine.bounding_constr_mip[1][:cnt] == 5
-        @test alpine.bounding_constr_mip[2][:rhs] == 60.0
-        @test alpine.bounding_constr_mip[2][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[2][:coefs],Any[-1.13151, 1.10501, -1.01839, 2.62557, 4.85468];atol=1e-3)
-        @test alpine.bounding_constr_mip[2][:sense] == :(<=)
-        @test alpine.bounding_constr_mip[2][:cnt] == 5
-        @test alpine.bounding_constr_mip[3][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[3][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[3][:coefs],Any[-0.05248, -0.904838, 0.209521, -0.29173, -0.222506];atol=1e-3)
-        @test alpine.bounding_constr_mip[3][:sense] == :(<=)
-        @test alpine.bounding_constr_mip[3][:cnt] == 5
-        @test alpine.bounding_constr_mip[4][:rhs] == 1.0
+        @test alpine.bounding_constr_mip[4][:rhs] == 60.0
         @test alpine.bounding_constr_mip[4][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[4][:coefs],Any[0.05248, 0.904838, -0.209521, 0.29173, 0.222506];atol=1e-3)
+        @test isapprox(alpine.bounding_constr_mip[4][:coefs],Any[-1.93415, 1.80315, 2.89696, 0.729325, 3.88374];atol=1e-3)
         @test alpine.bounding_constr_mip[4][:sense] == :(<=)
         @test alpine.bounding_constr_mip[4][:cnt] == 5
-        @test alpine.bounding_constr_mip[5][:rhs] == -0.0
+        @test alpine.bounding_constr_mip[5][:rhs] == 60.0
         @test alpine.bounding_constr_mip[5][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[5][:coefs],Any[0.445392, 0.30152, 0.587645, -0.145865, -0.586607];atol=1e-3)
+        @test isapprox(alpine.bounding_constr_mip[5][:coefs],Any[-1.13151, 1.10501, -1.01839, 2.62557, 4.85468];atol=1e-3)
         @test alpine.bounding_constr_mip[5][:sense] == :(<=)
         @test alpine.bounding_constr_mip[5][:cnt] == 5
-        @test alpine.bounding_constr_mip[6][:rhs] == 1.0
+        @test alpine.bounding_constr_mip[6][:rhs] == -0.0
         @test alpine.bounding_constr_mip[6][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[6][:coefs],Any[-0.445392, -0.30152, -0.587645, 0.145865, 0.586607];atol=1e-3)
+        @test isapprox(alpine.bounding_constr_mip[6][:coefs],Any[-0.05248, -0.904838, 0.209521, -0.29173, -0.222506];atol=1e-3)
         @test alpine.bounding_constr_mip[6][:sense] == :(<=)
         @test alpine.bounding_constr_mip[6][:cnt] == 5
-        @test alpine.bounding_constr_mip[7][:rhs] == -0.0
+        @test alpine.bounding_constr_mip[7][:rhs] == 1.0
         @test alpine.bounding_constr_mip[7][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[7][:coefs],Any[-0.328189, 0.199987, 0.506106, -0.58346, 0.505696];atol=1e-3)
-        @test alpine.bounding_constr_mip[7][:sense] == :(>=)
+        @test isapprox(alpine.bounding_constr_mip[7][:coefs],Any[0.05248, 0.904838, -0.209521, 0.29173, 0.222506];atol=1e-3)
+        @test alpine.bounding_constr_mip[7][:sense] == :(<=)
         @test alpine.bounding_constr_mip[7][:cnt] == 5
         @test alpine.bounding_constr_mip[8][:rhs] == -0.0
         @test alpine.bounding_constr_mip[8][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[8][:coefs],Any[-0.345682, -0.101626, 0.575947, 0.729325, 0.0809113];atol=1e-3)
-        @test alpine.bounding_constr_mip[8][:sense] == :(>=)
+        @test isapprox(alpine.bounding_constr_mip[8][:coefs],Any[0.445392, 0.30152, 0.587645, -0.145865, -0.586607];atol=1e-3)
+        @test alpine.bounding_constr_mip[8][:sense] == :(<=)
         @test alpine.bounding_constr_mip[8][:cnt] == 5
-        @test alpine.bounding_constr_mip[9][:rhs] == -0.0
+        @test alpine.bounding_constr_mip[9][:rhs] == 1.0
         @test alpine.bounding_constr_mip[9][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[9][:coefs],Any[0.756087, -0.200079, 0.151379, 0.145865, 0.586607];atol=1e-3)
-        @test alpine.bounding_constr_mip[9][:sense] == :(>=)
+        @test isapprox(alpine.bounding_constr_mip[9][:coefs],Any[-0.445392, -0.30152, -0.587645, 0.145865, 0.586607];atol=1e-3)
+        @test alpine.bounding_constr_mip[9][:sense] == :(<=)
         @test alpine.bounding_constr_mip[9][:cnt] == 5
+        @test alpine.bounding_constr_mip[1][:rhs] == -0.0
+        @test alpine.bounding_constr_mip[1][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
+        @test isapprox(alpine.bounding_constr_mip[1][:coefs],Any[-0.328189, 0.199987, 0.506106, -0.58346, 0.505696];atol=1e-3)
+        @test alpine.bounding_constr_mip[1][:sense] == :(>=)
+        @test alpine.bounding_constr_mip[1][:cnt] == 5
+        @test alpine.bounding_constr_mip[2][:rhs] == -0.0
+        @test alpine.bounding_constr_mip[2][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
+        @test isapprox(alpine.bounding_constr_mip[2][:coefs],Any[-0.345682, -0.101626, 0.575947, 0.729325, 0.0809113];atol=1e-3)
+        @test alpine.bounding_constr_mip[2][:sense] == :(>=)
+        @test alpine.bounding_constr_mip[2][:cnt] == 5
+        @test alpine.bounding_constr_mip[3][:rhs] == -0.0
+        @test alpine.bounding_constr_mip[3][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
+        @test isapprox(alpine.bounding_constr_mip[3][:coefs],Any[0.756087, -0.200079, 0.151379, 0.145865, 0.586607];atol=1e-3)
+        @test alpine.bounding_constr_mip[3][:sense] == :(>=)
+        @test alpine.bounding_constr_mip[3][:cnt] == 5
         @test alpine.bounding_constr_mip[10][:rhs] == -0.0
         @test alpine.bounding_constr_mip[10][:vars] == Any[:(x[7]), :(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
         @test isapprox(alpine.bounding_constr_mip[10][:coefs],Any[-1.0, 0.05248, 0.904838, -0.209521, 0.29173, 0.222506];atol=1e-3)
@@ -3419,7 +3414,7 @@ end
 
     @testset "Expression Parsing || discretemulti_basic" begin
 
-		test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+		test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
 		m = discretemulti_basic(solver=test_solver)
 
 		alpine = _build(m)
@@ -3766,12 +3761,11 @@ end
     end
 end
 
-
-
+#=
 @testset "Expression Parsing || sin/cos" begin
     @testset "Expression Parsing || sin/cos || specialopts " begin
 
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
 
         m = specialopts(solver=test_solver)
         alpine = _build(m)
@@ -3811,7 +3805,7 @@ end
 
     @testset "Expression Parsing || sin/cos || sincos_p1" begin
 
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = sincos_p1(solver=test_solver)
         alpine = _build(m)
 
@@ -4082,7 +4076,7 @@ end
     end
 
     @testset "Expression Parsing || sin/cos || trig" begin
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  pavito_solver,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = trig(solver=test_solver)
         alpine = _build(m)
         @test alpine.nonconvex_terms[Dict{Symbol,Any}(Pair{Symbol,Any}(:vars, Any[7]),Pair{Symbol,Any}(:scalar, 1.0),Pair{Symbol,Any}(:operator, :sin))][:y_idx] == 8
