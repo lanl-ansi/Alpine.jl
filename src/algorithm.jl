@@ -175,8 +175,14 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
             MOI.add_constraint(model, fx, set)
         end
     end
+    for (func, set) in m.lin_quad_constraints
+        MOI.add_constraint(model, func, set)
+    end
     MOI.set(model, MOI.ObjectiveSense(), m.sense_orig)
-    block = MOI.NLPBlockData(m.constraint_bounds_orig, m.d_orig, m.has_nlp_objective)
+    if m.objective_function !== nothing
+        MOI.set(model, MOI.ObjectiveFunction{typeof(m.objective_function)}(), m.objective_function)
+    end
+    block = MOI.NLPBlockData(m.nonlinear_constraint_bounds_orig, m.d_orig, m.has_nlp_objective)
     MOI.set(model, MOI.NLPBlock(), block)
     return x
 end

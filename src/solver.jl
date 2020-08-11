@@ -159,6 +159,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     var_type_orig::Vector{Symbol}                               # Variable type vector on original variables (only :Bin, :Cont, :Int)
     var_start_orig::Vector{Float64}                             # Variable warm start vector on original variables
     constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
+    lin_quad_constraints::Vector{Any}                           # Constraint `func`-in-`set` values
     constr_expr_orig::Vector{Expr}                              # Constraint expressions
     obj_expr_orig::Union{Expr,Number}                           # Objective expression
 
@@ -259,7 +260,6 @@ MOI.get(m::Optimizer, ::NumberOfPresolveIterations) = m.logs[:bt_iter]
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
-MOI.get(m::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex) = m.best_sol[vi.value]
 MOI.get(m::Optimizer, ::MOI.SolveTime) = m.logs[:total_time]
 
 function get_option(m::Optimizer, s::Symbol)
@@ -288,6 +288,7 @@ function MOI.empty!(m::Optimizer)
     m.var_type_orig = Symbol[]
     m.var_start_orig = Float64[]
     m.constr_type_orig = Symbol[]
+    m.lin_quad_constraints = Any[]
     m.constr_expr_orig = Expr[]
     m.num_lconstr_updated = 0
     m.num_nlconstr_updated = 0
@@ -416,6 +417,7 @@ function MOI.add_constraint(model::Optimizer, f::Union{MOI.ScalarAffineFunction{
     model.num_constr_orig += 1
     push!(model.constraint_bounds_orig, MOI.NLPBoundsPair(something(_lower(set), -Inf), something(_upper(set), Inf)))
     iszero(f.constant) || throw(MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(set)}(f.constant))
+    push!(model.lin_quad_constraints, (copy(f), copy(set)))
     push!(model.constr_expr_orig, _constraint_expr(_moi_function_to_expr(f), set))
     if f isa MOI.ScalarAffineFunction
         model.num_lconstr_orig += 1

@@ -678,7 +678,13 @@ function eval_feasibility(m::Optimizer, sol::Vector)
 
    # Check constraint violation
    eval_rhs = zeros(m.num_constr_orig)
-   interface_eval_g(m.d_orig, eval_rhs, rounded_sol)
+   for i in eachindex(m.lin_quad_constraints)
+       func = m.lin_quad_constraints[i][1]
+       eval_rhs[i] = MOI.Utilities.eval_variables(vi -> rounded_sol[vi.value], func)
+   end
+   start = m.num_constr_orig - length(m.nonlinear_constraint_bounds_orig) + 1
+   @assert start == length(m.lin_quad_constraints) + 1
+   interface_eval_g(m.d_orig, view(eval_rhs, start:m.num_constr_orig), rounded_sol)
    feasible = true
    for i in 1:m.num_constr_orig
       if m.constr_type_orig[i] == :(==)
