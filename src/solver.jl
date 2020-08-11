@@ -250,9 +250,11 @@ end
 
 struct NumberOfIterations <: MOI.AbstractModelAttribute end
 MOI.is_set_by_optimize(::NumberOfIterations) = true
+MOI.get(m::Optimizer, ::NumberOfIterations) = m.logs[:n_iter]
 
 struct NumberOfPresolveIterations <: MOI.AbstractModelAttribute end
 MOI.is_set_by_optimize(::NumberOfPresolveIterations) = true
+MOI.get(m::Optimizer, ::NumberOfPresolveIterations) = m.logs[:bt_iter]
 
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
