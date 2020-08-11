@@ -20,6 +20,7 @@ end
 
 const IPOPT = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true)
 const IPOPT_SB = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
+const IPOPT_9999 = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "max_iter" => 9999)
 const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "nl_solver" => IPOPT_SB)
 

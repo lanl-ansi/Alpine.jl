@@ -39,7 +39,7 @@ end
 
 @testset " Validation Test || AMP-TMC || minimum-vertex solving || examples/nlp3.jl (3 iterations)" begin
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IpoptSolver(print_level=0, max_iter=9999),
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT_9999,
                            "mip_solver" => CBC,
                            "bilinear_convexhull" => false,
                            "monomial_convexhull" => false,
