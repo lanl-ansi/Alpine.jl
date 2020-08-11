@@ -118,14 +118,8 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
             end
 
             bound_reduction = 0.0
-            if (temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]) > get_option(m, :presolve_bt_width_tol)
-                new_range = temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]
-                old_range = discretization[var_idx][end] - discretization[var_idx][1]
-                bound_reduction = old_range - new_range
-                discretization[var_idx][1] = temp_bounds[var_idx][1]
-                discretization[var_idx][end] = temp_bounds[var_idx][end]
-            else
-                midpoint = (temp_bounds[var_idx][1] + temp_bounds[var_idx][end])/2
+            if (temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]) <= get_option(m, :presolve_bt_width_tol)
+                midpoint = (temp_bounds[var_idx][1] + temp_bounds[var_idx][end]) / 2
                 if (midpoint - discretization[var_idx][1] < get_option(m, :presolve_bt_width_tol)/2)
                     temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = discretization[var_idx][1]
                     temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = discretization[var_idx][1] + (get_option(m, :presolve_bt_width_tol))
@@ -136,17 +130,17 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
                     temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = midpoint - (get_option(m, :presolve_bt_width_tol)/2)
                     temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = midpoint + (get_option(m, :presolve_bt_width_tol)/2)
                 end
-                new_range = temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]
-                old_range = discretization[var_idx][end] - discretization[var_idx][1]
-                bound_reduction = old_range - new_range
-                discretization[var_idx][1] = temp_bounds[var_idx][1]
-                discretization[var_idx][end] = temp_bounds[var_idx][end]
             end
+            new_range = temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]
+            old_range = discretization[var_idx][end] - discretization[var_idx][1]
+            bound_reduction = old_range - new_range
             total_reduction += bound_reduction
             (get_option(m, :loglevel) > 99) && print("+")
             (get_option(m, :loglevel) > 99) && println("  VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
             (get_option(m, :loglevel) > 99) && print("+")
             (get_option(m, :loglevel) > 99) && println("  VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
+            discretization[var_idx][1] = temp_bounds[var_idx][1]
+            discretization[var_idx][end] = temp_bounds[var_idx][end]
         end
 
         avg_reduction = total_reduction/length(keys(temp_bounds))
