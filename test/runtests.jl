@@ -2,6 +2,7 @@ using JuMP, MathOptInterface
 const MOI = MathOptInterface
 using Ipopt, Cbc #, Pavito
 using Juniper
+import Pavito
 using GLPK
 using Alpine
 
@@ -23,6 +24,7 @@ const IPOPT_SB = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true
 const IPOPT_9999 = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "max_iter" => 9999)
 const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "nl_solver" => IPOPT_SB)
+const PAVITO = optimizer_with_attributes(Pavito.Optimizer, "mip_solver" => CBC, "cont_solver" => IPOPT_SB)
 
 
 

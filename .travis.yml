@@ -6,6 +6,8 @@ os:
 julia:
   - 1.0
   - 1
+before_script:
+ - julia -e 'using Pkg; Pkg.add(PackageSpec(name="Pavito", rev="master"))'
 jobs:
   allow_failures:
     - julia: nightly

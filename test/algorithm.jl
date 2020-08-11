@@ -1,7 +1,7 @@
 @testset " Validation Test || AMP-TMC || basic solve || examples/nlp1.jl" begin
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => JUNIPER,
+                       "mip_solver" => PAVITO,
                        "bilinear_convexhull" => false,
                        "monomial_convexhull" => false,
                        "presolve_bt" => false,
@@ -85,7 +85,7 @@ end
 @testset " Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                               "mip_solver" => JUNIPER,
+                               "mip_solver" => PAVITO,
                                "bilinear_convexhull" => false,
                                "loglevel" =>100,
                                "maxiter" => 2,
@@ -105,7 +105,7 @@ end
 
 @testset " Validation Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => JUNIPER,
+                       "mip_solver" => PAVITO,
                        "bilinear_convexhull" => true,
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
@@ -138,7 +138,7 @@ end
 @testset " Validation Test || AMP || basic solve || examples/circle.jl" begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer,
                            "nlp_solver" => IPOPT,
-                           "mip_solver" => JUNIPER,
+                           "mip_solver" => PAVITO,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio" => 8,
                            "maxiter" => 6,
@@ -155,7 +155,7 @@ end
 
 @testset " Validation Test || AMP || basic solve || examples/circleN.jl" begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => JUNIPER,
+                           "mip_solver" => PAVITO,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio" => 8,
                            presolve_bt = false,
@@ -170,7 +170,7 @@ end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl" begin
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => JUNIPER,
+                       "mip_solver" => PAVITO,
                        "bilinear_convexhull" => true,
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
@@ -423,7 +423,7 @@ end
 end
 
 @testset "Operator :: bmpl && binlin && binprod solve test I" begin
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => JUNIPER,
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
                           "nlp_solver" => IPOPT,
                           "mip_solver" => CBC,
                           "presolve_bt" => false,
@@ -447,7 +447,7 @@ end
 end
 
 @testset "Operator :: bmpl && binlin && binprod solve test II" begin
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => JUNIPER,
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
                           "nlp_solver" => IPOPT,
                           "mip_solver" => CBC,
                           "presolve_bt" => false,
@@ -483,7 +483,7 @@ end
 
 @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => JUNIPER,
+                       "mip_solver" => PAVITO,
                        "bilinear_convexhull" => true,
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
@@ -500,7 +500,7 @@ end
 
 @testset "Embedding Test || AMP || special problem || ... " begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => JUNIPER,
+                           "mip_solver" => PAVITO,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio" => 8,
                            "maxiter" => 6,
@@ -518,7 +518,7 @@ end
 
 @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => JUNIPER,
+                       "mip_solver" => PAVITO,
                        "bilinear_convexhull" => true,
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
@@ -554,7 +554,7 @@ end
 
 @testset "Embedding IBS Test || AMP || special problem || ... " begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => JUNIPER,
+                           "mip_solver" => PAVITO,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio" => 8,
                            "maxiter" => 6,
@@ -573,7 +573,7 @@ end
 
 @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => JUNIPER,
+                       "mip_solver" => PAVITO,
                        "bilinear_convexhull" => true,
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
@@ -609,7 +609,7 @@ end
 
 @testset "Embedding LINK Test || AMP || special problem || ... " begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => JUNIPER,
+                           "mip_solver" => PAVITO,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio" => 8,
                            "maxiter" => 6,
@@ -640,7 +640,7 @@ end
 
 @testset " Algorithm Logic Test || blend029_gl || 3 iterations || Infeasible Case" begin
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => JUNIPER,
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
                           "nlp_solver" => IPOPT,
                           "mip_solver" => CBC,
                           "presolve_bp" => true,
@@ -659,7 +659,7 @@ end
 
 @testset "Convex Model Solve" begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => JUNIPER,
+                           "mip_solver" => PAVITO,
                            "maxiter" => 1,
                            "presolve_bt" => false,
                            "loglevel" =>100)
@@ -684,7 +684,7 @@ end
 
 @testset "Algorithm Test with binprod terms" begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => JUNIPER,
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
                             "nlp_solver" => IPOPT,
                             "mip_solver" => CBC,
                             "bilinear_convexhull" => true,
