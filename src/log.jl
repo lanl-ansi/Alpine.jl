@@ -199,13 +199,13 @@ function summary_status(m::Optimizer)
    # :Unknown : termination with no exception recorded
 
    if m.detected_bound && m.detected_feasible_solution
-      m.alpine_status = m.best_rel_gap > get_option(m, :relgap) ? :UserLimits : :Optimal
+      m.alpine_status = m.best_rel_gap > get_option(m, :relgap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
    elseif m.status[:bounding_solve] == MOI.INFEASIBLE
-      m.alpine_status = :Infeasible
+      m.alpine_status = MOI.INFEASIBLE
    elseif m.detected_bound && !m.detected_feasible_solution
-      m.alpine_status = :UserLimits
+      m.alpine_status = MOI.OTHER_LIMIT
    elseif !m.detected_bound && m.detected_feasible_solution
-      m.alpine_status = :Heuristic
+      m.alpine_status = MOI.LOCALLY_SOLVED
    else
       @warn "  [EXCEPTION] Indefinite Alpine status. Please report your instance (& solver configuration) as an issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."
    end

@@ -235,7 +235,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     detected_feasible_solution::Bool
     detected_bound::Bool
     status::Dict{Symbol, MOI.TerminationStatusCode}             # Detailed status of every iteration in the algorithm
-    alpine_status::Symbol                                       # Current Alpine's status
+    alpine_status::MOI.TerminationStatusCode                    # Current Alpine's status
 
     # constructor
     function Optimizer()
@@ -248,9 +248,17 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     end
 end
 
-MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.status[:bounding_solve]
+struct NumberOfIterations <: MOI.AbstractModelAttribute end
+MOI.is_set_by_optimize(::NumberOfIterations) = true
+
+struct NumberOfPresolveIterations <: MOI.AbstractModelAttribute end
+MOI.is_set_by_optimize(::NumberOfPresolveIterations) = true
+
+MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
+MOI.get(m::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex) = m.best_sol[vi.value]
+MOI.get(m::Optimizer, ::MOI.SolveTime) = m.logs[:total_time]
 
 function get_option(m::Optimizer, s::Symbol)
     getproperty(m.options, s)
@@ -320,7 +328,7 @@ function MOI.empty!(m::Optimizer)
     m.best_bound = -Inf
     m.best_rel_gap = Inf
     m.best_abs_gap = Inf
-    m.alpine_status = :NotLoaded
+    m.alpine_status = MOI.OPTIMIZE_NOT_CALLED
 
     create_status!(m)
     create_logs!(m)
