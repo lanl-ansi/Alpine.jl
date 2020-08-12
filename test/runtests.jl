@@ -26,12 +26,16 @@ const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "nl_solver" => IPOPT_SB)
 const PAVITO = optimizer_with_attributes(Pavito.Optimizer, "mip_solver" => CBC, "cont_solver" => IPOPT_SB, "mip_solver_drives" => false)
 
-
-
-#pavito_solver=PavitoSolver(mip_solver=CbcSolver(logLevel=0), cont_solver=IpoptSolver(print_level=0, sb="yes"), mip_solver_drives=false, log_level=0)
+function _build(model::JuMP.Model)
+    MOI.set(model, MOI.NLPBlock(), JuMP._create_nlp_block_data(model))
+    MOI.Utilities.attach_optimizer(model)
+    alpine = JuMP.backend(model).optimizer.model
+    Alpine.load!(alpine)
+    return alpine
+end
 
 # Perform Tests
-#include("$(alpine_dir)/test/solver.jl")
+include("$(alpine_dir)/test/solver.jl")
 include("$(alpine_dir)/test/expression.jl")
 include("$(alpine_dir)/test/algorithm.jl")
-#include("$(alpine_dir)/test/utility.jl")
+include("$(alpine_dir)/test/utility.jl")

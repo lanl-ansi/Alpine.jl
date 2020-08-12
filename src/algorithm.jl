@@ -191,7 +191,7 @@ function set_variable_type(model::MOI.ModelLike, xs, variable_types)
         fx = MOI.SingleVariable(x)
         if variable_type == :Int
             MOI.add_constraint(model, fx, MOI.Integer())
-        elseif variable_type == :Bool
+        elseif variable_type == :Bin
             MOI.add_constraint(model, fx, MOI.ZeroOne())
         else
             @assert variable_type == :Cont

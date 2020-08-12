@@ -667,7 +667,7 @@ end
                            "maxiter" => 1,
                            "presolve_bt" => false,
                            "loglevel" => 100)
-    m = convex_optimize!(solver=test_solver)
+    m = convex_solve(solver=test_solver)
     JuMP.optimize!(m)
     @test termination_status(m) == MOI.OPTIMAL
 end

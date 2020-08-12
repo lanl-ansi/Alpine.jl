@@ -450,7 +450,6 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     else
         error("Feasibility sense not supported yet by Alpine.")
     end
-    @show model.best_bound
 end
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction{F}, func::F) where F

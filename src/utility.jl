@@ -631,9 +631,9 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    @objective(minvertex, Min, sum(weights[i]*x[i] for i in nodes))
 
    # Solve the minimum vertex cover
-   status = solve(minvertex, suppress_warnings=true)
+   JuMP.optimize!(minvertex)
 
-   xVal = getvalue(x)
+   xVal = JuMP.value.(x)
    m.num_var_disc_mip = Int(sum(xVal))
    m.disc_vars = [i for i in nodes if xVal[i] > 0 && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= get_option(m, :tol)]
    get_option(m, :loglevel) >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")

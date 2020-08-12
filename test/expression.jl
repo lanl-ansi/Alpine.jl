@@ -1,11 +1,3 @@
-function _build(model::JuMP.Model)
-    MOI.set(model, MOI.NLPBlock(), JuMP._create_nlp_block_data(model))
-    MOI.Utilities.attach_optimizer(model)
-    alpine = JuMP.backend(model).optimizer.model
-    Alpine.load!(alpine)
-    return alpine
-end
-
 @testset "Expression Parsing || bilinear || Affine || exprs.jl" begin
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)

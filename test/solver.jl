@@ -1,22 +1,20 @@
-#=
 @testset "Optimizer loading tests" begin
     # Random Model 1
-    test_solver = () -> Alpine.Optimizer(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                       "mip_solver" => CBC,
+                       "loglevel" => 100)
     m = operator_c(solver = test_solver)
 
-    status = JuMP.build(m)
-    @test isa(m.internalModel, Alpine.Optimizer)
+    alpine = _build(m)
+    @test isa(alpine, Alpine.Optimizer)
 
     # Expression Model 1
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(),mip_solver=CbcSolver(logLevel=0),loglevel=100)
     m = exprstest(solver=test_solver)
-    status = JuMP.build(m)
-    @test isa(m.internalModel, Alpine.Optimizer)
+    alpine = _build(m)
+    @test isa(alpine, Alpine.Optimizer)
 end
-=#
 
 @testset "Partitioning variable selection tests :: nlp3" begin
-#=
     # Select all NL variable
     test_solver = optimizer_with_attributes(Alpine.Optimizer,
         "nlp_solver" => IPOPT,
@@ -28,259 +26,255 @@ end
         "maxiter" => 1,
         "loglevel" => 100)
     m = nlp3(solver=test_solver)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-        MOI.Utilities.attach_optimizer(m)
-        MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
+    @test length(alpine.candidate_disc_vars) == 8
+    @test length(alpine.disc_vars) == 8
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 0
 
-        alpine = JuMP.backend(m).optimizer.model
-        Alpine.load!(alpine)
-   #= 
-    status = MOI.optimize!(m)
-
-    @test status == :UserLimits
-    @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test length(m.internalModel.candidate_disc_vars) == 8
-    @test length(m.internalModel.disc_vars) == 8
-    @test m.internalModel.disc_var_pick == 0
-
-    =#
-#
-#=
     # Select all NL variable
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=2,
-                            disc_uniform_rate=10,
-                            presolve_bp = false,
-                            presolve_bt = false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 2,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bp" =>  false,
+                            "presolve_bt" =>  false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
     m = nlp3(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test length(m.internalModel.candidate_disc_vars) == 8
-    @test length(m.internalModel.disc_vars) == 8
-    @test m.internalModel.disc_var_pick == 2
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
+    @test length(alpine.candidate_disc_vars) == 8
+    @test length(alpine.disc_vars) == 8
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 2
 
     # Minimum vertex cover algorithm
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=1,
-                            disc_uniform_rate=10,
-                            presolve_bp = false,
-                            presolve_bt = false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 1,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bp" =>  false,
+                            "presolve_bt" =>  false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
     m = nlp3(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test length(m.internalModel.candidate_disc_vars) == 8
-    @test length(m.internalModel.disc_vars) == 3
-    @test m.internalModel.disc_var_pick == 1
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
+    @test length(alpine.candidate_disc_vars) == 8
+    @test length(alpine.disc_vars) == 3
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 1
 
     # Adaptive variable selection scheme :: disc_var_pick = 3
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=3,
-                            presolve_bp = false,
-                            presolve_bt = false,
-                            maxiter=2,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 3,
+                            "presolve_bp" =>  false,
+                            "presolve_bt" =>  false,
+                            "maxiter" => 2,
+                            "loglevel" => 100)
     m = nlp3(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test isapprox(m.objVal, 7049.2478976; atol=1e-3)
-    @test length(m.internalModel.candidate_disc_vars) == 8
-    @test length(m.internalModel.disc_vars) == 8
-    @test m.internalModel.disc_var_pick == 3
-=#
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
+    @test length(alpine.candidate_disc_vars) == 8
+    @test length(alpine.disc_vars) == 8
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 3
 end
 
-#=
 @testset "Partitioning variable selection tests :: castro2m2" begin
 
     # Select all NL variable
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=0,
-                            disc_uniform_rate=10,
-                            presolve_bp=false,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 0,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bp" => false,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test m.objVal <= 470.3176
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test JuMP.objective_value(m) <= 470.3176
 
-    @test length(m.internalModel.candidate_disc_vars) == 10
-    @test length(m.internalModel.disc_vars) == 10
-    @test m.internalModel.disc_var_pick == 0
+    @test length(alpine.candidate_disc_vars) == 10
+    @test length(alpine.disc_vars) == 10
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 0
 
     # Select minimum vertex cover
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=1,
-                            disc_uniform_rate=10,
-                            presolve_bp=false,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 1,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bp" => false,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test m.objVal <= 470.3176
-    @test length(m.internalModel.candidate_disc_vars) == 10
-    @test length(m.internalModel.disc_vars) == 4
-    @test m.internalModel.disc_var_pick == 1
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test JuMP.objective_value(m) <= 470.3176
+    @test length(alpine.candidate_disc_vars) == 10
+    @test length(alpine.disc_vars) == 4
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 1
 
     # Criteria 15 static selection
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=2,
-                            disc_uniform_rate=15,
-                            presolve_bp=false,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 2,
+                            "disc_uniform_rate" => 15,
+                            "presolve_bp" => false,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test m.objVal <= 470.3176
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test JuMP.objective_value(m) <= 470.3176
 
-    @test length(m.internalModel.candidate_disc_vars) == 10
-    @test length(m.internalModel.disc_vars) == 10
-    @test m.internalModel.disc_var_pick == 2
+    @test length(alpine.candidate_disc_vars) == 10
+    @test length(alpine.disc_vars) == 10
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 2
 end
 
 @testset "Partitioning variable selection tests :: blend029" begin
 
     # Select all NL variable
-    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,
-                            nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=0,
-                            disc_uniform_rate=10,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
+                            "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 0,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = blend029_gl(solver=test_solver)
-    JuMP.build(m)
+    alpine = _build(m)
 
-    @test length(m.internalModel.candidate_disc_vars) == 26
-    @test Set(m.internalModel.candidate_disc_vars) == Set([26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60])
-    @test length(m.internalModel.disc_vars) == 26
-    @test m.internalModel.disc_var_pick == 0
+    @test length(alpine.candidate_disc_vars) == 26
+    @test Set(alpine.candidate_disc_vars) == Set([26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60])
+    @test length(alpine.disc_vars) == 26
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 0
 
     # Minimum vertex cover
-    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,
-                            nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=1,
-                            disc_uniform_rate=10,
-                            presolve_bp=false,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
+                            "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 1,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bp" => false,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = blend029_gl(solver=test_solver)
-    JuMP.build(m)
+    alpine = _build(m)
 
-    @test length(m.internalModel.candidate_disc_vars) == 26
-    @test Set(m.internalModel.candidate_disc_vars) == Set([26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60])
-    @test length(m.internalModel.disc_vars) == 10
-    @test m.internalModel.disc_var_pick == 1
+    @test length(alpine.candidate_disc_vars) == 26
+    @test Set(alpine.candidate_disc_vars) == Set([26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60])
+    @test length(alpine.disc_vars) == 10
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 1
 
     # Adaptive Scheme vertex cover
-    test_solver = Alpine.Optimizer(minlp_solver=pavito_solver,
-                            nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=2,
-                            disc_uniform_rate=10,
-                            presolve_bp=false,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
+                            "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 2,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bp" => false,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = blend029_gl(solver=test_solver)
-    JuMP.build(m)
+    alpine = _build(m)
 
-    @test length(m.internalModel.candidate_disc_vars) == 26
-    @test length(Set(m.internalModel.candidate_disc_vars)) == 26
+    @test length(alpine.candidate_disc_vars) == 26
+    @test length(Set(alpine.candidate_disc_vars)) == 26
     # TODO provide a check to see if candidate_disc_vars are all covered
-    @test length(m.internalModel.disc_vars) == 10
-    @test m.internalModel.disc_var_pick == 2
+    @test length(alpine.disc_vars) == 10
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 2
 end
 
 @testset "Partitioning variable selection tests :: castro6m2" begin
 
     # Dynamic Scheme step 2
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=3,
-                            presolve_bp=true,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 3,
+                            "presolve_bp" => true,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = castro6m2(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test m.objVal <= 228.87
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test JuMP.objective_value(m) <= 228.87
 
-    @test length(m.internalModel.candidate_disc_vars) == 24
-    @test length(Set(m.internalModel.candidate_disc_vars)) == 24
-    @test length(m.internalModel.disc_vars) == 12
-    @test length(Set(m.internalModel.disc_vars)) == 12
-    @test m.internalModel.disc_var_pick == 3
+    @test length(alpine.candidate_disc_vars) == 24
+    @test length(Set(alpine.candidate_disc_vars)) == 24
+    @test length(alpine.disc_vars) == 12
+    @test length(Set(alpine.disc_vars)) == 12
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 3
 
     # Dynamic Scheme step 2
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=3,
-                            presolve_bp=true,
-                            presolve_bt=false,
-                            maxiter=2,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 3,
+                            "presolve_bp" => true,
+                            "presolve_bt" => false,
+                            "maxiter" => 2,
+                            "loglevel" => 100)
 
     m = castro6m2(solver=test_solver)
-    status = solve(m)
+    JuMP.optimize!(m)
+    alpine = JuMP.backend(m).optimizer.model
 
-    @test status == :UserLimits
-    @test m.objVal <= 228.7810
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+    @test JuMP.objective_value(m) <= 228.7810
 
-    @test length(m.internalModel.candidate_disc_vars) == 24
-    @test length(Set(m.internalModel.candidate_disc_vars)) == 24
-    @test length(m.internalModel.disc_vars) == 12
-    @test length(Set(m.internalModel.disc_vars)) == 12
-    @test m.internalModel.disc_var_pick == 3
+    @test length(alpine.candidate_disc_vars) == 24
+    @test length(Set(alpine.candidate_disc_vars)) == 24
+    @test length(alpine.disc_vars) == 12
+    @test length(Set(alpine.disc_vars)) == 12
+    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 3
 end
 
 @testset "Test getsolvetime for time tracking" begin
-    test_solver = Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
-                            mip_solver=CbcSolver(logLevel=0),
-                            disc_var_pick=0,
-                            disc_uniform_rate=10,
-                            presolve_bp=false,
-                            presolve_bt=false,
-                            maxiter=1,
-                            loglevel=100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
+                            "mip_solver" => CBC,
+                            "disc_var_pick" => 0,
+                            "disc_uniform_rate" => 10,
+                            "presolve_bp" => false,
+                            "presolve_bt" => false,
+                            "maxiter" => 1,
+                            "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)
-    status = solve(m)
-    @test getsolvetime(m) > 0.
+    JuMP.optimize!(m)
+    @test solve_time(m) > 0.0
 end
-=#

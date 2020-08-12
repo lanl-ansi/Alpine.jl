@@ -429,15 +429,15 @@ function disc_branch_solve(m::Optimizer)
     # ================= Solve Start ================ #
     set_mip_time_limit(m)
     start_bounding_solve = time()
-    MOI.optimize!(m.model_mip)
+    JuMP.optimize!(m.model_mip)
     status = MOI.get(m.model_mip, MOI.TerminationStatus())
     cputime_branch_bounding_solve = time() - start_bounding_solve
     m.logs[:total_time] += cputime_branch_bounding_solve
     m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
     # ================= Solve End ================ #
 
-    if status in [:Optimal, :Suboptimal, :UserLimit]
-        return m.model_mip.objBound
+    if status in STATUS_OPT || status in STATUS_LIMIT
+        return MOI.get(m.model_mip, MOI.ObjectiveBound())
     else
         @warn "  Warning: Unexpected solving condition $(status) during disc branching."
     end
