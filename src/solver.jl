@@ -266,7 +266,7 @@ function get_option(m::Optimizer, s::Symbol)
     getproperty(m.options, s)
 end
 
-function set_option(m::Optimizer, s::Symbol, val )
+function set_option(m::Optimizer, s::Symbol, val)
     setproperty!(m.options, s, val)
 end
 
@@ -347,6 +347,9 @@ MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
     set_option(model, Symbol(param.name), value)
+end
+function MOI.get(model::Optimizer, param::MOI.RawParameter)
+    get_option(model, Symbol(param.name))
 end
 
 function MOI.add_variables(model::Optimizer, n::Int)
