@@ -5,7 +5,6 @@ module Alpine
 const ALPINE_DEBUG = false
 
 using JuMP
-import MathOptInterface
 
 using LinearAlgebra
 using Random
