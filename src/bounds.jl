@@ -1,10 +1,10 @@
 """
-    init_tight_bound(m::AlpineNonlinearModel)
+    init_tight_bound(m::Optimizer)
 
 Initialize internal bound vectors (placeholders) to be used in other places.
 In this case, we don't have to mess with the original bound information.
 """
-function init_tight_bound(m::AlpineNonlinearModel)
+function init_tight_bound(m::Optimizer)
     m.l_var_tight = [m.l_var_orig; fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     m.u_var_tight = [m.u_var_orig; fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     for i in 1:m.num_var_orig
@@ -20,12 +20,12 @@ function init_tight_bound(m::AlpineNonlinearModel)
 end
 
 """
-    init_disc(m::AlpineNonlinearModel)
+    init_disc(m::Optimizer)
 
 This function initialize the dynamic discretization used for any bounding models. By default, it takes (.l_var_orig, .u_var_orig) as the base information. User is allowed to use alternative bounds for initializing the discretization dictionary.
-The output is a dictionary with MathProgBase variable indices keys attached to the :AlpineNonlinearModel.discretization.
+The output is a dictionary with MathProgBase variable indices keys attached to the :Optimizer.discretization.
 """
-function init_disc(m::AlpineNonlinearModel)
+function init_disc(m::Optimizer)
 
     for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         if m.var_type[var] in [:Bin, :Cont]
@@ -33,8 +33,8 @@ function init_disc(m::AlpineNonlinearModel)
             ub = m.u_var_tight[var]
             m.discretization[var] = [lb, ub]
         elseif m.var_type[var] in [:Int]
-            m.int_enable ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
-            m.int_enable ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
+            get_option(m, :int_enable) ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
+            get_option(m, :int_enable) ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
             m.discretization[var] = [lb, ub]
         else
             error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
@@ -46,13 +46,13 @@ end
 
 """
 
-    to_discretization(m::AlpineNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+    to_discretization(m::Optimizer, lbs::Vector{Float64}, ubs::Vector{Float64})
 
 Utility functions to convert bounds vectors to Dictionary based structures that is more suitable for
 partition operations.
 
 """
-function to_discretization(m::AlpineNonlinearModel, lbs::Vector{Float64}, ubs::Vector{Float64})
+function to_discretization(m::Optimizer, lbs::Vector{Float64}, ubs::Vector{Float64})
 
     @assert length(lbs) == length(ubs)
     var_discretization = Dict()
@@ -100,13 +100,13 @@ end
 
 
 """
-    detect_bound_from_aff(m::AlpineNonlinearModel)
+    detect_bound_from_aff(m::Optimizer)
 
 Detect bounds from parse affine constraint. This function examines the one variable constraints such as
 x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_tight.
 This function can potential grow to be smarter.
 """
-function bound_propagation(m::AlpineNonlinearModel)
+function bound_propagation(m::Optimizer)
     exhausted = false
     infeasible = false
     while !exhausted
@@ -128,21 +128,21 @@ function bound_propagation(m::AlpineNonlinearModel)
                             (eval_u_bound != Inf) && (eval_u_bound += abs(aff[:coefs][j]/var_coef)*m.u_var_tight[aff[:vars][j].args[2]])
                         end
                     end
-                    if eval_l_bound > m.l_var_tight[var_idx] + m.tol
+                    if eval_l_bound > m.l_var_tight[var_idx] + get_option(m, :tol)
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
-                    elseif eval_l_bound > m.u_var_tight[var_idx] + m.tol
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
+                    elseif eval_l_bound > m.u_var_tight[var_idx] + get_option(m, :tol)
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
-                    if eval_u_bound < m.u_var_tight[var_idx] - m.tol
+                    if eval_u_bound < m.u_var_tight[var_idx] - get_option(m, :tol)
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_u_bound < m.l_var_tight[var_idx] - m.tol
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_u_bound < m.l_var_tight[var_idx] - get_option(m, :tol)
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -156,12 +156,12 @@ function bound_propagation(m::AlpineNonlinearModel)
                         end
                         (eval_bound == -Inf) && break
                     end
-                    if eval_bound > m.l_var_tight[var_idx] + m.tol
+                    if eval_bound > m.l_var_tight[var_idx] + get_option(m, :tol)
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound > m.u_var_tight[var_idx] + m.tol
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound > m.u_var_tight[var_idx] + get_option(m, :tol)
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -175,12 +175,12 @@ function bound_propagation(m::AlpineNonlinearModel)
                         end
                         (eval_bound == Inf) && break
                     end
-                    if eval_bound < m.u_var_tight[var_idx] - m.tol
+                    if eval_bound < m.u_var_tight[var_idx] - get_option(m, :tol)
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound < m.l_var_tight[var_idx] - m.tol
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound < m.l_var_tight[var_idx] - get_option(m, :tol)
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -194,12 +194,12 @@ function bound_propagation(m::AlpineNonlinearModel)
                         end
                         (eval_bound == Inf) && break
                     end
-                    if eval_bound < m.u_var_tight[var_idx] - m.tol
+                    if eval_bound < m.u_var_tight[var_idx] - get_option(m, :tol)
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound < m.l_var_tight[var_idx] - m.tol
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound < m.l_var_tight[var_idx] - get_option(m, :tol)
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -213,23 +213,23 @@ function bound_propagation(m::AlpineNonlinearModel)
                         end
                         (eval_bound == -Inf) && break
                     end
-                    if eval_bound > m.l_var_tight[var_idx] + m.tol
+                    if eval_bound > m.l_var_tight[var_idx] + get_option(m, :tol)
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound > m.u_var_tight[var_idx] + m.tol
-                        (m.loglevel > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound > m.u_var_tight[var_idx] + get_option(m, :tol)
+                        (get_option(m, :loglevel) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
                 end
             end
         end
-        (exhausted == true && m.loglevel > 99) && println("Initial constraint-based bound evaluation exhausted...")
+        (exhausted == true && get_option(m, :loglevel) > 99) && println("Initial constraint-based bound evaluation exhausted...")
     end
 
     if infeasible
-        m.status[:bounding_solve] = :Infeasible
+        m.status[:bounding_solve] = MOI.INFEASIBLE
         @warn "[INFEASIBLE] Infeasibility detected via bound propagation"
     end
 
@@ -239,7 +239,7 @@ end
 """
     Recategorize :Int variables to :Bin variables if variable bounds are [0,1]
 """
-function recategorize_var(m::AlpineNonlinearModel)
+function recategorize_var(m::Optimizer)
 
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Int && m.l_var_orig[i] == 0.0 && m.u_var_orig[i] == 1.0
@@ -252,16 +252,16 @@ function recategorize_var(m::AlpineNonlinearModel)
 end
 
 """
-    resolve_var_bounds(m::AlpineNonlinearModel)
+    resolve_var_bounds(m::Optimizer)
 
 Resolve the bounds of the lifted variable using the information in l_var_tight and u_var_tight. This method only takes
 in known or trivial bounds information to reason lifted variable bound to avoid the cases of infinity bounds.
 """
-function resolve_var_bounds(m::AlpineNonlinearModel)
+function resolve_var_bounds(m::Optimizer)
 
     # Basic Bound propagation
-    if m.presolve_bp
-        m.presolve_infeasible = bound_propagation(m) # Fetch bounds from constraints
+    if get_option(m, :presolve_bp)
+        setproperty!(m, :presolve_infeasible, bound_propagation(m)) # Fetch bounds from constraints
     end
 
     # Resolve unbounded variables in the original formulation 
@@ -287,7 +287,7 @@ end
 """
     Critically assumed since Alpine relies on finite bound to work
 """
-function resolve_inf_bounds(m::AlpineNonlinearModel)
+function resolve_inf_bounds(m::Optimizer)
     warnuser = false
     infcount_l = 0
     infcount_u = 0
@@ -296,20 +296,20 @@ function resolve_inf_bounds(m::AlpineNonlinearModel)
     for i = 1:length(m.l_var_orig)
         if m.l_var_tight[i] == -Inf
             warnuser = true
-            m.l_var_tight[i] = -m.largebound
+            m.l_var_tight[i] = -get_option(m, :largebound)
             infcount_l += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
-            m.u_var_tight[i] = m.largebound
+            m.u_var_tight[i] = get_option(m, :largebound)
             infcount_u +=1
         end
     end
     infcount = min(infcount_l, infcount_u)
     if infcount == 1
-        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(m.largebound). This may affect global optimality and run times.")
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(get_option(m, :largebound)). This may affect global optimality and run times.")
     elseif infcount > 1
-        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(m.largebound). This may affect global optimality and run times.")
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(get_option(m, :largebound)). This may affect global optimality and run times.")
     end
     return
 end
@@ -323,7 +323,7 @@ end
 
     Only used in presolve bound tightening
 """
-function resolve_var_bounds(m::AlpineNonlinearModel, d::Dict; kwargs...)
+function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
     # Potentially, additional mapping can be applied to reduce the complexity
@@ -359,17 +359,17 @@ function resolve_var_bounds(m::AlpineNonlinearModel, d::Dict; kwargs...)
 end
 
 """
-    resolve_closed_var_bounds(m::AlpineNonlinearModel)
+    resolve_closed_var_bounds(m::Optimizer)
 
 This function seeks variable with tight bounds (by presolve_bt_width_tol) by checking .l_var_tight and .u_var_tight.
 If a variable is found to be within a sufficiently small interval then no discretization will be performed on this variable
 and the .discretization will be cleared with the tight bounds for basic McCormick operation if necessary.
 
 """
-function resolve_closed_var_bounds(m::AlpineNonlinearModel; kwargs...)
+function resolve_closed_var_bounds(m::Optimizer; kwargs...)
 
     for var in m.candidate_disc_vars
-        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < m.presolve_bt_width_tol         # Closed Bound Criteria
+        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < get_option(m, :presolve_bt_width_tol)         # Closed Bound Criteria
             deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonconvex_terms by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end
@@ -379,7 +379,7 @@ function resolve_closed_var_bounds(m::AlpineNonlinearModel; kwargs...)
 end
 
 """
-    update_var_bounds(m::AlpineNonlinearModel, discretization::Dict; len::Float64=length(keys(discretization)))
+    update_var_bounds(m::Optimizer, discretization::Dict; len::Float64=length(keys(discretization)))
 
 This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
 

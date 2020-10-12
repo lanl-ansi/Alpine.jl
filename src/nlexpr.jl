@@ -3,7 +3,7 @@ process_expr(expr; kwargs...)
 
 High-level wrapper for processing expression with sub-tree operators
 """
-function process_expr(m::AlpineNonlinearModel)
+function process_expr(m::Optimizer)
 
    expr_initialization(m)      # S0 : initialize the space for parsing and analyzing
    expr_preprocess(m)          # S1 : pre-process the negative sign in expressions
@@ -17,7 +17,7 @@ end
 """
 STEP 1: initialize the expression/ space
 """
-function expr_initialization(m::AlpineNonlinearModel)
+function expr_initialization(m::Optimizer)
 
    # 0 : deepcopy data into mip lifted expr place holders
    m.bounding_obj_expr_mip = deepcopy(m.obj_expr_orig)
@@ -34,7 +34,7 @@ end
 """
 STEP 2: preprocess expression for trivial sub-trees and nasty pieces for easier later process
 """
-function expr_preprocess(m::AlpineNonlinearModel)
+function expr_preprocess(m::Optimizer)
 
    expr_resolve_const(m.bounding_obj_expr_mip)
    expr_resolve_sign(m.bounding_obj_expr_mip)
@@ -51,7 +51,7 @@ end
 """
 STEP 3: parse expression for patterns on either the generic level or term level
 """
-function expr_parsing(m::AlpineNonlinearModel)
+function expr_parsing(m::Optimizer)
 
    # Throw an error if obj. expression has non-integer exponents
    expr_isfracexp(m.bounding_obj_expr_mip)
@@ -61,7 +61,7 @@ function expr_parsing(m::AlpineNonlinearModel)
       m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
       m.obj_structure = :generic_linear
    end
-   (m.loglevel > 199) && println("[OBJ] $(m.obj_expr_orig)")
+   (get_option(m, :loglevel) > 199) && println("[OBJ] $(m.obj_expr_orig)")
 
    for i in 1:m.num_constr_orig
       is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
@@ -69,7 +69,7 @@ function expr_parsing(m::AlpineNonlinearModel)
          m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], i, m)
          m.constr_structure[i] = :generic_linear
       end
-      (m.loglevel > 199) && println("[CONSTR] $(m.constr_expr_orig[i])")
+      (get_option(m, :loglevel) > 199) && println("[CONSTR] $(m.constr_expr_orig[i])")
    end
 
    return
@@ -78,19 +78,19 @@ end
 """
 STEP 4: convert the parsed expressions into affine-based function that can be used for adding JuMP constraints
 """
-function expr_conversion(m::AlpineNonlinearModel)
+function expr_conversion(m::Optimizer)
 
    if m.obj_structure == :generic_linear
       m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
       m.obj_structure = :affine
    end
-   m.loglevel > 199 && println("type :: ", m.obj_structure)
-   m.loglevel > 199 && println("lifted ::", m.bounding_obj_expr_mip)
-   m.loglevel > 199 && println("coeffs ::", m.bounding_obj_mip[:coefs])
-   m.loglevel > 199 && println("vars ::", m.bounding_obj_mip[:vars])
-   m.loglevel > 199 && println("sense ::", m.bounding_obj_mip[:sense])
-   m.loglevel > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
-   m.loglevel > 199 && println("----------------")
+   get_option(m, :loglevel) > 199 && println("type :: ", m.obj_structure)
+   get_option(m, :loglevel) > 199 && println("lifted ::", m.bounding_obj_expr_mip)
+   get_option(m, :loglevel) > 199 && println("coeffs ::", m.bounding_obj_mip[:coefs])
+   get_option(m, :loglevel) > 199 && println("vars ::", m.bounding_obj_mip[:vars])
+   get_option(m, :loglevel) > 199 && println("sense ::", m.bounding_obj_mip[:sense])
+   get_option(m, :loglevel) > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
+   get_option(m, :loglevel) > 199 && println("----------------")
 
 
    for i in 1:m.num_constr_orig
@@ -98,13 +98,13 @@ function expr_conversion(m::AlpineNonlinearModel)
          m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
          m.constr_structure[i] = :affine
       end
-      m.loglevel > 199 && println("type :: ", m.constr_structure[i])
-      m.loglevel > 199 && println("lifted ::", m.bounding_constr_expr_mip[i])
-      m.loglevel > 199 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-      m.loglevel > 199 && println("vars ::", m.bounding_constr_mip[i][:vars])
-      m.loglevel > 199 && println("sense ::", m.bounding_constr_mip[i][:sense])
-      m.loglevel > 199 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-      m.loglevel > 199 && println("----------------")
+      get_option(m, :loglevel) > 199 && println("type :: ", m.constr_structure[i])
+      get_option(m, :loglevel) > 199 && println("lifted ::", m.bounding_constr_expr_mip[i])
+      get_option(m, :loglevel) > 199 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+      get_option(m, :loglevel) > 199 && println("vars ::", m.bounding_constr_mip[i][:vars])
+      get_option(m, :loglevel) > 199 && println("sense ::", m.bounding_constr_mip[i][:sense])
+      get_option(m, :loglevel) > 199 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+      get_option(m, :loglevel) > 199 && println("----------------")
    end
 
    return
@@ -114,7 +114,7 @@ end
 """
 STEP 5: collect measurements and information as needed for handy operations in the algorithm section
 """
-function expr_finalized(m::AlpineNonlinearModel)
+function expr_finalized(m::Optimizer)
 
    collect_nonconvex_vars(m)
    m.candidate_disc_vars = sort(m.candidate_disc_vars)
@@ -125,7 +125,7 @@ function expr_finalized(m::AlpineNonlinearModel)
    return m
 end
 
-function collect_nonconvex_vars(m::AlpineNonlinearModel)
+function collect_nonconvex_vars(m::Optimizer)
 
    # Walk through all nonconvex terms
    for i in keys(m.nonconvex_terms)
@@ -142,6 +142,9 @@ function collect_nonconvex_vars(m::AlpineNonlinearModel)
 
    return
 end
+
+isa_variable_index(expr::Expr) = length(expr.args == 2) && expr.args[2] == :(MathOptInterface.VariableIndex)
+get_index(expr::Expr) = expr.args[2]
 
 function expr_strip_const(expr, subs=[], rhs=0.0)
 
@@ -183,21 +186,21 @@ function build_constr_block(y_idx::Int, var_idxs::Vector, operator::Symbol)
 end
 
 """
-expr_constr_parsing(expr, m::AlpineNonlinearModel)
+expr_constr_parsing(expr, m::Optimizer)
 
 Recognize structural constraints.
 """
-function expr_constr_parsing(expr, m::AlpineNonlinearModel, idx::Int=0)
+function expr_constr_parsing(expr, m::Optimizer, idx::Int=0)
 
    # First process user-defined structures in-cases of over-ride
-   for i in 1:length(m.constr_patterns)
-      is_strucural = eval(m.constr_patterns[i])(expr, m, idx)
+   for i in 1:length(get_option(m, :constr_patterns))
+      is_strucural = eval(get_option(m, :constr_patterns)[i])(expr, m, idx)
       return
    end
 
    isa(expr, Number) && return false
    # Recognize built-in special structural pattern
-   if m.recognize_convex
+   if get_option(m, :recognize_convex)
       is_convex = resolve_convex_constr(expr, m, idx)
       is_convex && return true
    end
@@ -381,7 +384,7 @@ By separating the structure with some dummy treatments
 """
 function expr_resolve_sign(expr, level=0; kwargs...)
 
-   isa(expr, Number) && return 
+   isa(expr, Number) && return
    resolver = Dict(:- => -1, :+ => 1)
    for i in 2:length(expr.args)
       if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) 								# Skip the coefficients
@@ -414,7 +417,7 @@ Most issues can be caused by this function.
 """
 function expr_flatten(expr, level=0; kwargs...)
 
-   isa(expr, Number) && return 
+   isa(expr, Number) && return
    if level > 0  # No trivial constraint is allowed "3>5"
       flat = expr_arrangeargs(expr.args)
       if isa(flat, Number)
@@ -465,13 +468,13 @@ function expr_arrangeargs(args::Array; kwargs...)
 
    if args[1] in [:^]
       return args
-   elseif args[1] in [:/]  
+   elseif args[1] in [:/]
       # error("Alpine does not currently support `$(args[1])` operator")
       if (typeof(args[3]) == Float64) || (typeof(args[3]) == Int64)
          args = expr_resolve_divdenominator(args)
-      else 
+      else
          error("Alpine does not currently support `$(args[1])` operator with a variable in the denominator")
-      end	
+      end
    elseif args[1] in [:*, :+, :-]
       # Such generic operators can be handled
    else
@@ -537,7 +540,7 @@ Check if a sub-tree is a constant or not
 """
 function expr_resolve_const(expr)
 
-   isa(expr, Number) && return 
+   isa(expr, Number) && return
    for i in 1:length(expr.args)
       if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
          continue
@@ -624,20 +627,20 @@ function expr_isaffine(expr)
    is_affine = false
    if expr.head == :call
       k=0
-      for i = 1:length(expr.args) 
-         if isa(expr.args[i], Number) 
+      for i = 1:length(expr.args)
+         if isa(expr.args[i], Number)
             k+=1
             continue
          end
-         if isa(expr.args[i], Symbol)  
+         if isa(expr.args[i], Symbol)
             (expr.args[i] in [:+,:-]) && (k+=1)
             continue
          end
          if expr.args[i].head == :ref
-            k+=1 
+            k+=1
          elseif expr.args[i].head == :call
             status = expr_isaffine(expr.args[i])
-            (status == true) && (k+=1)
+            status && (k += 1)
          end
       end
       (k == length(expr.args)) && (is_affine = true)
@@ -647,17 +650,17 @@ end
 
 """
 Converts ((a_1*x[1])^2 + (a_2*x[2])^2 + ... + (a_n*x[n])^2) to (a_1^2*x[1]^2 + a_2^2*x[2]^2 + ... + a_n^2*x[n]^2)
-Signs in the summation can be +/- 
-Note: This function does not support terms of type (a*(x[1] + x[2]))^2 yet. 
+Signs in the summation can be +/-
+Note: This function does not support terms of type (a*(x[1] + x[2]))^2 yet.
 """
 function expr_isolate_const(expr)
    expr_isaffine(expr) && return expr
 
    # Check nonlinear expressions
-   if (expr.head == :call && expr.args[1] in [:+,:-]) 
+   if (expr.head == :call && expr.args[1] in [:+,:-])
       expr_array = Any[]
       for i=2:length(expr.args)
-         ind = 0 
+         ind = 0
 
          # Handle negative sign in the first term
          if (!isa(expr.args[i], Number)) && (expr.args[i].args[1] == :-) && (length(expr.args[i].args) == 2)
@@ -676,7 +679,7 @@ function expr_isolate_const(expr)
             end
 
          # Handle nonlinear terms with coefficients within the exponent
-      elseif (expr.args[i].head == :call && expr_i.args[1] == :^ && expr_i.args[2].head == :call && isa(expr_i.args[2].args[2], Number) && isa(expr_i.args[3], Number)) 
+      elseif (expr.args[i].head == :call && expr_i.args[1] == :^ && expr_i.args[2].head == :call && isa(expr_i.args[2].args[2], Number) && isa(expr_i.args[3], Number))
             expr_tmp = Expr(:call, :^, expr_i.args[2].args[3], expr_i.args[3])
             if ((expr.args[1] == :-) && (i > 2)) || (ind == 1)
                push!(expr_array, Expr(:call, :*, -expr_i.args[2].args[2] ^ expr_i.args[3], expr_tmp))
@@ -684,15 +687,15 @@ function expr_isolate_const(expr)
                push!(expr_array, Expr(:call, :*, expr_i.args[2].args[2] ^ expr_i.args[3], expr_tmp))
             end
 
-         # Handle no-coefficients case  
+         # Handle no-coefficients case
          elseif expr_i.args[1] == :^ && expr_i.args[2].head == :ref
-            if (expr.args[1] == :- && (i > 2)) || (ind == 1) 
+            if (expr.args[1] == :- && (i > 2)) || (ind == 1)
                push!(expr_array, Expr(:call, :*, -1, expr_i))
             else
                push!(expr_array,  expr_i)
             end
 
-         # Handle coefficients which are not part of the exponent 
+         # Handle coefficients which are not part of the exponent
          elseif expr_i.args[1] == :* && isa(expr_i.args[2], Number)
             if ((expr.args[1] == :-) && (i > 2)) || (ind == 1)
                #push!(expr_array, Expr(:call, :*, -expr_i.args[2], expr_i.args[3]))
@@ -707,14 +710,14 @@ function expr_isolate_const(expr)
             push!(expr_array, expr_rec)
 
          # For any other terms
-         else 
-            if (expr.args[1] == :- && (i > 2)) || (ind == 1) 
+         else
+            if (expr.args[1] == :- && (i > 2)) || (ind == 1)
                push!(expr_array, Expr(:call, :*, -1, expr_i))
             else
                push!(expr_array,  expr_i)
             end
          end
-      end   
+      end
 
       # Construct the expression from the array
       if length(expr_array) == 1
@@ -729,7 +732,7 @@ function expr_isolate_const(expr)
          return(expr_n)
       end
 
-   elseif (expr.head == :call && expr.args[1] == :^ && expr.args[2].head == :call && isa(expr.args[2].args[2], Number) && isa(expr.args[3], Number)) 
+   elseif (expr.head == :call && expr.args[1] == :^ && expr.args[2].head == :call && isa(expr.args[2].args[2], Number) && isa(expr.args[3], Number))
       expr_tmp = Expr(:call, :^, expr.args[2].args[3], expr.args[3])
       return(Expr(:call, :*, expr.args[2].args[2] ^ expr.args[3], expr_tmp))
    else

@@ -111,7 +111,7 @@ end
 	This is the function that translate the bounding constraints (α¹b⁰+α²b¹ <= x <= α¹b¹+α²b²)
 	with log # of binary variables, i.e., generate these constraints using log # of binary variables.
 """
-function ebd_link_xα(m::AlpineNonlinearModel, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
+function ebd_link_xα(m::Optimizer, α::Vector, λCnt::Int, disc_vec::Vector, code_seq::Vector, var_idx::Int)
 
 	lifters = Dict()
 	exprs = Dict()
@@ -125,7 +125,7 @@ function ebd_link_xα(m::AlpineNonlinearModel, α::Vector, λCnt::Int, disc_vec:
 	end
 
 	# Construct Variable Vector
-	α_A = @variable(m.model_mip, [1:length(keys(lifters))], lowerbound=0.0, upperbound=1.0, basename="αA$(var_idx)")
+	α_A = @variable(m.model_mip, [1:length(keys(lifters))], lower_bound=0.0, upper_bound=1.0, base_name="αA$(var_idx)")
 	for i in keys(lifters) # Build first-level evaluation
 		binprod_relax(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
 	end
@@ -137,8 +137,8 @@ function ebd_link_xα(m::AlpineNonlinearModel, α::Vector, λCnt::Int, disc_vec:
 	end
 
 	# Contructing final constraints
-	@constraint(m.model_mip, Variable(m.model_mip, var_idx) >= sum(exprs[j][:expr]*disc_vec[j] for j in 1:P))
-	@constraint(m.model_mip, Variable(m.model_mip, var_idx) <= sum(exprs[j-1][:expr]*disc_vec[j] for j in 2:(P+1)))
+	@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, var_idx) >= sum(exprs[j][:expr]*disc_vec[j] for j in 1:P))
+	@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, var_idx) <= sum(exprs[j-1][:expr]*disc_vec[j] for j in 2:(P+1)))
 
 	return
 end

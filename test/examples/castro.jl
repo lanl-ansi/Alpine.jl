@@ -1,6 +1,6 @@
 function castro2m2(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, 0 <= x[1:41] <= 1E6)
     @variable(m, obj)
@@ -58,7 +58,7 @@ end
 
 function castro6m2(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, 0 <= x[1:133] <= 1E6)
 	@variable(m, obj)
@@ -225,7 +225,7 @@ end
 
 function castro4m2(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
 	# ----- Variables ----- #
 	@variable(m, 0 <= x[1:55] <= 1E6)

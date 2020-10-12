@@ -1,7 +1,7 @@
 function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
@@ -10,7 +10,7 @@ function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   presolve_bt_output_tol=1e-1,
 								   loglevel=10000))
 	else
-		m = Model(solver=solver)
+		m = Model(solver)
 	end
 
     @variable(m, 1<=x[1:2]<=10)
@@ -24,7 +24,7 @@ end
 function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 
 	if solver == nothing
-		m = Model(solver=AlpineSolver(nlp_solver=IpoptSolver(print_level=0),
+		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
 								   mip_solver=GurobiSolver(OutputFlag=0),
 								   bilinear_convexhull=convhull,
 								   monomial_convexhull=convhull,
@@ -33,7 +33,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 								   presolve_bt_output_tol=1e-1,
 								   loglevel=10000))
 	else
-		m = Model(solver=solver)
+		m = Model(solver)
 	end
 
 	@variable(m, -500<=x[1:2]<=500)
@@ -43,7 +43,7 @@ function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
 	return m
 end
 
-function max_cover_var_picker(m::Alpine.AlpineNonlinearModel)
+function max_cover_var_picker(m::Alpine.Optimizer)
 	nodes = Set()
 	for pair in keys(m.nonconvex_terms)
 		for i in pair
@@ -60,27 +60,27 @@ end
 
 function nlp3(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:8])
 
-	setlowerbound(x[1], 100)
-	setlowerbound(x[2], 1000)
-	setlowerbound(x[3], 1000)
-	setlowerbound(x[4], 10)
-	setlowerbound(x[5], 10)
-	setlowerbound(x[6], 10)
-	setlowerbound(x[7], 10)
-	setlowerbound(x[8], 10)
+	set_lower_bound(x[1], 100)
+	set_lower_bound(x[2], 1000)
+	set_lower_bound(x[3], 1000)
+	set_lower_bound(x[4], 10)
+	set_lower_bound(x[5], 10)
+	set_lower_bound(x[6], 10)
+	set_lower_bound(x[7], 10)
+	set_lower_bound(x[8], 10)
 
-	setupperbound(x[1], 10000)
-	setupperbound(x[2], 10000)
-	setupperbound(x[3], 10000)
-	setupperbound(x[4], 1000)
-	setupperbound(x[5], 1000)
-	setupperbound(x[6], 1000)
-	setupperbound(x[7], 1000)
-	setupperbound(x[8], 1000)
+	set_upper_bound(x[1], 10000)
+	set_upper_bound(x[2], 10000)
+	set_upper_bound(x[3], 10000)
+	set_upper_bound(x[4], 1000)
+	set_upper_bound(x[5], 1000)
+	set_upper_bound(x[6], 1000)
+	set_upper_bound(x[7], 1000)
+	set_upper_bound(x[8], 1000)
 
 	@constraint(m, 0.0025*(x[4] + x[6]) <= 1)
 	@constraint(m, 0.0025*(x[5] - x[4] + x[7]) <= 1)

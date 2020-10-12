@@ -1,5 +1,5 @@
 """
-update_rel_gap(m::AlpineNonlinearModel)
+update_rel_gap(m::Optimizer)
 
 Update Alpine model relative & absolute optimality gap.
 
@@ -14,28 +14,28 @@ The absolute gap calculation is
 |UB-LB|
 ```
 """
-function update_opt_gap(m::AlpineNonlinearModel)
+function update_opt_gap(m::Optimizer)
 
    if m.best_obj in [Inf, -Inf]
       m.best_rel_gap = Inf
       return
    else
-      p = convert(Int, round(abs(log(10,m.relgap))))
+      p = convert(Int, round(abs(log(10,get_option(m, :relgap)))))
       n = round(abs(m.best_obj-m.best_bound); digits=p)
       dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
-      if isapprox(n, 0.0;atol=m.tol) && isapprox(m.best_obj,0.0;atol=m.tol)
+      if isapprox(n, 0.0;atol=get_option(m, :tol)) && isapprox(m.best_obj,0.0;atol=get_option(m, :tol))
          m.best_rel_gap = 0.0
          return
       end
-      if m.gapref == :ub
-         if isapprox(m.best_obj,0.0;atol=m.tol) # zero upper bound case
+      if get_option(m, :gapref) == :ub
+         if isapprox(m.best_obj,0.0;atol=get_option(m, :tol)) # zero upper bound case
             eps = 1 # shift factor
-            m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(m.tol+(m.best_obj + eps))   
+            m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(get_option(m, :tol)+(m.best_obj + eps))
          else
-            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_obj))
+            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(get_option(m, :tol)+abs(m.best_obj))
          end
       else
-         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(m.tol+abs(m.best_bound))
+         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(get_option(m, :tol)+abs(m.best_bound))
       end
    end
 
@@ -43,9 +43,9 @@ function update_opt_gap(m::AlpineNonlinearModel)
    return
 end
 
-function measure_relaxed_deviation(m::AlpineNonlinearModel;sol=nothing)
+function measure_relaxed_deviation(m::Optimizer;sol=nothing)
 
-   sol == nothing ? sol = m.best_bound_sol : sol = sol
+   sol = something(sol, m.best_bound_sol)
 
    isempty(sol) && return
 
@@ -60,7 +60,7 @@ function measure_relaxed_deviation(m::AlpineNonlinearModel;sol=nothing)
    sort!(dev, by=x->x[1])
 
    for i in dev
-      m.loglevel > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
+      get_option(m, :loglevel) > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
    end
 
    return
@@ -76,14 +76,14 @@ discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 """
 Update the data structure with feasible solution and its associated objective (if better)
 """
-function update_incumb_objective(m::AlpineNonlinearModel, objval::Float64, sol::Vector)
+function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
 
-   convertor = Dict(:Max=>:>, :Min=>:<)
+   convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
    push!(m.logs[:obj], objval)
    if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
       m.best_obj = objval
       m.best_sol = sol
-      m.status[:feasible_solution] = :Detected
+      m.detected_feasible_solution = true
    end
 
    return
@@ -93,8 +93,8 @@ end
 Utility function for debugging.
 """
 function show_solution(m::JuMP.Model)
-   for i in 1:length(m.colNames)
-      println("$(m.colNames[i])=$(m.colVal[i])")
+   for var in all_variables(m)
+      println("$var=$(JuMP.value(var))")
    end
    return
 end
@@ -158,25 +158,25 @@ function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_
 end
 
 """
-fetch_boundstop_symbol(m::AlpineNonlinearModel)
+fetch_boundstop_symbol(m::Optimizer)
 
 An utility function used to recognize different sub-solvers and return the bound stop option key words
 """
-function update_boundstop_options(m::AlpineNonlinearModel)
+function update_boundstop_options(m::Optimizer)
 
    if m.mip_solver_id == "Gurobi"
       # Calculation of the bound
-      if m.sense_orig == :Min
-         m.gapref == :ub ? stopbound=(1-m.relgap+m.tol)*abs(m.best_obj) : stopbound=(1-m.relgap+m.tol)*abs(m.best_bound)
-      elseif m.sense_orig == :Max
-         m.gapref == :ub ? stopbound=(1+m.relgap-m.tol)*abs(m.best_obj) : stopbound=(1+m.relgap-m.tol)*abs(m.best_bound)
+      if is_min_sense(m)
+         get_option(m, :gapref) == :ub ? stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_obj) : stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_bound)
+      elseif is_max_sense(m)
+         get_option(m, :gapref) == :ub ? stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_obj) : stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_bound)
       end
 
-      for i in 1:length(m.mip_solver.options)
-         if m.mip_solver.options[i][1] == :BestBdStop
-            deleteat!(m.mip_solver.options, i)
+      for i in 1:length(get_option(m, :mip_solver).options)
+         if get_option(m, :mip_solver).options[i][1] == :BestBdStop
+            deleteat!(get_option(m, :mip_solver).options, i)
             if m.mip_solver_id == "Gurobi"
-               push!(m.mip_solver.options, (:BestBdStop, stopbound))
+               push!(get_option(m, :mip_solver).options, (:BestBdStop, stopbound))
             else
                return
             end
@@ -189,46 +189,50 @@ end
 
 
 """
-check_solution_history(m::AlpineNonlinearModel, ind::Int)
+check_solution_history(m::Optimizer, ind::Int)
 
 Check if the solution is alwasy the same within the last disc_consecutive_forbid iterations. Return true if suolution in invariant.
 """
-function check_solution_history(m::AlpineNonlinearModel, ind::Int)
+function check_solution_history(m::Optimizer, ind::Int)
 
-   m.disc_consecutive_forbid == 0 && return false
-   (m.logs[:n_iter] < m.disc_consecutive_forbid) && return false
+   get_option(m, :disc_consecutive_forbid) == 0 && return false
+   (m.logs[:n_iter] < get_option(m, :disc_consecutive_forbid)) && return false
 
-   sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, m.disc_consecutive_forbid)+1][ind]
-   for i in 1:(m.disc_consecutive_forbid-1)
-      search_pos = mod(m.logs[:n_iter]-1-i, m.disc_consecutive_forbid)+1
-      !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=m.disc_rel_width_tol) && return false
+   sol_val = m.bound_sol_history[mod(m.logs[:n_iter]-1, get_option(m, :disc_consecutive_forbid))+1][ind]
+   for i in 1:(get_option(m, :disc_consecutive_forbid)-1)
+      search_pos = mod(m.logs[:n_iter]-1-i, get_option(m, :disc_consecutive_forbid))+1
+      !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=get_option(m, :disc_rel_width_tol)) && return false
    end
 
-   m.loglevel > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
+   get_option(m, :loglevel) > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
    return true
 end
 
 """
 
-fix_domains(m::AlpineNonlinearModel)
+fix_domains(m::Optimizer)
 
 This function is used to fix variables to certain domains during the local solve process in the [`global_solve`](@ref).
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing variables to the active domain according to lower bound solution.
 """
-function fix_domains(m::AlpineNonlinearModel;discrete_sol=nothing, use_orig=false)
+function fix_domains(m::Optimizer;discrete_sol=nothing, use_orig=false)
 
-   discrete_sol != nothing && @assert length(discrete_sol) >= m.num_var_orig
+   discrete_sol !== nothing && @assert length(discrete_sol) >= m.num_var_orig
 
    l_var = [m.l_var_tight[i] for i in 1:m.num_var_orig]
    u_var = [m.u_var_tight[i] for i in 1:m.num_var_orig]
 
    for i in 1:m.num_var_orig
       if i in m.disc_vars && m.var_type[i] == :Cont
-         discrete_sol == nothing ? point = m.best_bound_sol[i] : point = discrete_sol[i]
+         point = if discrete_sol === nothing
+             m.best_bound_sol[i]
+         else
+             discrete_sol[i]
+         end
          PCnt = length(m.discretization[i]) - 1
          for j in 1:PCnt
-            if point >= (m.discretization[i][j] - m.tol) && (point <= m.discretization[i][j+1] + m.tol)
+            if point >= (m.discretization[i][j] - get_option(m, :tol)) && (point <= m.discretization[i][j+1] + get_option(m, :tol))
                @assert j < length(m.discretization[i])
                use_orig ? l_var[i] = m.discretization[i][1] : l_var[i] = m.discretization[i][j]
                use_orig ? u_var[i] = m.discretization[i][end] : u_var[i] = m.discretization[i][j+1]
@@ -250,9 +254,9 @@ function fix_domains(m::AlpineNonlinearModel;discrete_sol=nothing, use_orig=fals
 end
 
 """
-is_fully_convexified(m::AlpineNonlinearModel)
+is_fully_convexified(m::Optimizer)
 """
-function is_fully_convexified(m::AlpineNonlinearModel)
+function is_fully_convexified(m::Optimizer)
 
    # Other more advanced convexification check goes here
    for term in keys(m.nonconvex_terms)
@@ -271,7 +275,7 @@ end
 Collect LB solutions
 Don't test this function
 """
-function collect_lb_pool(m::AlpineNonlinearModel)
+function collect_lb_pool(m::Optimizer)
 
    # Always stick to the structural .discretization for algorithm consideration info
    # If in need, the scheme need to be refreshed with customized discretization info
@@ -305,7 +309,7 @@ end
 """
 Merge collected solution pools
 """
-function merge_solution_pool(m::AlpineNonlinearModel, s::Dict)
+function merge_solution_pool(m::Optimizer, s::Dict)
 
    # Always stick to the structural discretization for algorithm consideration info
    # If in need, the scheme needs to be refreshed with customized discretization info
@@ -339,7 +343,7 @@ function merge_solution_pool(m::AlpineNonlinearModel, s::Dict)
          act || break
       end
       # Reject solutions that is around best bound to avoid traps
-      if isapprox(s[:obj][i], m.best_bound;atol=m.tol)
+      if isapprox(s[:obj][i], m.best_bound;atol=get_option(m, :tol))
          s[:stat][i] = :Dead
       end
       push!(m.bound_sol_pool[:sol], s[:sol][i])
@@ -355,9 +359,9 @@ function merge_solution_pool(m::AlpineNonlinearModel, s::Dict)
    m.bound_sol_pool[:vars] = var_idxs
 
    # Show the summary
-   m.loglevel > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
+   get_option(m, :loglevel) > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
    for i in 1:m.bound_sol_pool[:cnt]
-      m.loglevel > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
+      get_option(m, :loglevel) > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
    end
 
    return
@@ -410,12 +414,12 @@ end
 
 """
 
-ncvar_collect_nodes(m:AlpineNonlinearModel)
+ncvar_collect_nodes(m:Optimizer)
 
 A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
 
 """
-function ncvar_collect_nodes(m::AlpineNonlinearModel;getoutput=false)
+function ncvar_collect_nodes(m::Optimizer;getoutput=false)
 
    # Pick variables that is bound width more than tolerance length
    if getoutput
@@ -428,10 +432,10 @@ function ncvar_collect_nodes(m::AlpineNonlinearModel;getoutput=false)
    return
 end
 
-function eval_objective(m::AlpineNonlinearModel; svec::Vector=[])
+function eval_objective(m::Optimizer; svec::Vector=[])
 
    isempty(svec) ? svec = m.best_bound_sol : svec = svec
-   m.sense_orig == :Min ? obj = Inf : obj=-Inf
+   is_min_sense(m) ? obj = Inf : obj = -Inf
 
    if m.obj_structure == :affine
       obj = m.bounding_obj_mip[:rhs]
@@ -447,7 +451,7 @@ function eval_objective(m::AlpineNonlinearModel; svec::Vector=[])
    return obj
 end
 
-function initialize_solution_pool(m::AlpineNonlinearModel, cnt::Int)
+function initialize_solution_pool(m::Optimizer, cnt::Int)
 
    s = Dict()
 
@@ -472,7 +476,7 @@ end
 """
 Reconsideration required
 """
-function ncvar_collect_arcs(m::AlpineNonlinearModel, nodes::Vector)
+function ncvar_collect_arcs(m::Optimizer, nodes::Vector)
 
    arcs = Set()
 
@@ -537,13 +541,13 @@ function print_iis_gurobi(m::JuMP.Model)
    info("Irreducible Inconsistent Subsystem (IIS)")
    info("Variable bounds:")
    for i in 1:numvar
-      v = Variable(m, i)
+      v = _index_to_variable_ref(m, i)
       if iislb[i] != 0 && iisub[i] != 0
-         println(getlowerbound(v), " <= ", getname(v), " <= ", getupperbound(v))
+         println(JuMP.lower_bound(v), " <= ", JuMP.name(v), " <= ", JuMP.upper_bound(v))
       elseif iislb[i] != 0
-         println(getname(v), " >= ", getlowerbound(v))
+         println(JuMP.name(v), " >= ", JuMP.lower_bound(v))
       elseif iisub[i] != 0
-         println(getname(v), " <= ", getupperbound(v))
+         println(JuMP.name(v), " <= ", JuMP.upper_bound(v))
       end
    end
 
@@ -560,7 +564,7 @@ end
 """
 TODO can be improved
 """
-function build_discvar_graph(m::AlpineNonlinearModel)
+function build_discvar_graph(m::Optimizer)
 
    # Collect the information of nonlinear terms in terms of arcs and nodes
    nodes = ncvar_collect_nodes(m, getoutput=true)
@@ -580,28 +584,29 @@ function build_discvar_graph(m::AlpineNonlinearModel)
    return nodes, arcs
 end
 
-function min_vertex_cover(m::AlpineNonlinearModel)
+function min_vertex_cover(m::Optimizer)
 
    nodes, arcs = build_discvar_graph(m)
 
    # Set up minimum vertex cover problem
-   update_mip_time_limit(m, timelimit=60.0)  # Set a timer to avoid waste of time in proving optimality
-   minvertex = Model(solver=m.mip_solver)
+   minvertex = Model(get_option(m, :mip_solver))
+   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0) # Set a timer to avoid waste of time in proving optimality
    @variable(minvertex, x[nodes], Bin)
    @constraint(minvertex, [a in arcs], x[a[1]] + x[a[2]] >= 1)
    @objective(minvertex, Min, sum(x))
 
-   status = solve(minvertex, suppress_warnings=true)
-   xVal = getvalue(x)
+   optimize!(minvertex)
+   status = MOI.get(minvertex, MOI.TerminationStatus())
+   xVal = JuMP.value.(x)
 
    # Collecting required information
    m.num_var_disc_mip = Int(sum(xVal))
-   m.disc_vars = [i for i in nodes if xVal[i] > m.tol && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= m.tol]
+   m.disc_vars = [i for i in nodes if xVal[i] > get_option(m, :tol) && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= get_option(m, :tol)]
 
    return
 end
 
-function weighted_min_vertex_cover(m::AlpineNonlinearModel, distance::Dict)
+function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
 
    # Collect the graph information
    nodes, arcs = build_discvar_graph(m)
@@ -613,12 +618,12 @@ function weighted_min_vertex_cover(m::AlpineNonlinearModel, distance::Dict)
    weights = Dict()
    for i in m.candidate_disc_vars
       isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-      (m.loglevel > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
+      (get_option(m, :loglevel) > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
    end
 
    # Set up minimum vertex cover problem
-   update_mip_time_limit(m, timelimit=60.0)  # Set a timer to avoid waste of time in proving optimality
-   minvertex = Model(solver=m.mip_solver)
+   minvertex = Model(get_option(m, :mip_solver))
+   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0)  # Set a timer to avoid waste of time in proving optimality
    @variable(minvertex, x[nodes], Bin)
    for arc in arcs
       @constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
@@ -626,30 +631,17 @@ function weighted_min_vertex_cover(m::AlpineNonlinearModel, distance::Dict)
    @objective(minvertex, Min, sum(weights[i]*x[i] for i in nodes))
 
    # Solve the minimum vertex cover
-   status = solve(minvertex, suppress_warnings=true)
+   JuMP.optimize!(minvertex)
 
-   xVal = getvalue(x)
+   xVal = JuMP.value.(x)
    m.num_var_disc_mip = Int(sum(xVal))
-   m.disc_vars = [i for i in nodes if xVal[i] > 0 && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= m.tol]
-   m.loglevel >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
+   m.disc_vars = [i for i in nodes if xVal[i] > 0 && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= get_option(m, :tol)]
+   get_option(m, :loglevel) >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
 
    return
 end
 
-function round_sol(m::AlpineNonlinearModel;nlp_model=nothing, nlp_sol=[])
-
-   if nlp_model != nothing
-      relaxed_sol = interface_get_solution(nlp_model)
-   end
-
-   if !isempty(nlp_sol)
-      relaxed_sol = nlp_sol
-   end
-
-   if nlp_model != nothing && !isempty(nlp_sol)
-      error("In function collision. Special usage")
-   end
-
+function round_sol(m::Optimizer, relaxed_sol)
    rounded_sol = copy(relaxed_sol)
    for i in 1:m.num_var_orig
       if m.var_type_orig[i] == :Bin
@@ -667,7 +659,7 @@ end
 """
 Evaluate a solution feasibility: Solution bust be in the feasible category and evaluated rhs must be feasible
 """
-function eval_feasibility(m::AlpineNonlinearModel, sol::Vector)
+function eval_feasibility(m::Optimizer, sol::Vector)
 
    length(sol) == m.num_var_orig || error("Candidate solution length mismatch.")
 
@@ -675,37 +667,43 @@ function eval_feasibility(m::AlpineNonlinearModel, sol::Vector)
    for i in 1:m.num_var_orig
       # Check solution category and bounds
       if m.var_type[i] == :Bin
-         isapprox(sol[i], 1.0;atol=m.tol) || isapprox(sol[i], 0.0;atol=m.tol) || return false
+         isapprox(sol[i], 1.0;atol=get_option(m, :tol)) || isapprox(sol[i], 0.0;atol=get_option(m, :tol)) || return false
       elseif m.var_type[i] == :Int
-         isapprox(mod(sol[i], 1.0), 0.0;atol=m.tol) || return false
+         isapprox(mod(sol[i], 1.0), 0.0;atol=get_option(m, :tol)) || return false
       end
       # Check solution bounds (with tight bounds)
-      sol[i] <= m.l_var_tight[i] - m.tol || return false
-      sol[i] >= m.u_var_tight[i] + m.tol || return false
+      sol[i] <= m.l_var_tight[i] - get_option(m, :tol) || return false
+      sol[i] >= m.u_var_tight[i] + get_option(m, :tol) || return false
    end
 
    # Check constraint violation
    eval_rhs = zeros(m.num_constr_orig)
-   interface_eval_g(m.d_orig, eval_rhs, rounded_sol)
+   for i in eachindex(m.lin_quad_constraints)
+       func = m.lin_quad_constraints[i][1]
+       eval_rhs[i] = MOI.Utilities.eval_variables(vi -> rounded_sol[vi.value], func)
+   end
+   start = m.num_constr_orig - length(m.nonlinear_constraint_bounds_orig) + 1
+   @assert start == length(m.lin_quad_constraints) + 1
+   interface_eval_g(m.d_orig, view(eval_rhs, start:m.num_constr_orig), rounded_sol)
    feasible = true
    for i in 1:m.num_constr_orig
       if m.constr_type_orig[i] == :(==)
-         if !isapprox(eval_rhs[i], m.l_constr_orig[i]; atol=m.tol)
+         if !isapprox(eval_rhs[i], m.constraint_bounds_orig[i].lower; atol=get_option(m, :tol))
             feasible = false
-            m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.l_constr_orig[i])")
-            m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.constraint_bounds_orig[i].lower)")
+            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(>=)
-         if !(eval_rhs[i] >= m.l_constr_orig[i] - m.tol)
-            m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.l_constr_orig[i])")
-            m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+         if !(eval_rhs[i] >= m.constraint_bounds_orig[i].lower - get_option(m, :tol))
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.constraint_bounds_orig[i].lower)")
+            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(<=)
-         if !(eval_rhs[i] <= m.u_constr_orig[i] + m.tol)
-            m.loglevel >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.u_constr_orig[i])")
-            m.loglevel >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+         if !(eval_rhs[i] <= m.constraint_bounds_orig[i].upper + get_option(m, :tol))
+            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.constraint_bounds_orig[i].upper)")
+            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       end
@@ -714,28 +712,31 @@ function eval_feasibility(m::AlpineNonlinearModel, sol::Vector)
    return feasible
 end
 
-function fetch_mip_solver_identifier(m::AlpineNonlinearModel;override="")
+function fetch_mip_solver_identifier(m::Optimizer;override="")
 
-   isempty(override) ? solverstring = string(m.mip_solver) : solverstring = override
+    isempty(override) ? solverstring = string(get_option(m, :mip_solver)) : solverstring = override
 
    # Higher-level solvers: that can use sub-solvers
    if occursin("Pajarito", solverstring)
-      m.mip_solver_id = "Pajarito"
+       m.mip_solver_id = "Pajarito"
       return
    elseif occursin("Pavito", solverstring)
-      m.mip_solver_id = "Pavito"
+       m.mip_solver_id = "Pavito"
+      return
+   elseif occursin("Juniper", solverstring)
+       m.mip_solver_id = "Juniper"
       return
    end
 
    # Lower level solvers
    if occursin("Gurobi", solverstring)
-      m.mip_solver_id = "Gurobi"
-   elseif occursin("Cplex", solverstring)
-      m.mip_solver_id = "Cplex"
-   elseif occursin("Cbc", solverstring)
-      m.mip_solver_id = "Cbc"
+       m.mip_solver_id = "Gurobi"
+   elseif occursin("CPLEX", solverstring)
+       m.mip_solver_id = "Cplex"
+   elseif occursin("Cbc", solverstring) # /!\ the `SolverName()` is "COIN Branch-and-Cut (Cbc)"
+       m.mip_solver_id = "Cbc"
    elseif occursin("GLPK", solverstring)
-      m.mip_solver_id = "GLPK"
+       m.mip_solver_id = "GLPK"
    else
       error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
    end
@@ -743,28 +744,28 @@ function fetch_mip_solver_identifier(m::AlpineNonlinearModel;override="")
    return
 end
 
-function fetch_nlp_solver_identifier(m::AlpineNonlinearModel;override="")
+function fetch_nlp_solver_identifier(m::Optimizer;override="")
 
-   isempty(override) ? solverstring = string(m.nlp_solver) : solverstring = override
+    isempty(override) ? solverstring = string(get_option(m, :nlp_solver)) : solverstring = override
 
    # Higher-level solver
    if occursin("Pajarito", solverstring)
-      m.nlp_solver_id = "Pajarito"
+       m.nlp_solver_id =  "Pajarito"
       return
    elseif occursin("Pavito", solverstring)
-      m.nlp_solver_id = "Pavito"
+       m.nlp_solver_id = "Pavito"
       return
    end
 
    # Lower-level solver
    if occursin("Ipopt", solverstring)
-      m.nlp_solver_id = "Ipopt"
+       m.nlp_solver_id = "Ipopt"
    elseif occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-      m.nlp_solver_id = "Bonmin"
-   elseif occursin("KNITRO", solverstring)
-      m.nlp_solver_id = "Knitro"
+       m.nlp_solver_id = "Bonmin"
+   elseif occursin("KNITRO", solverstring) # /!\ the `SolverName()` is "Knitro"
+       m.nlp_solver_id = "Knitro"
    elseif occursin("NLopt", solverstring)
-      m.nlp_solver_id = "NLopt"
+       m.nlp_solver_id = "NLopt"
    else
       error("Unsupported NLP local solver $solverstring; use a Alpine-supported NLP local solver")
    end
@@ -772,34 +773,33 @@ function fetch_nlp_solver_identifier(m::AlpineNonlinearModel;override="")
    return
 end
 
-function fetch_minlp_solver_identifier(m::AlpineNonlinearModel;override="")
+function fetch_minlp_solver_identifier(m::Optimizer;override="")
 
-   (m.minlp_solver == empty_solver) && return
+   (get_option(m, :minlp_solver) === nothing) && return
 
-   isempty(override) ? solverstring = string(m.minlp_solver) : solverstring = override
+   isempty(override) ? solverstring = string(get_option(m, :minlp_solver)) : solverstring = override
 
    # Higher-level solver
    if occursin("Pajarito", solverstring)
-      m.minlp_solver_id = "Pajarito"
+       m.minlp_solver_id = "Pajarito"
       return
    elseif occursin("Pavito", solverstring)
-      m.minlp_solver_id = "Pavito"
+       m.minlp_solver_id = "Pavito"
       return
    end
 
    # Lower-level Solver
    if occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-      m.minlp_solver_id = "Bonmin"
+       m.minlp_solver_id = "Bonmin"
    elseif occursin("KNITRO", solverstring)
-      m.minlp_solver_id = "Knitro"
+       m.minlp_solver_id = "Knitro"
    elseif occursin("NLopt", solverstring)
-      m.minlp_solver_id = "NLopt"
+       m.minlp_solver_id = "NLopt"
    elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
-      m.minlp_solver_id = "Bonmin"
+       m.minlp_solver_id = "Bonmin"
    elseif occursin("Juniper", solverstring)
-      m.minlp_solver_id = "Juniper"
+       m.minlp_solver_id = "Juniper"
    else
-      @show solverstring
       error("Unsupported MINLP local solver $solverstring; use a Alpine-supported MINLP local solver")
    end
 
@@ -807,118 +807,19 @@ function fetch_minlp_solver_identifier(m::AlpineNonlinearModel;override="")
 end
 
 """
-update_mip_time_limit(m::AlpineNonlinearModel)
+    set_mip_time_limit(m::Optimizer)
+
 An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
 """
-function update_mip_time_limit(m::AlpineNonlinearModel; kwargs...)
-
-   options = Dict(kwargs)
-   timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-   opts = Vector{Any}(undef, 0)
-   if m.mip_solver_id != "Pavito" && m.mip_solver_id != "Pajarito"
-      for i in collect(m.mip_solver.options)
-         push!(opts, i)
-      end
-   end
-
-   if m.mip_solver_id == "Cplex"
-      opts = update_timeleft_symbol(opts, :CPX_PARAM_TILIM, timelimit)
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Pavito"
-      (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
-   elseif m.mip_solver_id == "Gurobi"
-      opts = update_timeleft_symbol(opts, :TimeLimit, timelimit)  
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Cbc"
-      opts = update_timeleft_symbol(opts, :seconds, timelimit)
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "GLPK"
-      opts = update_timeleft_symbol(opts, :tm_lim, timelimit)
-      m.mip_solver.options = opts
-   elseif m.mip_solver_id == "Pajarito"
-      (timelimit < Inf) && (m.mip_solver.timeout = timelimit)
-   else
-      error("Needs support for this MIP solver")
-   end
-
-   return
-end
-
-"""
-update_mip_time_limit(m::AlpineNonlinearModel)
-An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
-"""
-function update_nlp_time_limit(m::AlpineNonlinearModel; kwargs...)
-
-   options = Dict(kwargs)
-   timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-   opts = Vector{Any}(undef, 0)
-   if m.nlp_solver_id != "Pavito" && m.nlp_solver_id != "Pajarito"
-      opts = collect(m.nlp_solver.options)
-   end
-
-
-   if m.nlp_solver_id == "Ipopt"
-      opts = update_timeleft_symbol(opts, :max_cpu_time, timelimit)
-      m.nlp_solver.options = opts
-   elseif m.nlp_solver_id == "Pajarito"
-      (timelimit < Inf) && (m.nlp_solver.timeout = timelimit)
-   elseif m.nlp_solver_id == "AmplNL"
-      opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
-      m.nlp_solver.options = opts
-   elseif m.nlp_solver_id == "Knitro"
-      error("You never tell me anything about knitro. Probably because they have a very short trail length.")
-   elseif m.nlp_solver_id == "NLopt"
-      m.nlp_solver.maxtime = timelimit
-   else
-      error("Needs support for this MIP solver")
-   end
-
-   return
-end
-
-"""
-update_mip_time_limit(m::AlpineNonlinearModel)
-An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
-"""
-function update_minlp_time_limit(m::AlpineNonlinearModel; kwargs...)
-
-   options = Dict(kwargs)
-   timelimit = 0.0
-   haskey(options, :timelimit) ? timelimit = options[:timelimit] : timelimit = max(0.0, m.timeout-m.logs[:total_time])
-
-   opts = Vector{Any}(undef, 0)
-   if m.minlp_solver_id != "Pavito" && m.minlp_solver_id != "Pajarito"
-      opts = collect(m.minlp_solver.options)
-   end
-
-
-   if m.minlp_solver_id == "Pajarito"
-      (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
-   elseif m.minlp_solver_id == "Pavito"
-      (timelimit < Inf) && (m.minlp_solver.timeout = timelimit)
-   elseif m.minlp_solver_id == "AmplNL"
-      opts = update_timeleft_symbol(opts, :seconds, timelimit, options_string_type=2)
-      m.minlp_solver.options = opts
-   elseif m.minlp_solver_id == "Knitro"
-      error("You never tell me anything about knitro. Probably because they charge everything they own.")
-   elseif m.minlp_solver_id == "NLopt"
-      m.minlp_solver.maxtime = timelimit
-   else
-      error("Needs support for this MIP solver")
-   end
-
-   return
+function set_mip_time_limit(m::Optimizer)
+   time_limit = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+   MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 end
 
 """
 Follow the definition of terms to calculate the value of lifted terms
 """
-function resolve_lifted_var_value(m::AlpineNonlinearModel, sol_vec::Array)
+function resolve_lifted_var_value(m::Optimizer, sol_vec::Array)
 
    @assert length(sol_vec) == m.num_var_orig
    sol_vec = [sol_vec; fill(NaN, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
@@ -939,7 +840,7 @@ function resolve_lifted_var_value(m::AlpineNonlinearModel, sol_vec::Array)
    return sol_vec
 end
 
-function adjust_branch_priority(m::AlpineNonlinearModel)
+function adjust_branch_priority(m::Optimizer)
 
    if m.mip_solver_id == "Gurobi"
       !m.model_mip.internalModelLoaded && return

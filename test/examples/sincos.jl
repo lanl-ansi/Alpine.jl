@@ -1,6 +1,6 @@
 function sincos_p1(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     @variable(m, 0.1<=x[1:10]<=10)
     @NLconstraint(m, [i in 1:9], x[i]*x[i+1]*sin(x[i])>=0.32)
@@ -12,14 +12,14 @@ end
 
 function trig(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
     x_Idx = Any[1]
     @variable(m, x[x_Idx])
-    setlowerbound(x[1], -2.0)
-    setupperbound(x[1], 5.0)
+    JuMP.set_lower_bound(x[1], -2.0)
+    JuMP.set_upper_bound(x[1], 5.0)
 
     # ----- Constraints ----- #
     @NLconstraint(m, e1, -(sin(11*x[1])+cos(13*x[1])-sin(17*x[1])-cos(19*x[1]))+objvar == 0.0)
@@ -33,7 +33,7 @@ end
 
 function specialopts(;verbose=false, solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[i=1:6]) # At some point if an initial value is given, keep them
 

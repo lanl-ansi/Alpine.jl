@@ -4,9 +4,9 @@ function create_logs!(m)
    logs = Dict{Symbol,Any}()
 
    # Timers
-   logs[:presolve_time] = 0.       # Total presolve-time of the algorithm
-   logs[:total_time] = 0.          # Total run-time of the algorithm
-   logs[:time_left] = m.timeout    # Total remaining time of the algorithm if time-out is specified
+   logs[:presolve_time] = 0.                     # Total presolve-time of the algorithm
+   logs[:total_time] = 0.                        # Total run-time of the algorithm
+   logs[:time_left] = get_option(m, :timeout)    # Total remaining time of the algorithm if time-out is specified
 
    # Values
    logs[:obj] = []                 # Iteration-based objective
@@ -22,15 +22,15 @@ function create_logs!(m)
    m.logs = logs
 end
 
-function reset_timer(m::AlpineNonlinearModel)
+function reset_timer(m::Optimizer)
    m.logs[:total_time] = 0.
-   m.logs[:time_left] = m.timeout
+   m.logs[:time_left] = get_option(m, :timeout)
    return m
 end
 
-function logging_summary(m::AlpineNonlinearModel)
+function logging_summary(m::Optimizer)
 
-   if m.loglevel > 0
+    if get_option(m, :loglevel) > 0
       # println("Problem sense $(m.sense_orig)")
       printstyled("\nPROBLEM STATISTICS\n", color=:cyan)
       println("  #Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
@@ -39,7 +39,7 @@ function logging_summary(m::AlpineNonlinearModel)
       println("  #NL Constraints = ", m.num_nlconstr_orig)
       println("  #Linear Constraints = ", m.num_lconstr_orig)
       # println("  #Int variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
-      m.recognize_convex && println("  #Detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
+      get_option(m, :recognize_convex) && println("  #Detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
       println("  #Detected nonlinear terms = ", length(m.nonconvex_terms))
       # for i in ALPINE_C_NLTERMS
       #     cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
@@ -49,56 +49,56 @@ function logging_summary(m::AlpineNonlinearModel)
       println("  #Potential variables for partitioning = ", length(m.disc_vars))
 
       printstyled("SUB-SOLVERS USED BY ALPINE\n", color=:cyan)
-      # m.minlp_solver != UnsetSolver() && println("MINLP local solver = ", split(string(m.minlp_solver),".")[1])
-      if string(m.minlp_solver) == "Alpine.UnsetSolver()"
-         println("  NLP local solver = ", split(string(m.nlp_solver),"S")[1])
-      else 
-         println("  MINLP local solver = ", split(string(m.minlp_solver),".")[1])
+      # get_option(m, :minlp_solver) !== nothing && println("MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
+      if get_option(m, :minlp_solver) === nothing
+          println("  NLP local solver = ", split(string(get_option(m, :nlp_solver)),"S")[1])
+      else
+          println("  MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
       end
-      println("  MIP solver = ", split(string(m.mip_solver),"S")[1])
+      println("  MIP solver = ", split(string(get_option(m, :mip_solver)),"S")[1])
       printstyled("ALPINE CONFIGURATION\n", color=:cyan)
-      println("  Maximum solution time = ", m.timeout)
-      println("  Maximum iterations =  ", m.maxiter)
-      # @printf "  Relative optimality gap criteria = %.5f (%.4f %%)\n" m.relgap (m.relgap*100)
-      @printf "  Relative optimality gap criteria = %.4f%%\n" m.relgap*100 
-      # m.recognize_convex && println("  actively recognize convex patterns")
-      # println("  Basic bound propagation = ", m.presolve_bp)
-      if m.disc_var_pick == 0
+      println("  Maximum solution time = ", get_option(m, :timeout))
+      println("  Maximum iterations =  ", get_option(m, :maxiter))
+      # @printf "  Relative optimality gap criteria = %.5f (%.4f %%)\n" get_option(m, :relgap) (get_option(m, :relgap)*100)
+      @printf "  Relative optimality gap criteria = %.4f%%\n" get_option(m, :relgap)*100
+      # get_option(m, :recognize_convex) && println("  actively recognize convex patterns")
+      # println("  Basic bound propagation = ", get_option(m, :presolve_bp))
+      if get_option(m, :disc_var_pick) == 0
          println("  Potential variables chosen for partitioning = All")
-      elseif m.disc_var_pick == 1
+      elseif get_option(m, :disc_var_pick) == 1
          println("  Potential variables chosen for partitioning = Min. vertex cover")
       end
 
-      # println("  Conseuctive solution rejection = after ", m.disc_consecutive_forbid, " times")
-      if m.disc_ratio_branch
+      # println("  Conseuctive solution rejection = after ", get_option(m, :disc_consecutive_forbid), " times")
+      if get_option(m, :disc_ratio_branch)
          println("  Discretization ratio branch activated")
       else
-         println("  Discretization ratio = ", m.disc_ratio)
+          println("  Discretization ratio = ", get_option(m, :disc_ratio))
       end
-      (m.convhull_ebd) && println("  Using convhull_ebd formulation")
-      (m.convhull_ebd) && println("  Encoding method = $(m.convhull_ebd_encode)")
-      (m.convhull_ebd) && println("  Independent branching scheme = $(m.convhull_ebd_ibs)")
-      println("  Bound-tightening presolve = ", m.presolve_bt)
-      m.presolve_bt && println("  Presolve maximum iterations = ", m.presolve_maxiter)
-      # m.presolve_bt && println("bound tightening presolve algorithm = ", m.presolve_bt_algo)
-      # m.presolve_bt && println("bound tightening presolve width tolerance = ", m.presolve_bt_width_tol)
-      # m.presolve_bt && println("bound tightening presolve output tolerance = ", m.presolve_bt_output_tol)
-      # m.presolve_bt && println("bound tightening presolve relaxation = ", m.presolve_bt_relax)
-      # m.presolve_bt && println("bound tightening presolve mip regulation time = ", m.presolve_bt_mip_timeout)
+      (get_option(m, :convhull_ebd)) && println("  Using convhull_ebd formulation")
+       (get_option(m, :convhull_ebd)) && println("  Encoding method = $(get_option(m, :convhull_ebd_encode))")
+       (get_option(m, :convhull_ebd)) && println("  Independent branching scheme = $(get_option(m, :convhull_ebd_ibs))")
+      println("  Bound-tightening presolve = ", get_option(m, :presolve_bt))
+      get_option(m, :presolve_bt) && println("  Presolve maximum iterations = ", get_option(m, :presolve_maxiter))
+      # get_option(m, :presolve_bt) && println("bound tightening presolve algorithm = ", get_option(m, :presolve_bt)_algo)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve width tolerance = ", get_option(m, :presolve_bt)_width_tol)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve output tolerance = ", get_option(m, :presolve_bt)_output_tol)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve relaxation = ", get_option(m, :presolve_bt)_relax)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve mip regulation time = ", get_option(m, :presolve_bt)_mip_timeout)
       # println("\n=======================================================================")
    end
 
    # Additional warnings
-   m.mip_solver_id == "Gurobi" && @warn "Alpine only supports Gurobi v7.0+ ..."
+   #get_option(m, :mip_solver_id) == "Gurobi" && @warn "Alpine only supports Gurobi v7.0+ ..."
 end
 
-function logging_head(m::AlpineNonlinearModel)  
-   if m.sense_orig == :Min
+function logging_head(m::Optimizer)
+   if is_min_sense(m)
       printstyled("LOWER-BOUNDING ITERATIONS", color=:cyan)
       UB_iter = "Incumbent"
       UB = "Best Incumbent"
       LB = "Lower Bound"
-   elseif m.sense_orig == :Max
+   elseif is_max_sense(m)
       printstyled("UPPER-BOUNDING ITERATIONS", color=:cyan)
       UB_iter = "Incumbent"
       UB = "Best Incumbent"
@@ -112,7 +112,7 @@ function logging_head(m::AlpineNonlinearModel)
    end
 end
 
-function logging_row_entry(m::AlpineNonlinearModel; kwargs...)
+function logging_row_entry(m::Optimizer; kwargs...)
 
    options = Dict(kwargs)
 
@@ -172,13 +172,12 @@ end
 # Create dictionary of statuses for Alpine algorithm
 function create_status!(m)
 
-   status = Dict{Symbol,Symbol}()
+   status = Dict{Symbol,MOI.TerminationStatusCode}()
 
-   status[:presolve] = :none                   # Status of presolve
-   status[:local_solve] = :none                # Status of local solve
-   status[:bounding_solve] = :none             # Status of bounding solve
-   status[:feasible_solution] = :none          # Status of whether a upper bound is detected or not
-   status[:bound] = :none                      # Status of whether a bound has been detected
+   status[:local_solve]    = MOI.OPTIMIZE_NOT_CALLED # Status of local solve
+   status[:bounding_solve] = MOI.OPTIMIZE_NOT_CALLED # Status of bounding solve
+   m.detected_feasible_solution = false
+   m.detected_bound = false
 
    m.status = status
 end
@@ -188,7 +187,7 @@ This function summarizes the eventual solver status based on all available infor
 recorded in the solver. The output status is self-defined which requires users to
 read our documentation to understand the details behind every status symbols.
 """
-function summary_status(m::AlpineNonlinearModel)
+function summary_status(m::Optimizer)
 
    # Alpine Solver Status Definition
    # :Optimal : normal termination with optimality gap closed within time limits
@@ -199,14 +198,14 @@ function summary_status(m::AlpineNonlinearModel)
    #               happens when lower bound problem is extremely hard to solve
    # :Unknown : termination with no exception recorded
 
-   if m.status[:bound] == :Detected && m.status[:feasible_solution] == :Detected
-      m.best_rel_gap > m.relgap ? m.alpine_status = :UserLimits : m.alpine_status = :Optimal
-   elseif m.status[:bounding_solve] == :Infeasible
-      m.alpine_status = :Infeasible
-   elseif m.status[:bound] == :Detected && m.status[:feasible_solution] == :none
-      m.alpine_status = :UserLimits
-   elseif m.status[:bound] == :none && m.status[:feasible_solution] == :Detected
-      m.alpine_status = :Heuristic
+   if m.detected_bound && m.detected_feasible_solution
+      m.alpine_status = m.best_rel_gap > get_option(m, :relgap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
+   elseif m.status[:bounding_solve] == MOI.INFEASIBLE
+      m.alpine_status = MOI.INFEASIBLE
+   elseif m.detected_bound && !m.detected_feasible_solution
+      m.alpine_status = MOI.OTHER_LIMIT
+   elseif !m.detected_bound && m.detected_feasible_solution
+      m.alpine_status = MOI.LOCALLY_SOLVED
    else
       @warn "  [EXCEPTION] Indefinite Alpine status. Please report your instance (& solver configuration) as an issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."
    end

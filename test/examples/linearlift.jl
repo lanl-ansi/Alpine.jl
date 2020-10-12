@@ -1,11 +1,11 @@
 function basic_linear_lift(;verbose=false, solver=nothing)
 
 	if solver == nothing
-		m = Model(solver=AlpineSolver(nlp_solver=IpoptSolver(),
+		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(),
 									mip_solver=CbcSolver(logLevel=0),
 									loglevel=10000))
 	else
-		m = Model(solver=solver)
+		m = Model(solver)
 	end
 
 	@variable(m, x[i=1:3]>=1) # At some point if an initial value is given, keep them

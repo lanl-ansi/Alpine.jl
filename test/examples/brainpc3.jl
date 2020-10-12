@@ -1,6 +1,6 @@
 function brainpc3(;solver=nothing)
 
-    m = Model(solver=solver)
+    m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, x[1:6907])

@@ -1,27 +1,27 @@
 function binprod_nlp3(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:8])
 	@variable(m, y[1:5], Bin)
 
-	setlowerbound(x[1], 100)
-	setlowerbound(x[2], 1000)
-	setlowerbound(x[3], 1000)
-	setlowerbound(x[4], 10)
-	setlowerbound(x[5], 10)
-	setlowerbound(x[6], 10)
-	setlowerbound(x[7], 10)
-	setlowerbound(x[8], 10)
+	JuMP.set_lower_bound(x[1], 100)
+	JuMP.set_lower_bound(x[2], 1000)
+	JuMP.set_lower_bound(x[3], 1000)
+	JuMP.set_lower_bound(x[4], 10)
+	JuMP.set_lower_bound(x[5], 10)
+	JuMP.set_lower_bound(x[6], 10)
+	JuMP.set_lower_bound(x[7], 10)
+	JuMP.set_lower_bound(x[8], 10)
 
-	setupperbound(x[1], 10000)
-	setupperbound(x[2], 10000)
-	setupperbound(x[3], 10000)
-	setupperbound(x[4], 1000)
-	setupperbound(x[5], 1000)
-	setupperbound(x[6], 1000)
-	setupperbound(x[7], 1000)
-	setupperbound(x[8], 1000)
+	JuMP.set_upper_bound(x[1], 10000)
+	JuMP.set_upper_bound(x[2], 10000)
+	JuMP.set_upper_bound(x[3], 10000)
+	JuMP.set_upper_bound(x[4], 1000)
+	JuMP.set_upper_bound(x[5], 1000)
+	JuMP.set_upper_bound(x[6], 1000)
+	JuMP.set_upper_bound(x[7], 1000)
+	JuMP.set_upper_bound(x[8], 1000)
 
 	@constraint(m, 0.0025*(x[4]*y[1] + x[6]*y[2]) <= 1)
 	@constraint(m, 0.0025*(x[5] - x[4]*y[1] + x[7]) <= 1)
@@ -41,7 +41,7 @@ end
 
 function circlebin(;verbose=false, solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
     @variable(m, x[1:5], Bin)
     @NLconstraint(m, x[1]^2 + x[2]^2 >= 2)
@@ -52,7 +52,7 @@ end
 
 function bpml(;verbose=false, solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:5], Bin)
 	@variable(m, y[1:5]>=0)
@@ -73,7 +73,7 @@ end
 
 function bmpl_linearlifting(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, x[1:5], Bin)
 	@variable(m, y[1:5]>=0)
@@ -89,7 +89,7 @@ end
 
 function bpml_lnl(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
@@ -102,7 +102,7 @@ end
 
 function bpml_binl(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
@@ -115,7 +115,7 @@ end
 
 function bpml_monl(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
@@ -128,16 +128,16 @@ end
 
 function bpml_negative(solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
 	@variable(m, 50<=Y[1:5]<=50+100*rand()*rand())
-	setlowerbound(Y[1], -10)
-	setupperbound(Y[1], -1)
-	setlowerbound(Y[2], -40)
-	setlowerbound(Y[3], -30)
-	setlowerbound(Y[4], -50)
+	JuMP.set_lower_bound(Y[1], -10)
+	JuMP.set_upper_bound(Y[1], -1)
+	JuMP.set_lower_bound(Y[2], -40)
+	JuMP.set_lower_bound(Y[3], -30)
+	JuMP.set_lower_bound(Y[4], -50)
 	@constraint(m, sum(X) >= 3)
 	@NLobjective(m, Max, sum(X[i]*Y[i]*Y[i+1] for i in 1:4) - X[5]*Y[5]*Y[1])
 
@@ -145,7 +145,7 @@ function bpml_negative(solver=nothing)
 end
 
 function intprod_basic(;solver=nothing)
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	@variable(m, 1 <= Z[1:10] <= 10, Int)
 	@NLconstraint(m, (Z[1]+Z[2])*(Z[3]+Z[4]) >= 25)
@@ -159,7 +159,7 @@ end
 
 function discretemulti_basic(;solver=nothing)
 
-	m = Model(solver=solver)
+	m = Model(solver)
 
 	Random.seed!(10)
 	@variable(m, X[1:5], Bin)
