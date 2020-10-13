@@ -3194,33 +3194,33 @@ end
         @test alpine.bounding_constr_mip[16][:sense] == :(<=)
         @test alpine.bounding_constr_mip[16][:cnt] == 2
         @test alpine.bounding_constr_mip[17][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[17][:vars] == Any[:(x[20]), :(x[17])]
+        @test alpine.bounding_constr_mip[17][:vars] == Any[:(x[17]), :(x[20])]
         @test isapprox(alpine.bounding_constr_mip[17][:coefs],Any[1.0, -3.0];atol=1e-3)
         @test alpine.bounding_constr_mip[17][:sense] == :(<=)
         @test alpine.bounding_constr_mip[17][:cnt] == 2
         @test alpine.bounding_constr_mip[18][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[18][:vars] == Any[:(x[21]), :(x[18])]
-        @test isapprox(alpine.bounding_constr_mip[18][:coefs],Any[1.0, -3.0];atol=1e-3)
+        @test alpine.bounding_constr_mip[18][:vars] == Any[:(x[18]), :(x[21])]
+        @test isapprox(alpine.bounding_constr_mip[18][:coefs],Any[-3.0, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[18][:sense] == :(<=)
         @test alpine.bounding_constr_mip[18][:cnt] == 2
         @test alpine.bounding_constr_mip[19][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[19][:vars] == Any[:(x[22]), :(x[19])]
-        @test isapprox(alpine.bounding_constr_mip[19][:coefs],Any[1.0, -3.0];atol=1e-3)
+        @test alpine.bounding_constr_mip[19][:vars] == Any[:(x[19]), :(x[22])]
+        @test isapprox(alpine.bounding_constr_mip[19][:coefs],Any[-3.0, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[19][:sense] == :(<=)
         @test alpine.bounding_constr_mip[19][:cnt] == 2
         @test alpine.bounding_constr_mip[20][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[20][:vars] == Any[:(x[23]), :(x[17])]
-        @test isapprox(alpine.bounding_constr_mip[20][:coefs],Any[1.0, -3.0];atol=1e-3)
+        @test alpine.bounding_constr_mip[20][:vars] == Any[:(x[17]), :(x[23])]
+        @test isapprox(alpine.bounding_constr_mip[20][:coefs],Any[-3.0, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[20][:sense] == :(<=)
         @test alpine.bounding_constr_mip[20][:cnt] == 2
         @test alpine.bounding_constr_mip[21][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[21][:vars] == Any[:(x[24]), :(x[18])]
-        @test isapprox(alpine.bounding_constr_mip[21][:coefs],Any[1.0, -3.0];atol=1e-3)
+        @test alpine.bounding_constr_mip[21][:vars] == Any[:(x[18]), :(x[24])]
+        @test isapprox(alpine.bounding_constr_mip[21][:coefs],Any[-3.0, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[21][:sense] == :(<=)
         @test alpine.bounding_constr_mip[21][:cnt] == 2
         @test alpine.bounding_constr_mip[22][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[22][:vars] == Any[:(x[25]), :(x[19])]
-        @test isapprox(alpine.bounding_constr_mip[22][:coefs],Any[1.0, -3.0];atol=1e-3)
+        @test alpine.bounding_constr_mip[22][:vars] == Any[:(x[19]), :(x[25])]
+        @test isapprox(alpine.bounding_constr_mip[22][:coefs],Any[-3.0, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[22][:sense] == :(<=)
         @test alpine.bounding_constr_mip[22][:cnt] == 2
         @test alpine.bounding_constr_mip[23][:rhs] == 0.0
@@ -3303,8 +3303,8 @@ end
         @test alpine.nonconvex_terms[Expr[:(x[2]), :(x[3])]][:y_type] == :Int
         @test alpine.nonconvex_terms[Expr[:(x[2]), :(x[3])]][:constr_id] == Set(Any[2])
         @test alpine.bounding_constr_mip[1][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[1][:vars] == Any[:(x[2]), :(x[3]), :(x[1])]
-        @test alpine.bounding_constr_mip[1][:coefs] == Any[-3.0, -2.0, 1.0]
+        @test alpine.bounding_constr_mip[1][:vars] == Any[:(x[1]), :(x[2]), :(x[3])]
+        @test alpine.bounding_constr_mip[1][:coefs] == Any[1.0, -3.0, -2.0]
         @test alpine.bounding_constr_mip[1][:sense] == :(==)
         @test alpine.bounding_constr_mip[1][:cnt] == 3
         @test alpine.bounding_constr_mip[2][:rhs] == -3.5
@@ -3378,23 +3378,23 @@ end
         @test alpine.bounding_constr_mip[3][:sense] == :(>=)
         @test alpine.bounding_constr_mip[3][:cnt] == 5
         @test alpine.bounding_constr_mip[10][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[10][:vars] == Any[:(x[7]), :(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[10][:coefs],Any[-1.0, 0.05248, 0.904838, -0.209521, 0.29173, 0.222506];atol=1e-3)
+        @test alpine.bounding_constr_mip[10][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6]), :(x[7])]
+        @test isapprox(alpine.bounding_constr_mip[10][:coefs],Any[0.05248, 0.904838, -0.209521, 0.29173, 0.222506, -1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[10][:sense] == :(<=)
         @test alpine.bounding_constr_mip[10][:cnt] == 6
         @test alpine.bounding_constr_mip[11][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[11][:vars] == Any[:(x[7]), :(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[11][:coefs],Any[1.0, -0.05248, -0.904838, 0.209521, -0.29173, -0.222506];atol=1e-3)
+        @test alpine.bounding_constr_mip[11][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6]), :(x[7])]
+        @test isapprox(alpine.bounding_constr_mip[11][:coefs],Any[-0.05248, -0.904838, 0.209521, -0.29173, -0.222506, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[11][:sense] == :(<=)
         @test alpine.bounding_constr_mip[11][:cnt] == 6
         @test alpine.bounding_constr_mip[12][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[12][:vars] == Any[:(x[8]), :(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[12][:coefs],Any[-1.0, -0.445392, -0.30152, -0.587645, 0.145865, 0.586607];atol=1e-3)
+        @test alpine.bounding_constr_mip[12][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6]), :(x[8])]
+        @test isapprox(alpine.bounding_constr_mip[12][:coefs],Any[-0.445392, -0.30152, -0.587645, 0.145865, 0.586607, -1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[12][:sense] == :(<=)
         @test alpine.bounding_constr_mip[12][:cnt] == 6
         @test alpine.bounding_constr_mip[13][:rhs] == -0.0
-        @test alpine.bounding_constr_mip[13][:vars] == Any[:(x[8]), :(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6])]
-        @test isapprox(alpine.bounding_constr_mip[13][:coefs],Any[1.0, 0.445392, 0.30152, 0.587645, -0.145865, -0.586607];atol=1e-3)
+        @test alpine.bounding_constr_mip[13][:vars] == Any[:(x[2]), :(x[3]), :(x[4]), :(x[5]), :(x[6]), :(x[8])]
+        @test isapprox(alpine.bounding_constr_mip[13][:coefs],Any[0.445392, 0.30152, 0.587645, -0.145865, -0.586607, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[13][:sense] == :(<=)
         @test alpine.bounding_constr_mip[13][:cnt] == 6
         @test alpine.bounding_constr_mip[14][:rhs] == 0.0
