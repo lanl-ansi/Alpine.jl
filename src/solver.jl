@@ -71,7 +71,7 @@ end
 
 function default_options()
         loglevel = 1
-        timeout = Inf
+        timeout = 1E6
         maxiter = 99
         relgap = 1e-4
         gapref = :ub

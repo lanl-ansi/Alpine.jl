@@ -809,7 +809,7 @@ end
 """
     set_mip_time_limit(m::Optimizer)
 
-An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver time limits.
+An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver's time limits.
 """
 function set_mip_time_limit(m::Optimizer)
    time_limit = max(0.0, get_option(m, :timeout) - m.logs[:total_time])

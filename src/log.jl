@@ -51,17 +51,16 @@ function logging_summary(m::Optimizer)
       printstyled("SUB-SOLVERS USED BY ALPINE\n", color=:cyan)
       # get_option(m, :minlp_solver) !== nothing && println("MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
       if get_option(m, :minlp_solver) === nothing
-          println("  NLP local solver = ", split(string(get_option(m, :nlp_solver)),"S")[1])
+          println("  NLP local solver = ", m.nlp_solver_id)
       else
-          println("  MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
+          println("  MINLP local solver = ", m.minlp_solver_id)
       end
-      println("  MIP solver = ", split(string(get_option(m, :mip_solver)),"S")[1])
+      println("  MIP solver = ", m.mip_solver_id)
       printstyled("ALPINE CONFIGURATION\n", color=:cyan)
       println("  Maximum solution time = ", get_option(m, :timeout))
       println("  Maximum iterations =  ", get_option(m, :maxiter))
       # @printf "  Relative optimality gap criteria = %.5f (%.4f %%)\n" get_option(m, :relgap) (get_option(m, :relgap)*100)
       @printf "  Relative optimality gap criteria = %.4f%%\n" get_option(m, :relgap)*100
-      # get_option(m, :recognize_convex) && println("  actively recognize convex patterns")
       # println("  Basic bound propagation = ", get_option(m, :presolve_bp))
       if get_option(m, :disc_var_pick) == 0
          println("  Potential variables chosen for partitioning = All")
@@ -106,8 +105,6 @@ function logging_head(m::Optimizer)
    end
    println("\n====================================================================================================")
    if m.logs[:time_left] < Inf
-      printstyled("| Iter   | $UB_iter       | $UB      | $LB        | Gap (%)         | Time         | TIME LEFT      \n")
-   else
       printstyled("| Iter   | $UB_iter       | $UB      | $LB        | Gap (%)         | Time      \n")
    end
 end
@@ -147,15 +144,13 @@ function logging_row_entry(m::Optimizer; kwargs...)
    spc = max(0, b_len+3 - length(bbdstr))
    incumb_LB_block = string(" ", bbdstr , " " ^ spc)
 
-   rel_gap = round(m.best_rel_gap*100, digits=5)
+   rel_gap = round(m.best_rel_gap*100, digits=3)
    rel_gap > 999 ? rel_gap = "LARGE" : rel_gap = string(rel_gap)
    GAP_block = string(" ", rel_gap, " " ^ (b_len - length(rel_gap)))
 
    UTIME_block = string(" ", round(m.logs[:total_time]; digits=2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:total_time]; digits=2)))))
 
    if m.logs[:time_left] < Inf
-      LTIME_block = string(" ", round(m.logs[:time_left]; digits=2), "s", " " ^ (b_len - 1 - length(string(round(m.logs[:time_left]; digits=2)))))
-   else
       LTIME_block = " "
    end
 
