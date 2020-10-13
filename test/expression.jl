@@ -1,6 +1,6 @@
 @testset "Expression Parsing || bilinear || Affine || exprs.jl" begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
 
     m=exprstest(solver=test_solver)
 
@@ -113,7 +113,7 @@
 end
 
 @testset "Expression Parsing || bilinear || Affine || nlp1.jl" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
                            "mip_solver" =>  CBC,
                            "loglevel" =>  100)
     m=nlp1(solver=test_solver)
@@ -134,7 +134,7 @@ end
 
 @testset "Expression Parsing || bilinear || Affine || nlp3.jl" begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
 
     m=nlp3(solver=test_solver)
 
@@ -153,9 +153,9 @@ end
 
     ex = alpine.bounding_constr_expr_mip[2]
     affdict = Alpine.expr_linear_to_affine(ex)
-    @test affdict[:coefs] == [0.0025,-0.0025,0.0025]
+    @test affdict[:coefs] == [-0.0025,0.0025,0.0025]
     @test affdict[:coefs] == alpine.bounding_constr_mip[2][:coefs]
-    @test affdict[:vars] == [:(x[5]),:(x[4]),:(x[7])]
+    @test affdict[:vars] == [:(x[4]),:(x[5]),:(x[7])]
     @test affdict[:vars] == alpine.bounding_constr_mip[2][:vars]
     @test isapprox(affdict[:rhs], 1.0; atol = 1e-3)
     @test affdict[:rhs] == alpine.bounding_constr_mip[2][:rhs]
@@ -164,9 +164,9 @@ end
 
     ex = alpine.bounding_constr_expr_mip[3]
     affdict = Alpine.expr_linear_to_affine(ex)
-    @test affdict[:coefs] == [0.01, -0.01]
+    @test affdict[:coefs] == [-0.01, 0.01]
     @test affdict[:coefs] == alpine.bounding_constr_mip[3][:coefs]
-    @test affdict[:vars] == [:(x[8]),:(x[5])]
+    @test affdict[:vars] == [:(x[5]),:(x[8])]
     @test affdict[:vars] == alpine.bounding_constr_mip[3][:vars]
     @test isapprox(affdict[:rhs], 1.0; atol = 1e-3)
     @test affdict[:rhs] == alpine.bounding_constr_mip[3][:rhs]
@@ -209,7 +209,7 @@ end
 
 @testset "Expression Parsing || bilinear || Simple || bi1.jl " begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
                            "mip_solver" =>  CBC,
                            "loglevel" =>  100)
 
@@ -346,7 +346,7 @@ end
 
 @testset "Expression Parsing || multilinear || Simple || multi.jl " begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
 
     m = multi3(solver=test_solver, exprmode=1)
 
@@ -654,7 +654,7 @@ end
 end
 
 @testset "Expression Parsing || bilinear || Complex-div || div.jl" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
 
     m = div(solver=test_solver)
 
@@ -743,7 +743,7 @@ end
 end
 
 @testset "Expression Parsing || part1 " begin
-    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100))
+    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100))
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, x[1]^2 >= 1)  				  # Basic monomial x[5]=x[1]^2
     @NLconstraint(m, x[1]*x[2] <= 1)				  # x[6] <= 1 : x[6] = x[1]*x[2]
@@ -780,7 +780,7 @@ end
 end
 
 @testset "Expression Parsing || part2" begin
-    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100))
+    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100))
 
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, (x[1]*x[2]) * x[3] >= 1)
@@ -834,7 +834,7 @@ end
 end
 
 @testset "Expression Parsing || part3" begin
-    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100))
+    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100))
 
     @variable(m, x[1:4]>=0)
     @NLconstraint(m, ((x[1]*x[2])*x[3])*x[4] >= 1)
@@ -895,7 +895,7 @@ end
 end
 
 @testset "Expression Parsing || part7" begin
-    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100))
+    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100))
     @variable(m, x[1:4]>=0)
 
     @NLconstraint(m, x[1]*x[2]*x[3]*x[4] >= 1)
@@ -942,7 +942,7 @@ end
 end
 
 @testset "Expression Parsing || part8" begin
-    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
+    m = Model(optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
            "mip_solver" =>  CBC,
            "loglevel" =>  100))
     @variable(m, x[1:4]>=0)
@@ -995,7 +995,7 @@ end
 
     @testset "Convex Parsing :: PART I" begin
 
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
         m = convex_test(test_solver)
 
         alpine = _build(m)
@@ -1200,7 +1200,7 @@ end
 @testset "Expression Prasing || Linear Lifting" begin
     
     @testset "Expression Parsing || Linear Lifting || nlp2" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
                                "mip_solver" =>  CBC,
                                "disc_ratio" => 8,
                                "loglevel" =>  100)
@@ -1249,7 +1249,7 @@ end
     end
 
     @testset "Expression Parsing || Linear Lifting || general" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
                                "mip_solver" =>  CBC,
                                "loglevel" =>  100)
 
@@ -1424,7 +1424,7 @@ end
 
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
-            "nlp_solver" =>  IPOPT_SB,
+            "nlp_solver" =>  IPOPT,
             "mip_solver" =>  CBC,
             "disc_ratio" =>  8,
             "loglevel" =>  100)
@@ -2578,7 +2578,7 @@ end
 
 @testset "Expression Parsing || corner cases" begin
     @testset "Corner Cases - 1 : sign convertor special case" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
                                 "mip_solver" =>  CBC,
                                 "minlp_solver" =>  JUNIPER,
                                 "loglevel" =>  100)
@@ -2621,7 +2621,7 @@ end
     end
 
     @testset "Corner Cases - 2 : full sub-expression" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT_SB,
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
                                 "mip_solver" =>  CBC,
                                 "loglevel" =>  100)
 
@@ -2649,7 +2649,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod" begin
 
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
 
         m = bpml(solver=test_solver)
 
@@ -2700,7 +2700,7 @@ end
 
     @testset "Expression Parsing || bmpl && binlin && binprod with linear lifting and coefficients" begin
 
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
 
         m = bmpl_linearlifting(solver=test_solver)
 
@@ -2826,7 +2826,7 @@ end
     end
 
     @testset "Expression Parsing || INTPROD Operators" begin
-        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB,"mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
         m = intprod_basic(solver=test_solver)
 
         alpine = _build(m) # Setup internal model
@@ -2910,7 +2910,7 @@ end
     end
 
     @testset "Expression Parsing || ex1225a" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER, "nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER, "nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = ex1225a(solver=test_solver)
 
         alpine = _build(m)
@@ -3291,7 +3291,7 @@ end
     end
 
     @testset "Expression Parsing || prob03" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = prob03(solver=test_solver)
 
         alpine = _build(m)
@@ -3315,7 +3315,7 @@ end
     end
 
     @testset "Expression Parsing || st_miqp5" begin
-        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+        test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
         m = st_miqp5(solver=test_solver)
 
         alpine = _build(m)
@@ -3406,7 +3406,7 @@ end
 
     @testset "Expression Parsing || discretemulti_basic" begin
 
-		test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT_SB, "mip_solver" =>  CBC,"loglevel" =>  100)
+		test_solver = optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT, "mip_solver" =>  CBC,"loglevel" =>  100)
 		m = discretemulti_basic(solver=test_solver)
 
 		alpine = _build(m)

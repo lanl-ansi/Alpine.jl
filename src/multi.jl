@@ -274,7 +274,7 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
                 partition_cnt = length(d[v])-1
                 active_j = get_active_partition_idx(d, m.bound_sol_pool[:sol][ws_idx][v], v)
                 for j = 1:partition_cnt
-                    j == active_j ? setvalue(α[v][j], 1.0) : setvalue(α[v][j], 0.0)
+                    j == active_j ? set_start_value(α[v][j], 1.0) : set_start_value(α[v][j], 0.0)
                 end
             end
             m.bound_sol_pool[:stat][ws_idx] = :Warmstarter
