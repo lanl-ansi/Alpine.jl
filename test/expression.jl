@@ -3195,7 +3195,7 @@ end
         @test alpine.bounding_constr_mip[16][:cnt] == 2
         @test alpine.bounding_constr_mip[17][:rhs] == -0.0
         @test alpine.bounding_constr_mip[17][:vars] == Any[:(x[17]), :(x[20])]
-        @test isapprox(alpine.bounding_constr_mip[17][:coefs],Any[1.0, -3.0];atol=1e-3)
+        @test isapprox(alpine.bounding_constr_mip[17][:coefs],Any[-3.0, 1.0];atol=1e-3)
         @test alpine.bounding_constr_mip[17][:sense] == :(<=)
         @test alpine.bounding_constr_mip[17][:cnt] == 2
         @test alpine.bounding_constr_mip[18][:rhs] == -0.0
