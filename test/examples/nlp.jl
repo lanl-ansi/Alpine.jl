@@ -62,25 +62,10 @@ function nlp3(;solver=nothing)
 
 	m = Model(solver)
 
-	@variable(m, x[1:8])
+   LB = [100, 1000, 1000, 10, 10, 10, 10, 10]
+   UB = [10000, 10000, 10000,  1000, 1000, 1000, 1000, 1000]
 
-	set_lower_bound(x[1], 100)
-	set_lower_bound(x[2], 1000)
-	set_lower_bound(x[3], 1000)
-	set_lower_bound(x[4], 10)
-	set_lower_bound(x[5], 10)
-	set_lower_bound(x[6], 10)
-	set_lower_bound(x[7], 10)
-	set_lower_bound(x[8], 10)
-
-	set_upper_bound(x[1], 10000)
-	set_upper_bound(x[2], 10000)
-	set_upper_bound(x[3], 10000)
-	set_upper_bound(x[4], 1000)
-	set_upper_bound(x[5], 1000)
-	set_upper_bound(x[6], 1000)
-	set_upper_bound(x[7], 1000)
-	set_upper_bound(x[8], 1000)
+   @variable(m, LB[i] <= x[i=1:8] <= UB[i])
 
 	@constraint(m, 0.0025*(x[4] + x[6]) <= 1)
 	@constraint(m, 0.0025*(x[5] - x[4] + x[7]) <= 1)
