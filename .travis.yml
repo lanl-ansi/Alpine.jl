@@ -4,8 +4,8 @@ os:
   - linux
   - osx
 julia:
-  - 1.5
-  - 1
+  - 1.0
+  - 1 # Most recent v > 1.0
 before_script:
  - julia -e 'using Pkg; Pkg.add(PackageSpec(name="Pavito", rev="master"))' # TODO remove when Pavito #master is released.
 jobs:

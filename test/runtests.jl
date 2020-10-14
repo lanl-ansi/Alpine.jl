@@ -5,9 +5,7 @@ using Juniper
 import Pavito
 using GLPK
 using Alpine
-
 using Test
-
 using Random
 using Pkg
 alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
@@ -19,7 +17,6 @@ for i in examples
 end
 
 const IPOPT = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
-# const IPOPT_SB = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
 const IPOPT_9999 = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "max_iter" => 9999)
 const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "nl_solver" => IPOPT)
@@ -36,5 +33,5 @@ end
 # Perform Tests
 include("$(alpine_dir)/test/solver.jl")
 include("$(alpine_dir)/test/expression.jl")
-# include("$(alpine_dir)/test/algorithm.jl")
-# include("$(alpine_dir)/test/utility.jl")
+include("$(alpine_dir)/test/algorithm.jl")
+include("$(alpine_dir)/test/utility.jl")

@@ -125,8 +125,8 @@ function logging_row_entry(m::Optimizer; kwargs...)
 
 
    if expr_isconst(m.obj_expr_orig)
-      bdstr = eval(m.obj_expr_orig)
-      spc = b_len - length(bdstr)
+      # bdstr = eval(m.obj_expr_orig)
+      spc = b_len - length(m.obj_expr_orig)
    elseif isa(m.logs[:bound][end], Float64)
       bdstr = string(round(m.logs[:bound][end]; digits=4))
       spc = max(0, b_len - length(bdstr))

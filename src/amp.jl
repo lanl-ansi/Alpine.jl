@@ -63,7 +63,8 @@ function amp_post_convexification(m::Optimizer; use_disc=nothing)
     use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
     for i in 1:length(get_option(m, :method_convexification))             # Additional user-defined convexification method
-        eval(get_option(m, :method_convexification)[i])(m)
+        # eval(get_option(m, :method_convexification)[i])(m)
+        get_option(m, :method_convexification)[i](m)
     end
 
     amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
@@ -195,7 +196,8 @@ function add_partition(m::Optimizer; kwargs...)
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
 
     if isa(get_option(m, :disc_add_partition_method), Function)
-        m.discretization = eval(get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
+        # m.discretization = eval(get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
+        m.discretization = get_option(m, :disc_add_partition_method)(m, use_disc=discretization, use_solution=point_vec)
     elseif get_option(m, :disc_add_partition_method) == "adaptive"
         m.discretization = add_adaptive_partition(m, use_disc=discretization, use_solution=point_vec)
     elseif get_option(m, :disc_add_partition_method) == "uniform"

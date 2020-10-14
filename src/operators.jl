@@ -67,8 +67,8 @@ function detect_nonconvex_terms(expr::Any, constr_id::Int, m::Optimizer; kwargs.
     skip, expr = detect_multilinear_term(expr, constr_id, m)       #L2
     skip && return expr
 
-    skip, expr = detect_sincos_term(expr, constr_id, m)            #L2
-    skip && return expr
+    # skip, expr = detect_sincos_term(expr, constr_id, m)            #L2
+    # skip && return expr
 
     return expr # if no structure is detected, simply return the original tree
 end
@@ -275,7 +275,7 @@ intlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
-sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
+# sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
 linear(k, vec) = k[:ref][:scalar] .+ sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
 
 """
@@ -1086,74 +1086,6 @@ function collect_monomial_discvar(m::Optimizer, k::Any; var_bowl=nothing)
 end
 
 """
-    Recognize sin/cos terms: sin(x) / cos(x), where x "should" be continous variables
-    # TODO future call detect_TRIGONOMETRIC_term
-"""
-function detect_sincos_term(expr::Any, constr_id::Int, m::Optimizer)
-
-    @assert (expr.head == :call || expr.head == :ref)
-
-    if expr.args[1] in [:sin, :cos]
-        # Pattern: sin(a*x) or cos(a*x)
-        operator = expr.args[1]
-        scalar = 1.0
-        var_idxs = []
-        for i in 1:length(expr.args)
-            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
-                scalar *= expr.args[i]
-                continue
-            end
-            isa(expr.args[i], Symbol) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            if (expr.args[i].head == :call)
-                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
-                !down_check && return false, expr
-                push!(var_idxs, linear_lift_var.args[2])
-                continue
-            end
-        end
-        if length(var_idxs) == 1
-            term_key = Dict(:operator=>operator, :scalar=>scalar, :vars=>var_idxs)
-            term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, term_key[:operator], term_key[:operator], sincos, basic_sincos_bounds, collect_sincos_discvar)
-            return true, lift_nonconvex_term(m, term_key, constr_id, scalar)
-        end
-    end
-
-    return false, expr
-end
-
-function basic_sincos_bounds(m::Optimizer, k::Any)
-
-    lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
-    m.l_var_tight[lifted_idx] = -1  # TODO can be improved
-    m.u_var_tight[lifted_idx] = 1
-
-    return
-end
-
-function basic_sincos_bounds(m::Optimizer, k::Any, d::Dict)
-
-    lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
-    d[lifted_idx][1] = -1  # TODO can be improved
-    d[lifted_idx][end] = 1
-
-    return d
-end
-
-
-function collect_sincos_discvar(m::Optimizer, k::Any; var_bowl=nothing)
-    for var in m.nonconvex_terms[k][:var_idxs]
-        @assert isa(var, Int)
-        if var_bowl == nothing
-            var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
-        else
-            var in var_bowl || push!(var_bowl, var)
-        end
-    end
-    return
-end
-
-"""
     Recognize convex constraints
     A catch for type-A convex constraint expression
 """
@@ -1344,3 +1276,72 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
 
     return false
 end
+
+"""
+    Recognize sin/cos terms: sin(x) / cos(x), where x "should" be continous variables
+    # TODO future call detect_TRIGONOMETRIC_term
+    # Deactivitating this part of the code until complete support for trigonometric functions are added
+"""
+# function detect_sincos_term(expr::Any, constr_id::Int, m::Optimizer)
+
+#     @assert (expr.head == :call || expr.head == :ref)
+
+#     if expr.args[1] in [:sin, :cos]
+#         # Pattern: sin(a*x) or cos(a*x)
+#         operator = expr.args[1]
+#         scalar = 1.0
+#         var_idxs = []
+#         for i in 1:length(expr.args)
+#             if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+#                 scalar *= expr.args[i]
+#                 continue
+#             end
+#             isa(expr.args[i], Symbol) && continue
+#             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+#             if (expr.args[i].head == :call)
+#                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+#                 !down_check && return false, expr
+#                 push!(var_idxs, linear_lift_var.args[2])
+#                 continue
+#             end
+#         end
+#         if length(var_idxs) == 1
+#             term_key = Dict(:operator=>operator, :scalar=>scalar, :vars=>var_idxs)
+#             term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, term_key[:operator], term_key[:operator], sincos, basic_sincos_bounds, collect_sincos_discvar)
+#             return true, lift_nonconvex_term(m, term_key, constr_id, scalar)
+#         end
+#     end
+
+#     return false, expr
+# end
+
+# function basic_sincos_bounds(m::Optimizer, k::Any)
+
+#     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
+#     m.l_var_tight[lifted_idx] = -1  # TODO can be improved
+#     m.u_var_tight[lifted_idx] = 1
+
+#     return
+# end
+
+# function basic_sincos_bounds(m::Optimizer, k::Any, d::Dict)
+
+#     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
+#     d[lifted_idx][1] = -1  # TODO can be improved
+#     d[lifted_idx][end] = 1
+
+#     return d
+# end
+
+
+# function collect_sincos_discvar(m::Optimizer, k::Any; var_bowl=nothing)
+#     for var in m.nonconvex_terms[k][:var_idxs]
+#         @assert isa(var, Int)
+#         if var_bowl == nothing
+#             var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
+#         else
+#             var in var_bowl || push!(var_bowl, var)
+#         end
+#     end
+#     return
+# end

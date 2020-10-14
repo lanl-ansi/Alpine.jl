@@ -441,7 +441,7 @@ end
 
 """
     [Experimental Function]
-    This is a utility function that used to measure the coefficients for formulations that convexify terms with integer variables.
+    This is a utility function that can be used to measure the coefficients for formulations that convexify terms with integer variables.
 """
 function amp_pick_ratevec(partvec::Vector, i::Int)
 
@@ -518,22 +518,6 @@ function amp_post_λ_upperbound(m::Optimizer, λ::Dict, indices::Any, ub::Float6
     return
 end
 
-function collect_indices(l::Array, locator::Tuple, dim::Tuple)
-
-    k = 0
-    indices = Vector{Int}(2^length(dim))
-    for i in 1:prod(dim)
-        ind = Tuple(CartesianIndices(l)[i])
-        diff = [((ind[i] - locator[i] == 0) || (ind[i] - locator[i] == 1)) for i in 1:length(dim)]
-        if prod(diff)
-            k +=1
-            indices[k] = i
-        end
-    end
-
-    return indices
-end
-
 function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::Tuple)
 
 	k = 0
@@ -548,3 +532,19 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
 
 	return indices
 end
+
+# function collect_indices(l::Array, locator::Tuple, dim::Tuple)
+
+#     k = 0
+#     indices = Vector{Int}(2^length(dim))
+#     for i in 1:prod(dim)
+#         ind = Tuple(CartesianIndices(l)[i])
+#         diff = [((ind[i] - locator[i] == 0) || (ind[i] - locator[i] == 1)) for i in 1:length(dim)]
+#         if prod(diff)
+#             k +=1
+#             indices[k] = i
+#         end
+#     end
+
+#     return indices
+# end

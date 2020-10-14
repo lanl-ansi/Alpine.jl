@@ -337,8 +337,8 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
                 d = basic_binint_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
                 d = basic_binprod_bounds(m, nlk, d)
-            elseif m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_TRIGONOMETRIC
-                d = basic_sincos_bounds(m, nlk, d)
+            # elseif m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_TRIGONOMETRIC
+            #     d = basic_sincos_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
                 d = basic_binlin_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
