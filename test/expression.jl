@@ -3322,13 +3322,11 @@ end
 
         @test alpine.nonconvex_terms[Expr[:(x[6]), :(x[6])]][:y_idx] == 10
         @test alpine.nonconvex_terms[Expr[:(x[6]), :(x[6])]][:id] == 2
-        @test alpine.nonconvex_terms[Expr[:(x[6]), :(x[6])]][:lifted_constr_ref] == :(x[10] == x[6] * x[6])
         @test alpine.nonconvex_terms[Expr[:(x[6]), :(x[6])]][:nonlinear_type] == :MONOMIAL
         @test alpine.nonconvex_terms[Expr[:(x[6]), :(x[6])]][:y_type] == :Cont
         @test alpine.nonconvex_terms[Expr[:(x[6]), :(x[6])]][:constr_id] == Set(Any[14])
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:y_idx] == 9
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:id] == 1
-        @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:lifted_constr_ref] == :(x[9] == x[5] * x[5])
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:nonlinear_type] == :MONOMIAL
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:y_type] == :Cont
         @test alpine.nonconvex_terms[Expr[:(x[5]), :(x[5])]][:constr_id] == Set(Any[14])
