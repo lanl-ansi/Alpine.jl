@@ -31,44 +31,38 @@ end
 function logging_summary(m::Optimizer)
 
     if get_option(m, :loglevel) > 0
-      # println("Problem sense $(m.sense_orig)")
       printstyled("\nPROBLEM STATISTICS\n", color=:cyan)
+      is_min_sense(m) && (println("  Objective sense = Min", ))
+      is_max_sense(m) && (println("  Objective sense = Max", ))
       println("  #Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
       println("  #Bin-Int Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
       println("  #Constraints = ", m.num_constr_orig)
       println("  #NL Constraints = ", m.num_nlconstr_orig)
       println("  #Linear Constraints = ", m.num_lconstr_orig)
-      # println("  #Int variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
       get_option(m, :recognize_convex) && println("  #Detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
       println("  #Detected nonlinear terms = ", length(m.nonconvex_terms))
-      # for i in ALPINE_C_NLTERMS
-      #     cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
-      #     cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
-      # end
       println("  #Variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
       println("  #Potential variables for partitioning = ", length(m.disc_vars))
 
       printstyled("SUB-SOLVERS USED BY ALPINE\n", color=:cyan)
-      # get_option(m, :minlp_solver) !== nothing && println("MINLP local solver = ", split(string(get_option(m, :minlp_solver)),".")[1])
       if get_option(m, :minlp_solver) === nothing
           println("  NLP local solver = ", m.nlp_solver_id)
       else
           println("  MINLP local solver = ", m.minlp_solver_id)
       end
       println("  MIP solver = ", m.mip_solver_id)
+
       printstyled("ALPINE CONFIGURATION\n", color=:cyan)
-      println("  Maximum solution time = ", get_option(m, :timeout))
       println("  Maximum iterations =  ", get_option(m, :maxiter))
-      # @printf "  Relative optimality gap criteria = %.5f (%.4f %%)\n" get_option(m, :relgap) (get_option(m, :relgap)*100)
       @printf "  Relative optimality gap criteria = %.4f%%\n" get_option(m, :relgap)*100
-      # println("  Basic bound propagation = ", get_option(m, :presolve_bp))
+      
       if get_option(m, :disc_var_pick) == 0
          println("  Potential variables chosen for partitioning = All")
       elseif get_option(m, :disc_var_pick) == 1
          println("  Potential variables chosen for partitioning = Min. vertex cover")
       end
 
-      # println("  Conseuctive solution rejection = after ", get_option(m, :disc_consecutive_forbid), " times")
+      
       if get_option(m, :disc_ratio_branch)
          println("  Discretization ratio branch activated")
       else
@@ -77,18 +71,10 @@ function logging_summary(m::Optimizer)
       (get_option(m, :convhull_ebd)) && println("  Using convhull_ebd formulation")
        (get_option(m, :convhull_ebd)) && println("  Encoding method = $(get_option(m, :convhull_ebd_encode))")
        (get_option(m, :convhull_ebd)) && println("  Independent branching scheme = $(get_option(m, :convhull_ebd_ibs))")
-      println("  Bound-tightening presolve = ", get_option(m, :presolve_bt))
-      get_option(m, :presolve_bt) && println("  Presolve maximum iterations = ", get_option(m, :presolve_maxiter))
-      # get_option(m, :presolve_bt) && println("bound tightening presolve algorithm = ", get_option(m, :presolve_bt)_algo)
-      # get_option(m, :presolve_bt) && println("bound tightening presolve width tolerance = ", get_option(m, :presolve_bt)_width_tol)
-      # get_option(m, :presolve_bt) && println("bound tightening presolve output tolerance = ", get_option(m, :presolve_bt)_output_tol)
-      # get_option(m, :presolve_bt) && println("bound tightening presolve relaxation = ", get_option(m, :presolve_bt)_relax)
-      # get_option(m, :presolve_bt) && println("bound tightening presolve mip regulation time = ", get_option(m, :presolve_bt)_mip_timeout)
-      # println("\n=======================================================================")
+      println("  Bound-tightening (OBBT) presolve = ", get_option(m, :presolve_bt))
+      get_option(m, :presolve_bt) && println("  OBBT maximum iterations = ", get_option(m, :presolve_maxiter))
    end
 
-   # Additional warnings
-   #get_option(m, :mip_solver_id) == "Gurobi" && @warn "Alpine only supports Gurobi v7.0+ ..."
 end
 
 function logging_head(m::Optimizer)
@@ -105,7 +91,7 @@ function logging_head(m::Optimizer)
    end
    println("\n====================================================================================================")
    if m.logs[:time_left] < Inf
-      printstyled("| Iter   | $UB_iter       | $UB      | $LB        | Gap (%)         | Time      \n")
+      printstyled(bold=true, "| Iter   | $UB_iter       | $UB      | $LB        | Gap (%)         | Time      \n")
    end
 end
 
@@ -209,3 +195,18 @@ function summary_status(m::Optimizer)
 
    return
 end
+
+# Some useful logging details:
+
+      # for i in ALPINE_C_NLTERMS
+      #     cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
+      #     cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
+      # end
+      # println("  Maximum solution time = ", get_option(m, :timeout))
+      # println("  Basic bound propagation = ", get_option(m, :presolve_bp))
+      # println("  Conseuctive solution rejection = after ", get_option(m, :disc_consecutive_forbid), " times")
+      # get_option(m, :presolve_bt) && println("bound tightening presolve algorithm = ", get_option(m, :presolve_bt)_algo)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve width tolerance = ", get_option(m, :presolve_bt)_width_tol)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve output tolerance = ", get_option(m, :presolve_bt)_output_tol)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve relaxation = ", get_option(m, :presolve_bt)_relax)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve mip regulation time = ", get_option(m, :presolve_bt)_mip_timeout)

@@ -54,8 +54,8 @@ function detect_nonconvex_terms(expr::Any, constr_id::Int, m::Optimizer; kwargs.
     skip, expr = detect_binprod_term(expr, constr_id, m)           #L1 : binprod = binary products
     skip && return expr
 
-    skip, expr = detect_intprod_term(expr, constr_id, m)		   #L1 : intprod = integer products
-    skip && return expr
+    # skip, expr = detect_intprod_term(expr, constr_id, m)		   #L1 : intprod = integer products
+    # skip && return expr
 
     # LEVEL 2 : : Recognize all built-in structural patterns
     skip, expr = detect_bilinear_term(expr, constr_id, m)          #L2
@@ -267,16 +267,16 @@ end
 ## Evaluators ##
 bpml(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 discretemulti(k, vec) = prod([vec[i] for i in k[:var_idxs]])
-binint(l, vec) = prod([vec[i] for i in k[:var_idxs]])
-intprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
 binprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
 binlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
-intlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
-# sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
 linear(k, vec) = k[:ref][:scalar] .+ sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
+# intlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
+# binint(l, vec) = prod([vec[i] for i in k[:var_idxs]])
+# intprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
+# # sincos(k, vec) = eval(k[:nonlinear_type])(vec[k[:var_idxs][1]])
 
 """
     Recognize prodcuts of binary variables and multilinear products
@@ -288,7 +288,7 @@ linear(k, vec) = k[:ref][:scalar] .+ sum([i[1]*vec[i[2]] for i in k[:ref][:coef_
 """
 function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
 
-    # Alwasy construct the binlin term after lifting
+    # Always construct the binlin term after lifting
     @assert (expr.head == :call || expr.head == :ref)
 
     if (expr.args[1] == :*)
@@ -362,12 +362,12 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
             isempty(int_var_idxs) ? ip_idx = -1 : ip_idx = int_var_idxs[1]
         end
 
-        if bp_idx < 0 # intlin term if no binary variable
-            intlin_key = [Expr(:ref, :x, ip_idx), Expr(:ref, :x, ml_idx)]
-            intlin_idxs = [ip_idx; ml_idx]
-            intlin_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, intlin_key, intlin_idxs, :INTLIN, :*, intlin, basic_intlin_bounds, collect_intlin_discvar)
-            return true, lift_nonconvex_term(m, intlin_key, constr_id, scalar)
-        end
+        # if bp_idx < 0 # intlin term if no binary variable
+        #     intlin_key = [Expr(:ref, :x, ip_idx), Expr(:ref, :x, ml_idx)]
+        #     intlin_idxs = [ip_idx; ml_idx]
+        #     intlin_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, intlin_key, intlin_idxs, :INTLIN, :*, intlin, basic_intlin_bounds, collect_intlin_discvar)
+        #     return true, lift_nonconvex_term(m, intlin_key, constr_id, scalar)
+        # end
 
         if ip_idx < 0 # binlin term if no integer variable
             binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ml_idx)]
@@ -377,15 +377,17 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
         end
 
         # Otherwise, first :intlin term then :binlin term by assumption
-        intlin_key = [Expr(:ref, :x, ip_idx), Expr(:ref, :x, ml_idx)]
-        intlin_expr = Expr(:call, :*)
-        push!(intlin_expr.args, Expr(:ref, :x, ip_idx))
-        push!(intlin_expr.args, Expr(:ref, :x, ml_idx))
-        intlin_lift = detect_nonconvex_terms(intlin_expr, constr_id, m)
-        intlin_idx = intlin_lift.args[2]
+        # intlin_key = [Expr(:ref, :x, ip_idx), Expr(:ref, :x, ml_idx)]
+        # intlin_expr = Expr(:call, :*)
+        # push!(intlin_expr.args, Expr(:ref, :x, ip_idx))
+        # push!(intlin_expr.args, Expr(:ref, :x, ml_idx))
+        # intlin_lift = detect_nonconvex_terms(intlin_expr, constr_id, m)
+        # intlin_idx = intlin_lift.args[2]
 
-        binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, intlin_idx)]
-        binlin_idxs = [bp_idx; intlin_idx]
+        # binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, intlin_idx)]
+        binlin_key = [Expr(:ref, :x, bp_idx)]
+        # binlin_idxs = [bp_idx; intlin_idx]
+        binlin_idxs = [bp_idx]
         binlin_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, binlin_key, binlin_idxs, :BINLIN, :*, binlin, basic_binlin_bounds, collect_binlin_discvar)
         return true, lift_nonconvex_term(m, binlin_key, constr_id, scalar)
     end
@@ -437,68 +439,68 @@ function basic_binlin_bounds(m::Optimizer, k::Any, d::Dict)
     return d
 end
 
-function basic_intlin_bounds(m::Optimizer, k::Any)
+# function basic_intlin_bounds(m::Optimizer, k::Any)
 
-    lifted_idx = m.nonconvex_terms[k][:y_idx]
+#     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
-    lins = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
-    ints = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
-    @assert length(lins) == 1 && length(ints) == 1
+#     lins = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
+#     ints = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
+#     @assert length(lins) == 1 && length(ints) == 1
 
-    lin_idx = lins[1]
-    int_idx = ints[1]
+#     lin_idx = lins[1]
+#     int_idx = ints[1]
 
-    linrange = [m.l_var_tight[lin_idx]; m.u_var_tight[lin_idx]]
-    intrange = [m.l_var_tight[int_idx]; m.u_var_tight[int_idx]]
+#     linrange = [m.l_var_tight[lin_idx]; m.u_var_tight[lin_idx]]
+#     intrange = [m.l_var_tight[int_idx]; m.u_var_tight[int_idx]]
 
-    crossrange = linrange * intrange'
+#     crossrange = linrange * intrange'
 
-    m.l_var_tight[lifted_idx] = max(m.l_var_tight[lifted_idx], minimum(crossrange))
-    m.u_var_tight[lifted_idx] = min(m.u_var_tight[lifted_idx], maximum(crossrange))
+#     m.l_var_tight[lifted_idx] = max(m.l_var_tight[lifted_idx], minimum(crossrange))
+#     m.u_var_tight[lifted_idx] = min(m.u_var_tight[lifted_idx], maximum(crossrange))
 
-    return
-end
+#     return
+# end
 
-function basic_intlin_bounds(m::Optimizer, k::Any, d::Dict)
+# function basic_intlin_bounds(m::Optimizer, k::Any, d::Dict)
 
-    lifted_idx = m.nonconvex_terms[k][:y_idx]
+#     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
-    lins = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
-    ints = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
-    @assert length(lins) == 1 == length(ints)
+#     lins = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
+#     ints = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
+#     @assert length(lins) == 1 == length(ints)
 
-    lin_idx = lins[1]
-    int_idx = ints[1]
+#     lin_idx = lins[1]
+#     int_idx = ints[1]
 
-    linrange = [d[lin_idx][1]; d[lin_idx][end]]
-    intrange = [d[int_idx][1]; d[int_idx][end]]
+#     linrange = [d[lin_idx][1]; d[lin_idx][end]]
+#     intrange = [d[int_idx][1]; d[int_idx][end]]
 
-    crossrange = linrange * intrange'
+#     crossrange = linrange * intrange'
 
-    d[lifted_idx][1] = max(d[lifted_idx][1], minimum(crossrange))
-    d[lifted_idx][end] = min(d[lifted_idx][end], maximum(crossrange))
+#     d[lifted_idx][1] = max(d[lifted_idx][1], minimum(crossrange))
+#     d[lifted_idx][end] = min(d[lifted_idx][end], maximum(crossrange))
 
-    return d
-end
+#     return d
+# end
 
 function collect_binlin_discvar(m::Optimizer, k::Any; var_bowl=nothing)
     # Exact linearization exist
     return
 end
 
-function collect_intlin_discvar(m::Optimizer, k::Any; var_bowl=nothing)
+# function collect_intlin_discvar(m::Optimizer, k::Any; var_bowl=nothing)
 
-    for i in m.nonconvex_terms[k][:var_idxs]
-        @assert isa(i, Int)
-        if var_bowl == nothing
-            i in m.candidate_disc_vars || push!(m.candidate_disc_vars, i)
-        else
-            i in var_bowl || push!(var_bowl, i)
-        end
-    end
+#     for i in m.nonconvex_terms[k][:var_idxs]
+#         @assert isa(i, Int)
+#         if var_bowl == nothing
+#             i in m.candidate_disc_vars || push!(m.candidate_disc_vars, i)
+#         else
+#             i in var_bowl || push!(var_bowl, i)
+#         end
+#     end
 
-    return
-end
+#     return
+# end
 
 """
 	Recognize products of discrete variables with both binary and integer variables
@@ -509,252 +511,252 @@ end
 
 	Leads to BININT terms, with BINPROD, INTPROD if necessary
 """
-function detect_binint_term(expr::Any, constr_id::Int, m::Optimizer)
+# function detect_binint_term(expr::Any, constr_id::Int, m::Optimizer)
 
-    @assert (expr.head == :call || expr.head == :ref)
+#     @assert (expr.head == :call || expr.head == :ref)
 
-    if (expr.args[1] == :*)
+#     if (expr.args[1] == :*)
 
-        var_idxs = []
-        var_types = []
-        scalar = 1.0
-        for i in 1:length(expr.args)
-            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
-                scalar *= expr.args[i]
-                continue
-            end
-            (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type[expr.args[i].args[2]])
-            if (expr.args[i].head == :call)
-                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
-                !down_check && return false, expr
-                push!(var_idxs, linear_lift_var.args[2])
-                push!(var_types, m.var_type[linear_lift_var.args[2]])
-                continue
-            end
-        end
+#         var_idxs = []
+#         var_types = []
+#         scalar = 1.0
+#         for i in 1:length(expr.args)
+#             if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+#                 scalar *= expr.args[i]
+#                 continue
+#             end
+#             (isa(expr.args[i], Symbol)) && continue
+#             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+#             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type[expr.args[i].args[2]])
+#             if (expr.args[i].head == :call)
+#                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+#                 !down_check && return false, expr
+#                 push!(var_idxs, linear_lift_var.args[2])
+#                 push!(var_types, m.var_type[linear_lift_var.args[2]])
+#                 continue
+#             end
+#         end
 
-        cont_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Cont]
-        bin_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Bin]
-        int_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Int]
+#         cont_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Cont]
+#         bin_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Bin]
+#         int_var_idxs = [idx for idx in var_idxs if m.var_type[idx] == :Int]
 
-		# Avoid the presense of continous variables
-		isempty(cont_var_idxs) || return false, expr
-        isempty(int_var_idxs) && isempty(bin_var_idxs) && return false, expr
+# 		# Avoid the presense of continous variables
+# 		isempty(cont_var_idxs) || return false, expr
+#         isempty(int_var_idxs) && isempty(bin_var_idxs) && return false, expr
 
-        # Lift clusters of binary variables multiplication if necessary
-        if length(bin_var_idxs) > 1
-            bp_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
-            bp_term_expr = Expr(:call, :*)
-            for idx in bin_var_idxs
-                push!(bp_term_expr.args, Expr(:ref, :x, idx))
-            end
-            bp_lift_term = detect_nonconvex_terms(bp_term_expr, constr_id, m)
-            bp_idx = bp_lift_term.args[2]
-        else
-            bp_idx = bin_var_idxs[1]
-        end
+#         # Lift clusters of binary variables multiplication if necessary
+#         if length(bin_var_idxs) > 1
+#             bp_term_key = [Expr(:ref, :x, idx) for idx in bin_var_idxs]
+#             bp_term_expr = Expr(:call, :*)
+#             for idx in bin_var_idxs
+#                 push!(bp_term_expr.args, Expr(:ref, :x, idx))
+#             end
+#             bp_lift_term = detect_nonconvex_terms(bp_term_expr, constr_id, m)
+#             bp_idx = bp_lift_term.args[2]
+#         else
+#             bp_idx = bin_var_idxs[1]
+#         end
 
-        # lift clusters of integer variables multiplication if necessary
-        if length(int_var_idxs) > 1
-            ip_term_key = [Expr(:ref, :x, idx) for idx in int_var_idxs]
-            ip_term_expr = Expr(:call, :*)
-            for idx in cont_var_idxs
-                push!(ip_term_expr.args, Expr(:ref, :x, idx))
-            end
-            ip_lift_term = detect_nonconvex_terms(ip_term_expr, constr_id, m)
-        else
-            ip_idx = ip_var_idxs[1]
-        end
+#         # lift clusters of integer variables multiplication if necessary
+#         if length(int_var_idxs) > 1
+#             ip_term_key = [Expr(:ref, :x, idx) for idx in int_var_idxs]
+#             ip_term_expr = Expr(:call, :*)
+#             for idx in cont_var_idxs
+#                 push!(ip_term_expr.args, Expr(:ref, :x, idx))
+#             end
+#             ip_lift_term = detect_nonconvex_terms(ip_term_expr, constr_id, m)
+#         else
+#             ip_idx = ip_var_idxs[1]
+#         end
 
-        binint_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ip_idx)]
-        binint_idxs = [bp_idx; ip_idx]
-        binint_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, binint_key, binint_idxs, :BININT, :*, binint, basic_binint_bound, collect_binint_discvar)
-        return true, lift_nonconvex_term(m, binint_key, constr_id, scalar)
-    end
+#         binint_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ip_idx)]
+#         binint_idxs = [bp_idx; ip_idx]
+#         binint_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, binint_key, binint_idxs, :BININT, :*, binint, basic_binint_bound, collect_binint_discvar)
+#         return true, lift_nonconvex_term(m, binint_key, constr_id, scalar)
+#     end
 
-    return false, expr
-end
+#     return false, expr
+# end
 
-function basic_binint_bound(m::Optimizer, k::Any)
+# function basic_binint_bound(m::Optimizer, k::Any)
 
-    lifted_idx = m.nonconvex_terms[k][:y_idx]
+#     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
-    prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
-    @assert length(prod_idxs) == 1
-    lin_idx = prod_idxs[1]
+#     prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
+#     @assert length(prod_idxs) == 1
+#     lin_idx = prod_idxs[1]
 
-    if m.l_var_tight[lin_idx] > 0.0
-        m.l_var_tight[lifted_idx] = 0.0
-        m.u_var_tight[lifted_idx] = m.u_var_tight[lifted_idx]
-    elseif m.u_var_tight[lin_idx] < 0.0
-        m.u_var_tight[lifted_idx] = 0.0
-        m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
-    else
-        m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
-        m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
-    end
+#     if m.l_var_tight[lin_idx] > 0.0
+#         m.l_var_tight[lifted_idx] = 0.0
+#         m.u_var_tight[lifted_idx] = m.u_var_tight[lifted_idx]
+#     elseif m.u_var_tight[lin_idx] < 0.0
+#         m.u_var_tight[lifted_idx] = 0.0
+#         m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
+#     else
+#         m.u_var_tight[lifted_idx] = m.u_var_tight[lin_idx]
+#         m.l_var_tight[lifted_idx] = m.l_var_tight[lin_idx]
+#     end
 
-    return
-end
+#     return
+# end
 
-function basic_binint_bound(m::Optimizer, k::Any, d::Dict)
+# function basic_binint_bound(m::Optimizer, k::Any, d::Dict)
 
-    lifted_idx = m.nonconvex_terms[k][:y_idx]
+#     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
-    prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
-    @assert length(prod_idxs) == 1
-    lin_idx = prod_idxs[1]
+#     prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Int]
+#     @assert length(prod_idxs) == 1
+#     lin_idx = prod_idxs[1]
 
-    if d[lin_idx][1] > 0.0
-        d[lifted_idx][1] = 0.0
-        d[lifted_idx][end] = d[lin_idx][end]
-    elseif m.u_var_tight[lin_idx] < 0.0
-        d[lifted_idx][end] = 0.0
-        d[lifted_idx][1] = d[lin_idx][1]
-    else
-        d[lifted_idx][end] = d[lin_idx][end]
-        d[lifted_idx][1] = d[lin_idx][1]
-    end
+#     if d[lin_idx][1] > 0.0
+#         d[lifted_idx][1] = 0.0
+#         d[lifted_idx][end] = d[lin_idx][end]
+#     elseif m.u_var_tight[lin_idx] < 0.0
+#         d[lifted_idx][end] = 0.0
+#         d[lifted_idx][1] = d[lin_idx][1]
+#     else
+#         d[lifted_idx][end] = d[lin_idx][end]
+#         d[lifted_idx][1] = d[lin_idx][1]
+#     end
 
-    return d
-end
+#     return d
+# end
 
-function collect_binint_discvar(m::Optimizer, k::Any; var_bowl=nothing)
-    # Exact linearization exist
-    return
-end
+# function collect_binint_discvar(m::Optimizer, k::Any; var_bowl=nothing)
+#     # Exact linearization exist
+#     return
+# end
 
 """
-    Recognize products of binary variables : x1 * x2 * .. * xN
+    Recognize products of integer variables : x1 * x2 * .. * xN
 """
-function detect_intprod_term(expr::Any, constr_id::Int, m::Optimizer)
+# function detect_intprod_term(expr::Any, constr_id::Int, m::Optimizer)
 
-    @assert (expr.head == :call || expr.head == :ref)
-    if (expr.args[1] == :*)
-        # Pattern: coefficients * x * y * z ..., where x, y, z are all integer variables
-        var_idxs = []
-        scalar = 1.0
-        for i in 1:length(expr.args)
-            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
-                scalar *= expr.args[i]
-                continue
-            end
-            (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Int && return false, expr
-            if (expr.args[i].head == :call)
-                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
-                !down_check && return false, expr
-                m.var_type[linear_lift_var.args[2]] != :Int && return false, expr
-                push!(var_idxs, linear_lift_var.args[2])
-                continue
-            end
-        end
+#     @assert (expr.head == :call || expr.head == :ref)
+#     if (expr.args[1] == :*)
+#         # Pattern: coefficients * x * y * z ..., where x, y, z are all integer variables
+#         var_idxs = []
+#         scalar = 1.0
+#         for i in 1:length(expr.args)
+#             if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+#                 scalar *= expr.args[i]
+#                 continue
+#             end
+#             (isa(expr.args[i], Symbol)) && continue
+#             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+#             !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Int && return false, expr
+#             if (expr.args[i].head == :call)
+#                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+#                 !down_check && return false, expr
+#                 m.var_type[linear_lift_var.args[2]] != :Int && return false, expr
+#                 push!(var_idxs, linear_lift_var.args[2])
+#                 continue
+#             end
+#         end
 
-        if length(var_idxs) >= 2
-            term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
-            term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
-            return true, lift_nonconvex_term(m, term_key, constr_id, scalar)
-        end
+#         if length(var_idxs) >= 2
+#             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
+#             term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
+#             return true, lift_nonconvex_term(m, term_key, constr_id, scalar)
+#         end
 
-    elseif expr.args[1] == :^ && length(expr.args) == 3
-        # Pattern: (x)^(>2), where x is integer variable
-        var_idxs = []
-        power_scalar = 0
-        scalar = 1.0
-        for i in 2:length(expr.args)
-            if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
-                power_scalar += expr.args[i]
-                continue
-            end
-            (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Int && return false, expr
-            if (expr.args[i].head == :call)
-                down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
-                !down_check && return false, expr
-                m.var_type[linear_lift_var.args[2]] != :Int && return false, expr
-                push!(var_idxs, linear_lift_var.args[2])
-                continue
-            end
-        end
+#     elseif expr.args[1] == :^ && length(expr.args) == 3
+#         # Pattern: (x)^(>2), where x is integer variable
+#         var_idxs = []
+#         power_scalar = 0
+#         scalar = 1.0
+#         for i in 2:length(expr.args)
+#             if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
+#                 power_scalar += expr.args[i]
+#                 continue
+#             end
+#             (isa(expr.args[i], Symbol)) && continue
+#             (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+#             !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Int && return false, expr
+#             if (expr.args[i].head == :call)
+#                 down_check, linear_lift_var = detect_linear_term(expr.args[i], constr_id, m)
+#                 !down_check && return false, expr
+#                 m.var_type[linear_lift_var.args[2]] != :Int && return false, expr
+#                 push!(var_idxs, linear_lift_var.args[2])
+#                 continue
+#             end
+#         end
 
-        if length(var_idxs) == 1 && power_scalar >= 2.0 && mod(power_scalar, 1.0) == 0.0
-            term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
-            term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
-            return true, lift_nonconvex_term(m, term_key, constr_id, scalar)
-        end
-    end
+#         if length(var_idxs) == 1 && power_scalar >= 2.0 && mod(power_scalar, 1.0) == 0.0
+#             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
+#             term_key in keys(m.nonconvex_terms) || store_nonconvex_term(m, term_key, var_idxs, :INTPROD, :*, intprod, basic_intprod_bounds, collect_intprod_discvar)
+#             return true, lift_nonconvex_term(m, term_key, constr_id, scalar)
+#         end
+#     end
 
-    return false, expr
-end
+#     return false, expr
+# end
 
-function basic_intprod_bounds(m::Optimizer, k::Any)
+# function basic_intprod_bounds(m::Optimizer, k::Any)
 
-    lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
+#     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
 
-    bound = []
-    for (cnt,varexpr) in enumerate(k)
-        var = varexpr.args[2]
-        var_bounds = [m.l_var_tight[var], m.u_var_tight[var]]
-        if cnt == 1
-            bound = copy(var_bounds)
-        elseif cnt == 2
-            bound = bound * var_bounds'
-        else
-            bound = vec(bound) * var_bounds'
-        end
-    end
+#     bound = []
+#     for (cnt,varexpr) in enumerate(k)
+#         var = varexpr.args[2]
+#         var_bounds = [m.l_var_tight[var], m.u_var_tight[var]]
+#         if cnt == 1
+#             bound = copy(var_bounds)
+#         elseif cnt == 2
+#             bound = bound * var_bounds'
+#         else
+#             bound = vec(bound) * var_bounds'
+#         end
+#     end
 
-    if minimum(bound) > m.l_var_tight[lifted_idx] + get_option(m, :tol)
-        m.l_var_tight[lifted_idx] = minimum(bound)
-    end
-    if maximum(bound) < m.u_var_tight[lifted_idx] - get_option(m, :tol)
-        m.u_var_tight[lifted_idx] = maximum(bound)
-    end
+#     if minimum(bound) > m.l_var_tight[lifted_idx] + get_option(m, :tol)
+#         m.l_var_tight[lifted_idx] = minimum(bound)
+#     end
+#     if maximum(bound) < m.u_var_tight[lifted_idx] - get_option(m, :tol)
+#         m.u_var_tight[lifted_idx] = maximum(bound)
+#     end
 
-    return
-end
+#     return
+# end
 
-function basic_intprod_bounds(m::Optimizer, k::Any, d::Dict)
+# function basic_intprod_bounds(m::Optimizer, k::Any, d::Dict)
 
-    lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
+#     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
 
-    bound = []
-    for (cnt,varexpr) in enumerate(k)
-        var = varexpr.args[2]
-        var_bounds = [d[var][1], d[var][end]]
-        if cnt == 1
-            bound = copy(var_bounds)
-        elseif cnt == 2
-            bound = bound * var_bounds'
-        else
-            bound = vec(bound) * var_bounds'
-        end
-    end
-    if minimum(bound) > d[lifted_idx][1] + get_option(m, :tol)
-        d[lifted_idx][1] = minimum(bound)
-    end
-    if maximum(bound) < d[lifted_idx][end] - get_option(m, :tol)
-        d[lifted_idx][end] = maximum(bound)
-    end
+#     bound = []
+#     for (cnt,varexpr) in enumerate(k)
+#         var = varexpr.args[2]
+#         var_bounds = [d[var][1], d[var][end]]
+#         if cnt == 1
+#             bound = copy(var_bounds)
+#         elseif cnt == 2
+#             bound = bound * var_bounds'
+#         else
+#             bound = vec(bound) * var_bounds'
+#         end
+#     end
+#     if minimum(bound) > d[lifted_idx][1] + get_option(m, :tol)
+#         d[lifted_idx][1] = minimum(bound)
+#     end
+#     if maximum(bound) < d[lifted_idx][end] - get_option(m, :tol)
+#         d[lifted_idx][end] = maximum(bound)
+#     end
 
-    return d
-end
+#     return d
+# end
 
-function collect_intprod_discvar(m::Optimizer, k::Any; var_bowl=nothing)
-    for var in m.nonconvex_terms[k][:var_idxs]
-        @assert isa(var, Int)
-        if var_bowl == nothing
-            var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
-        else
-            var in var_bowl || push!(var_bowl, var)
-        end
-    end
-    return
-end
+# function collect_intprod_discvar(m::Optimizer, k::Any; var_bowl=nothing)
+#     for var in m.nonconvex_terms[k][:var_idxs]
+#         @assert isa(var, Int)
+#         if var_bowl == nothing
+#             var in m.candidate_disc_vars || push!(m.candidate_disc_vars, var)
+#         else
+#             var in var_bowl || push!(var_bowl, var)
+#         end
+#     end
+#     return
+# end
 
 """
     Recognize products of binary variables : x1 * x2 * .. * xN

@@ -22,11 +22,11 @@ function amp_post_convhull(m::Optimizer; kwargs...)
         elseif nl_type == :BININT && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binint(m, k, β)
         elseif nl_type == :INTPROD && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTPROD at this condition.")
+            error("Integer features are OFF. No support for INTPROD at this moment.")
         elseif nl_type == :INTLIN && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTLIN at this condition.")
+            error("Integer features are OFF. No support for INTLIN at this moment.")
         elseif nl_type in [:sin, :cos] && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTLIN at this condition.")
+            error("Integer features are OFF. No support for INTLIN at this moment.")
         end
     end
 
@@ -433,7 +433,7 @@ function amp_post_inequalities_int(m::Optimizer, d::Dict, λ::Dict, α::Dict, in
             end
         end
     else
-        error("Only SOS-2 formulation support convexification of terms with integer variables.")
+        error("Only SOS-2 formulation supports convexification of terms with integer variables.")
     end
 
     return

@@ -114,7 +114,7 @@ function presolve(m::Optimizer)
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
    # (get_option(m, :loglevel) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-   (get_option(m, :loglevel) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations).")
+   (get_option(m, :loglevel) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations)")
    return
 end
 

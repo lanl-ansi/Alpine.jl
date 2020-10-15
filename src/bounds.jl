@@ -255,7 +255,7 @@ end
     resolve_var_bounds(m::Optimizer)
 
 Resolve the bounds of the lifted variable using the information in l_var_tight and u_var_tight. This method only takes
-in known or trivial bounds information to reason lifted variable bound to avoid the cases of infinity bounds.
+in known or trivial bounds information to deduce lifted variable bounds and to potentially avoid the cases of infinity bounds.
 """
 function resolve_var_bounds(m::Optimizer)
 
@@ -307,9 +307,9 @@ function resolve_inf_bounds(m::Optimizer)
     end
     infcount = min(infcount_l, infcount_u)
     if infcount == 1
-        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(get_option(m, :largebound)). This may affect global optimality and run times.")
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(get_option(m, :largebound)). This may affect global optimal values and run times.")
     elseif infcount > 1
-        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(get_option(m, :largebound)). This may affect global optimality and run times.")
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(get_option(m, :largebound)). This may affect global optimal values and run times.")
     end
     return
 end
@@ -317,15 +317,14 @@ end
 """
     resolve_var_bounds(nonconvex_terms::Dict, discretization::Dict)
 
-    For discretization to be performed, we do not allow for a variable being discretized to have infinite bounds.
-    The lifted variables will have infinite bounds and the function infers bounds on these variables. This process
-    can help speed up the subsequent solve in subsequent iterations.
+    For discretization to be performed, we do not allow a variable being discretized to have infinite bounds.
+    The lifted/auxiliary variables may have infinite bounds and the function infers bounds on these variables. This process
+    can help speed up the subsequent solve times.
 
     Only used in presolve bound tightening
 """
 function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
-    # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
-    # Increased complexity from linear to square but a reasonable amount
+    # Added sequential bound resolving process base on DFS process, which ensures all bounds are accurate.
     # Potentially, additional mapping can be applied to reduce the complexity
     for i in 1:length(m.term_seq)
         k = m.term_seq[i]
@@ -341,17 +340,17 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
             #     d = basic_sincos_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
                 d = basic_binlin_bounds(m, nlk, d)
-            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
-                d = basic_intlin_bounds(m, nlk, d)
-            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTPROD]
-                d = basic_intprod_bounds(m, nlk, d)
+            # elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
+            #     d = basic_intlin_bounds(m, nlk, d)
+            # elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTPROD]
+            #     d = basic_intprod_bounds(m, nlk, d)
             else
                 error("EXPECTED ERROR : NEED IMPLEMENTATION")
             end
         elseif haskey(m.linear_terms, k)
             d = basic_linear_bounds(m, k, d)
         else
-            error("[RARE] Found homeless term key $(k) during bound resolution.")
+            error("Found a homeless term key $(k) during bound resolution im resolve_var_bounds.")
         end
     end
 

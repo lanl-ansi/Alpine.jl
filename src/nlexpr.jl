@@ -212,7 +212,6 @@ end
 
 function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
 
-   # @show "inner recursive input $(expr)"
    expr.args[1] in [:*,:^] || return nothing, nothing, nothing         # Limited Area
 
    if expr.args[1] == :*
