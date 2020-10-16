@@ -2824,11 +2824,12 @@ end
         @test alpine.nonconvex_terms[nlk11][:nonlinear_type] == :BILINEAR
         @test alpine.nonconvex_terms[nlk12][:nonlinear_type] == :BINPROD
     end
+end
 
     #--------------------------------------------------------------------------------------------------------------------------------------------
     # Commented out the entire part of expression testing which involve generic integer products and trigonometric terms. This can alwyas be brought back once these are supported by Alpine. 
     #--------------------------------------------------------------------------------------------------------------------------------------------
-    
+
     # @testset "Expression Parsing || INTPROD Operators" begin
     #     test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"loglevel" =>  100)
     #     m = intprod_basic(solver=test_solver)
