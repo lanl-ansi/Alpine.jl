@@ -22,11 +22,11 @@ function amp_post_convhull(m::Optimizer; kwargs...)
         elseif nl_type == :BININT && !m.nonconvex_terms[k][:convexified]
             β = amp_convexify_binint(m, k, β)
         elseif nl_type == :INTPROD && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTPROD at this condition.")
+            error("Integer features are OFF. No support for INTPROD at this moment.")
         elseif nl_type == :INTLIN && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTLIN at this condition.")
+            error("Integer features are OFF. No support for INTLIN at this moment.")
         elseif nl_type in [:sin, :cos] && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTLIN at this condition.")
+            error("Integer features are OFF. No support for INTLIN at this moment.")
         end
     end
 
@@ -274,7 +274,7 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
                 partition_cnt = length(d[v])-1
                 active_j = get_active_partition_idx(d, m.bound_sol_pool[:sol][ws_idx][v], v)
                 for j = 1:partition_cnt
-                    j == active_j ? setvalue(α[v][j], 1.0) : setvalue(α[v][j], 0.0)
+                    j == active_j ? set_start_value(α[v][j], 1.0) : set_start_value(α[v][j], 0.0)
                 end
             end
             m.bound_sol_pool[:stat][ws_idx] = :Warmstarter
@@ -433,7 +433,7 @@ function amp_post_inequalities_int(m::Optimizer, d::Dict, λ::Dict, α::Dict, in
             end
         end
     else
-        error("Only SOS-2 formulation support convexification of terms with integer variables.")
+        error("Only SOS-2 formulation supports convexification of terms with integer variables.")
     end
 
     return
@@ -441,7 +441,7 @@ end
 
 """
     [Experimental Function]
-    This is a utility function that used to measure the coefficients for formulations that convexify terms with integer variables.
+    This is a utility function that can be used to measure the coefficients for formulations that convexify terms with integer variables.
 """
 function amp_pick_ratevec(partvec::Vector, i::Int)
 
@@ -518,22 +518,6 @@ function amp_post_λ_upperbound(m::Optimizer, λ::Dict, indices::Any, ub::Float6
     return
 end
 
-function collect_indices(l::Array, locator::Tuple, dim::Tuple)
-
-    k = 0
-    indices = Vector{Int}(2^length(dim))
-    for i in 1:prod(dim)
-        ind = Tuple(CartesianIndices(l)[i])
-        diff = [((ind[i] - locator[i] == 0) || (ind[i] - locator[i] == 1)) for i in 1:length(dim)]
-        if prod(diff)
-            k +=1
-            indices[k] = i
-        end
-    end
-
-    return indices
-end
-
 function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::Tuple)
 
 	k = 0
@@ -548,3 +532,19 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
 
 	return indices
 end
+
+# function collect_indices(l::Array, locator::Tuple, dim::Tuple)
+
+#     k = 0
+#     indices = Vector{Int}(2^length(dim))
+#     for i in 1:prod(dim)
+#         ind = Tuple(CartesianIndices(l)[i])
+#         diff = [((ind[i] - locator[i] == 0) || (ind[i] - locator[i] == 1)) for i in 1:length(dim)]
+#         if prod(diff)
+#             k +=1
+#             indices[k] = i
+#         end
+#     end
+
+#     return indices
+# end

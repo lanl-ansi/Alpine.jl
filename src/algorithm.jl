@@ -114,7 +114,7 @@ function presolve(m::Optimizer)
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
    # (get_option(m, :loglevel) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-   (get_option(m, :loglevel) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations).")
+   (get_option(m, :loglevel) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations)")
    return
 end
 
@@ -140,7 +140,8 @@ function check_exit(m::Optimizer)
 
    # constant objective with feasible local solve check
    if expr_isconst(m.obj_expr_orig) && (m.status[:local_solve] == MOI.OPTIMAL || m.status == MOI.LOCALLY_SOLVED)
-      m.best_bound = eval(m.obj_expr_orig)
+      # m.best_bound = eval(m.obj_expr_orig)
+      m.best_bound = m.obj_expr_orig
       m.best_rel_gap = 0.0
       m.best_abs_gap = 0.0
       m.status[:bounding_solve] = MOI.OPTIMAL
@@ -371,7 +372,8 @@ For advanced usage, `get_option(m, :disc_var_pick)` allows `::Function` inputs. 
 function pick_disc_vars(m::Optimizer)
 
    if isa(get_option(m, :disc_var_pick), Function)
-      eval(get_option(m, :disc_var_pick))(m)
+      # eval(get_option(m, :disc_var_pick))(m)
+      get_option(m, :disc_var_pick)(m)
       length(m.disc_vars) == 0 && length(m.nonconvex_terms) > 0 && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
    elseif isa(get_option(m, :disc_var_pick), Int)
       if get_option(m, :disc_var_pick) == 0

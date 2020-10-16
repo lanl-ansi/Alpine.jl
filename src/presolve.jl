@@ -19,7 +19,8 @@ function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
     elseif get_option(m, :presolve_bt_algo) == 2
         minmax_bound_tightening(m, use_bound=use_bound, use_tmc=true)
     elseif isa(get_option(m, :presolve_bt_algo), Function)
-        eval(get_option(m, :presolve_bt_algo))(m)
+        # eval(get_option(m, :presolve_bt_algo))(m)
+        get_option(m, :presolve_bt_algo)(m)
     else
         error("Unrecognized optimization-based bound tightening algorithm")
     end
@@ -98,9 +99,9 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
                     @objective(m.model_mip, sense, _index_to_variable_ref(m.model_mip, var_idx))
                     status = solve_bound_tightening_model(m)
                     if status in STATUS_OPT
-                        temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(JuMP.objective_value(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
+                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_value(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
                     elseif status in STATUS_LIMIT
-                        temp_bounds[var_idx][tell_side[sense]] = eval(tell_round[sense])(JuMP.objective_bound(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)
+                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_bound(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)
                     else
                         print("!")
                     end
@@ -156,14 +157,14 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
     end
 
     # (get_option(m, :loglevel) > 0) && println("Completed bound-tightening in $(m.logs[:bt_iter]) iterations. Here are the tightened bounds:")
-    (get_option(m, :loglevel) > 0) && println("  Variables whose bounds were tightened:")
+    (get_option(m, :loglevel) > 1) && println("  Variables whose bounds were tightened:")
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
     for i in m.disc_vars
         contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]); digits=2)*100
         if get_option(m, :loglevel) > 0 && contract_ratio > 0.0001
-            println("    VAR $(i): $(contract_ratio)% contraction |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |")
+            (get_option(m, :loglevel) > 1) && (println("    VAR $(i): $(contract_ratio)% contraction |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |"))
         end
     end
     # (get_option(m, :loglevel) > 0) && print("\n")

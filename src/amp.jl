@@ -63,7 +63,8 @@ function amp_post_convexification(m::Optimizer; use_disc=nothing)
     use_disc == nothing ? discretization = m.discretization : discretization = use_disc
 
     for i in 1:length(get_option(m, :method_convexification))             # Additional user-defined convexification method
-        eval(get_option(m, :method_convexification)[i])(m)
+        # eval(get_option(m, :method_convexification)[i])(m)
+        get_option(m, :method_convexification)[i](m)
     end
 
     amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
@@ -102,7 +103,7 @@ function amp_post_vars(m::Optimizer; kwargs...)
         # Changed to tight bound, if no bound tightening is performed, will be just .u_var_orig
         u_var[i] < Inf && JuMP.set_upper_bound(x[i], u_var[i])
 
-        m.var_type[i] == :Int && error("Support for general integer problem is current limited...")
+        m.var_type[i] == :Int && error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
     end
 
     return
@@ -182,7 +183,6 @@ if expr_isconst(m.obj_expr_orig)
         # Higher-order convex monomials need implementation of outer-approximation (check resolve_convex_constr in operators.jl)
         @objective(m.model_mip, m.sense_orig, m.bounding_obj_mip[:rhs] + sum(m.bounding_obj_mip[:coefs][i]*_index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][i].args[2])^2 for i in 1:m.bounding_obj_mip[:cnt]))
     else
-     @show m.obj_expr_orig
         error("Unknown structural obj type $(m.obj_structure)")
     end
     return
@@ -195,7 +195,8 @@ function add_partition(m::Optimizer; kwargs...)
     haskey(options, :use_solution) ? point_vec = options[:use_solution] : point_vec = m.best_bound_sol
 
     if isa(get_option(m, :disc_add_partition_method), Function)
-        m.discretization = eval(get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
+        # m.discretization = eval(get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
+        m.discretization = get_option(m, :disc_add_partition_method)(m, use_disc=discretization, use_solution=point_vec)
     elseif get_option(m, :disc_add_partition_method) == "adaptive"
         m.discretization = add_adaptive_partition(m, use_disc=discretization, use_solution=point_vec)
     elseif get_option(m, :disc_add_partition_method) == "uniform"
@@ -257,8 +258,6 @@ function add_adaptive_partition(m::Optimizer;kwargs...)
         point = point_vec[i]                # Original Variable
         λCnt = length(discretization[i])
 
-        # @show i, point, discretization[i] # Debugger
-
         # Built-in method based-on variable type
         if m.var_type[i] == :Cont
             i in processed && continue
@@ -275,7 +274,7 @@ function add_adaptive_partition(m::Optimizer;kwargs...)
             @warn "  Warning: Binary variable in m.disc_vars. Check out what is wrong..."
             continue  # No partition should be added to binary variable unless user specified
         elseif m.var_type[i] == :Int
-            error("Support for general integer problem is current limited...")
+            error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
         else
             error("Unexpected variable types during injecting partitions")
         end

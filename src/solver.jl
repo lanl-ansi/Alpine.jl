@@ -77,7 +77,7 @@ function default_options()
         gapref = :ub
         absgap = 1e-6
         tol = 1e-6
-        largebound = 1e4
+        largebound = 1E6
 
         nlp_solver = nothing
         minlp_solver = nothing
@@ -534,7 +534,7 @@ function load!(m::Optimizer)
     # populate data to create the bounding model
     recategorize_var(m)             # Initial round of variable re-categorization
 
-    :Int in m.var_type_orig && @warn "Alpine's support for integer variables is experimental"
+    :Int in m.var_type_orig && error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
     :Int in m.var_type_orig ? set_option(m, :int_enable, true) : set_option(m, :int_enable, false) # Separator for safer runs
 
     # Conduct solver-dependent detection

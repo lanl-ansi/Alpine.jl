@@ -212,7 +212,6 @@ end
 
 function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
 
-   # @show "inner recursive input $(expr)"
    expr.args[1] in [:*,:^] || return nothing, nothing, nothing         # Limited Area
 
    if expr.args[1] == :*
@@ -542,11 +541,11 @@ function expr_resolve_const(expr)
 
    isa(expr, Number) && return
    for i in 1:length(expr.args)
-      if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
+      if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
          continue
       elseif expr.args[i].head == :call
          (expr_isconst(expr.args[i])) && (expr.args[i] = eval(expr.args[i]))
-         if isa(expr.args[i], Float64) || isa(expr.args[i], Int) || isa(expr.args[i], Symbol)
+         if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
             continue
          else
             expr_resolve_const(expr.args[i])

@@ -48,7 +48,7 @@ function update_disc_int_var(m::Optimizer)
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
     # Additional error checking scheme
-    :Int in m.var_type && error("Support for general integer problems are limited...")
+    :Int in m.var_type && error("Alpine does not support MINLPs with geenric integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
 
     return
 end

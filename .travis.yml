@@ -5,9 +5,7 @@ os:
   - osx
 julia:
   - 1.0
-  - 1
-before_script:
- - julia -e 'using Pkg; Pkg.add(PackageSpec(name="Pavito", rev="master"))' # TODO remove when Pavito#master is released.
+  - 1 # Most recent v > 1.0
 jobs:
   allow_failures:
     - julia: nightly
@@ -16,7 +14,6 @@ jobs:
       julia: 1
       os: linux
       script:
-        - julia -e 'using Pkg; Pkg.rm("Pavito")' # TODO Pkg seems to get into troubles because of the `before_script`. Remove when Pavito#master is released.
         - julia --project=docs/ -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
         - julia --project=docs/ docs/make.jl
       after_success: skip

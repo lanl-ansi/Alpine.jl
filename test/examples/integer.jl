@@ -1,51 +1,18 @@
 function ex1225a(;solver=nothing)
+    # GOpt: 131670.377903
+    # This problem may be numerically sensitive 
 
     m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
     x_Idx = Any[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    @variable(m, x[x_Idx])
+    @variable(m, x[x_Idx] >= 0)
     b_Idx = Any[22, 23, 24]
-    @variable(m, b[b_Idx])
+    @variable(m, b[b_Idx], Bin)
     i_Idx = Any[16, 17, 18, 19, 20, 21]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[21])
-    JuMP.set_lower_bound(i[21], 0.0)
-    JuMP.set_upper_bound(i[21], 100.0)
-    JuMP.set_lower_bound(x[4], 0.0)
-    JuMP.set_lower_bound(x[6], 0.0)
-    JuMP.set_lower_bound(x[14], 0.0)
-    JuMP.set_lower_bound(x[3], 0.0)
-    JuMP.set_integer(i[19])
-    JuMP.set_lower_bound(i[19], 0.0)
-    JuMP.set_upper_bound(i[19], 100.0)
-    JuMP.set_lower_bound(x[11], 0.0)
-    JuMP.set_lower_bound(x[12], 0.0)
-    JuMP.set_lower_bound(x[5], 0.0)
-    JuMP.set_lower_bound(x[2], 0.0)
-    JuMP.set_binary(b[24])
-    JuMP.set_integer(i[16])
-    JuMP.set_lower_bound(i[16], 0.0)
-    JuMP.set_upper_bound(i[16], 100.0)
-    JuMP.set_binary(b[23])
-    JuMP.set_integer(i[17])
-    JuMP.set_lower_bound(i[17], 0.0)
-    JuMP.set_upper_bound(i[17], 100.0)
-    JuMP.set_lower_bound(x[9], 0.0)
-    JuMP.set_lower_bound(x[15], 0.0)
-    JuMP.set_lower_bound(x[1], 0.0)
-    JuMP.set_lower_bound(x[7], 0.0)
-    JuMP.set_lower_bound(x[8], 0.0)
-    JuMP.set_lower_bound(x[13], 0.0)
-    JuMP.set_integer(i[20])
-    JuMP.set_lower_bound(i[20], 0.0)
-    JuMP.set_upper_bound(i[20], 100.0)
-    JuMP.set_lower_bound(x[10], 0.0)
-    JuMP.set_integer(i[18])
-    JuMP.set_lower_bound(i[18], 0.0)
-    JuMP.set_upper_bound(i[18], 100.0)
-    JuMP.set_binary(b[22])
+    @variable(m, 0 <= i[i_Idx] <= 3, Int)
+
     JuMP.set_upper_bound(x[1], 80.0)
     JuMP.set_upper_bound(x[2], 25.0)
     JuMP.set_upper_bound(x[3], 45.0)
@@ -61,12 +28,6 @@ function ex1225a(;solver=nothing)
     JuMP.set_upper_bound(x[13], 1.0)
     JuMP.set_upper_bound(x[14], 1.0)
     JuMP.set_upper_bound(x[15], 1.0)
-    JuMP.set_upper_bound(i[16], 3.0)
-    JuMP.set_upper_bound(i[17], 3.0)
-    JuMP.set_upper_bound(i[18], 3.0)
-    JuMP.set_upper_bound(i[19], 3.0)
-    JuMP.set_upper_bound(i[20], 3.0)
-    JuMP.set_upper_bound(i[21], 3.0)
 
 
     # ----- Constraints ----- #
@@ -114,103 +75,25 @@ function ex1225a(;solver=nothing)
 end
 
 function ex1264a(;solver=nothing)
+    # Source: http://minlplib.org/ex1264a.html
+    # GOpt: 8.6
 
-    # 8.6
     m = Model(solver)
 
-    # ----- Variables ----- #
     @variable(m, objvar)
     b_Idx = Any[17, 18, 19, 20]
-    @variable(m, b[b_Idx])
+    @variable(m, b[b_Idx], Bin)
     i_Idx = Any[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 21, 22, 23, 24]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[8])
-    JuMP.set_lower_bound(i[8], 0.0)
-    JuMP.set_upper_bound(i[8], 100.0)
-    JuMP.set_integer(i[23])
-    JuMP.set_lower_bound(i[23], 0.0)
-    JuMP.set_upper_bound(i[23], 100.0)
-    JuMP.set_integer(i[21])
-    JuMP.set_lower_bound(i[21], 0.0)
-    JuMP.set_upper_bound(i[21], 100.0)
-    JuMP.set_integer(i[12])
-    JuMP.set_lower_bound(i[12], 0.0)
-    JuMP.set_upper_bound(i[12], 100.0)
-    JuMP.set_binary(b[18])
-    JuMP.set_integer(i[24])
-    JuMP.set_lower_bound(i[24], 0.0)
-    JuMP.set_upper_bound(i[24], 100.0)
-    JuMP.set_integer(i[5])
-    JuMP.set_lower_bound(i[5], 0.0)
-    JuMP.set_upper_bound(i[5], 100.0)
-    JuMP.set_binary(b[20])
-    JuMP.set_integer(i[3])
-    JuMP.set_lower_bound(i[3], 0.0)
-    JuMP.set_upper_bound(i[3], 100.0)
-    JuMP.set_binary(b[19])
-    JuMP.set_integer(i[2])
-    JuMP.set_lower_bound(i[2], 0.0)
-    JuMP.set_upper_bound(i[2], 100.0)
-    JuMP.set_integer(i[13])
-    JuMP.set_lower_bound(i[13], 0.0)
-    JuMP.set_upper_bound(i[13], 100.0)
-    JuMP.set_integer(i[6])
-    JuMP.set_lower_bound(i[6], 0.0)
-    JuMP.set_upper_bound(i[6], 100.0)
-    JuMP.set_integer(i[4])
-    JuMP.set_lower_bound(i[4], 0.0)
-    JuMP.set_upper_bound(i[4], 100.0)
-    JuMP.set_integer(i[9])
-    JuMP.set_lower_bound(i[9], 0.0)
-    JuMP.set_upper_bound(i[9], 100.0)
-    JuMP.set_integer(i[22])
-    JuMP.set_lower_bound(i[22], 0.0)
-    JuMP.set_upper_bound(i[22], 100.0)
-    JuMP.set_integer(i[14])
-    JuMP.set_lower_bound(i[14], 0.0)
-    JuMP.set_upper_bound(i[14], 100.0)
-    JuMP.set_integer(i[16])
-    JuMP.set_lower_bound(i[16], 0.0)
-    JuMP.set_upper_bound(i[16], 100.0)
-    JuMP.set_integer(i[10])
-    JuMP.set_lower_bound(i[10], 0.0)
-    JuMP.set_upper_bound(i[10], 100.0)
-    JuMP.set_integer(i[15])
-    JuMP.set_lower_bound(i[15], 0.0)
-    JuMP.set_upper_bound(i[15], 100.0)
-    JuMP.set_binary(b[17])
-    JuMP.set_integer(i[7])
-    JuMP.set_lower_bound(i[7], 0.0)
-    JuMP.set_upper_bound(i[7], 100.0)
-    JuMP.set_integer(i[11])
-    JuMP.set_lower_bound(i[11], 0.0)
-    JuMP.set_upper_bound(i[11], 100.0)
-    JuMP.set_integer(i[1])
-    JuMP.set_lower_bound(i[1], 0.0)
-    JuMP.set_upper_bound(i[1], 100.0)
-    JuMP.set_upper_bound(i[1], 5.0)
-    JuMP.set_upper_bound(i[2], 5.0)
-    JuMP.set_upper_bound(i[3], 5.0)
-    JuMP.set_upper_bound(i[4], 5.0)
-    JuMP.set_upper_bound(i[5], 5.0)
-    JuMP.set_upper_bound(i[6], 5.0)
-    JuMP.set_upper_bound(i[7], 5.0)
-    JuMP.set_upper_bound(i[8], 5.0)
-    JuMP.set_upper_bound(i[9], 5.0)
-    JuMP.set_upper_bound(i[10], 5.0)
-    JuMP.set_upper_bound(i[11], 5.0)
-    JuMP.set_upper_bound(i[12], 5.0)
-    JuMP.set_upper_bound(i[13], 5.0)
-    JuMP.set_upper_bound(i[14], 5.0)
-    JuMP.set_upper_bound(i[15], 5.0)
-    JuMP.set_upper_bound(i[16], 5.0)
+    @variable(m, i[i_Idx] >= 0, Int)
+
+    for j=1:16
+        JuMP.set_upper_bound(i[j], 5.0)
+    end    
     JuMP.set_upper_bound(i[21], 15.0)
     JuMP.set_upper_bound(i[22], 12.0)
     JuMP.set_upper_bound(i[23], 9.0)
     JuMP.set_upper_bound(i[24], 6.0)
 
-
-    # ----- Constraints ----- #
     @constraint(m, e1, -0.1*b[17]-0.2*b[18]-0.3*b[19]-0.4*b[20]-i[21]-i[22]-i[23]-i[24]+objvar == 0.0)
     @NLconstraint(m, e2, i[21]*i[1]+i[22]*i[2]+i[23]*i[3]+i[24]*i[4] >= 9.0)
     @NLconstraint(m, e3, i[21]*i[5]+i[22]*i[6]+i[23]*i[7]+i[24]*i[8] >= 7.0)
@@ -256,101 +139,59 @@ function ex1264a(;solver=nothing)
 end
 
 function prob03(;solver=nothing)
+    # Source: http://minlplib.org/prob03.html
+    # GOpt: 10.0000
 
     m = Model(solver)
 
-    # ----- Variables ----- #
     @variable(m, objvar)
     i_Idx = Any[1, 2]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[1])
-    JuMP.set_lower_bound(i[1], 0.0)
-    JuMP.set_upper_bound(i[1], 100.0)
-    JuMP.set_integer(i[2])
-    JuMP.set_lower_bound(i[2], 0.0)
-    JuMP.set_upper_bound(i[2], 100.0)
-    JuMP.set_lower_bound(i[1], 1.0)
-    JuMP.set_upper_bound(i[1], 5.0)
-    JuMP.set_lower_bound(i[2], 1.0)
-    JuMP.set_upper_bound(i[2], 5.0)
+    @variable(m, 1 <= i[i_Idx] <= 5, Int)
 
-
-    # ----- Constraints ----- #
-    @constraint(m, e1, -3*i[1]-2*i[2]+objvar == 0.0)
+    @constraint(m, e1, -3*i[1] - 2*i[2] + objvar == 0.0)
     @NLconstraint(m, e2, -i[1]*i[2] <= -3.5)
 
-
-    # ----- Objective ----- #
     @objective(m, Min, objvar)
 
     return m
 end
 
 function prob10(;solver=nothing)
+    # Source: http://minlplib.org/prob10.html
+    # GOpt: 3.44550379
 
     m = Model(solver)
 
-    # ----- Variables ----- #
     @variable(m, objvar)
     x_Idx = Any[2]
-    @variable(m, x[x_Idx])
+    @variable(m, 0 <= x[x_Idx] <= 10)
     i_Idx = Any[3]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[3])
-    JuMP.set_lower_bound(i[3], 0.0)
-    JuMP.set_upper_bound(i[3], 100.0)
-    JuMP.set_lower_bound(x[2], 0.0)
-    JuMP.set_upper_bound(x[2], 10.0)
-    JuMP.set_upper_bound(i[3], 10.0)
+    @variable(m, 0 <= i[i_Idx] <= 10, Int)
 
-
-    # ----- Constraints ----- #
     @constraint(m, e1, 0.7*x[2]+i[3] <= 7.0)
     @constraint(m, e2, 2.5*x[2]+i[3] <= 19.0)
-    @NLconstraint(m, e3, 1.1*( (2*x[2]-10)^2+ (i[3]-5)^2)+sin( (2*x[2]-10)^2+ (i[3]-5)^2)-objvar == 0.0)
+    @NLconstraint(m, e3, 1.1*( (2*x[2]-10)^2+ (i[3]-5)^2) + sin((2*x[2]-10)^2+ (i[3]-5)^2) - objvar == 0.0)
 
-
-    # ----- Objective ----- #
     @objective(m, Min, objvar)
 
     return m
 end
 
 function st_miqp1(;solver=nothing)
+    # source: http://minlplib.org/st_miqp1.html
+    # GOpt: 281.0000
 
-    # 281.0000
     m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
     i_Idx = Any[1, 2, 3, 4, 5]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[5])
-    JuMP.set_lower_bound(i[5], 0.0)
-    JuMP.set_upper_bound(i[5], 100.0)
-    JuMP.set_integer(i[4])
-    JuMP.set_lower_bound(i[4], 0.0)
-    JuMP.set_upper_bound(i[4], 100.0)
-    JuMP.set_integer(i[3])
-    JuMP.set_lower_bound(i[3], 0.0)
-    JuMP.set_upper_bound(i[3], 100.0)
-    JuMP.set_integer(i[1])
-    JuMP.set_lower_bound(i[1], 0.0)
-    JuMP.set_upper_bound(i[1], 100.0)
-    JuMP.set_integer(i[2])
-    JuMP.set_lower_bound(i[2], 0.0)
-    JuMP.set_upper_bound(i[2], 100.0)
-    JuMP.set_upper_bound(i[1], 1.0)
-    JuMP.set_upper_bound(i[2], 1.0)
-    JuMP.set_upper_bound(i[3], 1.0)
-    JuMP.set_upper_bound(i[4], 1.0)
-    JuMP.set_upper_bound(i[5], 1.0)
 
+    @variable(m, 0 <= i[i_Idx] <= 1, Int)
 
     # ----- Constraints ----- #
-    @constraint(m, e1, 20*i[1]+12*i[2]+11*i[3]+7*i[4]+4*i[5] >= 40.0)
-    @NLconstraint(m, e2, -(50*i[1]*i[1]+42*i[1]+50*i[2]*i[2]+44*i[2]+50*i[3]*i[3]+45*i[3]+50*i[4]*i[4]+47*i[4]+50*i[5]*i[5]+47.5*i[5])+objvar == 0.0)
-
+    @constraint(m, e1, 20*i[1] + 12*i[2] + 11*i[3] + 7*i[4] + 4*i[5] >= 40.0)
+    @NLconstraint(m, e2, -(50*i[1]^2 + 42*i[1] + 50*i[2]^2 + 44*i[2]+ 50*i[3]^2 + 45*i[3] + 50*i[4]^2 + 47*i[4]+ 50*i[5]^2 + 47.5*i[5]) + objvar == 0.0)
 
     # ----- Objective ----- #
     @objective(m, Min, objvar)
@@ -359,38 +200,25 @@ function st_miqp1(;solver=nothing)
 end
 
 function st_miqp2(;solver=nothing)
-
-    # 2.0000
+    # Source: http://minlplib.org/st_miqp2.html
+    # GOpt: 2.0000
+    
     m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
     i_Idx = Any[1, 2, 3, 4]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[4])
-    JuMP.set_lower_bound(i[4], 0.0)
-    JuMP.set_upper_bound(i[4], 100.0)
-    JuMP.set_integer(i[3])
-    JuMP.set_lower_bound(i[3], 0.0)
-    JuMP.set_upper_bound(i[3], 100.0)
-    JuMP.set_integer(i[1])
-    JuMP.set_lower_bound(i[1], 0.0)
-    JuMP.set_upper_bound(i[1], 100.0)
-    JuMP.set_integer(i[2])
-    JuMP.set_lower_bound(i[2], 0.0)
-    JuMP.set_upper_bound(i[2], 100.0)
+    @variable(m, i[i_Idx] >= 0, Int)
     JuMP.set_upper_bound(i[1], 1.0)
     JuMP.set_upper_bound(i[2], 1.0)
     JuMP.set_upper_bound(i[3], 1.0e10)
     JuMP.set_upper_bound(i[4], 1.0e10)
 
-
     # ----- Constraints ----- #
     @constraint(m, e1, -10*i[1]+i[3] <= 0.0)
     @constraint(m, e2, -20*i[2]+i[4] <= 0.0)
     @constraint(m, e3, i[3]+i[4] >= 5.0)
-    @NLconstraint(m, e4, -(4*i[3]*i[3]-3*i[3]+2*i[4]*i[4]-10*i[4])-4*i[1]-5*i[2]+objvar == 0.0)
-
+    @NLconstraint(m, e4, -(4*i[3]^2 - 3*i[3] + 2*i[4]^2 - 10*i[4]) - 4*i[1] -5*i[2] + objvar == 0.0)
 
     # ----- Objective ----- #
     @objective(m, Min, objvar)
@@ -399,27 +227,21 @@ function st_miqp2(;solver=nothing)
 end
 
 function st_miqp3(;solver=nothing)
+    # Source: http://minlplib.org/st_miqp3.html
+    # GOpt: -6.0000
 
-    # -6.0000
     m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
     i_Idx = Any[1, 2]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[1])
-    JuMP.set_lower_bound(i[1], 0.0)
-    JuMP.set_upper_bound(i[1], 100.0)
-    JuMP.set_integer(i[2])
-    JuMP.set_lower_bound(i[2], 0.0)
-    JuMP.set_upper_bound(i[2], 100.0)
+    @variable(m, i[i_Idx] >= 0, Int)
     JuMP.set_upper_bound(i[1], 3.0)
     JuMP.set_upper_bound(i[2], 1.0e15)
 
-
     # ----- Constraints ----- #
     @constraint(m, e1, -4*i[1]+i[2] <= 0.0)
-    @NLconstraint(m, e2, -6*i[1]*i[1]+3*i[2]+objvar == 0.0)
+    @NLconstraint(m, e2, -6*i[1]^2 + 3*i[2] + objvar == 0.0)
 
 
     # ----- Objective ----- #
@@ -429,43 +251,24 @@ function st_miqp3(;solver=nothing)
 end
 
 function st_miqp4(;solver=nothing)
+    # Source: http://minlplib.org/st_miqp4.html
+    # GOpt: -4574.0000
 
-    # -4574.0000
     m = Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
     x_Idx = Any[4, 5, 6]
-    @variable(m, x[x_Idx])
+    @variable(m, 0 <= x[x_Idx] <= 1E15)
     i_Idx = Any[1, 2, 3]
-    @variable(m, i[i_Idx])
-    JuMP.set_lower_bound(x[5], 0.0)
-    JuMP.set_integer(i[3])
-    JuMP.set_lower_bound(i[3], 0.0)
-    JuMP.set_upper_bound(i[3], 100.0)
-    JuMP.set_lower_bound(x[4], 0.0)
-    JuMP.set_lower_bound(x[6], 0.0)
-    JuMP.set_integer(i[1])
-    JuMP.set_lower_bound(i[1], 0.0)
-    JuMP.set_upper_bound(i[1], 100.0)
-    JuMP.set_integer(i[2])
-    JuMP.set_lower_bound(i[2], 0.0)
-    JuMP.set_upper_bound(i[2], 100.0)
-    JuMP.set_upper_bound(i[1], 1.0)
-    JuMP.set_upper_bound(i[2], 1.0)
-    JuMP.set_upper_bound(i[3], 1.0)
-    JuMP.set_upper_bound(x[4], 1.0e15)
-    JuMP.set_upper_bound(x[5], 1.0e15)
-    JuMP.set_upper_bound(x[6], 1.0e15)
-
+    @variable(m, 0 <= i[i_Idx] <= 1, Int)
 
     # ----- Constraints ----- #
     @constraint(m, e1, x[4]+x[5]-x[6] >= 0.0)
     @constraint(m, e2, -5*i[1]+x[4] <= 0.0)
     @constraint(m, e3, -10*i[2]+x[5] <= 0.0)
     @constraint(m, e4, -30*i[3]+x[6] <= 0.0)
-    @NLconstraint(m, e5, -(5*x[4]*x[4]+2*x[4]+5*x[5]*x[5]+3*x[5]+10*x[6]*x[6]-500*x[6])-10*i[1]+4*i[2]-5*i[3]+objvar == 0.0)
-
+    @NLconstraint(m, e5, -(5*x[4]^2 + 2*x[4] + 5*x[5]^2 + 3*x[5] + 10*x[6]^2 - 500*x[6]) - 10*i[1] + 4*i[2] - 5*i[3] + objvar == 0.0)
 
     # ----- Objective ----- #
     @objective(m, Min, objvar)
@@ -474,8 +277,9 @@ function st_miqp4(;solver=nothing)
 end
 
 function st_miqp5(;solver=nothing)
+    # Source: http://minlplib.org/st_miqp5.html
+    # GOpt: -333.88888890
 
-    # -333.88888890
     m = Model(solver)
 
     # ----- Variables ----- #
@@ -483,15 +287,8 @@ function st_miqp5(;solver=nothing)
     x_Idx = Any[3, 4, 5, 6, 7]
     @variable(m, x[x_Idx])
     i_Idx = Any[1, 2]
-    @variable(m, i[i_Idx])
-    JuMP.set_integer(i[1])
-    JuMP.set_lower_bound(i[1], 0.0)
-    JuMP.set_upper_bound(i[1], 100.0)
-    JuMP.set_integer(i[2])
-    JuMP.set_lower_bound(i[2], 0.0)
-    JuMP.set_upper_bound(i[2], 100.0)
-    JuMP.set_upper_bound(i[1], 1.0)
-    JuMP.set_upper_bound(i[2], 1.0)
+    @variable(m, 0 <= i[i_Idx] <= 1, Int)
+    
     JuMP.set_lower_bound(x[3], -7.24380468458)
     JuMP.set_upper_bound(x[3], 22.6826188429)
     JuMP.set_lower_bound(x[4], -6.0023781122)
@@ -500,9 +297,8 @@ function st_miqp5(;solver=nothing)
     JuMP.set_upper_bound(x[5], 11.5189336042)
     JuMP.set_lower_bound(x[6], -8.75189948987)
     JuMP.set_upper_bound(x[6], 14.5864991498)
-    JuMP.set_lower_bound(x[7], 8.98296319621e-17)
+    JuMP.set_lower_bound(x[7], 0)
     JuMP.set_upper_bound(x[7], 19.4187214575)
-
 
     # ----- Constraints ----- #
     @constraint(m, e1, -1.93414531698*x[3]+1.80314509442*x[4]+2.89695789508*x[5]+0.729324957489*x[6]+3.8837442915*x[7] <= 60.0)
@@ -518,8 +314,7 @@ function st_miqp5(;solver=nothing)
     @constraint(m, e11, i[1]-0.0524800119769*x[3]-0.904837825133*x[4]+0.209520819817*x[5]-0.291729982996*x[6]-0.222506183367*x[7] <= 0.0)
     @constraint(m, e12, -i[2]-0.445391966818*x[3]-0.301519984248*x[4]-0.587645368916*x[5]+0.145864991498*x[6]+0.586607210695*x[7] <= 0.0)
     @constraint(m, e13, i[2]+0.445391966818*x[3]+0.301519984248*x[4]+0.587645368916*x[5]-0.145864991498*x[6]-0.586607210695*x[7] <= 0.0)
-    @NLconstraint(m, e14, -(5*x[6]*x[6]-0.875189948987*x[6]+52*x[7]*x[7]-192.710582631*x[7])+54.0615511462*x[3]+45.2691026456*x[4]+33.0896119339*x[5]+objvar == 0.0)
-
+    @NLconstraint(m, e14, -(5*x[6]^2 - 0.875189948987*x[6] + 52*x[7]^2 - 192.710582631*x[7]) + 54.0615511462*x[3] + 45.2691026456*x[4] + 33.0896119339*x[5] + objvar == 0.0)
 
     # ----- Objective ----- #
     @objective(m, Min, objvar)
