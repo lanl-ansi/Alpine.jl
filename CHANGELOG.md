@@ -1,4 +1,14 @@
 # Critical Updates for Alpine.jl
+## v0.2.0
+* JuMP v0.21 build error issues fixed
+* #146 (MOI support fix)
+* expression.jl clean up
+* eval() removal where unnecessary #153 
+* NL objective parsing fix for higher-order monomials: #104 
+* Issues #151  #150  addressed
+* Drop support for all trigonometric related functions (both in src and testing)
+* Drop support of expression parsing for generic integer variables in MINLPs (both in src and testing)
+
 ## v0.1.16
 * Fixed CBC version to make it compatible 
 * Removed support for "Mini" Formulation for convex hulls
