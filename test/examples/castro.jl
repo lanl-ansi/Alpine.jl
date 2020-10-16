@@ -2,7 +2,7 @@ function castro2m2(;solver=nothing)
 
 	m = Model(solver)
 
-	@variable(m, 0 <= x[1:41] <= 1E6)
+	@variable(m, 0 <= x[1:41] <= 1E5)
     @variable(m, obj)
     @objective(m, Min, obj)
 
