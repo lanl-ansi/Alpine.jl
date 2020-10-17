@@ -4,7 +4,7 @@ Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Alpine.jl.svg?branch=maste
 [![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Alpine.jl/latest/)
 
-"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", formerly **POD.jl**, is a novel global optimization solver that uses an adaptive, piecewise convexification scheme and constraints programming methods to solve Mixed-Integer Non-Linear Programs (non-convex MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see [MINLPLib.jl](https://github.com/lanl-ansi/MINLPLib.jl)). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
+"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", is a novel global optimization solver that uses an adaptive, piecewise convexification scheme and constraint programming methods to solve non-convex Mixed-Integer Non-Linear Programs (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see [MINLPLib.jl](https://github.com/lanl-ansi/MINLPLib.jl)). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
 
 Unlike many other state-of-the-art MINLP solvers, Alpine is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
 
@@ -14,9 +14,7 @@ Alpine globally solves a given MINLP by:
 
 * Performing novel adaptive partitioning methods to create piecewise relaxations, bound tightening and polyhedral outer-approximations to guarantee global convergence
 
-**Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. 
-
-**Alpine currently does not support problems with**: Exponential cones, Positive Semi-Definite (PSD) cones, Nonlinear functions including exp(x), ln(x), x/y, abs(x), x^y, a^x, trigonometric functions (sin(x), cos(x), etc), where 'a' is a constant, and 'x' and 'y' are variables. 
+**Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. 
 
 <!-- 
  **Illustration of Alpine's dynamic partitioning and outer-approximation on simple functions** ([Source](https://arxiv.org/abs/1707.02514))
@@ -56,8 +54,8 @@ Please report any issues via the Github **[issue tracker]**. All types of issues
 
 [issue tracker]: https://github.com/lanl-ansi/Alpine.jl/issues
 
-## Challenging MINLPs
-We are seeking out hard benchmark instances for MINLPs. Please get in touch either by opening an issue or [privately](https://harshangrjn.github.io/#contact) if you would like to share any hard instances. Challenging problems will help us determine how to improve Alpine.
+## Challenging Problems
+We are seeking out hard benchmark instances for MINLPs. Please get in touch either by opening an issue or [privately](https://harshangrjn.github.io/#contact) if you would like to share any hard instances.
 
 ## Citing Alpine
 
