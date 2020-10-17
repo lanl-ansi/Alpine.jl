@@ -26,6 +26,8 @@
     @test alpine.mip_solver_id == "Cbc"
     Alpine.fetch_mip_solver_identifier(alpine;override="GLPKMathProgInterface.GLPKInterfaceMIP.GLPKSolverMIP(false, Any[])")
     @test alpine.mip_solver_id == "GLPK"
+    Alpine.fetch_mip_solver_identifier(alpine;override="Xpress.Optimizer")
+    @test alpine.mip_solver_id == "Xpress"
 
     Alpine.fetch_nlp_solver_identifier(alpine;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
     @test alpine.nlp_solver_id == "Pajarito"
