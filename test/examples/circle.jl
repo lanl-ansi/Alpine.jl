@@ -1,5 +1,4 @@
 function circle(;solver=nothing)
-
 	m = Model(solver)
 
     @variable(m, 0<=x[1:2]<=2)
@@ -10,7 +9,6 @@ function circle(;solver=nothing)
 end
 
 function circleN(;solver=nothing, N=2)
-
 	m = Model(solver)
 
     @variable(m, 0<=x[1:N]<=N)
