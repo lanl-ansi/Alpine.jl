@@ -46,7 +46,7 @@ Though the algorithm implemented in Alpine is quite involved, most of the hard w
 | [Ipopt](https://projects.coin-or.org/Ipopt)                                    | [Ipopt.jl](https://github.com/JuliaOpt/Ipopt.jl)             |
 | [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/JuliaOpt/AmplNLWriter.jl)   |
 | [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/JuliaOpt/KNITRO.jl)           |
-
+| [Xpress](https://www.fico.com/en/products/fico-xpress-optimization)            | [Xpress.jl](https://github.com/jump-dev/Xpress.jl)
 
 ## Bug reports and support
 Please report any issues via the Github **[issue tracker]**. All types of issues are welcome and encouraged; this includes bug reports, documentation typos, feature requests, etc. 

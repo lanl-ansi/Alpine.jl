@@ -737,6 +737,8 @@ function fetch_mip_solver_identifier(m::Optimizer;override="")
        m.mip_solver_id = "Cbc"
    elseif occursin("GLPK", solverstring)
        m.mip_solver_id = "GLPK"
+   elseif occursin("Xpress", solverstring)
+        m.mip_solver_id = "Xpress" 
    else
       error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
    end
