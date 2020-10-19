@@ -1,13 +1,21 @@
 # Critical Updates for Alpine.jl
 ## v0.2.0
-* JuMP v0.21 build error issues fixed
-* #146 (MOI support fix)
+* MOI wrapper and JuMP v0.21 support 
 * expression.jl clean up
-* eval() removal where unnecessary #153 
-* NL objective parsing fix for higher-order monomials: #104 
-* Issues #151  #150  addressed
+* eval() removal where unnecessary (#153)
 * Drop support for all trigonometric related functions (both in src and testing)
 * Drop support of expression parsing for generic integer variables in MINLPs (both in src and testing)
+
+Closed issues:
+* arc consistency partitioning pruning scheme as an example extension for POD (#37)
+* Generate convex relaxations for nonconvex MINLPs (#86)
+* Error in convexification of monomials (#104)
+* On variables chosen for partitioning (#121)
+* Travis and Documeter Maintenance (#144)
+* Compilation error (#146)
+* bound propagation buggy (#147)
+* Reenable test: Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl (#150)
+* Reenable test: Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl (#151)
 
 ## v0.1.16
 * Fixed CBC version to make it compatible 
