@@ -682,7 +682,7 @@ function eval_feasibility(m::Optimizer, sol::Vector)
        func = m.lin_quad_constraints[i][1]
        eval_rhs[i] = MOI.Utilities.eval_variables(vi -> rounded_sol[vi.value], func)
    end
-   start = m.num_constr_orig - length(m.nonlinear_constraint_bounds_orig) + 1
+   start = m.num_constr_orig - length(m.nl_constraint_bounds_orig) + 1
    @assert start == length(m.lin_quad_constraints) + 1
    interface_eval_g(m.d_orig, view(eval_rhs, start:m.num_constr_orig), rounded_sol)
    feasible = true
@@ -814,7 +814,7 @@ end
 An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver's time limits.
 """
 function set_mip_time_limit(m::Optimizer)
-   time_limit = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+   time_limit = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
    MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 end
 

@@ -158,7 +158,7 @@ function check_exit(m::Optimizer)
 
    # Optimality check
    m.best_rel_gap <= get_option(m, :relgap) && return true
-   m.logs[:n_iter] >= get_option(m, :maxiter) && return true
+   m.logs[:n_iter] >= get_option(m, :max_iter) && return true
    m.best_abs_gap <= get_option(m, :absgap) && return true
 
    # Userlimits check
@@ -183,7 +183,7 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
     if m.objective_function !== nothing
         MOI.set(model, MOI.ObjectiveFunction{typeof(m.objective_function)}(), m.objective_function)
     end
-    block = MOI.NLPBlockData(m.nonlinear_constraint_bounds_orig, m.d_orig, m.has_nlp_objective)
+    block = MOI.NLPBlockData(m.nl_constraint_bounds_orig, m.d_orig, m.has_nl_objective)
     MOI.set(model, MOI.NLPBlock(), block)
     return x
 end
@@ -259,7 +259,7 @@ function local_solve(m::Optimizer; presolve = false)
 
    cputime_local_solve = time() - start_local_solve
    m.logs[:total_time] += cputime_local_solve
-   m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+   m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
 
    if do_heuristic
       m.status[:local_solve] = heu_basic_rounding(m, MOI.get(local_solve_model, MOI.VariablePrimal(), x))
@@ -322,7 +322,7 @@ function bounding_solve(m::Optimizer)
    optimize!(m.model_mip)
    status = termination_status(m.model_mip)
    m.logs[:total_time] += time() - start_bounding_solve
-   m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+   m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
    # ================= Solve End ================ #
 
    if status in STATUS_OPT || status in STATUS_LIMIT
@@ -345,7 +345,7 @@ function bounding_solve(m::Optimizer)
       push!(m.logs[:bound], "-")
       m.status[:bounding_solve] = MOI.INFEASIBLE
       ALPINE_DEBUG && print_iis_gurobi(m.model_mip) # Diagnostic code
-      @warn "  Warning: Infeasibility detected via convex relaxation Infeasibility"
+      @warn "  Warning: Infeasibility detected in the MIP solver"
    elseif status == :Unbounded
       m.status[:bounding_solve] = MOI.DUAL_INFEASIBLE
       @warn "  Warning: MIP solver return unbounded"

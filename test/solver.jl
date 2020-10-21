@@ -23,7 +23,7 @@ end
         "disc_uniform_rate" => 10,
         "presolve_bp" => false,
         "presolve_bt" => false,
-        "maxiter" => 1,
+        "max_iter" => 1,
         "loglevel" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
@@ -42,7 +42,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bp" =>  false,
                             "presolve_bt" =>  false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
@@ -61,7 +61,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bp" =>  false,
                             "presolve_bt" =>  false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
@@ -79,7 +79,7 @@ end
                             "disc_var_pick" => 3,
                             "presolve_bp" =>  false,
                             "presolve_bt" =>  false,
-                            "maxiter" => 2,
+                            "max_iter" => 2,
                             "loglevel" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
@@ -101,7 +101,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bp" => false,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)
@@ -122,7 +122,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bp" => false,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)
@@ -142,7 +142,7 @@ end
                             "disc_uniform_rate" => 15,
                             "presolve_bp" => false,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)
@@ -166,7 +166,7 @@ end
                             "disc_var_pick" => 0,
                             "disc_uniform_rate" => 10,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = blend029_gl(solver=test_solver)
@@ -185,7 +185,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bp" => false,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = blend029_gl(solver=test_solver)
@@ -204,7 +204,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bp" => false,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = blend029_gl(solver=test_solver)
@@ -225,7 +225,7 @@ end
                             "disc_var_pick" => 3,
                             "presolve_bp" => true,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = castro6m2(solver=test_solver)
@@ -247,7 +247,7 @@ end
                             "disc_var_pick" => 3,
                             "presolve_bp" => true,
                             "presolve_bt" => false,
-                            "maxiter" => 2,
+                            "max_iter" => 2,
                             "loglevel" => 100)
 
     m = castro6m2(solver=test_solver)
@@ -271,7 +271,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bp" => false,
                             "presolve_bt" => false,
-                            "maxiter" => 1,
+                            "max_iter" => 1,
                             "loglevel" => 100)
 
     m = castro2m2(solver=test_solver)

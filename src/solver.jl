@@ -3,12 +3,12 @@ mutable struct OptimizerOptions
 
     # basic solver parameters
     loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
-    timeout::Float64                                            # Time limit for algorithm (in seconds)
-    maxiter::Int                                                # Target Maximum Iterations
+    time_limit::Float64                                            # Time limit for algorithm (in seconds)
+    max_iter::Int                                                # Target Maximum Iterations
     relgap::Float64                                             # Relative optimality gap termination condition
     gapref::Symbol                                              # Relative gap reference point (options: [:ub, :lb])
     absgap::Float64                                             # Absolute optimality gap termination condition
-    tol::Float64                                                # Numerical tol used in the algorithmic process
+    tol::Float64                                                # Numerical tol used in algorithms
     largebound::Float64                                         # Large bounds for problems with unbounded variables
 
     # add all the solver options
@@ -37,7 +37,7 @@ mutable struct OptimizerOptions
     disc_abs_width_tol::Float64                                 # Absolute tolerance used when setting up partition/discretization
     disc_rel_width_tol::Float64                                 # Relative width tolerance when setting up partition/discretization
     disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve
-    disc_ratio_branch::Bool                                     # Branching tests for picking fixed the discretization ratio
+    disc_ratio_branch::Bool                                     # Branching tests for picking fixed discretization ratio
 
     # MIP Formulation Parameters
     convhull_formulation::String                                # MIP Formulation for the relaxation
@@ -51,13 +51,13 @@ mutable struct OptimizerOptions
     # Presolving Parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
-    presolve_timeout::Float64                                   # Time limit for presolving (seconds)
-    presolve_maxiter::Int                                       # Maximum iterations allowed to perform presolve (vague in parallel mode)
+    presolve_time_limit::Float64                                # Time limit for presolving (seconds)
+    presolve_max_iter::Int                                      # Maximum iterations allowed to perform presolve (vague in parallel mode)
     presolve_bt_width_tol::Float64                              # Width tolerance for bound-tightening
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol (change to precision)
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
     presolve_bt_relax::Bool                                     # Relax the MIP solved in built-in relaxation scheme for time performance
-    presolve_bt_mip_timeout::Float64                            # Regulate the time limit for a single MIP solved in the built-in bound tightening algorithm
+    presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
@@ -71,8 +71,8 @@ end
 
 function default_options()
         loglevel = 1
-        timeout = 1E6
-        maxiter = 99
+        time_limit = 1E6
+        max_iter = 99
         relgap = 1e-4
         gapref = :ub
         absgap = 1e-6
@@ -113,29 +113,29 @@ function default_options()
 
         presolve_track_time = true
         presolve_bt = true
-        presolve_timeout = 900
-        presolve_maxiter = 10
+        presolve_time_limit = 900
+        presolve_max_iter = 10
         presolve_bt_width_tol = 1e-3
         presolve_bt_output_tol = 1e-5
         presolve_bt_algo = 1
         presolve_bt_relax = false
-        presolve_bt_mip_timeout = Inf
-        presolve_bp = true
+        presolve_bt_mip_time_limit = Inf
+        presolve_bp = false
 
         user_parameters = Dict()
         int_enable = false
         int_cumulative_disc = true
         int_fully_disc = false
 
-    return OptimizerOptions(loglevel, timeout, maxiter, relgap, gapref, absgap, tol, largebound,
+    return OptimizerOptions(loglevel, time_limit, max_iter, relgap, gapref, absgap, tol, largebound,
                              nlp_solver, minlp_solver, mip_solver,
                              recognize_convex, bilinear_mccormick, bilinear_convexhull, monomial_convexhull,
                              method_convexification, method_partition_injection, term_patterns, constr_patterns,
                              disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
                              disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch,
                              convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts,
-                             presolve_track_time, presolve_bt, presolve_timeout, presolve_maxiter, presolve_bt_width_tol, presolve_bt_output_tol,
-                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_timeout, presolve_bp,
+                             presolve_track_time, presolve_bt, presolve_time_limit, presolve_max_iter, presolve_bt_width_tol, presolve_bt_output_tol,
+                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_time_limit, presolve_bp,
                              user_parameters, int_enable, int_cumulative_disc, int_fully_disc)
 end
 
@@ -167,10 +167,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
     u_var_orig::Vector{Float64}                                 # Variable upper bounds
     constraint_bounds_orig::Vector{MOI.NLPBoundsPair}           # Constraint lower bounds
-    nonlinear_constraint_bounds_orig::Vector{MOI.NLPBoundsPair} # Constraint lower bounds
+    nl_constraint_bounds_orig::Vector{MOI.NLPBoundsPair}        # Constraint lower bounds
     sense_orig::MOI.OptimizationSense                           # Problem type (:Min, :Max)
     d_orig::Union{Nothing, JuMP.NLPEvaluator}                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
-    has_nlp_objective::Bool
+    has_nl_objective::Bool
     objective_function::Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
 
     # additional initial data that may be useful later (not populated)
@@ -297,11 +297,11 @@ function MOI.empty!(m::Optimizer)
     m.l_var_orig = Float64[]
     m.u_var_orig = Float64[]
     m.constraint_bounds_orig = MOI.NLPBoundsPair[]
-    m.nonlinear_constraint_bounds_orig = MOI.NLPBoundsPair[]
+    m.nl_constraint_bounds_orig = MOI.NLPBoundsPair[]
     m.sense_orig = MOI.FEASIBILITY_SENSE
 
     m.d_orig = nothing
-    m.has_nlp_objective = false
+    m.has_nl_objective = false
     m.objective_function = nothing
 
     m.linear_terms = Dict()
@@ -458,13 +458,13 @@ end
 
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
-    m.has_nlp_objective = block.has_objective
+    m.has_nl_objective = block.has_objective
     # We cache it to add it in `load!` as we cannot call `MOI.constraint_expr` yet
     # so we will add the nonlinear `constr_expr_orig` at the end so we need
     # to add the bounds at the end too.
     # So we can consider that the nonlinear constraints are the
-    # `length(m.nonlinear_constraint_bounds_orig)` last ones.
-    m.nonlinear_constraint_bounds_orig = block.constraint_bounds
+    # `length(m.nl_constraint_bounds_orig)` last ones.
+    m.nl_constraint_bounds_orig = block.constraint_bounds
 end
 
 # In JuMP v0.18/MathProgBase, the 5th decision variable would be `:(x[5])`.
@@ -485,7 +485,7 @@ function load!(m::Optimizer)
     MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
 
     # Collect objective & constraint expressions
-    if m.has_nlp_objective
+    if m.has_nl_objective
         m.obj_expr_orig = expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
     elseif m.objective_function isa Nothing
         m.obj_expr_orig = Expr(:call, :+)
@@ -499,13 +499,13 @@ function load!(m::Optimizer)
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
     if !isempty(m.int_vars) || !isempty(m.bin_vars)
-        (get_option(m, :minlp_solver) === nothing) && (error("No MINLP local solver specified; use minlp_solver to specify a MINLP local solver"))
+        (get_option(m, :minlp_solver) === nothing) && (error("No MINLP local solver specified; use option 'minlp_solver' to specify a MINLP local solver"))
     end
 
-    m.num_constr_orig += length(m.nonlinear_constraint_bounds_orig)
-    m.num_nlconstr_orig += length(m.nonlinear_constraint_bounds_orig)
-    append!(m.constraint_bounds_orig, m.nonlinear_constraint_bounds_orig)
-    for i in eachindex(m.nonlinear_constraint_bounds_orig)
+    m.num_constr_orig += length(m.nl_constraint_bounds_orig)
+    m.num_nlconstr_orig += length(m.nl_constraint_bounds_orig)
+    append!(m.constraint_bounds_orig, m.nl_constraint_bounds_orig)
+    for i in eachindex(m.nl_constraint_bounds_orig)
         push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
         push!(m.constr_structure, :generic_nonlinear)
     end
@@ -527,7 +527,7 @@ function load!(m::Optimizer)
     m.obj_structure = :none
 
     @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
-    m.is_obj_linear_orig = !m.has_nlp_objective && m.objective_function isa MOI.ScalarAffineFunction{Float64}
+    m.is_obj_linear_orig = !m.has_nl_objective && m.objective_function isa MOI.ScalarAffineFunction{Float64}
     m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
@@ -558,13 +558,13 @@ function load!(m::Optimizer)
     # Turn-on bt presolver if variables are not discrete
     if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && get_option(m, :presolve_bt) == nothing
         set_option(m, :presolve_bt, true)
-        println("Automatically turning on bound-tightening presolver...")
+        println("Automatically turning on bound-tightening presolve")
     elseif get_option(m, :presolve_bt) == nothing  # If no use indication
         set_option(m, :presolve_bt, false)
     end
 
     if length(m.bin_vars) > 200 || m.num_var_orig > 2000
-        println("Automatically turning OFF ratio branching due to the size of the problem")
+        println("Automatically turning OFF 'disc_ratio_branch' due to the size of the problem")
         set_option(m, :disc_ratio_branch, false)
     end
 

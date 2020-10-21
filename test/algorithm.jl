@@ -24,7 +24,7 @@ end
                            "monomial_convexhull" => false,
                            "presolve_bp" => true,
     					   "loglevel" =>100,
-                           "maxiter" => 3,
+                           "max_iter" => 3,
     					   "presolve_bt_width_tol" => 1e-3,
     					   "presolve_bt" => false,
     					   "disc_var_pick" => 0)
@@ -46,7 +46,7 @@ end
                            "presolve_bp" => true,
                            "disc_var_pick" => 1,
                            "loglevel" =>100,
-                           "maxiter" => 3,
+                           "max_iter" => 3,
                            "presolve_bt_width_tol" => 1e-3,
                            "presolve_bt" => false)
     m = nlp3(solver = test_solver)
@@ -64,13 +64,13 @@ end
 							   "mip_solver" => CBC,
                                "bilinear_convexhull" => false,
 							   "loglevel" =>100,
-                               "maxiter" => 3,
+                               "max_iter" => 3,
 							   "presolve_bt_width_tol" => 1e-3,
 							   "presolve_bt_output_tol" => 1e-1,
 							   "presolve_bt" => true,
                                "presolve_bt_algo" => 1,
                                "presolve_bp" => true,
-							   "presolve_maxiter" => 2,
+							   "presolve_max_iter" => 2,
                                "presolve_track_time" => true,
 							   "disc_var_pick" => max_cover_var_picker)
     m = nlp3(solver=test_solver)
@@ -90,13 +90,13 @@ end
                               "mip_solver" => CBC,
                               "bilinear_convexhull" => false,
                               "loglevel" =>100,
-                              "maxiter" => 2,
+                              "max_iter" => 2,
                               "presolve_bt" => true,
                               "presolve_bt_width_tol" => 1e-3,
                               "presolve_bt_output_tol" => 1e-1,
                               "presolve_bt_algo" => 2,
                               "presolve_bp" => true,
-                              "presolve_maxiter" => 2,
+                              "presolve_max_iter" => 2,
                               "disc_var_pick" => max_cover_var_picker)
 
    m = nlp3(solver=test_solver)
@@ -144,7 +144,7 @@ end
                            "mip_solver" => PAVITO,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio" => 8,
-                           "maxiter" => 6,
+                           "max_iter" => 6,
                            "presolve_bt" => false,
                            "presolve_bt_algo" => 1,
                            "presolve_bt_output_tol" => 1e-1,
@@ -179,7 +179,7 @@ end
                       "presolve_bt" => false,
                       "presolve_bp" => true,
                       "convhull_formulation" => "facet",
-                      "maxiter" => 3,
+                      "max_iter" => 3,
                       "loglevel" =>100)
    m = nlp3(solver=test_solver)
    JuMP.optimize!(m)
@@ -197,7 +197,7 @@ end
         test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                                "mip_solver" => CBC,
                                "disc_abs_width_tol" => 1e-2,
-                               "maxiter" => 4,
+                               "max_iter" => 4,
                                "presolve_bp" => false,
                                "presolve_bt" => false,
                                "loglevel" => 1)
@@ -216,7 +216,7 @@ end
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
-                           "maxiter" => 4,
+                           "max_iter" => 4,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
                            "loglevel" => 1)
@@ -237,7 +237,7 @@ end
         test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                                "mip_solver" => CBC,
                                "disc_abs_width_tol" => 1e-2,
-                               "maxiter" => 4,
+                               "max_iter" => 4,
                                "presolve_bp" => false,
                                "presolve_bt" => false,
                                "loglevel" => 1)
@@ -256,7 +256,7 @@ end
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
-                           "maxiter" => 3,
+                           "max_iter" => 3,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
                            "loglevel" =>1)
@@ -276,7 +276,7 @@ end
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
                        "presolve_bp" => false,
-                       "maxiter" => 4,
+                       "max_iter" => 4,
                        "convhull_formulation" => "facet",
                        "loglevel" =>100)
     m = nlp3(solver=test_solver)
@@ -295,7 +295,7 @@ end
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => false,
                            "disc_ratio" => 18,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -312,7 +312,7 @@ end
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => true,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -329,7 +329,7 @@ end
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => true,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -346,7 +346,7 @@ end
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => true,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -363,7 +363,7 @@ end
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => true,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -380,7 +380,7 @@ end
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => true,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -397,7 +397,7 @@ end
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => true,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -414,7 +414,7 @@ end
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio_branch" => true,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
                            "loglevel" => 100)
@@ -509,7 +509,7 @@ end
 #                            "mip_solver" => PAVITO,
 #                            "disc_abs_width_tol" => 1e-2,
 #                            "disc_ratio" => 8,
-#                            "maxiter" => 6,
+#                            "max_iter" => 6,
 #                            "presolve_bt" => false,
 #                            "presolve_bp" => true,
 #                            "presolve_bt_algo" => 1,
@@ -563,7 +563,7 @@ end
                            "mip_solver" => PAVITO,
                            "disc_abs_width_tol" => 1e-2,
                            "disc_ratio" => 8,
-                           "maxiter" => 6,
+                           "max_iter" => 6,
                            "presolve_bt" => false,
                            "presolve_bp" => true,
                            "presolve_bt_algo" => 1,
@@ -619,7 +619,7 @@ end
 #                            "mip_solver" => PAVITO,
 #                            "disc_abs_width_tol" => 1e-2,
 #                            "disc_ratio" => 8,
-#                            "maxiter" => 6,
+#                            "max_iter" => 6,
 #                            "presolve_bt" => false,
 #                            "presolve_bp" => true,
 #                            "presolve_bt_algo" => 1,
@@ -636,7 +636,7 @@ end
 @testset "Algorithm Logic Test || castro4m2 || 1 iteration || Error case" begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => CBC,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bt" => false,
                            "loglevel" => 100)
 
@@ -653,7 +653,7 @@ end
                           "presolve_bp" => true,
                           "disc_var_pick" => 1,
                           "loglevel" => 100,
-                          "maxiter" => 3,
+                          "max_iter" => 3,
                           "presolve_bt_width_tol" => 1e-3,
                           "presolve_bt" => false)
     m = blend029_gl(solver=test_solver)
@@ -667,7 +667,7 @@ end
 @testset "Convex Model Solve" begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => PAVITO,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bt" => false,
                            "loglevel" => 100)
     m = convex_solve(solver=test_solver)
@@ -680,9 +680,9 @@ end
                            "mip_solver" => CBC,
                            "disc_add_partition_method" => "uniform",
                            "disc_uniform_rate" => 10,
-                           "maxiter" => 1,
+                           "max_iter" => 1,
                            "presolve_bt" => false,
-                           "timeout" => 100000,
+                           "time_limit" => 100000,
                            "loglevel" => 100)
     m = nlp3(solver=test_solver)
     optimize!(m)

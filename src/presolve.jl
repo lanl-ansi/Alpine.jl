@@ -60,7 +60,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
 
     st = time() # Track start time
     if timelimit == Inf
-        timelimit = get_option(m, :presolve_timeout)
+        timelimit = get_option(m, :presolve_time_limit)
     end
 
     # Regulating Special Input Conditions: default use best feasible solution objective value
@@ -83,7 +83,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
     keeptightening = true
     avg_reduction = Inf
     total_reduction = 0.0
-    while keeptightening && (m.logs[:time_left] > get_option(m, :tol)) && (m.logs[:bt_iter] < get_option(m, :presolve_maxiter)) # Stopping criteria
+    while keeptightening && (m.logs[:time_left] > get_option(m, :tol)) && (m.logs[:bt_iter] < get_option(m, :presolve_max_iter)) # Stopping criteria
 
         keeptightening = false
         m.logs[:bt_iter] += 1
@@ -194,7 +194,7 @@ function create_bound_tightening_model(m::Optimizer, discretization, bound; kwar
 
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
-    m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
 
     return
 end
@@ -209,10 +209,10 @@ A function that solves the min and max OBBT model.
 function solve_bound_tightening_model(m::Optimizer; kwargs...)
 
     # ========= MILP Solve ========= #
-    time_limit = max(0.0, if get_option(m, :presolve_bt_mip_timeout) < Inf
-        min(get_option(m, :presolve_bt_mip_timeout), get_option(m, :timeout) - m.logs[:total_time])
+    time_limit = max(0.0, if get_option(m, :presolve_bt_mip_time_limit) < Inf
+        min(get_option(m, :presolve_bt_mip_time_limit), get_option(m, :time_limit) - m.logs[:total_time])
     else
-        get_option(m, :timeout) - m.logs[:total_time]
+        get_option(m, :time_limit) - m.logs[:total_time]
     end)
     MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 
@@ -227,7 +227,7 @@ function solve_bound_tightening_model(m::Optimizer; kwargs...)
     end
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve
-    m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
     # ========= MILP Solve ========= #
 
     return status
