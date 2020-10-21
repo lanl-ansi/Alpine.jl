@@ -686,7 +686,7 @@ end
                            "loglevel" => 100)
     m = nlp3(solver=test_solver)
     optimize!(m)
-    @test isapprox(objective_bound(m), 6561.7156;atol=1e-3)
+    @test isapprox(objective_bound(m), 6561.7841; atol=1e-3)
 end
 
 @testset "Algorithm Test with binprod terms" begin
