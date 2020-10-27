@@ -193,10 +193,10 @@ Recognize structural constraints.
 function expr_constr_parsing(expr, m::Optimizer, idx::Int=0)
 
    # First process user-defined structures in-cases of over-ride
-   for i in 1:length(get_option(m, :constr_patterns))
-      is_strucural = eval(get_option(m, :constr_patterns)[i])(expr, m, idx)
-      return
-   end
+   # for i in 1:length(get_option(m, :constr_patterns))
+   #    is_strucural = eval(get_option(m, :constr_patterns)[i])(expr, m, idx)
+   #    return
+   # end
 
    isa(expr, Number) && return false
    # Recognize built-in special structural pattern

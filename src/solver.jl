@@ -24,9 +24,9 @@ mutable struct OptimizerOptions
 
     # expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user can choose to convexify specific non-linear terms : no over-ride privilege
-    method_partition_injection::Array{Function}                 # [INACTIVE] Array of functions for special methods to add partitions to variables under complex conditions
-    term_patterns::Array{Function}                              # Array of functions that user can choose to parse/recognize nonlinear terms in constraint expressions
-    constr_patterns::Array{Function}                            # Array of functions that user can choose to parse/recognize structural constraint from expressions
+    # method_partition_injection::Array{Function}               # [INACTIVE] Array of functions for special methods to add partitions to variables under complex conditions
+    # term_patterns::Array{Function}                            # [INACTIVE] Array of functions that user can choose to parse/recognize nonlinear terms in constraint expressions
+    # constr_patterns::Array{Function}                          # [INACTIVE] Array of functions that user can choose to parse/recognize structural constraint from expressions
 
     # parameters used in the partitioning algorithm
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
@@ -89,9 +89,9 @@ function default_options()
         monomial_convexhull = true
 
         method_convexification = Array{Function}(undef, 0)
-        method_partition_injection = Array{Function}(undef, 0)
-        term_patterns = Array{Function}(undef, 0)
-        constr_patterns = Array{Function}(undef, 0)
+        # method_partition_injection = Array{Function}(undef, 0)
+        # term_patterns = Array{Function}(undef, 0)
+        # constr_patterns = Array{Function}(undef, 0)
 
         disc_var_pick = 2                      # By default use the 15-variable selective rule
         disc_ratio = 4
@@ -130,8 +130,7 @@ function default_options()
     return OptimizerOptions(loglevel, time_limit, max_iter, relgap, gapref, absgap, tol, largebound,
                              nlp_solver, minlp_solver, mip_solver,
                              recognize_convex, bilinear_mccormick, bilinear_convexhull, monomial_convexhull,
-                             method_convexification, method_partition_injection, term_patterns, constr_patterns,
-                             disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
+                             method_convexification, disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
                              disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch,
                              convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts,
                              presolve_track_time, presolve_bt, presolve_time_limit, presolve_max_iter, presolve_bt_width_tol, presolve_bt_output_tol,

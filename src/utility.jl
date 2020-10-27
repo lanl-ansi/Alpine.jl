@@ -77,7 +77,6 @@ discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len=l)
 Update the data structure with feasible solution and its associated objective (if better)
 """
 function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
-
    convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
    push!(m.logs[:obj], objval)
    if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
@@ -85,7 +84,6 @@ function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
       m.best_sol = sol
       m.detected_feasible_solution = true
    end
-
    return
 end
 
@@ -101,7 +99,7 @@ end
 
 
 """
-Tell what would be the variable type of a lifted term.
+Mention the variable type of a lifted term.
 This function is with limited functionality
 @docstring TODO
 """

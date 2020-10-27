@@ -37,10 +37,10 @@ Specific structure pattern information will be described formally.
 function detect_nonconvex_terms(expr::Any, constr_id::Int, m::Optimizer; kwargs...)
 
     # First process user-defined structures in-cases of over-ride
-    for i in 1:length(get_option(m, :term_patterns))
-        skip, expr = eval(get_option(m, :term_patterns)[i])(expr, constr_id, m)
-        skip && return expr
-    end
+    # for i in 1:length(get_option(m, :term_patterns))
+    #     skip, expr = eval(get_option(m, :term_patterns)[i])(expr, constr_id, m)
+    #     skip && return expr
+    # end
 
     # NOTE :: Sequence of which term to detect matters here
     #         More specific term should be detected first to reduce the size of relaxation
