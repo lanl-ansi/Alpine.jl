@@ -6,7 +6,7 @@
                           "presolve_bp" => true,
                           "disc_var_pick" => 1,
                           "loglevel" => 100,
-                          "maxiter" => 2,
+                          "max_iter" => 2,
                           "presolve_bt_width_tol" => 1e-3,
                           "presolve_bt" => false)
     m = blend029_gl(solver=test_solver)

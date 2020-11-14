@@ -47,7 +47,7 @@ function create_bounding_mip(m::Optimizer; use_disc=nothing)
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
-    m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
 
     return
 end
@@ -432,7 +432,7 @@ function disc_branch_solve(m::Optimizer)
     status = MOI.get(m.model_mip, MOI.TerminationStatus())
     cputime_branch_bounding_solve = time() - start_bounding_solve
     m.logs[:total_time] += cputime_branch_bounding_solve
-    m.logs[:time_left] = max(0.0, get_option(m, :timeout) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
     # ================= Solve End ================ #
 
     if status in STATUS_OPT || status in STATUS_LIMIT

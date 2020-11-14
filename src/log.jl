@@ -6,7 +6,7 @@ function create_logs!(m)
    # Timers
    logs[:presolve_time] = 0.                     # Total presolve-time of the algorithm
    logs[:total_time] = 0.                        # Total run-time of the algorithm
-   logs[:time_left] = get_option(m, :timeout)    # Total remaining time of the algorithm if time-out is specified
+   logs[:time_left] = get_option(m, :time_limit)    # Total remaining time of the algorithm if time-out is specified
 
    # Values
    logs[:obj] = []                 # Iteration-based objective
@@ -24,7 +24,7 @@ end
 
 function reset_timer(m::Optimizer)
    m.logs[:total_time] = 0.
-   m.logs[:time_left] = get_option(m, :timeout)
+   m.logs[:time_left] = get_option(m, :time_limit)
    return m
 end
 
@@ -53,7 +53,7 @@ function logging_summary(m::Optimizer)
       println("  MIP solver = ", m.mip_solver_id)
 
       printstyled("ALPINE CONFIGURATION\n", color=:cyan)
-      println("  Maximum iterations =  ", get_option(m, :maxiter))
+      println("  Maximum iterations =  ", get_option(m, :max_iter))
       @printf "  Relative optimality gap criteria = %.4f%%\n" get_option(m, :relgap)*100
       
       if get_option(m, :disc_var_pick) == 0
@@ -72,7 +72,7 @@ function logging_summary(m::Optimizer)
        (get_option(m, :convhull_ebd)) && println("  Encoding method = $(get_option(m, :convhull_ebd_encode))")
        (get_option(m, :convhull_ebd)) && println("  Independent branching scheme = $(get_option(m, :convhull_ebd_ibs))")
       println("  Bound-tightening (OBBT) presolve = ", get_option(m, :presolve_bt))
-      get_option(m, :presolve_bt) && println("  OBBT maximum iterations = ", get_option(m, :presolve_maxiter))
+      get_option(m, :presolve_bt) && println("  OBBT maximum iterations = ", get_option(m, :presolve_max_iter))
    end
 
 end
@@ -111,8 +111,8 @@ function logging_row_entry(m::Optimizer; kwargs...)
 
 
    if expr_isconst(m.obj_expr_orig)
-      # bdstr = eval(m.obj_expr_orig)
-      spc = b_len - length(m.obj_expr_orig)
+      bdstr = eval(m.obj_expr_orig)
+      spc = b_len - length(bdstr)
    elseif isa(m.logs[:bound][end], Float64)
       bdstr = string(round(m.logs[:bound][end]; digits=4))
       spc = max(0, b_len - length(bdstr))
@@ -202,11 +202,11 @@ end
       #     cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
       #     cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
       # end
-      # println("  Maximum solution time = ", get_option(m, :timeout))
+      # println("  Maximum solution time = ", get_option(m, :time_limit))
       # println("  Basic bound propagation = ", get_option(m, :presolve_bp))
       # println("  Conseuctive solution rejection = after ", get_option(m, :disc_consecutive_forbid), " times")
       # get_option(m, :presolve_bt) && println("bound tightening presolve algorithm = ", get_option(m, :presolve_bt)_algo)
       # get_option(m, :presolve_bt) && println("bound tightening presolve width tolerance = ", get_option(m, :presolve_bt)_width_tol)
       # get_option(m, :presolve_bt) && println("bound tightening presolve output tolerance = ", get_option(m, :presolve_bt)_output_tol)
       # get_option(m, :presolve_bt) && println("bound tightening presolve relaxation = ", get_option(m, :presolve_bt)_relax)
-      # get_option(m, :presolve_bt) && println("bound tightening presolve mip regulation time = ", get_option(m, :presolve_bt)_mip_timeout)
+      # get_option(m, :presolve_bt) && println("bound tightening presolve mip regulation time = ", get_option(m, :presolve_bt)_mip_time_limit)
