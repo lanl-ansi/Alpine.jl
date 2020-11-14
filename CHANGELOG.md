@@ -1,4 +1,13 @@
 # Critical Updates for Alpine.jl
+## v0.2.1
+* Logging clean up 
+* Removal of redundant tests
+
+Closed issues: 
+#157 (Juniper's ALMOST_LOCALLY SOLVED) error
+#153 (unncessary eval usages)
+#159 (logging issue for constants in obj.)
+
 ## v0.2.0
 * MOI wrapper and JuMP v0.21 support 
 * expression.jl clean up
