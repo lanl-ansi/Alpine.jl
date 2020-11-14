@@ -4,9 +4,9 @@
 * Removal of redundant tests
 
 Closed issues: 
-#157 (Juniper's ALMOST_LOCALLY SOLVED) error
-#153 (unncessary eval usages)
-#159 (logging issue for constants in obj.)
+* Juniper's ALMOST_LOCALLY SOLVED error (#157)
+* unncessary eval usages (#153)
+* Logging issue with constants in objective (#159)
 
 ## v0.2.0
 * MOI wrapper and JuMP v0.21 support 
