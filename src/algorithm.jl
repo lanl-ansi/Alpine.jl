@@ -348,7 +348,7 @@ function bounding_solve(m::Optimizer)
       @warn "  Warning: Infeasibility detected in the MIP solver"
    elseif status == :Unbounded
       m.status[:bounding_solve] = MOI.DUAL_INFEASIBLE
-      @warn "  Warning: MIP solver return unbounded"
+      @warn "  Warning: MIP solver returns unbounded"
    else
       error("  Warning: MIP solver failure $(status)")
    end
