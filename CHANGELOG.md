@@ -1,4 +1,10 @@
 # Critical Updates for Alpine.jl
+## v0.2.2
+* README clean up 
+
+Closed issues: 
+* Constraints are not supported and cannot be bridged into supported constrained variables and constraints (#164)
+
 ## v0.2.1
 * Logging clean up 
 * Removal of redundant tests
