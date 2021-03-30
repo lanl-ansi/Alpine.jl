@@ -579,8 +579,15 @@ function load!(m::Optimizer)
     return
 end
 
+
 function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableIndex)
+
     MOI.check_result_index_bounds(model, attr)
     MOI.throw_if_not_valid(model, vi)
     return model.best_sol[vi.value]
+    
 end
+
+MOI.get(model::Optimizer, ::MOI.ResultCount) = model.alpine_status == MOI.OPTIMIZE_NOT_CALLED ? 0 : 1
+
+MOI.is_valid(model::Alpine.Optimizer, vi::MOI.VariableIndex) = 1 <= vi.value <= model.num_var_orig
