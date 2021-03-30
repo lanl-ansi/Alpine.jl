@@ -4,9 +4,9 @@ Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Alpine.jl.svg?branch=maste
 [![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Alpine.jl/latest/)
 
-"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", is a novel global optimization solver that uses an adaptive, piecewise convexification scheme and constraint programming methods to solve non-convex Mixed-Integer Non-Linear Programs (MINLPs) efficiently. MINLPs are famously known as the "hard" programming problems that exist in many applications (see [MINLPLib.jl](https://github.com/lanl-ansi/MINLPLib.jl)). Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadradic Convex Programming (MIQCP), Non-Linear Programming (NLP), etc.
+"ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", is a novel global optimization solver that uses an adaptive, piecewise convexification scheme and constraint programming methods to solve non-convex Mixed-Integer Non-Linear Programs (MINLPs) efficiently. MINLPs are typically "hard" optimization problems which appear in numerous applications (see [MINLPLib.jl](https://github.com/lanl-ansi/MINLPLib.jl)). 
 
-Unlike many other state-of-the-art MINLP solvers, Alpine is entirely built upon [JuMP](https://github.com/JuliaOpt/JuMP.jl) and [MathProgBase](https://github.com/JuliaOpt/MathProgBase.jl) Interface in Julia, which provides incredible flexibility for usage and further development.
+Alpine is entirely built upon [JuMP](https://github.com/jump-dev/JuMP.jl) and [MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl) in Julia, which provides incredible flexibility for usage and further development.
 
 Alpine globally solves a given MINLP by:
 
@@ -14,38 +14,40 @@ Alpine globally solves a given MINLP by:
 
 * Performing novel adaptive partitioning methods to create piecewise relaxations, bound tightening and polyhedral outer-approximations to guarantee global convergence
 
-**Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. 
+**Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadratically Constrainted Quadradic Programs (MIQCQPs), Non-Linear Programs (NLPs), etc.
 
 <!-- 
  **Illustration of Alpine's dynamic partitioning and outer-approximation on simple functions** ([Source](https://arxiv.org/abs/1707.02514))
  
 <p align="center"> <img src="https://github.com/lanl-ansi/Alpine.jl/blob/master/Dynamic_partitions_github.png" width="580" class="centerImage"> </p>
 -->
-**Presentation on Alpine.jl at the [2nd Annual JuMP-dev Workshop](http://www.juliaopt.org/meetings/bordeaux2018/), held at the Institut de Mathématiques de Bordeaux, June 2018** 
+**For more details, check out this [presentation](https://www.youtube.com/watch?v=mwkhiEIS5JA) on Alpine.jl at the [2nd Annual JuMP-dev Workshop](http://www.juliaopt.org/meetings/bordeaux2018/), held at the Institut de Mathématiques de Bordeaux, June 2018** 
 
-[<img src="https://github.com/lanl-ansi/Alpine.jl/blob/master/alpine_slide.png" width="600" height="350">](https://www.youtube.com/watch?v=mwkhiEIS5JA)
+<!-- [<img src="https://github.com/lanl-ansi/Alpine.jl/blob/master/alpine_slide.png" width="600" height="350">](https://www.youtube.com/watch?v=mwkhiEIS5JA) -->
 
-## Installation
+## Installation and Usage
 
-Alpine, with it's repository under the LANL-ANSI group, can be installed through the Julia package manager:
+Alpine can be installed through the Julia package manager:
 
 `julia> Pkg.add("Alpine")`
 
 Developers: Any further development of Alpine can be conducted on a new branch or a forked repo.
 
+Check the "test/examples" folder on how to use this package. 
+
 ## Underlying solvers
 
-Though the algorithm implemented in Alpine is quite involved, most of the hard work and computational bottleneck would arise in the underlying solvers. Since every iteration of Alpine solves a subproblem to optimality, which is typically a convex MILP/MIQCQP and solves a nonconvex NLP/MINLP to local optimality, Alpine's run time heavily depends on the quality of these solvers. For best performance of Alpine, use commercial solvers such as CPLEX/Gurobi. However, due to the flexibility offered by JuMP/MathProgBase, the following solvers are supported in Alpine: 
+Though the algorithm implemented in Alpine is quite involved, most of the computational bottleneck arises in the underlying MIP solvers. Since every iteration of Alpine solves a subproblem to optimality, which is typically a convex MILP/MIQCQP, Alpine's run time heavily depends on the run-time of these solvers. For best performance of Alpine, use commercial solvers such as CPLEX/Gurobi. However, due to the flexibility offered by JuMP.jl, the following solvers are supported in Alpine: 
 
 
 | Solver                                                                         | Julia Package                                                |
 |--------------------------------------------------------------------------------|--------------------------------------------------------------|
-| [CPLEX](http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/) | [CPLEX.jl](https://github.com/JuliaOpt/CPLEX.jl)             |
-| [Cbc](https://projects.coin-or.org/Cbc)                                        | [Cbc.jl](https://github.com/JuliaOpt/Clp.jl)                 |
-| [Gurobi](http://gurobi.com/)                                                   | [Gurobi.jl](https://github.com/JuliaOpt/Gurobi.jl)           |
-| [Ipopt](https://projects.coin-or.org/Ipopt)                                    | [Ipopt.jl](https://github.com/JuliaOpt/Ipopt.jl)             |
-| [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/JuliaOpt/AmplNLWriter.jl)   |
-| [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/JuliaOpt/KNITRO.jl)           |
+| [CPLEX](https://www.ibm.com/analytics/cplex-optimizer) | [CPLEX.jl](https://github.com/jump-dev/CPLEX.jl)             |
+| [Cbc](https://projects.coin-or.org/Cbc)                                        | [Cbc.jl](https://github.com/jump-dev/Cbc.jl)                 |
+| [Gurobi](http://gurobi.com/)                                                   | [Gurobi.jl](https://github.com/jump-dev/Gurobi.jl)           |
+| [Ipopt](https://projects.coin-or.org/Ipopt)                                    | [Ipopt.jl](https://github.com/jump-dev/Ipopt.jl)             |
+| [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/jump-dev/AmplNLWriter.jl)   |
+| [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/jump-dev/KNITRO.jl)           |
 | [Xpress](https://www.fico.com/en/products/fico-xpress-optimization)            | [Xpress.jl](https://github.com/jump-dev/Xpress.jl)
 
 ## Bug reports and support
