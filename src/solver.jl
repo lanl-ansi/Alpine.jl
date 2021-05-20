@@ -2,14 +2,14 @@ mutable struct OptimizerOptions
     # Parameters for tuning Alpine
 
     # basic solver parameters
-    loglevel::Int                                               # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
-    time_limit::Float64                                            # Time limit for algorithm (in seconds)
-    max_iter::Int                                                # Target Maximum Iterations
-    relgap::Float64                                             # Relative optimality gap termination condition
-    gapref::Symbol                                              # Relative gap reference point (options: [:ub, :lb])
-    absgap::Float64                                             # Absolute optimality gap termination condition
+    log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
+    time_limit::Float64                                         # Time limit for algorithm (in seconds)
+    max_iter::Int                                               # Target Maximum Iterations
+    rel_gap::Float64                                            # Relative optimality gap for termination condition
+    gap_ref::Symbol                                             # Relative gap reference point (options: [:ub, :lb])
+    abs_gap::Float64                                            # Absolute optimality gap for termination condition
     tol::Float64                                                # Numerical tol used in algorithms
-    largebound::Float64                                         # Large bounds for problems with unbounded variables
+    large_bound::Float64                                        # Large bounds for problems with unbounded variables
 
     # add all the solver options
     nlp_solver                                                  # Local continuous NLP solver for solving NLPs at each iteration
@@ -52,11 +52,11 @@ mutable struct OptimizerOptions
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
     presolve_time_limit::Float64                                # Time limit for presolving (seconds)
-    presolve_max_iter::Int                                      # Maximum iterations allowed to perform presolve (vague in parallel mode)
+    presolve_bt_max_iter::Int                                   # Maximum iterations allowed to perform presolve 
     presolve_bt_width_tol::Float64                              # Width tolerance for bound-tightening
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol (change to precision)
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
-    presolve_bt_relax::Bool                                     # Relax the MIP solved in built-in relaxation scheme for time performance
+    presolve_bt_relax_integrality::Bool                                     # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
 
     # Domain Reduction
@@ -70,14 +70,14 @@ mutable struct OptimizerOptions
 end
 
 function default_options()
-        loglevel = 1
+        log_level = 1
         time_limit = 1E6
         max_iter = 99
-        relgap = 1e-4
-        gapref = :ub
-        absgap = 1e-6
+        rel_gap = 1e-4
+        gap_ref = :ub
+        abs_gap = 1e-6
         tol = 1e-6
-        largebound = 1E6
+        large_bound = 1E6
 
         nlp_solver = nothing
         minlp_solver = nothing
@@ -114,11 +114,11 @@ function default_options()
         presolve_track_time = true
         presolve_bt = true
         presolve_time_limit = 900
-        presolve_max_iter = 10
+        presolve_bt_max_iter = 10
         presolve_bt_width_tol = 1e-3
         presolve_bt_output_tol = 1e-5
         presolve_bt_algo = 1
-        presolve_bt_relax = false
+        presolve_bt_relax_integrality = false
         presolve_bt_mip_time_limit = Inf
         presolve_bp = false
 
@@ -127,14 +127,14 @@ function default_options()
         int_cumulative_disc = true
         int_fully_disc = false
 
-    return OptimizerOptions(loglevel, time_limit, max_iter, relgap, gapref, absgap, tol, largebound,
+    return OptimizerOptions(log_level, time_limit, max_iter, rel_gap, gap_ref, abs_gap, tol, large_bound,
                              nlp_solver, minlp_solver, mip_solver,
                              recognize_convex, bilinear_mccormick, bilinear_convexhull, monomial_convexhull,
                              method_convexification, disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
                              disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch,
                              convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts,
-                             presolve_track_time, presolve_bt, presolve_time_limit, presolve_max_iter, presolve_bt_width_tol, presolve_bt_output_tol,
-                             presolve_bt_algo, presolve_bt_relax, presolve_bt_mip_time_limit, presolve_bp,
+                             presolve_track_time, presolve_bt, presolve_time_limit, presolve_bt_max_iter, presolve_bt_width_tol, presolve_bt_output_tol,
+                             presolve_bt_algo, presolve_bt_relax_integrality, presolve_bt_mip_time_limit, presolve_bp,
                              user_parameters, int_enable, int_cumulative_disc, int_fully_disc)
 end
 

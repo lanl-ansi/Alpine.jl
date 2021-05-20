@@ -10,8 +10,6 @@ using LinearAlgebra
 using Random
 using Distributed
 using Statistics
-using Printf
-using SparseArrays
 
 include("const.jl")
 

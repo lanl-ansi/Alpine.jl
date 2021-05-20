@@ -94,7 +94,7 @@ function store_nonconvex_term(m::Optimizer, nl_key::Any, var_idxs::Any, term_typ
 
     # push!(m.var_type, :Cont)  # TODO check if this replacement is good since additional constraints should be able to sufficiently constraint the type
     push!(m.var_type, m.nonconvex_terms[nl_key][:y_type])            # Keep track of the lifted var type
-    get_option(m, :loglevel) > 199 && println("found lifted $(term_type) term $(lifted_constr_ref)")
+    get_option(m, :log_level) > 199 && println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
@@ -120,7 +120,7 @@ function store_linear_term(m::Optimizer, term_key::Any, expr::Any)#, bound_resol
 
     m.term_seq[l_cnt+nl_cnt + 1] = term_key
     push!(m.var_type, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-    get_option(m, :loglevel) > 199 && println("found lifted linear term $(lifted_var_ref) = $expr")
+    get_option(m, :log_level) > 199 && println("found lifted linear term $(lifted_var_ref) = $expr")
 
     return y_idx
 end
@@ -879,7 +879,7 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
                                           :cnt => length(idxs_bin),
                                           :powers => power_bin)
 
-        get_option(m, :loglevel) > 99 && println("CONVEX Constraint $(idx): $(expr)")
+        get_option(m, :log_level) > 99 && println("CONVEX Constraint $(idx): $(expr)")
 
         return true
     elseif expr_orig == :obj
@@ -933,7 +933,7 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
                                   :cnt => length(idxs_bin),
                                   :powers => power_bin)
 
-        get_option(m, :loglevel) > 99 && println("CONVEX Objective: $(expr)")
+        get_option(m, :log_level) > 99 && println("CONVEX Objective: $(expr)")
         return true
     end
 

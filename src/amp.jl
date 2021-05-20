@@ -1,9 +1,8 @@
 """
-
     create_bounding_mip(m::Optimizer; use_disc::Dict)
 
-Set up a JuMP MILP bounding model base on variable domain partitioning information stored in `use_disc`.
-By default, if `use_disc is` not provided, it will use `m.discretizations` store in the Alpine model.
+Set up a MILP bounding model base on variable domain partitioning information stored in `use_disc`.
+By default, if `use_disc` is not provided, it will use `m.discretizations` store in the Alpine model.
 The basic idea of this MILP bounding model is to use Tighten McCormick to convexify the original Non-convex region.
 Among all presented partitions, the bounding model will choose one specific partition as the lower bound solution.
 The more partitions there are, the better or finer bounding model relax the original MINLP while the more
@@ -15,23 +14,6 @@ This function is implemented in the following manner:
     * [`amp_post_lifted_constraints`](@ref): post original and lifted constraints
     * [`amp_post_lifted_obj`](@ref): post original or lifted objective function
     * [`amp_post_tmc_mccormick`](@ref): post Tighten McCormick variables and constraints base on `discretization` information
-
-More specifically, the Tightening McCormick used here can be generalized in the following mathematical formulation. Consider a nonlinear term
-```math
-\\begin{subequations}
-\\begin{align}
-   &\\widehat{x_{ij}} \\geq (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) \\\\
-   &\\widehat{x_{ij}} \\geq (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) \\\\
-   &\\widehat{x_{ij}} \\leq (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) \\\\
-   &\\widehat{x_{ij}} \\leq (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i) x_j + (\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) x_i - (\\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i)(\\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) \\\\
-   & \\mathbf{x}_i^u\\cdot\\hat{\\mathbf{y}}_i) \\geq x_{i} \\geq \\mathbf{x}_i^l\\cdot\\hat{\\mathbf{y}}_i) \\\\
-   & \\mathbf{x}_j^u\\cdot\\hat{\\mathbf{y}}_j) \\geq x_{j} \\geq \\mathbf{x}_j^l\\cdot\\hat{\\mathbf{y}}_j) \\\\
-   &\\sum \\hat{\\mathbf{y}_i} = 1, \\ \\ \\sum \\hat{\\mathbf{y}_j}_k = 1 \\\\
-   &\\hat{\\mathbf{y}}_i \\in \\{0,1\\}, \\hat{\\mathbf{y}}_j \\in \\{0,1\\}
-\\end{align}
-\\end{subequations}
-```
-
 """
 function create_bounding_mip(m::Optimizer; use_disc=nothing)
 
@@ -208,31 +190,24 @@ function add_partition(m::Optimizer; kwargs...)
     return
 end
 
+# TODO: also need to document the special diverted cases when new partition touches both corners
 """
-    add_discretization(m::Optimizer; use_disc::Dict, use_solution::Vector)
 
-Basic built-in method used to add a new partition on feasible domains of discretizing variables.
-This method makes modification in discretization
+    add_adaptive_partition(m::Optimizer; use_disc::Dict, use_solution::Vector)
 
-Consider an original partition [0, 3, 7, 9], where LB/any solution is 4.
-Use ^ as the new partition, "|" as the original partition
+A built-in method used to add a new partition on feasible domains of variables chosen for partitioning.
 
-A case when discretize ratio = 4
-| -------- | - ^ -- * -- ^ ---- | -------- |
-0          3  3.5   4   4.5     7          9
-
-A special case when discretize ratio = 2
-| -------- | ---- * ---- ^ ---- | -------- |
-0          3      4      5      7          9
+This can be illustrated by the following example. Let the previous iteration's partition vector on 
+variable "x" be given by [0, 3, 7, 9]. And say, the lower bounding solution has a value of 4 for variable "x".
+In the case when `disc_ratio=4`, this function creates the new partition vector as follows: [0, 3, 3.5, 4, 4.5, 7, 9]
 
 There are two options for this function,
 
     * `use_disc(default=m.discretization)`:: to regulate which is the base to add new partitions on
     * `use_solution(default=m.best_bound_sol)`:: to regulate which solution to use when adding new partitions on
 
-TODO: also need to document the special diverted cases when new partition touches both corners
-
 This function can be accordingly modified by the user to change the behavior of the solver, and thus the convergence.
+
 """
 function add_adaptive_partition(m::Optimizer;kwargs...)
 
@@ -347,9 +322,9 @@ function insert_partition(m::Optimizer, var::Int, partidx::Int, point::Number, r
         for i in 2:get_option(m, :disc_divert_chunks)
             insert!(partvec, pos+1, lb_local + chunk * (get_option(m, :disc_divert_chunks)-(i-1)))
         end
-        (get_option(m, :loglevel) > 199) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig; digits=4))=>$(point) |$(round(lb_local; digits=4)) | $(get_option(m, :disc_divert_chunks)) SEGMENTS | $(round(ub_local; digits=4))|")
+        (get_option(m, :log_level) > 199) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig; digits=4))=>$(point) |$(round(lb_local; digits=4)) | $(get_option(m, :disc_divert_chunks)) SEGMENTS | $(round(ub_local; digits=4))|")
     else
-        (get_option(m, :loglevel) > 199) && println("[DEBUG] VAR$(var): SOL=$(round(point; digits=4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local; digits=4)) |$(round(lb_new; digits=6)) <- * -> $(round(ub_new; digits=6))| $(round(ub_local; digits=4))|")
+        (get_option(m, :log_level) > 199) && println("[DEBUG] VAR$(var): SOL=$(round(point; digits=4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local; digits=4)) |$(round(lb_new; digits=6)) <- * -> $(round(ub_new; digits=6))| $(round(ub_local; digits=4))|")
     end
 
     return
@@ -367,7 +342,7 @@ function add_uniform_partition(m::Optimizer; kwargs...)
         chunk = distance / ((m.logs[:n_iter]+1)*get_option(m, :disc_uniform_rate))
         discretization[i] = [lb_local+chunk*(j-1) for j in 1:(m.logs[:n_iter]+1)*get_option(m, :disc_uniform_rate)]
         push!(discretization[i], ub_local)   # Safety Scheme
-        (get_option(m, :loglevel) > 199) && println("[DEBUG] VAR$(i): RATE=$(get_option(m, :disc_uniform_rate)), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local; digits=4)) | $(get_option(m, :disc_uniform_rate)*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local; digits=4))|")
+        (get_option(m, :log_level) > 199) && println("[DEBUG] VAR$(i): RATE=$(get_option(m, :disc_uniform_rate)), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local; digits=4)) | $(get_option(m, :disc_uniform_rate)*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local; digits=4))|")
     end
 
     return discretization
@@ -404,11 +379,11 @@ function update_disc_ratio(m::Optimizer, presolve=false)
             println("Expensive disc branching pass... Fixed at 8")
             return 8
         end
-        get_option(m, :loglevel) > 0 && println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
+        get_option(m, :log_level) > 0 && println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
     if std(res_collector) >= 1e-2    # Detect if all solution are similar to each other
-        get_option(m, :loglevel) > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
+        get_option(m, :log_level) > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
         set_option(m, :disc_ratio_branch, false) # If an incumbent ratio is selected, then stop the branching scheme
     end
 
@@ -418,7 +393,7 @@ function update_disc_ratio(m::Optimizer, presolve=false)
         m.discretization = add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio)
     end
 
-    get_option(m, :loglevel) > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
+    get_option(m, :log_level) > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
 
     return incumb_ratio
 end

@@ -61,7 +61,7 @@ function expr_parsing(m::Optimizer)
       m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
       m.obj_structure = :generic_linear
    end
-   (get_option(m, :loglevel) > 199) && println("[OBJ] $(m.obj_expr_orig)")
+   (get_option(m, :log_level) > 199) && println("[OBJ] $(m.obj_expr_orig)")
 
    for i in 1:m.num_constr_orig
       is_strucural = expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
@@ -69,7 +69,7 @@ function expr_parsing(m::Optimizer)
          m.bounding_constr_expr_mip[i] = expr_term_parsing(m.bounding_constr_expr_mip[i], i, m)
          m.constr_structure[i] = :generic_linear
       end
-      (get_option(m, :loglevel) > 199) && println("[CONSTR] $(m.constr_expr_orig[i])")
+      (get_option(m, :log_level) > 199) && println("[CONSTR] $(m.constr_expr_orig[i])")
    end
 
    return
@@ -84,13 +84,13 @@ function expr_conversion(m::Optimizer)
       m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
       m.obj_structure = :affine
    end
-   get_option(m, :loglevel) > 199 && println("type :: ", m.obj_structure)
-   get_option(m, :loglevel) > 199 && println("lifted ::", m.bounding_obj_expr_mip)
-   get_option(m, :loglevel) > 199 && println("coeffs ::", m.bounding_obj_mip[:coefs])
-   get_option(m, :loglevel) > 199 && println("vars ::", m.bounding_obj_mip[:vars])
-   get_option(m, :loglevel) > 199 && println("sense ::", m.bounding_obj_mip[:sense])
-   get_option(m, :loglevel) > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
-   get_option(m, :loglevel) > 199 && println("----------------")
+   get_option(m, :log_level) > 199 && println("type :: ", m.obj_structure)
+   get_option(m, :log_level) > 199 && println("lifted ::", m.bounding_obj_expr_mip)
+   get_option(m, :log_level) > 199 && println("coeffs ::", m.bounding_obj_mip[:coefs])
+   get_option(m, :log_level) > 199 && println("vars ::", m.bounding_obj_mip[:vars])
+   get_option(m, :log_level) > 199 && println("sense ::", m.bounding_obj_mip[:sense])
+   get_option(m, :log_level) > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
+   get_option(m, :log_level) > 199 && println("----------------")
 
 
    for i in 1:m.num_constr_orig
@@ -98,13 +98,13 @@ function expr_conversion(m::Optimizer)
          m.bounding_constr_mip[i] = expr_linear_to_affine(m.bounding_constr_expr_mip[i])
          m.constr_structure[i] = :affine
       end
-      get_option(m, :loglevel) > 199 && println("type :: ", m.constr_structure[i])
-      get_option(m, :loglevel) > 199 && println("lifted ::", m.bounding_constr_expr_mip[i])
-      get_option(m, :loglevel) > 199 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-      get_option(m, :loglevel) > 199 && println("vars ::", m.bounding_constr_mip[i][:vars])
-      get_option(m, :loglevel) > 199 && println("sense ::", m.bounding_constr_mip[i][:sense])
-      get_option(m, :loglevel) > 199 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
-      get_option(m, :loglevel) > 199 && println("----------------")
+      get_option(m, :log_level) > 199 && println("type :: ", m.constr_structure[i])
+      get_option(m, :log_level) > 199 && println("lifted ::", m.bounding_constr_expr_mip[i])
+      get_option(m, :log_level) > 199 && println("coeffs ::", m.bounding_constr_mip[i][:coefs])
+      get_option(m, :log_level) > 199 && println("vars ::", m.bounding_constr_mip[i][:vars])
+      get_option(m, :log_level) > 199 && println("sense ::", m.bounding_constr_mip[i][:sense])
+      get_option(m, :log_level) > 199 && println("rhs ::", m.bounding_constr_mip[i][:rhs])
+      get_option(m, :log_level) > 199 && println("----------------")
    end
 
    return

@@ -39,7 +39,7 @@ function update_disc_cont_var(m::Optimizer)
     distance = Dict(zip(var_idxs,var_diffs))
     weighted_min_vertex_cover(m, distance)
 
-    (get_option(m, :loglevel) > 100) && println("updated partition var selection => $(m.disc_vars)")
+    (get_option(m, :log_level) > 100) && println("updated partition var selection => $(m.disc_vars)")
     return
 end
 
@@ -72,14 +72,14 @@ function heu_basic_rounding(m::Optimizer, relaxed_sol)
     heuristic_model_status = MOI.get(heuristic_model, MOI.TerminationStatus())
 
     if heuristic_model_status == MOI.OTHER_ERROR || heuristic_model_status in STATUS_INF
-        get_option(m, :loglevel) > 0 && println("Rounding obtained an Infeasible point.")
+        get_option(m, :log_level) > 0 && println("Rounding obtained an Infeasible point.")
         push!(m.logs[:obj], "INF")
         return MOI.LOCALLY_INFEASIBLE
     elseif heuristic_model_status in STATUS_OPT || heuristic_model_status in STATUS_LIMIT
         candidate_obj = MOI.get(heuristic_model, MOI.ObjectiveValue())
         candidate_sol = round.(MOI.get(heuristic_model, MOI.VariablePrimal(), x), 5)
         update_incumb_objective(m, candidate_obj, candidate_sol)
-        get_option(m, :loglevel) > 0 && println("Rounding obtained a feasible solution OBJ = $(m.best_obj)")
+        get_option(m, :log_level) > 0 && println("Rounding obtained a feasible solution OBJ = $(m.best_obj)")
         return MOI.LOCALLY_SOLVED
     else
         error("[EXCEPTION] Unknown NLP solver status.")
@@ -111,11 +111,11 @@ function heu_pool_multistart(m::Optimizer)
                 if eval(convertor[m.sense_orig])(candidate_obj, incumb_obj)
                     incumb_obj = candidate_obj
                     incumb_sol = round.(MOI.get(heuristic_model, MOI.VariablePrimal(), x), 5)
-                    get_option(m, :loglevel) > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)] [OBJ=$(incumb_obj)]")
+                    get_option(m, :log_level) > 0 && println("Feasible solution obtained using lower bound solution pool [SOL:$(i)] [OBJ=$(incumb_obj)]")
                 end
                 found_feasible = true
             else
-                get_option(m, :loglevel) > 99 && println("Multi-start heuristic returns $(heuristic_model_status) [SOL:$(i)]")
+                get_option(m, :log_level) > 99 && println("Multi-start heuristic returns $(heuristic_model_status) [SOL:$(i)]")
             end
             m.bound_sol_pool[:ubstart][i] = true
         end

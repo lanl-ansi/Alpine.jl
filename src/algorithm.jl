@@ -11,7 +11,7 @@ const STATUS_INF = [
 ]
 
 """
-High-level Function
+   High-level Function
 """
 function MOI.optimize!(m::Optimizer)
     load!(m)
@@ -21,14 +21,14 @@ function MOI.optimize!(m::Optimizer)
     end
     presolve(m)
     global_solve(m)
-    get_option(m, :loglevel)  > 0 && logging_row_entry(m, finish_entry=true)
+    get_option(m, :log_level)  > 0 && logging_row_entry(m, finish_entry=true)
     println("====================================================================================================")
     summary_status(m)
     return
 end
 
 """
-global_solve(m::Optimizer)
+   global_solve(m::Optimizer)
 
 Perform global optimization algorithm that is based on the adaptive piecewise convexification.
 This iterative algorithm loops over [`bounding_solve`](@ref) and [`local_solve`](@ref) until the optimality gap between the lower bound (relaxed problem with min. objective) and the upper bound (feasible problem) is within the user prescribed limits.
@@ -38,7 +38,7 @@ Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorith
 """
 function global_solve(m::Optimizer)
 
-   get_option(m, :loglevel) > 0 && logging_head(m)
+   get_option(m, :log_level) > 0 && logging_head(m)
    get_option(m, :presolve_track_time) || reset_timer(m)
 
    while !check_exit(m)
@@ -47,7 +47,7 @@ function global_solve(m::Optimizer)
       bounding_solve(m)                       # Solve the relaxation model
       update_opt_gap(m)                       # Update optimality gap
       check_exit(m) && break                  # Feasibility check
-      get_option(m, :loglevel) > 0 && logging_row_entry(m)  # Logging
+      get_option(m, :log_level) > 0 && logging_row_entry(m)  # Logging
       local_solve(m)                          # Solve local model for feasible solution
       update_opt_gap(m)                       # Update optimality gap
       check_exit(m) && break                  # Detect optimality termination
@@ -59,7 +59,7 @@ function global_solve(m::Optimizer)
 end
 
 function run_bounding_iteration(m::Optimizer)
-   get_option(m, :loglevel) > 0 && logging_head(m)
+   get_option(m, :log_level) > 0 && logging_head(m)
    get_option(m, :presolve_track_time) || reset_timer(m)
 
    m.logs[:n_iter] += 1
@@ -67,7 +67,7 @@ function run_bounding_iteration(m::Optimizer)
    bounding_solve(m)                       # Solve the relaxation model
    update_opt_gap(m)                       # Update optimality gap
    check_exit(m) && return                 # Feasibility check
-   get_option(m, :loglevel) > 0 && logging_row_entry(m)  # Logging
+   get_option(m, :log_level) > 0 && logging_row_entry(m)  # Logging
    local_solve(m)                          # Solve local model for feasible solution
    update_opt_gap(m)                       # Update optimality gap
    check_exit(m) && return                 # Detect optimality termination
@@ -78,31 +78,31 @@ function run_bounding_iteration(m::Optimizer)
    return
 end
 
-"""
-presolve(m::Optimizer)
+"""   
+   presolve(m::Optimizer)
 """
 function presolve(m::Optimizer)
 
    start_presolve = time()
-   get_option(m, :loglevel) > 0 && printstyled("PRESOLVE \n", color=:cyan)
-   get_option(m, :loglevel) > 0 && println("  Doing local search")
+   get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color=:cyan)
+   get_option(m, :log_level) > 0 && println("  Doing local search")
    local_solve(m, presolve = true)
 
    # Solver status - returns error when see different
 
    if m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT
-      get_option(m, :loglevel) > 0 && println("  Local solver returns a feasible point")
+      get_option(m, :log_level) > 0 && println("  Local solver returns a feasible point")
       bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
       get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
       get_option(m, :disc_ratio_branch) && (set_option(m, :disc_ratio, update_disc_ratio(m, true)))
       add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
-      # get_option(m, :loglevel) > 0 && println("Ending the presolve")
+      # get_option(m, :log_level) > 0 && println("Ending the presolve")
    elseif m.status[:local_solve] in STATUS_INF
-      (get_option(m, :loglevel) > 0) && println("  Bound tightening without objective bounds (OBBT)")
+      (get_option(m, :log_level) > 0) && println("  Bound tightening without objective bounds (OBBT)")
       bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
       (get_option(m, :disc_ratio_branch)) && (set_option(m, :disc_ratio, update_disc_ratio(m, true)))
       get_option(m, :presolve_bt) && init_disc(m)
-      # get_option(m, :loglevel) > 0 && println("Ending the presolve")
+      # get_option(m, :log_level) > 0 && println("Ending the presolve")
    elseif m.status[:local_solve] == MOI.INVALID_MODEL
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n This may come from Ipopt's `:Not_Enough_Degrees_Of_Freedom`. \n Consider more replace equality constraints with >= and <= to resolve this."
    else
@@ -113,13 +113,13 @@ function presolve(m::Optimizer)
    m.logs[:presolve_time] += cputime_presolve
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
-   # (get_option(m, :loglevel) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-   (get_option(m, :loglevel) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations)")
+   # (get_option(m, :log_level) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
+   (get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations)")
    return
 end
 
 """
-A wrapper function that collects some automated solver adjustments within the main while loop.
+   A wrapper function that collects some automated solver adjustments within the main while loop.
 """
 function algorithm_automation(m::Optimizer)
 
@@ -134,7 +134,7 @@ function algorithm_automation(m::Optimizer)
 end
 
 """
-Summarized function to determine whether to interrupt the main while loop.
+   Summarized function to determine whether to interrupt the main while loop.
 """
 function check_exit(m::Optimizer)
 
@@ -157,9 +157,9 @@ function check_exit(m::Optimizer)
    m.status[:bounding_solve] == MOI.DUAL_INFEASIBLE && return true
 
    # Optimality check
-   m.best_rel_gap <= get_option(m, :relgap) && return true
+   m.best_rel_gap <= get_option(m, :rel_gap) && return true
    m.logs[:n_iter] >= get_option(m, :max_iter) && return true
-   m.best_abs_gap <= get_option(m, :absgap) && return true
+   m.best_abs_gap <= get_option(m, :abs_gap) && return true
 
    # Userlimits check
    m.logs[:time_left] < get_option(m, :tol) && return true
@@ -201,11 +201,12 @@ function set_variable_type(model::MOI.ModelLike, xs, variable_types)
 end
 
 """
-local_solve(m::Optimizer, presolve::Bool=false)
+   local_solve(m::Optimizer, presolve::Bool=false)
 
 Perform a local NLP or MINLP solve to obtain a feasible solution.
 The `presolve` option is set to `true` when the function is invoked in [`presolve`](@ref).
 Otherwise, the function is invoked from [`bounding_solve`](@ref).
+
 """
 function local_solve(m::Optimizer; presolve = false)
 
@@ -300,8 +301,7 @@ end
 
 
 """
-
-bounding_solve(m::Optimizer; kwargs...)
+   bounding_solve(m::Optimizer; kwargs...)
 
 This process usually deals with a MILP or a MIQCP/MIQCQP problem for lower bounding the given problem.
 It solves the problem built upon a convexification base on a discretization Dictionary of some variables.
@@ -357,14 +357,14 @@ function bounding_solve(m::Optimizer)
 end
 
 """
-pick_disc_vars(m::Optimizer)
+   pick_disc_vars(m::Optimizer)
 
 This function helps pick the variables for discretization. The method chosen depends on user-inputs.
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
 there are two built-in options for users as follows:
 
-* `max-cover (get_option(m, :disc_var_pick)=0, default)`: pick all variables involved in the non-linear term for discretization
-* `min-vertex-cover (get_option(m, :disc_var_pick)=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+* `max_cover (get_option(m, :disc_var_pick)=0, default)`: pick all variables involved in the non-linear term for discretization
+* `min_vertex_cover (get_option(m, :disc_var_pick)=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
 For advanced usage, `get_option(m, :disc_var_pick)` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
 

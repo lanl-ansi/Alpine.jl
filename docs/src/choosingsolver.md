@@ -20,10 +20,23 @@ As the development of AMP contineous, supports fo [Mosek](http://www.mosek.com/)
 To use different sub-solvers, here is an example:
 
 ```julia
-    using JuMP
-    using Alpine
-    using Gurobi, Ipopt
-    m = Model()
-    # Here goes the building of your model...
-    setsolver(m, Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0), mip_solver=GurobiSolver(OutputFlag=0)))
+using JuMP
+using Alpine 
+using CPLEX 
+using Ipopt
+
+# MIP solver
+const cplex = optimizer_with_attributes(CPLEX.Optimizer, 
+                                        MOI.Silent() => true) 
+
+# NLP solver
+const ipopt = optimizer_with_attributes(Ipopt.Optimizer, 
+                                        MOI.Silent() => true, 
+                                        "max_iter" => 9999)
+
+# Global solver
+const alpine = optimizer_with_attributes(Alpine.Optimizer, 
+                                        "nlp_solver" => ipopt,
+                                        "mip_solver" => cplex)
+m = Model(alpine)
 ```

@@ -1,4 +1,13 @@
 # Critical Updates for Alpine.jl
+
+## v0.2.3
+* Migrating from Travis to Github-actions
+* Major documentation clean-up
+* Dependency packages clean-up 
+* runtests.jl clean-up
+* Solver options update: `presolve_max_iter` => `presolve_bt_max_iter` and others
+* Added `test/examples/run_example.jl`
+
 ## v0.2.2
 * README clean up 
 

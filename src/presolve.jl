@@ -1,14 +1,14 @@
 """
     bound_tightening(m::Optimizer)
 
-    Entry point for the optimization-based bound-tightening (OBBT) algorithm. The aim of the OBBT algorithm
+Entry point for the optimization-based bound-tightening (OBBT) algorithm. The aim of the OBBT algorithm
 is to sequentially tighten the variable bounds until a fixed point is reached.
 
-Currently, two OBBT methods are implemented [`minmax_bound_tightening`](@ref).
+Currently, two OBBT methods are implemented in [`minmax_bound_tightening`](@ref).
 
     * Bound-tightening with polyhedral relaxations (McCormick, Lambda for convex-hull)
     * Bound-tightening with piecewise polyhedral relaxations: (with three partitions around the local feasible solution)
-    If no local feasible solution is obtained, the algorithm defaults to OBBT without partitions
+If no local feasible solution is obtained, the algorithm defaults to OBBT without partitions
 """
 function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
 
@@ -39,14 +39,14 @@ The algorithm as two main parameters. The first is the `use_tmc`, which when set
 invokes the algorithm on the TMC relaxation. The second parameter `use_bound` takes in the
 objective value of the local solve solution stored in `best_sol` for performing OBBT. The `use_bound` option is set
 to `true` when the local solve is successful in obtaining a feasible solution, else this parameter
-is set to `false`
+is set to `false`.
 
 For details, refer to section 3.1.1 of
-Nagarjan, Lu, Wang, Bent, Sundar, "An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs"
-URL: https://goo.gl/89zrDf
+Nagarajan, Lu, Wang, Bent, Sundar, "An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs"
+[link](https://doi.org/10.1007/s10898-018-00734-1).
 
-Several other parameters are available for the OBBT algorithm tuning.
-For more details, see [Parameters](@ref).
+Several other user-input options can be used to tune the OBBT algorithm.
+For more details, see [Presolve Options](https://lanl-ansi.github.io/Alpine.jl/latest/parameters/#Presolve-Options).
 
 """
 function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf, kwargs...)
@@ -70,24 +70,24 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
 
     discretization = to_discretization(m, m.l_var_tight, m.u_var_tight)
     if use_bound == false && haskey(options, :use_tmc)
-        (get_option(m, :loglevel) > 0) && @warn " Local solve infeasible; defaulting to doing bound-tightening without partitions."
+        (get_option(m, :log_level) > 0) && @warn " Local solve infeasible; defaulting to doing bound-tightening without partitions."
     end
     if use_bound == true && haskey(options, :use_tmc)
         discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=discretization)
     end
     discretization = resolve_var_bounds(m, discretization) # recomputation of bounds for lifted_variables
 
-    (get_option(m, :loglevel) > 0) && println("  Starting bound-tightening")
+    (get_option(m, :log_level) > 0) && println("  Starting bound-tightening")
 
     # start of the solve
-    keeptightening = true
+    keep_tightening = true
     avg_reduction = Inf
     total_reduction = 0.0
-    while keeptightening && (m.logs[:time_left] > get_option(m, :tol)) && (m.logs[:bt_iter] < get_option(m, :presolve_max_iter)) # Stopping criteria
+    while keep_tightening && (m.logs[:time_left] > get_option(m, :tol)) && (m.logs[:bt_iter] < get_option(m, :presolve_bt_max_iter)) # Stopping criteria
 
-        keeptightening = false
+        keep_tightening = false
         m.logs[:bt_iter] += 1
-        get_option(m, :loglevel) > 199 && println("  Iteration - $(m.logs[:bt_iter])")
+        get_option(m, :log_level) > 199 && println("  Iteration - $(m.logs[:bt_iter])")
         temp_bounds = Dict()
 
         # Perform Bound Contraction
@@ -136,16 +136,16 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
             old_range = discretization[var_idx][end] - discretization[var_idx][1]
             bound_reduction = old_range - new_range
             total_reduction += bound_reduction
-            (get_option(m, :loglevel) > 99) && print("+")
-            (get_option(m, :loglevel) > 99) && println("  VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
-            (get_option(m, :loglevel) > 99) && print("+")
-            (get_option(m, :loglevel) > 99) && println("  VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
+            (get_option(m, :log_level) > 99) && print("+")
+            (get_option(m, :log_level) > 99) && println("  VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
+            (get_option(m, :log_level) > 99) && print("+")
+            (get_option(m, :log_level) > 99) && println("  VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
             discretization[var_idx][1] = temp_bounds[var_idx][1]
             discretization[var_idx][end] = temp_bounds[var_idx][end]
         end
 
         avg_reduction = total_reduction/length(keys(temp_bounds))
-        keeptightening = (avg_reduction > 1e-3)
+        keep_tightening = (avg_reduction > 1e-3)
 
         discretization = resolve_var_bounds(m, discretization)
         if haskey(options, :use_tmc)
@@ -156,18 +156,18 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
         time() - st > timelimit && break
     end
 
-    # (get_option(m, :loglevel) > 0) && println("Completed bound-tightening in $(m.logs[:bt_iter]) iterations. Here are the tightened bounds:")
-    (get_option(m, :loglevel) > 1) && println("  Variables whose bounds were tightened:")
+    # (get_option(m, :log_level) > 0) && println("Completed bound-tightening in $(m.logs[:bt_iter]) iterations. Here are the tightened bounds:")
+    (get_option(m, :log_level) > 1) && println("  Variables whose bounds were tightened:")
     m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
     m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
 
     for i in m.disc_vars
         contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]); digits=2)*100
-        if get_option(m, :loglevel) > 0 && contract_ratio > 0.0001
-            (get_option(m, :loglevel) > 1) && (println("    VAR $(i): $(contract_ratio)% contraction |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |"))
+        if get_option(m, :log_level) > 0 && contract_ratio > 0.0001
+            (get_option(m, :log_level) > 1) && (println("    VAR $(i): $(contract_ratio)% contraction |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |"))
         end
     end
-    # (get_option(m, :loglevel) > 0) && print("\n")
+    # (get_option(m, :log_level) > 0) && print("\n")
     return
 end
 
@@ -175,12 +175,11 @@ end
     create_bound_tightening_model(m::Optimizer, discretization::Dict, bound::Float64)
 
 This function takes in the initial discretization information and builds the OBBT model.
-It is an algorithm specific function called by [`minmax_bound_tightening`](@ref)
-
- """
+It is an algorithm specific function called by [`minmax_bound_tightening`](@ref).
+"""
 function create_bound_tightening_model(m::Optimizer, discretization, bound; kwargs...)
 
-    options = Dict(kwargs)
+    # options = Dict(kwargs)
 
     start_build = time()
     m.model_mip = Model(get_option(m, :mip_solver)) # Construct JuMP model
@@ -217,12 +216,12 @@ function solve_bound_tightening_model(m::Optimizer; kwargs...)
     MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 
     start_solve = time()
-    if get_option(m, :presolve_bt_relax) #TODO Double check here
+    if get_option(m, :presolve_bt_relax_integrality) #TODO Double check here
         unrelax = JuMP.relax_integrality(m.model_mip)
     end
     JuMP.optimize!(m.model_mip)
     status = MOI.get(m.model_mip, MOI.TerminationStatus())
-    if get_option(m, :presolve_bt_relax)
+    if get_option(m, :presolve_bt_relax_integrality)
         unrelax() # FIXME should this be called ?
     end
     cputime_solve = time() - start_solve

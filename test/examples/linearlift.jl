@@ -2,8 +2,8 @@ function basic_linear_lift(;verbose=false, solver=nothing)
 
 	if solver == nothing
 		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(),
-									mip_solver=CbcSolver(logLevel=0),
-									loglevel=10000))
+									mip_solver=CbcSolver(log_level=0),
+									log_level=10000))
 	else
 		m = Model(solver)
 	end

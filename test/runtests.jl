@@ -1,23 +1,26 @@
 using JuMP, MathOptInterface
-const MOI = MathOptInterface
-using Ipopt, Cbc #, Pavito
+using Ipopt
+using Cbc 
 using Juniper
 import Pavito
 using GLPK
 using Alpine
 using Test
 using Random
-using Pkg
+
 alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
 
 examples = readdir(joinpath(alpine_dir, "test", "examples"))
 
 for i in examples
-    include(joinpath(alpine_dir, "test", "examples", i))
+    if !(i in ["Manifest.toml", "Project.toml", "run_example.jl"])
+        include(joinpath(alpine_dir, "test", "examples", i))
+    end
 end
 
-const IPOPT = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
-const IPOPT_9999 = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "max_iter" => 9999)
+const MOI = MathOptInterface
+
+const IPOPT = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes", "max_iter" => 9999)
 const CBC = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "nl_solver" => IPOPT)
 const PAVITO = optimizer_with_attributes(Pavito.Optimizer, "mip_solver" => CBC, "cont_solver" => IPOPT, "mip_solver_drives" => false)
@@ -31,7 +34,7 @@ function _build(model::JuMP.Model)
 end
 
 # Perform Tests
-include("$(alpine_dir)/test/solver.jl")
-include("$(alpine_dir)/test/expression.jl")
-include("$(alpine_dir)/test/algorithm.jl")
-include("$(alpine_dir)/test/utility.jl")
+include("$(alpine_dir)/test/test_solver.jl")
+include("$(alpine_dir)/test/test_expression.jl")
+include("$(alpine_dir)/test/test_algorithm.jl")
+include("$(alpine_dir)/test/test_utility.jl")

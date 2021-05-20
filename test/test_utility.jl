@@ -5,7 +5,7 @@
                           "mip_solver" => CBC,
                           "presolve_bp" => true,
                           "disc_var_pick" => 1,
-                          "loglevel" => 100,
+                          "log_level" => 100,
                           "max_iter" => 2,
                           "presolve_bt_width_tol" => 1e-3,
                           "presolve_bt" => false)
@@ -16,7 +16,7 @@
     @test termination_status(m) == MOI.OTHER_LIMIT
     @test alpine.logs[:n_iter] == 2
 
-    Alpine.fetch_mip_solver_identifier(alpine;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
+    Alpine.fetch_mip_solver_identifier(alpine;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:log_level, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
     @test alpine.mip_solver_id == "Pajarito"
     Alpine.fetch_mip_solver_identifier(alpine;override="Gurobi.GurobiSolver(nothing, Any[])")
     @test alpine.mip_solver_id == "Gurobi"
@@ -29,7 +29,7 @@
     Alpine.fetch_mip_solver_identifier(alpine;override="Xpress.Optimizer")
     @test alpine.mip_solver_id == "Xpress"
 
-    Alpine.fetch_nlp_solver_identifier(alpine;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
+    Alpine.fetch_nlp_solver_identifier(alpine;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:log_level, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
     @test alpine.nlp_solver_id == "Pajarito"
     Alpine.fetch_nlp_solver_identifier(alpine;override="Ipopt.IpoptSolver(Any[])")
     @test alpine.nlp_solver_id == "Ipopt"
@@ -39,7 +39,7 @@
     Alpine.fetch_nlp_solver_identifier(alpine;override="KNITRO.KnitroSolver(Any[])")
     @test alpine.nlp_solver_id == "Knitro"
 
-    Alpine.fetch_minlp_solver_identifier(alpine;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:logLevel, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
+    Alpine.fetch_minlp_solver_identifier(alpine;override="Pajarito.PajaritoSolver(0, Inf, 1.0e-5, false, Cbc.CbcMathProgSolverInterface.CbcSolver(Any[(:log_level, 0)]), Pajarito.UnsetSolver(), 0, false, true, Ipopt.IpoptSolver(Any[(:print_level, 0)]), true, true, false, false, true, false, false, true, false, true, true, true, true, false, true, 2.0, false, false, false, true, 1.0e-12, 1.0e-6, false, \"\")")
     @test alpine.minlp_solver_id == "Pajarito"
     Alpine.fetch_minlp_solver_identifier(alpine;override="AmplNLWriter.AmplNLSolver(\"bonmin\", String[], \"\")")
     @test alpine.minlp_solver_id == "Bonmin"

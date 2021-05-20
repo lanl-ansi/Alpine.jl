@@ -7,7 +7,7 @@
                        "presolve_bt" => false,
                        "presolve_bp" => true,
                        "presolve_bt_output_tol" => 1e-1,
-                       "loglevel" =>100)
+                       "log_level" =>100)
     m = nlp1(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -23,7 +23,7 @@ end
                            "bilinear_convexhull" => false,
                            "monomial_convexhull" => false,
                            "presolve_bp" => true,
-    					   "loglevel" =>100,
+    					   "log_level" =>100,
                            "max_iter" => 3,
     					   "presolve_bt_width_tol" => 1e-3,
     					   "presolve_bt" => false,
@@ -39,13 +39,13 @@ end
 
 @testset " Validation Test || AMP-TMC || minimum-vertex solving || examples/nlp3.jl (3 iterations)" begin
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT_9999,
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => CBC,
                            "bilinear_convexhull" => false,
                            "monomial_convexhull" => false,
                            "presolve_bp" => true,
                            "disc_var_pick" => 1,
-                           "loglevel" =>100,
+                           "log_level" =>100,
                            "max_iter" => 3,
                            "presolve_bt_width_tol" => 1e-3,
                            "presolve_bt" => false)
@@ -63,14 +63,14 @@ end
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
 							   "mip_solver" => CBC,
                                "bilinear_convexhull" => false,
-							   "loglevel" =>100,
+							   "log_level" =>100,
                                "max_iter" => 3,
 							   "presolve_bt_width_tol" => 1e-3,
 							   "presolve_bt_output_tol" => 1e-1,
 							   "presolve_bt" => true,
                                "presolve_bt_algo" => 1,
                                "presolve_bp" => true,
-							   "presolve_max_iter" => 2,
+							   "presolve_bt_max_iter" => 2,
                                "presolve_track_time" => true,
 							   "disc_var_pick" => max_cover_var_picker)
     m = nlp3(solver=test_solver)
@@ -89,14 +89,14 @@ end
    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                               "mip_solver" => CBC,
                               "bilinear_convexhull" => false,
-                              "loglevel" =>100,
+                              "log_level" =>100,
                               "max_iter" => 2,
                               "presolve_bt" => true,
                               "presolve_bt_width_tol" => 1e-3,
                               "presolve_bt_output_tol" => 1e-1,
                               "presolve_bt_algo" => 2,
                               "presolve_bp" => true,
-                              "presolve_max_iter" => 2,
+                              "presolve_bt_max_iter" => 2,
                               "disc_var_pick" => max_cover_var_picker)
 
    m = nlp3(solver=test_solver)
@@ -112,7 +112,7 @@ end
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
                        "presolve_bp" => true,
-                       "loglevel" => 100)
+                       "log_level" => 100)
     m = nlp1(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -129,7 +129,7 @@ end
                        "presolve_bt" => false,
                        "presolve_bp" => false,
                        "disc_ratio" => 14,
-                       "loglevel" =>100)
+                       "log_level" =>100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -148,7 +148,7 @@ end
                            "presolve_bt" => false,
                            "presolve_bt_algo" => 1,
                            "presolve_bt_output_tol" => 1e-1,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = circle(solver=test_solver)
     optimize!(m)
@@ -164,7 +164,7 @@ end
                            "presolve_bt" => false,
                            "presolve_bt_algo" => 1,
                            "presolve_bt_output_tol" => 1e-1,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = circleN(solver=test_solver, N=4)
     optimize!(m)
@@ -180,7 +180,7 @@ end
                       "presolve_bp" => true,
                       "convhull_formulation" => "facet",
                       "max_iter" => 3,
-                      "loglevel" =>100)
+                      "log_level" =>100)
    m = nlp3(solver=test_solver)
    JuMP.optimize!(m)
 
@@ -200,7 +200,7 @@ end
                                "max_iter" => 4,
                                "presolve_bp" => false,
                                "presolve_bt" => false,
-                               "loglevel" => 1)
+                               "log_level" => 1)
 
         m = multi4N(solver=test_solver, N=2, exprmode=i)
         JuMP.optimize!(m)
@@ -219,7 +219,7 @@ end
                            "max_iter" => 4,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
-                           "loglevel" => 1)
+                           "log_level" => 1)
 
     m = multi2(solver=test_solver)
     JuMP.optimize!(m)
@@ -240,7 +240,7 @@ end
                                "max_iter" => 4,
                                "presolve_bp" => false,
                                "presolve_bt" => false,
-                               "loglevel" => 1)
+                               "log_level" => 1)
 
         m = multi3N(solver=test_solver, N=2, exprmode=i)
         JuMP.optimize!(m)
@@ -259,7 +259,7 @@ end
                            "max_iter" => 3,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
-                           "loglevel" =>1)
+                           "log_level" =>1)
 
     m = multiKND(solver=test_solver, randomub=50, K=3, N=3, D=0)
     JuMP.optimize!(m)
@@ -278,7 +278,7 @@ end
                        "presolve_bp" => false,
                        "max_iter" => 4,
                        "convhull_formulation" => "facet",
-                       "loglevel" =>100)
+                       "log_level" =>100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -298,7 +298,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = nlp3(solver=test_solver)
     optimize!(m)
@@ -315,7 +315,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = nlp3(solver=test_solver)
     optimize!(m)
@@ -332,7 +332,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = castro2m2(solver=test_solver)
     optimize!(m)
@@ -349,7 +349,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = multi3N(solver=test_solver, N=3, exprmode=1)
     optimize!(m)
@@ -366,7 +366,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = multi3N(solver=test_solver, N=3, exprmode=1)
     optimize!(m)
@@ -383,7 +383,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = multi4N(solver=test_solver, N=2, exprmode=1)
     optimize!(m)
@@ -400,7 +400,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => false,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = multi4N(solver=test_solver, N=2, exprmode=1)
     optimize!(m)
@@ -417,7 +417,7 @@ end
                            "max_iter" => 1,
                            "presolve_bp" => true,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = multi4N(solver=test_solver, N=2, exprmode=2)
     optimize!(m)
@@ -431,7 +431,7 @@ end
                           "nlp_solver" => IPOPT,
                           "mip_solver" => CBC,
                           "presolve_bt" => false,
-                          "loglevel" => 100)
+                          "log_level" => 100)
 
     m = bpml_lnl(test_solver)
     optimize!(m)
@@ -455,7 +455,7 @@ end
                           "nlp_solver" => IPOPT,
                           "mip_solver" => CBC,
                           "presolve_bt" => false,
-                          "loglevel" => 100)
+                          "log_level" => 100)
 
     m = bpml_binl(test_solver)
     optimize!(m)
@@ -493,7 +493,7 @@ end
                        "presolve_bt" => false,
                        "presolve_bp" => true,
                        "convhull_ebd" => true,
-                       "loglevel" => 100)
+                       "log_level" => 100)
     m = nlp1(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -515,7 +515,7 @@ end
 #                            "presolve_bt_algo" => 1,
 #                            "presolve_bt_output_tol" => 1e-1,
 #                            "convhull_ebd" => true,
-#                            "loglevel" => 100)
+#                            "log_level" => 100)
 
 #     m = circle(solver=test_solver)
 #     optimize!(m)
@@ -531,7 +531,7 @@ end
                        "presolve_bp" => true,
                        "convhull_ebd" => true,
                        "convhull_ebd_ibs" => true,
-                       "loglevel" => 100)
+                       "log_level" => 100)
     m = nlp1(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -549,7 +549,7 @@ end
                        "presolve_bp" => false,
                        "convhull_ebd" => true,
                        "convhull_ebd_ibs" => true,
-                       "loglevel" => 100)
+                       "log_level" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -570,7 +570,7 @@ end
                            "presolve_bt_output_tol" => 1e-1,
                            "convhull_ebd" => true,
                            "convhull_ebd_ibs" => true,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = circle(solver=test_solver)
     optimize!(m)
@@ -586,7 +586,7 @@ end
                        "presolve_bp" => true,
                        "convhull_ebd" => true,
                        "convhull_ebd_link" => true,
-                       "loglevel" => 100)
+                       "log_level" => 100)
     m = nlp1(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -604,7 +604,7 @@ end
                        "presolve_bp" => false,
                        "convhull_ebd" => true,
                        "convhull_ebd_link" => true,
-                       "loglevel" => 100)
+                       "log_level" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
 
@@ -613,32 +613,12 @@ end
     @test MOI.get(m, Alpine.NumberOfIterations()) == 9
 end
 
-# FIXME Pavito terminates with `NUMERICAL_ERROR` on Julia v1.0 in Mac OS (travis)
-# @testset "Embedding LINK Test || AMP || special problem || ... " begin
-#     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-#                            "mip_solver" => PAVITO,
-#                            "disc_abs_width_tol" => 1e-2,
-#                            "disc_ratio" => 8,
-#                            "max_iter" => 6,
-#                            "presolve_bt" => false,
-#                            "presolve_bp" => true,
-#                            "presolve_bt_algo" => 1,
-#                            "presolve_bt_output_tol" => 1e-1,
-#                            "convhull_ebd" => true,
-#                            "convhull_ebd_link" => true,
-#                            "loglevel" => 100)
-
-#     m = circle(solver=test_solver)
-#     optimize!(m)
-#     @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
-# end
-
 @testset "Algorithm Logic Test || castro4m2 || 1 iteration || Error case" begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => CBC,
                            "max_iter" => 1,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
 
     m = castro4m2(solver=test_solver)
     JuMP.optimize!(m)
@@ -652,7 +632,7 @@ end
                           "mip_solver" => CBC,
                           "presolve_bp" => true,
                           "disc_var_pick" => 1,
-                          "loglevel" => 100,
+                          "log_level" => 100,
                           "max_iter" => 3,
                           "presolve_bt_width_tol" => 1e-3,
                           "presolve_bt" => false)
@@ -669,7 +649,7 @@ end
                            "mip_solver" => PAVITO,
                            "max_iter" => 1,
                            "presolve_bt" => false,
-                           "loglevel" => 100)
+                           "log_level" => 100)
     m = convex_solve(solver=test_solver)
     JuMP.optimize!(m)
     @test termination_status(m) == MOI.OPTIMAL
@@ -683,7 +663,7 @@ end
                            "max_iter" => 1,
                            "presolve_bt" => false,
                            "time_limit" => 100000,
-                           "loglevel" => 100)
+                           "log_level" => 100)
     m = nlp3(solver=test_solver)
     optimize!(m)
     @test isapprox(objective_bound(m), 6561.7841; atol=1e-3)
@@ -698,7 +678,7 @@ end
                             "monomial_convexhull" => true,
                             "presolve_bp" => true,
                             "presolve_bt" => false,
-                            "loglevel" => 100)
+                            "log_level" => 100)
     m = binprod_nlp3(solver=test_solver)
     JuMP.optimize!(m)
 

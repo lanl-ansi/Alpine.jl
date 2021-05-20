@@ -1,7 +1,7 @@
 """
-update_rel_gap(m::Optimizer)
+   update_opt_gap(m::Optimizer)
 
-Update Alpine model relative & absolute optimality gap.
+Updates Alpine model's relative & absolute optimality gaps.
 
 The relative gap calculation is
 
@@ -20,14 +20,14 @@ function update_opt_gap(m::Optimizer)
       m.best_rel_gap = Inf
       return
    else
-      p = convert(Int, round(abs(log(10,get_option(m, :relgap)))))
+      p = convert(Int, round(abs(log(10,get_option(m, :rel_gap)))))
       n = round(abs(m.best_obj-m.best_bound); digits=p)
       dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
       if isapprox(n, 0.0;atol=get_option(m, :tol)) && isapprox(m.best_obj,0.0;atol=get_option(m, :tol))
          m.best_rel_gap = 0.0
          return
       end
-      if get_option(m, :gapref) == :ub
+      if get_option(m, :gap_ref) == :ub
          if isapprox(m.best_obj,0.0;atol=get_option(m, :tol)) # zero upper bound case
             eps = 1 # shift factor
             m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(get_option(m, :tol)+(m.best_obj + eps))
@@ -60,14 +60,14 @@ function measure_relaxed_deviation(m::Optimizer;sol=nothing)
    sort!(dev, by=x->x[1])
 
    for i in dev
-      get_option(m, :loglevel) > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
+      get_option(m, :log_level) > 199 && println("Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])")
    end
 
    return
 end
 
 """
-discretization_to_bounds(d::Dict, l::Int)
+   discretization_to_bounds(d::Dict, l::Int)
 
 Same as [`update_var_bounds`](@ref)
 """
@@ -156,7 +156,7 @@ function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_
 end
 
 """
-fetch_boundstop_symbol(m::Optimizer)
+   update_boundstop_options(m::Optimizer)
 
 An utility function used to recognize different sub-solvers and return the bound stop option key words
 """
@@ -165,9 +165,9 @@ function update_boundstop_options(m::Optimizer)
    if m.mip_solver_id == "Gurobi"
       # Calculation of the bound
       if is_min_sense(m)
-         get_option(m, :gapref) == :ub ? stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_obj) : stopbound=(1-get_option(m, :relgap)+get_option(m, :tol))*abs(m.best_bound)
+         get_option(m, :gap_ref) == :ub ? stopbound=(1-get_option(m, :rel_gap)+get_option(m, :tol))*abs(m.best_obj) : stopbound=(1-get_option(m, :rel_gap)+get_option(m, :tol))*abs(m.best_bound)
       elseif is_max_sense(m)
-         get_option(m, :gapref) == :ub ? stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_obj) : stopbound=(1+get_option(m, :relgap)-get_option(m, :tol))*abs(m.best_bound)
+         get_option(m, :gap_ref) == :ub ? stopbound=(1+get_option(m, :rel_gap)-get_option(m, :tol))*abs(m.best_obj) : stopbound=(1+get_option(m, :rel_gap)-get_option(m, :tol))*abs(m.best_bound)
       end
 
       for i in 1:length(get_option(m, :mip_solver).options)
@@ -187,7 +187,7 @@ end
 
 
 """
-check_solution_history(m::Optimizer, ind::Int)
+   check_solution_history(m::Optimizer, ind::Int)
 
 Check if the solution is alwasy the same within the last disc_consecutive_forbid iterations. Return true if suolution in invariant.
 """
@@ -202,13 +202,12 @@ function check_solution_history(m::Optimizer, ind::Int)
       !isapprox(sol_val, m.bound_sol_history[search_pos][ind]; atol=get_option(m, :disc_rel_width_tol)) && return false
    end
 
-   get_option(m, :loglevel) > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
+   get_option(m, :log_level) > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
    return true
 end
 
 """
-
-fix_domains(m::Optimizer)
+   fix_domains(m::Optimizer)
 
 This function is used to fix variables to certain domains during the local solve process in the [`global_solve`](@ref).
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
@@ -252,7 +251,7 @@ function fix_domains(m::Optimizer;discrete_sol=nothing, use_orig=false)
 end
 
 """
-is_fully_convexified(m::Optimizer)
+   is_fully_convexified(m::Optimizer)
 """
 function is_fully_convexified(m::Optimizer)
 
@@ -305,6 +304,8 @@ function collect_lb_pool(m::Optimizer)
 end
 
 """
+   merge_solution_pool(m::Optimizer, s::Dict)
+
 Merge collected solution pools
 """
 function merge_solution_pool(m::Optimizer, s::Dict)
@@ -357,9 +358,9 @@ function merge_solution_pool(m::Optimizer, s::Dict)
    m.bound_sol_pool[:vars] = var_idxs
 
    # Show the summary
-   get_option(m, :loglevel) > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
+   get_option(m, :log_level) > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
    for i in 1:m.bound_sol_pool[:cnt]
-      get_option(m, :loglevel) > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
+      get_option(m, :log_level) > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
    end
 
    return
@@ -411,8 +412,7 @@ function get_active_partition_idx(discretization::Dict, val::Float64, idx::Int; 
 end
 
 """
-
-ncvar_collect_nodes(m:Optimizer)
+   ncvar_collect_nodes(m:Optimizer)
 
 A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
 
@@ -582,6 +582,13 @@ function build_discvar_graph(m::Optimizer)
    return nodes, arcs
 end
 
+"""
+   min_vertex_cover(m::Optimizer)
+
+`min_vertex_cover` choses the variables based on the minimum vertex cover algorithm for the interaction graph of 
+nonlinear terms which are adaptively partitioned for global optimization. This option can be activated by 
+setting `disc_var_pick` to 1. 
+"""
 function min_vertex_cover(m::Optimizer)
 
    nodes, arcs = build_discvar_graph(m)
@@ -594,8 +601,9 @@ function min_vertex_cover(m::Optimizer)
    @objective(minvertex, Min, sum(x))
 
    optimize!(minvertex)
-   status = MOI.get(minvertex, MOI.TerminationStatus())
+   # status = MOI.get(minvertex, MOI.TerminationStatus())
    xVal = JuMP.value.(x)
+   
 
    # Collecting required information
    m.num_var_disc_mip = Int(sum(xVal))
@@ -616,7 +624,7 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    weights = Dict()
    for i in m.candidate_disc_vars
       isapprox(distance[i], 0.0; atol=1e-6) ? weights[i] = heavy : (weights[i]=(1/distance[i]))
-      (get_option(m, :loglevel) > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
+      (get_option(m, :log_level) > 100) && println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
    end
 
    # Set up minimum vertex cover problem
@@ -634,7 +642,7 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    xVal = JuMP.value.(x)
    m.num_var_disc_mip = Int(sum(xVal))
    m.disc_vars = [i for i in nodes if xVal[i] > 0 && abs(m.u_var_tight[i]-m.l_var_tight[i]) >= get_option(m, :tol)]
-   get_option(m, :loglevel) >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
+   get_option(m, :log_level) >= 99 && println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
 
    return
 end
@@ -655,6 +663,8 @@ function round_sol(m::Optimizer, relaxed_sol)
 end
 
 """
+   eval_feasibility(m::Optimizer, sol::Vector)
+
 Evaluate a solution feasibility: Solution bust be in the feasible category and evaluated rhs must be feasible
 """
 function eval_feasibility(m::Optimizer, sol::Vector)
@@ -688,20 +698,20 @@ function eval_feasibility(m::Optimizer, sol::Vector)
       if m.constr_type_orig[i] == :(==)
          if !isapprox(eval_rhs[i], m.constraint_bounds_orig[i].lower; atol=get_option(m, :tol))
             feasible = false
-            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.constraint_bounds_orig[i].lower)")
-            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+            get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.constraint_bounds_orig[i].lower)")
+            get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(>=)
          if !(eval_rhs[i] >= m.constraint_bounds_orig[i].lower - get_option(m, :tol))
-            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.constraint_bounds_orig[i].lower)")
-            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+            get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.constraint_bounds_orig[i].lower)")
+            get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       elseif m.constr_type_orig[i] == :(<=)
          if !(eval_rhs[i] <= m.constraint_bounds_orig[i].upper + get_option(m, :tol))
-            get_option(m, :loglevel) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.constraint_bounds_orig[i].upper)")
-            get_option(m, :loglevel) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+            get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.constraint_bounds_orig[i].upper)")
+            get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
             return false
          end
       end

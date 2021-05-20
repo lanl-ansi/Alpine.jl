@@ -4,8 +4,8 @@
 CurrentModule = Alpine
 ```
 
-## High-level Algorithmic Operations
-These are the high-level algorithmic methods:
+## High-level Algorithmic Functions
+These are the high-level algorithmic functions:
 ```@docs
 presolve
 global_solve
@@ -19,7 +19,6 @@ create_bounding_mip
 pick_disc_vars
 fix_domains
 min_vertex_cover
-max_cover
 ```
 
 ## Presolve Methods
@@ -38,7 +37,5 @@ discretization_to_bounds
 init_disc
 to_discretization
 flatten_discretization
-add_adpative_partition
-update_mip_time_limit
-fetch_timeleft_symbol
+add_adaptive_partition
 ```

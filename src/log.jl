@@ -4,8 +4,8 @@ function create_logs!(m)
    logs = Dict{Symbol,Any}()
 
    # Timers
-   logs[:presolve_time] = 0.                     # Total presolve-time of the algorithm
-   logs[:total_time] = 0.                        # Total run-time of the algorithm
+   logs[:presolve_time] = 0.                        # Total presolve-time of the algorithm
+   logs[:total_time] = 0.                           # Total run-time of the algorithm
    logs[:time_left] = get_option(m, :time_limit)    # Total remaining time of the algorithm if time-out is specified
 
    # Values
@@ -30,7 +30,7 @@ end
 
 function logging_summary(m::Optimizer)
 
-    if get_option(m, :loglevel) > 0
+    if get_option(m, :log_level) > 0
       printstyled("\nPROBLEM STATISTICS\n", color=:cyan)
       is_min_sense(m) && (println("  Objective sense = Min", ))
       is_max_sense(m) && (println("  Objective sense = Max", ))
@@ -54,12 +54,12 @@ function logging_summary(m::Optimizer)
 
       printstyled("ALPINE CONFIGURATION\n", color=:cyan)
       println("  Maximum iterations =  ", get_option(m, :max_iter))
-      @printf "  Relative optimality gap criteria = %.4f%%\n" get_option(m, :relgap)*100
+      println("  Relative optimality gap criteria = ", get_option(m, :rel_gap)*100, "%")
       
       if get_option(m, :disc_var_pick) == 0
          println("  Potential variables chosen for partitioning = All")
       elseif get_option(m, :disc_var_pick) == 1
-         println("  Potential variables chosen for partitioning = Min. vertex cover")
+         println("  Potential variables chosen for partitioning = Minimum vertex cover")
       end
 
       
@@ -72,7 +72,7 @@ function logging_summary(m::Optimizer)
        (get_option(m, :convhull_ebd)) && println("  Encoding method = $(get_option(m, :convhull_ebd_encode))")
        (get_option(m, :convhull_ebd)) && println("  Independent branching scheme = $(get_option(m, :convhull_ebd_ibs))")
       println("  Bound-tightening (OBBT) presolve = ", get_option(m, :presolve_bt))
-      get_option(m, :presolve_bt) && println("  OBBT maximum iterations = ", get_option(m, :presolve_max_iter))
+      get_option(m, :presolve_bt) && println("  OBBT maximum iterations = ", get_option(m, :presolve_bt_max_iter))
    end
 
 end
@@ -180,7 +180,7 @@ function summary_status(m::Optimizer)
    # :Unknown : termination with no exception recorded
 
    if m.detected_bound && m.detected_feasible_solution
-      m.alpine_status = m.best_rel_gap > get_option(m, :relgap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
+      m.alpine_status = m.best_rel_gap > get_option(m, :rel_gap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
    elseif m.status[:bounding_solve] == MOI.INFEASIBLE
       m.alpine_status = MOI.INFEASIBLE
    elseif m.detected_bound && !m.detected_feasible_solution

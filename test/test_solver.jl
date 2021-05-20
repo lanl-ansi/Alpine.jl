@@ -2,7 +2,7 @@
     # Random Model 1
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                        "mip_solver" => CBC,
-                       "loglevel" => 100)
+                       "log_level" => 100)
     m = operator_c(solver = test_solver)
 
     alpine = _build(m)
@@ -24,7 +24,7 @@ end
         "presolve_bp" => false,
         "presolve_bt" => false,
         "max_iter" => 1,
-        "loglevel" => 100)
+        "log_level" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -43,7 +43,7 @@ end
                             "presolve_bp" =>  false,
                             "presolve_bt" =>  false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -62,7 +62,7 @@ end
                             "presolve_bp" =>  false,
                             "presolve_bt" =>  false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -80,7 +80,7 @@ end
                             "presolve_bp" =>  false,
                             "presolve_bt" =>  false,
                             "max_iter" => 2,
-                            "loglevel" => 100)
+                            "log_level" => 100)
     m = nlp3(solver=test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -102,7 +102,7 @@ end
                             "presolve_bp" => false,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = castro2m2(solver=test_solver)
     JuMP.optimize!(m)
@@ -123,7 +123,7 @@ end
                             "presolve_bp" => false,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = castro2m2(solver=test_solver)
     JuMP.optimize!(m)
@@ -143,7 +143,7 @@ end
                             "presolve_bp" => false,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = castro2m2(solver=test_solver)
     JuMP.optimize!(m)
@@ -167,7 +167,7 @@ end
                             "disc_uniform_rate" => 10,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = blend029_gl(solver=test_solver)
     alpine = _build(m)
@@ -186,7 +186,7 @@ end
                             "presolve_bp" => false,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = blend029_gl(solver=test_solver)
     alpine = _build(m)
@@ -205,7 +205,7 @@ end
                             "presolve_bp" => false,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = blend029_gl(solver=test_solver)
     alpine = _build(m)
@@ -226,7 +226,7 @@ end
                             "presolve_bp" => true,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = castro6m2(solver=test_solver)
     JuMP.optimize!(m)
@@ -248,7 +248,7 @@ end
                             "presolve_bp" => true,
                             "presolve_bt" => false,
                             "max_iter" => 2,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = castro6m2(solver=test_solver)
     JuMP.optimize!(m)
@@ -272,7 +272,7 @@ end
                             "presolve_bp" => false,
                             "presolve_bt" => false,
                             "max_iter" => 1,
-                            "loglevel" => 100)
+                            "log_level" => 100)
 
     m = castro2m2(solver=test_solver)
     JuMP.optimize!(m)
