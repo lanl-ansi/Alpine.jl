@@ -100,8 +100,8 @@ function default_options()
         disc_divert_chunks = 5
         disc_abs_width_tol = 1e-4
         disc_rel_width_tol = 1e-6
-        disc_consecutive_forbid = 0
-        disc_ratio_branch=false
+        disc_consecutive_forbid = false
+        disc_ratio_branch = false
 
         convhull_formulation = "sos2"
         convhull_ebd = false

@@ -46,6 +46,7 @@
     Alpine.fetch_minlp_solver_identifier(alpine;override="KNITRO.KnitroSolver(Any[])")
     @test alpine.minlp_solver_id == "Knitro"
     @test "NLopt" == "NLopt"
+
 end
 
 @testset "Solver Funtion Tests :: Embedding" begin
@@ -80,4 +81,35 @@ end
     @test ebdmap[6] == Set([4,2,3,1])
     @test ebdmap[7] == Set([9,10,2,8,1])
     @test ebdmap[8] == Set([9,5,1])
+end
+
+@testset "Utility Function Tests: check_solution_history test" begin
+
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+    "nlp_solver" => IPOPT,  
+    "mip_solver" => PAVITO,
+    "presolve_bt" => false,
+    "disc_ratio" => 8,
+    "disc_consecutive_forbid" => false)
+    m1 = circle(solver=test_solver)
+    JuMP.optimize!(m1)
+    alpine1 = JuMP.backend(m1).optimizer.model
+
+    Alpine.print_solution_values(m1)
+
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+    "nlp_solver" => IPOPT,  
+    "mip_solver" => PAVITO,
+    "presolve_bt" => false,
+    "disc_ratio" => 8,
+    "disc_consecutive_forbid" => true)
+    m2 = circle(solver=test_solver)
+    JuMP.optimize!(m2)
+    alpine2 = JuMP.backend(m2).optimizer.model
+
+    @test termination_status(m1) == MOI.OPTIMAL
+    @test termination_status(m2) == MOI.OPTIMAL
+    @test alpine1.logs[:n_iter] > alpine2.logs[:n_iter]
+    @test isapprox(JuMP.objective_value(m1), JuMP.objective_value(m2), atol=1E-6)
+
 end

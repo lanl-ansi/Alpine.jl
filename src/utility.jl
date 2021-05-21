@@ -88,9 +88,11 @@ function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
 end
 
 """
-Utility function for debugging.
+   print_solution_values(m::JuMP.Model)
+
+Prints values of all the variables after optimizing the original JuMP model. 
 """
-function show_solution(m::JuMP.Model)
+function print_solution_values(m::JuMP.Model)
    for var in all_variables(m)
       println("$var=$(JuMP.value(var))")
    end
@@ -99,7 +101,7 @@ end
 
 
 """
-Mention the variable type of a lifted term.
+Mention the variable type of the lifted term.
 This function is with limited functionality
 @docstring TODO
 """
@@ -128,37 +130,10 @@ function resolve_lifted_var_type(var_types::Vector{Symbol}, operator::Symbol)
 end
 
 """
-@docstring
-"""
-function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_string_type=1)
-
-   for i in 1:length(options)
-      if options_string_type == 1
-         if keyword in collect(options[i])
-            deleteat!(options, i)
-            break
-         end
-      elseif options_string_type == 2
-         if keyword == split(options[i],"=")[1]
-            deleteat!(options, i)
-            break
-         end
-      end
-   end
-
-   if options_string_type == 1
-      (val != Inf) && (push!(options, keyword => val))
-   elseif options_string_type == 2
-      (val != Inf) && (push!(options, "$(keyword)=$(val)"))
-   end
-
-   return options
-end
-
-"""
    update_boundstop_options(m::Optimizer)
 
-An utility function used to recognize different sub-solvers and return the bound stop option key words
+An utility function used to recognize different sub-solvers and return the bound stop option key words. Currently, this
+function supports only Gurobi solver. 
 """
 function update_boundstop_options(m::Optimizer)
 
@@ -189,7 +164,7 @@ end
 """
    check_solution_history(m::Optimizer, ind::Int)
 
-Check if the solution is alwasy the same within the last disc_consecutive_forbid iterations. Return true if suolution in invariant.
+Check if the solution is always the same within the last disc_consecutive_forbid iterations. Return `true` if solution has stalled.
 """
 function check_solution_history(m::Optimizer, ind::Int)
 
@@ -270,12 +245,11 @@ end
 
 """
 Collect LB solutions
-Don't test this function
 """
 function collect_lb_pool(m::Optimizer)
 
    # Always stick to the structural .discretization for algorithm consideration info
-   # If in need, the scheme need to be refreshed with customized discretization info
+   # If in need, the scheme needs to be refreshed with customized discretization info
 
    if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
       @warn "  Warning: Skipping collecting solution pool procedure",
@@ -283,6 +257,7 @@ function collect_lb_pool(m::Optimizer)
    end
 
    return
+
    # Construct a new solution pool for just this new iteration
    s = initialize_solution_pool(m, Gurobi.get_intattr(m.model_mip.internalModel.inner, "SolCount"))
 
@@ -313,7 +288,7 @@ function merge_solution_pool(m::Optimizer, s::Dict)
    # Always stick to the structural discretization for algorithm consideration info
    # If in need, the scheme needs to be refreshed with customized discretization info
 
-   # Update a few dimensional parameter
+   # Update a few dimensional parameters
    var_idxs = s[:vars]
 
    lbv2p = Dict()  # Book-keeping the partition idx between iterations
@@ -415,7 +390,6 @@ end
    ncvar_collect_nodes(m:Optimizer)
 
 A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
-
 """
 function ncvar_collect_nodes(m::Optimizer;getoutput=false)
 
@@ -428,25 +402,6 @@ function ncvar_collect_nodes(m::Optimizer;getoutput=false)
    end
 
    return
-end
-
-function eval_objective(m::Optimizer; svec::Vector=[])
-
-   isempty(svec) ? svec = m.best_bound_sol : svec = svec
-   is_min_sense(m) ? obj = Inf : obj = -Inf
-
-   if m.obj_structure == :affine
-      obj = m.bounding_obj_mip[:rhs]
-      for i in 1:m.bounding_obj_mip[:cnt]
-         obj += m.bounding_obj_mip[:coefs][i]*svec[m.bounding_obj_mip[:vars][i].args[2]]
-      end
-   elseif m.structural_obj == :convex
-      error("need implementation for local objective function evaluation for convex form")
-   else
-      error("Unknown structural obj type $(m.structural_obj)")
-   end
-
-   return obj
 end
 
 function initialize_solution_pool(m::Optimizer, cnt::Int)
@@ -479,13 +434,16 @@ function ncvar_collect_arcs(m::Optimizer, nodes::Vector)
    arcs = Set()
 
    for k in keys(m.nonconvex_terms)
+
       if m.nonconvex_terms[k][:nonlinear_type] == :BILINEAR
          arc = [i.args[2] for i in k]
          length(arc) == 2 && push!(arcs, sort(arc))
+
       elseif m.nonconvex_terms[k][:nonlinear_type] == :MONOMIAL
          @assert isa(m.nonconvex_terms[k][:var_idxs][1], Int)
          varidx = m.nonconvex_terms[k][:var_idxs][1]
          push!(arcs, [varidx; varidx])
+
       elseif m.nonconvex_terms[k][:nonlinear_type] == :MULTILINEAR
          varidxs = m.nonconvex_terms[k][:var_idxs]
          for i in 1:length(varidxs)
@@ -498,65 +456,31 @@ function ncvar_collect_arcs(m::Optimizer, nodes::Vector)
          if length(varidxs) == 1
             push!(arcs, sort([varidxs[1]; varidxs[1]]))
          end
-      elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
-         var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
-         push!(arcs, sort(var_idxs))
-      elseif m.nonconvex_terms[k][:nonlinear_type] == :INTPROD
-         var_idxs = m.nonconvex_terms[k][:var_idxs]
-         for i in 1:length(var_idxs)
-            for j in 1:length(var_idxs)
-               i != j && push!(arcs, sort([var_idxs[i]; var_idxs[j]]))
-            end
-         end
-      elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
-         @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
-         var_idx = m.nonconvex_terms[k][:var_idxs][1]
-         push!(arcs, [var_idx; var_idx])
+
+      # elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
+      #    var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
+      #    push!(arcs, sort(var_idxs))
+      # elseif m.nonconvex_terms[k][:nonlinear_type] == :INTPROD
+      #    var_idxs = m.nonconvex_terms[k][:var_idxs]
+      #    for i in 1:length(var_idxs)
+      #       for j in 1:length(var_idxs)
+      #          i != j && push!(arcs, sort([var_idxs[i]; var_idxs[j]]))
+      #       end
+      #    end
+      # elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
+      #    @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
+      #    var_idx = m.nonconvex_terms[k][:var_idxs][1]
+      #    push!(arcs, [var_idx; var_idx])
+
       elseif m.nonconvex_terms[k][:nonlinear_type] in [:BININT, :BINLIN, :BINPROD]
          continue
       else
-         error("[EXCEPTION] Unexpected nonlinear term when building discvar graph.")
+
+         error("[EXCEPTION] Unexpected nonlinear term when building interaction graphs for min. vertex cover.")
       end
    end
 
    return arcs
-end
-
-"""
-Special function for debugging bounding models
-"""
-function print_iis_gurobi(m::JuMP.Model)
-
-   grb = interface_get_rawsolver(m)
-   Gurobi.computeIIS(grb)
-   numconstr = Gurobi.num_constrs(grb)
-   numvar = Gurobi.num_vars(grb)
-
-   iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
-   iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
-   iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
-
-   info("Irreducible Inconsistent Subsystem (IIS)")
-   info("Variable bounds:")
-   for i in 1:numvar
-      v = _index_to_variable_ref(m, i)
-      if iislb[i] != 0 && iisub[i] != 0
-         println(JuMP.lower_bound(v), " <= ", JuMP.name(v), " <= ", JuMP.upper_bound(v))
-      elseif iislb[i] != 0
-         println(JuMP.name(v), " >= ", JuMP.lower_bound(v))
-      elseif iisub[i] != 0
-         println(JuMP.name(v), " <= ", JuMP.upper_bound(v))
-      end
-   end
-
-   info("Constraints:")
-   for i in 1:numconstr
-      if iisconstr[i] != 0
-         println(m.linconstr[i])
-      end
-   end
-
-   return
 end
 
 """
@@ -585,9 +509,9 @@ end
 """
    min_vertex_cover(m::Optimizer)
 
-`min_vertex_cover` choses the variables based on the minimum vertex cover algorithm for the interaction graph of 
+`min_vertex_cover` chooses the variables based on the minimum vertex cover algorithm for the interaction graph of 
 nonlinear terms which are adaptively partitioned for global optimization. This option can be activated by 
-setting `disc_var_pick` to 1. 
+setting `disc_var_pick = 1`. 
 """
 function min_vertex_cover(m::Optimizer)
 
@@ -595,7 +519,7 @@ function min_vertex_cover(m::Optimizer)
 
    # Set up minimum vertex cover problem
    minvertex = Model(get_option(m, :mip_solver))
-   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0) # Set a timer to avoid waste of time in proving optimality
+   MOI.set(minvertex, MOI.TimeLimitSec(), 60.0) # Time limit for min vertex cover formulation
    @variable(minvertex, x[nodes], Bin)
    @constraint(minvertex, [a in arcs], x[a[1]] + x[a[2]] >= 1)
    @objective(minvertex, Min, sum(x))
@@ -660,64 +584,6 @@ function round_sol(m::Optimizer, relaxed_sol)
    end
 
    return rounded_sol
-end
-
-"""
-   eval_feasibility(m::Optimizer, sol::Vector)
-
-Evaluate a solution feasibility: Solution bust be in the feasible category and evaluated rhs must be feasible
-"""
-function eval_feasibility(m::Optimizer, sol::Vector)
-
-   length(sol) == m.num_var_orig || error("Candidate solution length mismatch.")
-
-
-   for i in 1:m.num_var_orig
-      # Check solution category and bounds
-      if m.var_type[i] == :Bin
-         isapprox(sol[i], 1.0;atol=get_option(m, :tol)) || isapprox(sol[i], 0.0;atol=get_option(m, :tol)) || return false
-      elseif m.var_type[i] == :Int
-         isapprox(mod(sol[i], 1.0), 0.0;atol=get_option(m, :tol)) || return false
-      end
-      # Check solution bounds (with tight bounds)
-      sol[i] <= m.l_var_tight[i] - get_option(m, :tol) || return false
-      sol[i] >= m.u_var_tight[i] + get_option(m, :tol) || return false
-   end
-
-   # Check constraint violation
-   eval_rhs = zeros(m.num_constr_orig)
-   for i in eachindex(m.lin_quad_constraints)
-       func = m.lin_quad_constraints[i][1]
-       eval_rhs[i] = MOI.Utilities.eval_variables(vi -> rounded_sol[vi.value], func)
-   end
-   start = m.num_constr_orig - length(m.nl_constraint_bounds_orig) + 1
-   @assert start == length(m.lin_quad_constraints) + 1
-   interface_eval_g(m.d_orig, view(eval_rhs, start:m.num_constr_orig), rounded_sol)
-   feasible = true
-   for i in 1:m.num_constr_orig
-      if m.constr_type_orig[i] == :(==)
-         if !isapprox(eval_rhs[i], m.constraint_bounds_orig[i].lower; atol=get_option(m, :tol))
-            feasible = false
-            get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.constraint_bounds_orig[i].lower)")
-            get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
-            return false
-         end
-      elseif m.constr_type_orig[i] == :(>=)
-         if !(eval_rhs[i] >= m.constraint_bounds_orig[i].lower - get_option(m, :tol))
-            get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.constraint_bounds_orig[i].lower)")
-            get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
-            return false
-         end
-      elseif m.constr_type_orig[i] == :(<=)
-         if !(eval_rhs[i] <= m.constraint_bounds_orig[i].upper + get_option(m, :tol))
-            get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.constraint_bounds_orig[i].upper)")
-            get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
-            return false
-         end
-      end
-   end
-
-   return feasible
 end
 
 function fetch_mip_solver_identifier(m::Optimizer;override="")
@@ -850,27 +716,179 @@ function resolve_lifted_var_value(m::Optimizer, sol_vec::Array)
    return sol_vec
 end
 
-function adjust_branch_priority(m::Optimizer)
+#-----------------------------------------------------------------#
+#                    UNSUPPORTED FUNCTIONS                        #
+#-----------------------------------------------------------------#
 
-   if m.mip_solver_id == "Gurobi"
-      !m.model_mip.internalModelLoaded && return
-      len = length(m.model_mip.colVal)
-      prior = Cint[] # priorities
-      for i=1:len
-         push!(prior, i)
-      end
-      Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
-   elseif m.mip_solver_id == "Cplex"
-      !m.model_mip.internalModelLoaded && return
-      n = length(m.model_mip.colVal)
-      idxlist = Cint[1:n;] # variable indices
-      prior = Cint[] # priorities
-      for i=1:n
-         push!(prior, i)
-      end
-      CPLEX.set_branching_priority(MathProgBase.getrawsolver(internalmodel(m.model_mip)), idxlist, prior)
-   else
-      return
-   end
+# """
+# @docstring
+# """
+# function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_string_type=1)
 
-end
+#    for i in 1:length(options)
+#       if options_string_type == 1
+#          if keyword in collect(options[i])
+#             deleteat!(options, i)
+#             break
+#          end
+#       elseif options_string_type == 2
+#          if keyword == split(options[i],"=")[1]
+#             deleteat!(options, i)
+#             break
+#          end
+#       end
+#    end
+
+#    if options_string_type == 1
+#       (val != Inf) && (push!(options, keyword => val))
+#    elseif options_string_type == 2
+#       (val != Inf) && (push!(options, "$(keyword)=$(val)"))
+#    end
+
+#    return options
+# end
+
+# function eval_objective(m::Optimizer; svec::Vector=[])
+
+#    isempty(svec) ? svec = m.best_bound_sol : svec = svec
+#    is_min_sense(m) ? obj = Inf : obj = -Inf
+
+#    if m.obj_structure == :affine
+#       obj = m.bounding_obj_mip[:rhs]
+#       for i in 1:m.bounding_obj_mip[:cnt]
+#          obj += m.bounding_obj_mip[:coefs][i]*svec[m.bounding_obj_mip[:vars][i].args[2]]
+#       end
+#    elseif m.structural_obj == :convex
+#       error("need implementation for local objective function evaluation for convex form")
+#    else
+#       error("Unknown structural obj type $(m.structural_obj)")
+#    end
+
+#    return obj
+# end
+
+
+# """
+# Special function for debugging bounding models
+# """
+# function print_iis_gurobi(m::JuMP.Model)
+
+#    grb = interface_get_rawsolver(m)
+#    Gurobi.computeIIS(grb)
+#    numconstr = Gurobi.num_constrs(grb)
+#    numvar = Gurobi.num_vars(grb)
+
+#    iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
+#    iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
+#    iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
+
+#    info("Irreducible Inconsistent Subsystem (IIS)")
+#    info("Variable bounds:")
+#    for i in 1:numvar
+#       v = _index_to_variable_ref(m, i)
+#       if iislb[i] != 0 && iisub[i] != 0
+#          println(JuMP.lower_bound(v), " <= ", JuMP.name(v), " <= ", JuMP.upper_bound(v))
+#       elseif iislb[i] != 0
+#          println(JuMP.name(v), " >= ", JuMP.lower_bound(v))
+#       elseif iisub[i] != 0
+#          println(JuMP.name(v), " <= ", JuMP.upper_bound(v))
+#       end
+#    end
+
+#    info("Constraints:")
+#    for i in 1:numconstr
+#       if iisconstr[i] != 0
+#          println(m.linconstr[i])
+#       end
+#    end
+
+#    return
+# end
+
+
+# """
+#    eval_feasibility(m::Optimizer, sol::Vector)
+
+# Evaluate a solution feasibility: Optimization problem must be feasible and the evaluated rhs must be feasible
+# """
+# function eval_feasibility(m::Optimizer, sol::Vector)
+
+#    if !(length(sol) == m.num_var_orig)
+#       error("Candidate solution length mismatch.")
+#    end
+
+#    for i in 1:m.num_var_orig
+#       # Check solution category and bounds
+#       if m.var_type[i] == :Bin
+#          isapprox(sol[i], 1.0;atol=get_option(m, :tol)) || isapprox(sol[i], 0.0;atol=get_option(m, :tol)) || return false
+#       elseif m.var_type[i] == :Int
+#          isapprox(mod(sol[i], 1.0), 0.0;atol=get_option(m, :tol)) || return false
+#       end
+#       # Check solution bounds (with tight bounds)
+#       sol[i] <= m.l_var_tight[i] - get_option(m, :tol) || return false
+#       sol[i] >= m.u_var_tight[i] + get_option(m, :tol) || return false
+#    end
+
+#    # Check constraint violation
+#    eval_rhs = zeros(m.num_constr_orig)
+#    for i in eachindex(m.lin_quad_constraints)
+#        func = m.lin_quad_constraints[i][1]
+#        eval_rhs[i] = MOI.Utilities.eval_variables(vi -> rounded_sol[vi.value], func)
+#    end
+   
+#    start = m.num_constr_orig - length(m.nl_constraint_bounds_orig) + 1
+#    @assert start == length(m.lin_quad_constraints) + 1
+#    interface_eval_g(m.d_orig, view(eval_rhs, start:m.num_constr_orig), rounded_sol)
+#    feasible = true
+
+#    for i in 1:m.num_constr_orig
+#       if m.constr_type_orig[i] == :(==)
+#          if !isapprox(eval_rhs[i], m.constraint_bounds_orig[i].lower; atol=get_option(m, :tol))
+#             feasible = false
+#             get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.constraint_bounds_orig[i].lower)")
+#             get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+#             return false
+#          end
+#       elseif m.constr_type_orig[i] == :(>=)
+#          if !(eval_rhs[i] >= m.constraint_bounds_orig[i].lower - get_option(m, :tol))
+#             get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.constraint_bounds_orig[i].lower)")
+#             get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+#             return false
+#          end
+#       elseif m.constr_type_orig[i] == :(<=)
+#          if !(eval_rhs[i] <= m.constraint_bounds_orig[i].upper + get_option(m, :tol))
+#             get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.constraint_bounds_orig[i].upper)")
+#             get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
+#             return false
+#          end
+#       end
+#    end
+
+#    return feasible
+# end
+
+
+# function adjust_branch_priority(m::Optimizer)
+
+#    if m.mip_solver_id == "Gurobi"
+#       !m.model_mip.internalModelLoaded && return
+#       len = length(m.model_mip.colVal)
+#       prior = Cint[] # priorities
+#       for i=1:len
+#          push!(prior, i)
+#       end
+#       Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
+#    elseif m.mip_solver_id == "Cplex"
+#       !m.model_mip.internalModelLoaded && return
+#       n = length(m.model_mip.colVal)
+#       idxlist = Cint[1:n;] # variable indices
+#       prior = Cint[] # priorities
+#       for i=1:n
+#          push!(prior, i)
+#       end
+#       CPLEX.set_branching_priority(MathProgBase.getrawsolver(internalmodel(m.model_mip)), idxlist, prior)
+#    else
+#       return
+#    end
+
+# end

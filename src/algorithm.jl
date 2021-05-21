@@ -187,6 +187,7 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
     MOI.set(model, MOI.NLPBlock(), block)
     return x
 end
+
 function set_variable_type(model::MOI.ModelLike, xs, variable_types)
     for (x, variable_type) in zip(xs, variable_types)
         fx = MOI.SingleVariable(x)
@@ -244,38 +245,46 @@ function local_solve(m::Optimizer; presolve = false)
    end
    MOI.set(local_solve_model, MOI.VariablePrimalStart(), x, warmval)
 
-   do_heuristic = false
+   # do_heuristic = false
+
    # The only case when MINLP solver is actually used
    if presolve && !isempty(var_type_screener)
       if get_option(m, :minlp_solver) === nothing
-         do_heuristic = true
+         error("Provide a valid MINLP solver")
+         # do_heuristic = true
       else
          set_variable_type(local_solve_model, x, m.var_type_orig)
       end
    end
+
    MOI.optimize!(local_solve_model)
-   if !do_heuristic
-       local_nlp_status = MOI.get(local_solve_model, MOI.TerminationStatus())
-   end
+   local_nlp_status = MOI.get(local_solve_model, MOI.TerminationStatus())
+
+   # if !do_heuristic
+   #     local_nlp_status = MOI.get(local_solve_model, MOI.TerminationStatus())
+   # end
 
    cputime_local_solve = time() - start_local_solve
    m.logs[:total_time] += cputime_local_solve
    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
 
-   if do_heuristic
-      m.status[:local_solve] = heu_basic_rounding(m, MOI.get(local_solve_model, MOI.VariablePrimal(), x))
-      return
-   elseif local_nlp_status in STATUS_OPT || local_nlp_status in STATUS_LIMIT
+   # if do_heuristic
+      # m.status[:local_solve] = heu_basic_rounding(m, MOI.get(local_solve_model, MOI.VariablePrimal(), x))
+      # return
+
+   if local_nlp_status in STATUS_OPT || local_nlp_status in STATUS_LIMIT
       candidate_obj = MOI.get(local_solve_model, MOI.ObjectiveValue())
       candidate_sol = round.(MOI.get(local_solve_model, MOI.VariablePrimal(), x); digits=5)
       update_incumb_objective(m, candidate_obj, candidate_sol)
       m.status[:local_solve] = local_nlp_status
       return
+
    elseif local_nlp_status in STATUS_INF
       heu_pool_multistart(m) == MOI.LOCALLY_SOLVED && return
       push!(m.logs[:obj], "INF")
       m.status[:local_solve] = MOI.LOCALLY_INFEASIBLE
       return
+
    elseif local_nlp_status == MOI.DUAL_INFEASIBLE
       push!(m.logs[:obj], "U")
       m.status[:local_solve] = MOI.DUAL_INFEASIBLE
@@ -285,6 +294,7 @@ function local_solve(m::Optimizer; presolve = false)
          @warn "  Warning: NLP local solve is unbounded."
       end
       return
+
    else
       push!(m.logs[:obj], "E")
       m.status[:local_solve] = MOI.OTHER_ERROR
@@ -303,11 +313,9 @@ end
 """
    bounding_solve(m::Optimizer; kwargs...)
 
-This process usually deals with a MILP or a MIQCP/MIQCQP problem for lower bounding the given problem.
-It solves the problem built upon a convexification base on a discretization Dictionary of some variables.
-The convexification utilized is Tighten McCormick scheme.
+This step usually solves a convex MILP/MIQCP/MIQCQP problem for lower bounding the given minimization problem.
+It solves the problem built upon a piecewise convexification based on the discretization sictionary of some variables.
 See `create_bounding_mip` for more details of the problem solved here.
-
 """
 function bounding_solve(m::Optimizer)
 
@@ -326,8 +334,10 @@ function bounding_solve(m::Optimizer)
    # ================= Solve End ================ #
 
    if status in STATUS_OPT || status in STATUS_LIMIT
+      
       candidate_bound = (status == MOI.OPTIMAL) ? objective_value(m.model_mip) : objective_bound(m.model_mip)
       candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+      
       # Experimental code
       measure_relaxed_deviation(m, sol=candidate_bound_sol)
       if get_option(m, :disc_consecutive_forbid) > 0
@@ -340,16 +350,26 @@ function bounding_solve(m::Optimizer)
          m.status[:bounding_solve] = status
          m.detected_bound = true
       end
-      collect_lb_pool(m)    # Always collect details sub-optimal solution
+      
+      collect_lb_pool(m)    # Collect a pool of sub-optimal solutions - currently implemented for Gurobi only
+
    elseif status in STATUS_INF || status == MOI.INFEASIBLE_OR_UNBOUNDED
+      
       push!(m.logs[:bound], "-")
       m.status[:bounding_solve] = MOI.INFEASIBLE
-      ALPINE_DEBUG && print_iis_gurobi(m.model_mip) # Diagnostic code
       @warn "  Warning: Infeasibility detected in the MIP solver"
+
+      if ALPINE_DEBUG
+         @warn "Use Alpine.print_iis_gurobi(m.model_mip) function in src/utility.jl (commented out code) for further investigation, if your MIP solver is Gurobi"
+      end
+
    elseif status == :Unbounded
+      
       m.status[:bounding_solve] = MOI.DUAL_INFEASIBLE
       @warn "  Warning: MIP solver returns unbounded"
+
    else
+
       error("  Warning: MIP solver failure $(status)")
    end
 
