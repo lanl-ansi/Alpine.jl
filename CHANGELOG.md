@@ -1,5 +1,12 @@
 # Critical Updates for Alpine.jl
 
+## v0.2.4
+* Added unit tests for utility functions
+* Removed un-used functions from utility functions which aren't part of Alpine's algorithm     
+* Dropped support for heuristic rounding algorithm (`heu_basic_rounding`) - `minlp_solver` input is a must
+* Dropped support for adjusting branching priority in MIP solvers (`adjust_branch_priority`)
+
+
 ## v0.2.3
 * Migrating from Travis to Github-actions
 * Major documentation clean-up
