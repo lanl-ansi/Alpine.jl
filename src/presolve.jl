@@ -63,7 +63,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
         timelimit = get_option(m, :presolve_time_limit)
     end
 
-    # Regulating Special Input Conditions: default use best feasible solution objective value
+    # Regulating special input conditions: default use best feasible solution objective value
     (use_bound == true) ? bound = m.best_obj : bound = Inf
     l_var_orig = copy(m.l_var_tight)
     u_var_orig = copy(m.u_var_tight)

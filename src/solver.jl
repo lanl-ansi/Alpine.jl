@@ -1,7 +1,7 @@
 mutable struct OptimizerOptions
     # Parameters for tuning Alpine
 
-    # basic solver parameters
+    # Basic solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     time_limit::Float64                                         # Time limit for algorithm (in seconds)
     max_iter::Int                                               # Target Maximum Iterations
@@ -11,24 +11,25 @@ mutable struct OptimizerOptions
     tol::Float64                                                # Numerical tol used in algorithms
     large_bound::Float64                                        # Large bounds for problems with unbounded variables
 
-    # add all the solver options
+    # All the solver options
     nlp_solver                                                  # Local continuous NLP solver for solving NLPs at each iteration
     minlp_solver                                                # Local MINLP solver for solving MINLPs at each iteration
     mip_solver                                                  # MIP solver for successive lower bound solves
 
-    # convexification method tuning
+    # Convexification methods
     recognize_convex::Bool                                      # Recognize convex expressions in parsing objective functions and constraints
     bilinear_mccormick::Bool                                    # [INACTIVE] Convexify bilinear terms using piecwise McCormick representation
     bilinear_convexhull::Bool                                   # Convexify bilinear terms using lambda representation
     monomial_convexhull::Bool                                   # Convexify monomial terms using convex-hull representation
 
-    # expression-based user-inputs
+    # Expression-based user-inputs
     method_convexification::Array{Function}                     # Array of functions that user can choose to convexify specific non-linear terms : no over-ride privilege
+
     # method_partition_injection::Array{Function}               # [INACTIVE] Array of functions for special methods to add partitions to variables under complex conditions
     # term_patterns::Array{Function}                            # [INACTIVE] Array of functions that user can choose to parse/recognize nonlinear terms in constraint expressions
     # constr_patterns::Array{Function}                          # [INACTIVE] Array of functions that user can choose to parse/recognize structural constraint from expressions
 
-    # parameters used in the partitioning algorithm
+    # Parameters used in Alpine's MIP-based partitioning algorithm
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     disc_ratio::Any                                             # Discretization ratio parameter (use a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
@@ -39,7 +40,7 @@ mutable struct OptimizerOptions
     disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve
     disc_ratio_branch::Bool                                     # Branching tests for picking fixed discretization ratio
 
-    # MIP Formulation Parameters
+    # MIP formulation parameters
     convhull_formulation::String                                # MIP Formulation for the relaxation
     convhull_ebd::Bool                                          # Enable embedding formulation
     convhull_ebd_encode::Any                                    # Encoding method used for convhull_ebd
@@ -48,7 +49,7 @@ mutable struct OptimizerOptions
     convhull_warmstart::Bool                                    # Warm start the bounding MIP
     convhull_no_good_cuts::Bool                                 # Add no-good cuts to MIP based on the pool solutions
 
-    # Presolving Parameters
+    # Presolving parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
     presolve_time_limit::Float64                                # Time limit for presolving (seconds)
@@ -66,7 +67,7 @@ mutable struct OptimizerOptions
     # Features for Integer Problems (NOTE: no support for int-lin problems)
     int_enable::Bool                                            # Convert integer problem into binary problem
     int_cumulative_disc::Bool                                   #  Cumulatively involve integer variables for discretization
-    int_fully_disc::Bool                                        # [INACTIVE] Construct equivalent formulation for integer variables
+    
 end
 
 function default_options()
@@ -125,7 +126,6 @@ function default_options()
         user_parameters = Dict()
         int_enable = false
         int_cumulative_disc = true
-        int_fully_disc = false
 
     return OptimizerOptions(log_level, time_limit, max_iter, rel_gap, gap_ref, abs_gap, tol, large_bound,
                              nlp_solver, minlp_solver, mip_solver,
@@ -135,7 +135,7 @@ function default_options()
                              convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts,
                              presolve_track_time, presolve_bt, presolve_time_limit, presolve_bt_max_iter, presolve_bt_width_tol, presolve_bt_output_tol,
                              presolve_bt_algo, presolve_bt_relax_integrality, presolve_bt_mip_time_limit, presolve_bp,
-                             user_parameters, int_enable, int_cumulative_disc, int_fully_disc)
+                             user_parameters, int_enable, int_cumulative_disc)
 end
 
 
@@ -148,7 +148,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     minlp_solver_id::AbstractString                             # MINLP local solver identifier string
     mip_solver_id::AbstractString                               # MIP solver identifier string
 
-    # user provided inputs
+    # User inputs
     num_var_orig::Int                                           # Initial number of variables
     num_cont_var_orig::Int                                      # Initial number of continuous variables
     num_int_var_orig::Int                                       # Initial number of binary/integer variables
@@ -162,7 +162,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     constr_expr_orig::Vector{Expr}                              # Constraint expressions
     obj_expr_orig::Union{Expr,Number}                           # Objective expression
 
-    # additional user inputs useful for local solves
+    # Additional user inputs concerning local solves
     l_var_orig::Vector{Float64}                                 # Variable lower bounds
     u_var_orig::Vector{Float64}                                 # Variable upper bounds
     constraint_bounds_orig::Vector{MOI.NLPBoundsPair}           # Constraint lower bounds
@@ -172,17 +172,19 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     has_nl_objective::Bool
     objective_function::Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
 
-    # additional initial data that may be useful later (not populated)
-    A_orig::Any                                                 # Linear constraint matrix
-    A_l_orig::Vector{Float64}                                   # Linear constraint matrix LHS
-    A_u_orig::Vector{Float64}                                   # Linear constraint matrix RHS
-    is_obj_linear_orig::Bool                                    # Bool variable for type of objective
-    c_orig::Vector{Float64}                                     # Coefficient vector for linear objective
-    num_lconstr_updated::Int                                    # Updated number of linear constraints - includes linear constraints added via @NLconstraint macro
-    num_nlconstr_updated::Int                                   # Updated number of non-linear constraints
-    indexes_lconstr_updated::Vector{Int}                        # Indexes of updated linear constraints
+    # Additional initial data  
+    is_obj_linear_orig::Bool                                      # Boolean parameter for type of objective
+    
+    # (un-populated options for later use)
+    # A_orig::Any                                                 # Linear constraint matrix
+    # A_l_orig::Vector{Float64}                                   # Linear constraint matrix LHS
+    # A_u_orig::Vector{Float64}                                   # Linear constraint matrix RHS
+    # c_orig::Vector{Float64}                                     # Coefficient vector for linear objective
+    # num_lconstr_updated::Int                                    # Updated number of linear constraints - includes linear constraints added via @NLconstraint macro
+    # num_nlconstr_updated::Int                                   # Updated number of non-linear constraints
+    # indices_lconstr_updated::Vector{Int}                        # Indexes of updated linear constraints
 
-    # local solution model extra data for each iteration
+    # Local solution model (extra data for each iteration)
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
     u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
 
@@ -194,7 +196,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     num_var_disc_mip::Int                                       # Number of variables which are discretized
     num_constr_convex::Int                                      # Number of convex constraints
 
-    # expression-related and structural property placeholder
+    # Expression-related and structural property placeholder
     linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
     nonconvex_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
     term_seq::Dict{Int, Any}                                    # Vector-Dictionary for NL terms detection
@@ -206,14 +208,14 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
     bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
 
-    # Discretization Related
+    # Discretization Related options
     candidate_disc_vars::Vector{Int}                            # A vector of all original variable indices that is involved in the nonlinear terms
     discretization::Dict{Any,Any}                               # Discretization points with variable keys
     disc_vars::Vector{Int}                                      # Variables chosen for discretization
     int_vars::Vector{Int}                                       # Index vector of integer variables
     bin_vars::Vector{Int}                                       # Index vector of binary variables
 
-    # Reformulated problem
+    # Reformulated problem options
     l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
     u_var_tight::Vector{Float64}                                # Tightened variable lower bounds
     var_type::Vector{Symbol}                                    # Updated variable type for local solve
@@ -237,7 +239,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     status::Dict{Symbol, MOI.TerminationStatusCode}             # Detailed status of every iteration in the algorithm
     alpine_status::MOI.TerminationStatusCode                    # Current Alpine's status
 
-    # constructor
+    # Constructor for Alpine.Optimizer
     function Optimizer()
 
         m = new()
@@ -289,9 +291,9 @@ function MOI.empty!(m::Optimizer)
     m.constr_type_orig = Symbol[]
     m.lin_quad_constraints = Any[]
     m.constr_expr_orig = Expr[]
-    m.num_lconstr_updated = 0
-    m.num_nlconstr_updated = 0
-    m.indexes_lconstr_updated = Int[]
+    # m.num_lconstr_updated = 0
+    # m.num_nlconstr_updated = 0
+    # m.indices_lconstr_updated = Int[]
 
     m.l_var_orig = Float64[]
     m.u_var_orig = Float64[]

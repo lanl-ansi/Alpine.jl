@@ -1,5 +1,10 @@
 # Critical Updates for Alpine.jl
 
+## v0.2.5
+* Cleaning up of solver logs
+* Time correction for local solve 
+* Removed unused `Alpine.Optimizer` options in solver.jl
+
 ## v0.2.4
 * Added unit tests for utility functions
 * Removed un-used functions from utility functions which aren't part of Alpine's algorithm     

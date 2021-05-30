@@ -34,15 +34,15 @@ function logging_summary(m::Optimizer)
       printstyled("\nPROBLEM STATISTICS\n", color=:cyan)
       is_min_sense(m) && (println("  Objective sense = Min", ))
       is_max_sense(m) && (println("  Objective sense = Max", ))
-      println("  #Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
-      println("  #Bin-Int Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
-      println("  #Constraints = ", m.num_constr_orig)
-      println("  #NL Constraints = ", m.num_nlconstr_orig)
-      println("  #Linear Constraints = ", m.num_lconstr_orig)
-      get_option(m, :recognize_convex) && println("  #Detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
-      println("  #Detected nonlinear terms = ", length(m.nonconvex_terms))
-      println("  #Variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
-      println("  #Potential variables for partitioning = ", length(m.disc_vars))
+      println("  # Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
+      println("  # Bin-Int Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
+      println("  # Constraints = ", m.num_constr_orig)
+      println("  # NL Constraints = ", m.num_nlconstr_orig)
+      println("  # Linear Constraints = ", m.num_lconstr_orig)
+      get_option(m, :recognize_convex) && println("  # Detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))")
+      println("  # Detected nonlinear terms = ", length(m.nonconvex_terms))
+      println("  # Variables involved in nonlinear terms = ", length(m.candidate_disc_vars))
+      println("  # Potential variables for partitioning = ", length(m.disc_vars))
 
       printstyled("SUB-SOLVERS USED BY ALPINE\n", color=:cyan)
       if get_option(m, :minlp_solver) === nothing
@@ -53,8 +53,15 @@ function logging_summary(m::Optimizer)
       println("  MIP solver = ", m.mip_solver_id)
 
       printstyled("ALPINE CONFIGURATION\n", color=:cyan)
-      println("  Maximum iterations =  ", get_option(m, :max_iter))
-      println("  Relative optimality gap criteria = ", get_option(m, :rel_gap)*100, "%")
+      if is_min_sense(m)
+         println("  Maximum iterations (lower-bounding MIPs) =  ", get_option(m, :max_iter))
+      elseif is_max_sense(m)
+         println("  Maximum iterations (upper-bounding MIPs) =  ", get_option(m, :max_iter))
+      else 
+         println("  Maximum iterations (bounding MIPs) =  ", get_option(m, :max_iter))
+      end
+
+      println("  Relative global optimality gap = ", get_option(m, :rel_gap)*100, "%")
       
       if get_option(m, :disc_var_pick) == 0
          println("  Potential variables chosen for partitioning = All")
@@ -72,7 +79,7 @@ function logging_summary(m::Optimizer)
        (get_option(m, :convhull_ebd)) && println("  Encoding method = $(get_option(m, :convhull_ebd_encode))")
        (get_option(m, :convhull_ebd)) && println("  Independent branching scheme = $(get_option(m, :convhull_ebd_ibs))")
       println("  Bound-tightening (OBBT) presolve = ", get_option(m, :presolve_bt))
-      get_option(m, :presolve_bt) && println("  OBBT maximum iterations = ", get_option(m, :presolve_bt_max_iter))
+      get_option(m, :presolve_bt) && println("  Maximum iterations (OBBT) = ", get_option(m, :presolve_bt_max_iter))
    end
 
 end

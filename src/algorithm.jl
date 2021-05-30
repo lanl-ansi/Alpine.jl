@@ -91,22 +91,35 @@ function presolve(m::Optimizer)
    # Solver status - returns error when see different
 
    if m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT
-      get_option(m, :log_level) > 0 && println("  Local solver returns a feasible point")
+
+      get_option(m, :log_level) > 0 && println("  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))")
+      
       bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
+      
       get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
+      
       get_option(m, :disc_ratio_branch) && (set_option(m, :disc_ratio, update_disc_ratio(m, true)))
+      
       add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
-      # get_option(m, :log_level) > 0 && println("Ending the presolve")
+
    elseif m.status[:local_solve] in STATUS_INF
+
       (get_option(m, :log_level) > 0) && println("  Bound tightening without objective bounds (OBBT)")
+      
       bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
+      
       (get_option(m, :disc_ratio_branch)) && (set_option(m, :disc_ratio, update_disc_ratio(m, true)))
+      
       get_option(m, :presolve_bt) && init_disc(m)
-      # get_option(m, :log_level) > 0 && println("Ending the presolve")
+
    elseif m.status[:local_solve] == MOI.INVALID_MODEL
+      
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n This may come from Ipopt's `:Not_Enough_Degrees_Of_Freedom`. \n Consider more replace equality constraints with >= and <= to resolve this."
+   
    else
+      
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve])."
+   
    end
 
    cputime_presolve = time() - start_presolve
@@ -114,7 +127,7 @@ function presolve(m::Optimizer)
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
    # (get_option(m, :log_level) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-   (get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s ($(m.logs[:bt_iter]) iterations)")
+   (get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s")
    return
 end
 
@@ -161,7 +174,7 @@ function check_exit(m::Optimizer)
    m.logs[:n_iter] >= get_option(m, :max_iter) && return true
    m.best_abs_gap <= get_option(m, :abs_gap) && return true
 
-   # Userlimits check
+   # User-limits check
    m.logs[:time_left] < get_option(m, :tol) && return true
 
    return false
@@ -234,7 +247,6 @@ function local_solve(m::Optimizer; presolve = false)
       l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
    end
 
-   start_local_solve = time()
    x = load_nonlinear_model(m, local_solve_model, l_var, u_var)
    (!m.d_orig.want_hess) && MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
 
@@ -257,6 +269,7 @@ function local_solve(m::Optimizer; presolve = false)
       end
    end
 
+   start_local_solve = time()
    MOI.optimize!(local_solve_model)
    local_nlp_status = MOI.get(local_solve_model, MOI.TerminationStatus())
 
