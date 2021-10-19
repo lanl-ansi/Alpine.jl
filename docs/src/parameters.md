@@ -1,4 +1,4 @@
-# Solver options for Alpine.jl
+# Solver options for Alpine
 
 ```@meta
 CurrentModule = Alpine

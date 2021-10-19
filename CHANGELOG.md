@@ -1,163 +1,171 @@
-# Critical Updates for Alpine.jl
+# Alpine.jl Change Log
+
+## v0.2.6
+- Bug fix in `algorithm.jl` to handle Gurobi as the MIP solver with updated MOI 
+- Deactivated redundant functions `collect_lb_pool`, `merge_solution_pool` and `track_new_partition_idx`
+- Moved `examples` out of `test` folder
+- Updated `run_examples` to handle Gurobi as the MIP solver
+- Removed dependency on the `Distributed` package
+- Typos fixed in docs
 
 ## v0.2.5
-* Cleaning up of solver logs
-* Time correction for local solve 
-* Removed unused `Alpine.Optimizer` options in solver.jl
+- Cleaning up of solver logs
+- Time correction for local solve 
+- Removed unused `Alpine.Optimizer` options in solver.jl
 
 ## v0.2.4
-* Added unit tests for utility functions
-* Removed un-used functions from utility functions which aren't part of Alpine's algorithm     
-* Dropped support for heuristic rounding algorithm (`heu_basic_rounding`) - `minlp_solver` input is a must
-* Dropped support for adjusting branching priority in MIP solvers (`adjust_branch_priority`)
+- Added unit tests for utility functions
+- Removed un-used functions from utility functions which aren't part of Alpine's algorithm     
+- Dropped support for heuristic rounding algorithm (`heu_basic_rounding`) - `minlp_solver` input is a must
+- Dropped support for adjusting branching priority in MIP solvers (`adjust_branch_priority`)
 
 
 ## v0.2.3
-* Migrating from Travis to Github-actions
-* Major documentation clean-up
-* Dependency packages clean-up 
-* runtests.jl clean-up
-* Solver options update: `presolve_max_iter` => `presolve_bt_max_iter` and others
-* Added `test/examples/run_example.jl`
+- Migrating from Travis to Github-actions
+- Major documentation clean-up
+- Dependency packages clean-up 
+- runtests.jl clean-up
+- Solver options update: `presolve_max_iter` => `presolve_bt_max_iter` and others
+- Added `test/examples/run_example.jl`
 
 ## v0.2.2
-* README clean up 
+- README clean up 
 
 Closed issues: 
-* Constraints are not supported and cannot be bridged into supported constrained variables and constraints (#164)
+- Constraints are not supported and cannot be bridged into supported constrained variables and constraints (#164)
 
 ## v0.2.1
-* Logging clean up 
-* Removal of redundant tests
+- Logging clean up 
+- Removal of redundant tests
 
 Closed issues: 
-* Juniper's ALMOST_LOCALLY SOLVED error (#157)
-* unncessary eval usages (#153)
-* Logging issue with constants in objective (#159)
+- Juniper's ALMOST_LOCALLY SOLVED error (#157)
+- unncessary eval usages (#153)
+- Logging issue with constants in objective (#159)
 
 ## v0.2.0
-* MOI wrapper and JuMP v0.21 support 
-* expression.jl clean up
-* eval() removal where unnecessary (#153)
-* Drop support for all trigonometric related functions (both in src and testing)
-* Drop support of expression parsing for generic integer variables in MINLPs (both in src and testing)
+- MOI wrapper and JuMP v0.21 support 
+- expression.jl clean up
+- eval() removal where unnecessary (#153)
+- Drop support for all trigonometric related functions (both in src and testing)
+- Drop support of expression parsing for generic integer variables in MINLPs (both in src and testing)
 
 Closed issues:
-* arc consistency partitioning pruning scheme as an example extension for POD (#37)
-* Generate convex relaxations for nonconvex MINLPs (#86)
-* Error in convexification of monomials (#104)
-* On variables chosen for partitioning (#121)
-* Travis and Documeter Maintenance (#144)
-* Compilation error (#146)
-* bound propagation buggy (#147)
-* Reenable test: Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl (#150)
-* Reenable test: Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl (#151)
+- arc consistency partitioning pruning scheme as an example extension for POD (#37)
+- Generate convex relaxations for nonconvex MINLPs (#86)
+- Error in convexification of monomials (#104)
+- On variables chosen for partitioning (#121)
+- Travis and Documeter Maintenance (#144)
+- Compilation error (#146)
+- bound propagation buggy (#147)
+- Reenable test: Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl (#150)
+- Reenable test: Validation Test || AMP-CONV-FACET || basic solve || examples/nlp1.jl (#151)
 
 ## v0.1.16
-* Fixed CBC version to make it compatible 
-* Removed support for "Mini" Formulation for convex hulls
-* Updated tests and removed a few 
+- Fixed CBC version to make it compatible 
+- Removed support for "Mini" Formulation for convex hulls
+- Updated tests and removed a few 
 
 ## v0.1.15
-* Bug fixes for issues 134 and 135 (fractional exponents, constants within integer exponents)
-* Added function 'expr_isolate_const' to nlexpr.jl
-* Meaningful optimality gaps for zero upper bound values (issue 103)
-* Typos in comments  
-* Dropped support for colorful_alpine
-* Ole Kroger's updates to docs/make.jl
+- Bug fixes for issues 134 and 135 (fractional exponents, constants within integer exponents)
+- Added function 'expr_isolate_const' to nlexpr.jl
+- Meaningful optimality gaps for zero upper bound values (issue 103)
+- Typos in comments  
+- Dropped support for colorful_alpine
+- Ole Kroger's updates to docs/make.jl
 
 ## v0.1.10
-* Multiple bug fixes in expression parsing 
-* Added support for feasibility problems with constant objectives
-* Typos in comments  
+- Multiple bug fixes in expression parsing 
+- Added support for feasibility problems with constant objectives
+- Typos in comments  
 
 ## v0.1.9
-* Drop support for Julia < v1.0. 
-* Move to the new Registrator system.
-* The last supported version for Julia v0.6 is v0.1.8 
-* The last supported version for Julia v0.7 is v0.1.7 (the bugs fixed in v0.1.8 is not ported to Julia v0.7)
+- Drop support for Julia < v1.0. 
+- Move to the new Registrator system.
+- The last supported version for Julia v0.6 is v0.1.8 
+- The last supported version for Julia v0.7 is v0.1.7 (the bugs fixed in v0.1.8 is not ported to Julia v0.7)
 
 
 ## v0.1.8 
-* Bug fixes in solver recognition 
-* Updated Issue template and Readme.  
-* Rounding bug fixed for binaries. 
-* This version is only available for Julia v0.6
+- Bug fixes in solver recognition 
+- Updated Issue template and Readme.  
+- Rounding bug fixed for binaries. 
+- This version is only available for Julia v0.6
 
 ## v0.1.7
-* Bug fixes for bounds on lifted variables representing nonlinear terms
-* Inf bound warning issue fixed 
+- Bug fixes for bounds on lifted variables representing nonlinear terms
+- Inf bound warning issue fixed 
 
 ## v0.1.6
-* Bug fix in operators.jl for accounting all extreme points in the bound evaluation 
+- Bug fix in operators.jl for accounting all extreme points in the bound evaluation 
 
 ## v0.1.5
-* Unit exponent bug-fix
-* Meaningful error messages for unsupported functions 
-* Pinned tests to JuMP 0.18.5
-* Cleaner & meaningful logs
+- Unit exponent bug-fix
+- Meaningful error messages for unsupported functions 
+- Pinned tests to JuMP 0.18.5
+- Cleaner & meaningful logs
 
 ## v0.1.3
-* Finite large bounds on unbounded variables 
+- Finite large bounds on unbounded variables 
 
 ## Staged
-* typo fix
-* set Big-M values for unbounded variables
+- typo fix
+- set Big-M values for unbounded variables
 
 ## v0.1.2
-* Bug fix in bound tightening tolerance corner case
+- Bug fix in bound tightening tolerance corner case
 
 ## v0.1.1
-* Bug fix in Cplex solver recognition
+- Bug fix in Cplex solver recognition
 
 ## v0.1.0
-* Alpine.jl first release
+- Alpine.jl first release
 
 ## Merged Features
-* `disc_ratio` selection algorithm
-* logarithm embedding formulation
-* bounding model warm starting and no-good-cuts using solution pool
-* `disc_vars` selection algorithm based on weighted minimum vertex cover
-* more support for binary problem
-* rounding heuristic and multi-start heuristic for feasible solutions
-* recursive linear lifting
-* some attempts to reason bounds for variables with infinite bounds
+- `disc_ratio` selection algorithm
+- logarithm embedding formulation
+- bounding model warm starting and no-good-cuts using solution pool
+- `disc_vars` selection algorithm based on weighted minimum vertex cover
+- more support for binary problem
+- rounding heuristic and multi-start heuristic for feasible solutions
+- recursive linear lifting
+- some attempts to reason bounds for variables with infinite bounds
 
 ## New Operators
-* `BINPROD`: product of binary vars
-* `BINLIN`: product of a binary var and continuous var
+- `BINPROD`: product of binary vars
+- `BINLIN`: product of a binary var and continuous var
 
 ## Data Structure
-* Some refactoring to shorten the attribute names
-* Eliminated unnecessary/obsolete user options
-* Strengthen the checks to problems
+- Some refactoring to shorten the attribute names
+- Eliminated unnecessary/obsolete user options
+- Strengthen the checks to problems
 
 ## Code Structure
-* `Alpine.jl`: "header" file
-* `solver.jl`: data structure and problem loading
-* `algorithm.jl`: high-level algorithms and major utilities (`presolve()`, `local_solve()`, `bounding_solve()`)
-* `amp.jl`: algorithms for bounding formulation constructions
-* `presolve.jl`: algorithms for presolves
-* `heuristics.jl`: algorithms for heuristics
-* `bounds.jl`: algorithms and utilities for handling bounds including bounds propagation and reasoning with lifting
-* `mpb2moi.jl`: preparation for migration to `MOI` interface, a collection of all solver & modeling interface warpping functions
-* `multi.jl`: high-level piecewise convex relaxation formulation construction and utilities for multilinear/monomial terms
-* `tmc.jl`: old McCormick-based methods
-* `const.jl`: (experimental) tries to categorize operators for cleaner and safer operations
-* `embedding.jl`: logarithm embedding formulations and utilities
-* `nlexpr.jl`: algorithms for expression handling
-* `operators.jl`: operator detection algorithm and associated utilities for bounds, discretization variable selection, etc.
-* `log.jl`: logging utilities
-* `utility.jl`: general utility functions
+- `Alpine.jl`: "header" file
+- `solver.jl`: data structure and problem loading
+- `algorithm.jl`: high-level algorithms and major utilities (`presolve()`, `local_solve()`, `bounding_solve()`)
+- `amp.jl`: algorithms for bounding formulation constructions
+- `presolve.jl`: algorithms for presolves
+- `heuristics.jl`: algorithms for heuristics
+- `bounds.jl`: algorithms and utilities for handling bounds including bounds propagation and reasoning with lifting
+- `mpb2moi.jl`: preparation for migration to `MOI` interface, a collection of all solver & modeling interface warpping functions
+- `multi.jl`: high-level piecewise convex relaxation formulation construction and utilities for multilinear/monomial terms
+- `tmc.jl`: old McCormick-based methods
+- `const.jl`: (experimental) tries to categorize operators for cleaner and safer operations
+- `embedding.jl`: logarithm embedding formulations and utilities
+- `nlexpr.jl`: algorithms for expression handling
+- `operators.jl`: operator detection algorithm and associated utilities for bounds, discretization variable selection, etc.
+- `log.jl`: logging utilities
+- `utility.jl`: general utility functions
 
 
 ## Debugs
-* Fixed multiple bugs in recursive expression handling
-* Fixed duplicates in constructing convex relaxations
-* Fixed bound reasoning steps for complex terms
-* Fixed many other things
+- Fixed multiple bugs in recursive expression handling
+- Fixed duplicates in constructing convex relaxations
+- Fixed bound reasoning steps for complex terms
+- Fixed many other things
 
 ## Tests & Coverage
-* Most new features are covered (embedding, `disc_ratio` algorithm, etc.)
-* Stronger expression parsing tests with new operators covered
-* Coverage should be more than `~90%`
+- Most new features are covered (embedding, `disc_ratio` algorithm, etc.)
+- Stronger expression parsing tests with new operators covered
+- Coverage should be more than `~90%`

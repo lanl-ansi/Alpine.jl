@@ -37,7 +37,7 @@ Check the "test/examples" folder on how to use this package.
 
 ## Underlying solvers
 
-Though the algorithm implemented in Alpine is quite involved, most of the computational bottleneck arises in the underlying MIP solvers. Since every iteration of Alpine solves a subproblem to optimality, which is typically a convex MILP/MIQCQP, Alpine's run time heavily depends on the run-time of these solvers. For best performance of Alpine, use commercial solvers such as CPLEX/Gurobi. However, due to the flexibility offered by JuMP.jl, the following solvers are supported in Alpine: 
+Though the algorithm implemented in Alpine is quite involved, most of the computational bottleneck arises in the underlying MIP solvers. Since every iteration of Alpine solves an MIP sub-problem, which is typically a convex MILP/MIQCQP, Alpine's run time heavily depends on the run-time of these solvers. For the best performance of Alpine, we recommend using the commercial solver [Gurobi](https://www.gurobi.com), which is avaible [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. However, due to the flexibility offered by JuMP.jl, the following solvers are supported in Alpine: 
 
 
 | Solver                                                                         | Julia Package                                                |
@@ -72,7 +72,7 @@ If you find Alpine useful in your work, we kindly request that you cite the foll
 }
 
 @inproceedings{NagarajanLuYamangilBent2016,
-  title = {Tightening {McC}ormick relaxations for nonlinear programs via dynamic multivariate partitioning},
+  title = {Tightening {McCormick} relaxations for nonlinear programs via dynamic multivariate partitioning},
   author = {Nagarajan, Harsha and Lu, Mowen and Yamangil, Emre and Bent, Russell},
   booktitle = {International Conference on Principles and Practice of Constraint Programming},
   pages = {369--387},

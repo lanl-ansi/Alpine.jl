@@ -4,7 +4,7 @@
 CurrentModule = Alpine
 ```
 
-The design of the AMP solver requires a variety of programming problems to be solved underneath the surface. For algorithmic performance, it's recommend that dedicated solvers to be used for these operations. The design of AMP takes advantage of MathProgBase to allow a majority of optimization softwares to be utilized easily with simple development. Currently, the following sub-solvers with Julia Interface is supported by AMP:
+Alpine's global optimization algorithm requires a few types of optimization problems to be solved efficiently. For its best performance, it is recommended that a dedicated solver is used for these purposes. The design of Alpine takes advantage of [MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl) to seemlessly interface with a majority of optimization software. Currently, the following sub-solvers with Julia Interface are supported by Alpine:
 
 | Solver                                                                         | Julia Package                                                |
 |--------------------------------------------------------------------------------|--------------------------------------------------------------|
@@ -15,19 +15,23 @@ The design of the AMP solver requires a variety of programming problems to be so
 | [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/JackDunnNZ/AmplNLWriter.jl)   |
 | [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/JuliaOpt/KNITRO.jl)           |
 
-As the development of AMP contineous, supports fo [Mosek](http://www.mosek.com/), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt), [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) is already scheduled for the roadmap.
+As the development of Alpine continues, supports for solvers such as [Mosek](http://www.mosek.com/), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt) and [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) are in the development roadmap.
 
-To use different sub-solvers, here is an example:
+!!! tip
+    Performance of Alpine is significantly faster and robust while using [Gurobi](https://www.gurobi.com) as the convex mixed-integer programming (MIP) solver. Note that this solver's individual-usage license is available [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. 
+
+To solve nonlinear program with only continuous variables to global optimality, here is an example to utilize different sub-solvers for the best performance of Alpine:
 
 ```julia
 using JuMP
 using Alpine 
-using CPLEX 
+using Gurobi 
 using Ipopt
 
 # MIP solver
-const cplex = optimizer_with_attributes(CPLEX.Optimizer, 
-                                        MOI.Silent() => true) 
+const gurobi = optimizer_with_attributes(Gurobi.Optimizer, 
+                                         MOI.Silent() => true,
+                                         "Presolve" => 1) 
 
 # NLP solver
 const ipopt = optimizer_with_attributes(Ipopt.Optimizer, 
@@ -37,6 +41,6 @@ const ipopt = optimizer_with_attributes(Ipopt.Optimizer,
 # Global solver
 const alpine = optimizer_with_attributes(Alpine.Optimizer, 
                                         "nlp_solver" => ipopt,
-                                        "mip_solver" => cplex)
+                                        "mip_solver" => gurobi)
 m = Model(alpine)
 ```

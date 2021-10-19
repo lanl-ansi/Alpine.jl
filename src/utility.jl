@@ -243,6 +243,7 @@ function is_fully_convexified(m::Optimizer)
    return
 end
 
+#=
 """
 Collect LB solutions
 """
@@ -369,6 +370,7 @@ function track_new_partition_idx(d::Dict, idx::Int, val::Float64, acp::Int=-1)
 
    return
 end
+=#
 
 """
 Collect active partition idx

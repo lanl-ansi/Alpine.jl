@@ -2,14 +2,14 @@ __precompile__()
 
 module Alpine
 
-const ALPINE_DEBUG = false
-
 using JuMP
-
 using LinearAlgebra
 using Random
-using Distributed
 using Statistics
+
+const ALPINE_DEBUG = false
+const ALP = Alpine
+const LA = LinearAlgebra
 
 include("const.jl")
 
@@ -22,18 +22,18 @@ include("solver.jl")
 include("nlexpr.jl")
 include("operators.jl")
 
-# Main Algorithmic Process
+# Main Algorithm
 include("algorithm.jl")
 include("presolve.jl")
 include("amp.jl")
 include("embedding.jl")
 include("heuristics.jl")
 
-# Convexification method
+# Convexification 
 include("multi.jl")
 include("tmc.jl")
 
-# Model Manipulation and utilities
+# Model manipulation and utilities
 include("bounds.jl")
 include("utility.jl")
 

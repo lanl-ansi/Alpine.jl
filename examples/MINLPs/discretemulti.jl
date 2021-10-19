@@ -2,26 +2,11 @@ function binprod_nlp3(;solver=nothing)
 
 	m = Model(solver)
 
-	@variable(m, x[1:8])
+	LB = [100, 1000, 1000, 10, 10, 10, 10, 10]
+    UB = [10000, 10000, 10000,  1000, 1000, 1000, 1000, 1000]
+
+    @variable(m, LB[i] <= x[i=1:8] <= UB[i])
 	@variable(m, y[1:5], Bin)
-
-	JuMP.set_lower_bound(x[1], 100)
-	JuMP.set_lower_bound(x[2], 1000)
-	JuMP.set_lower_bound(x[3], 1000)
-	JuMP.set_lower_bound(x[4], 10)
-	JuMP.set_lower_bound(x[5], 10)
-	JuMP.set_lower_bound(x[6], 10)
-	JuMP.set_lower_bound(x[7], 10)
-	JuMP.set_lower_bound(x[8], 10)
-
-	JuMP.set_upper_bound(x[1], 10000)
-	JuMP.set_upper_bound(x[2], 10000)
-	JuMP.set_upper_bound(x[3], 10000)
-	JuMP.set_upper_bound(x[4], 1000)
-	JuMP.set_upper_bound(x[5], 1000)
-	JuMP.set_upper_bound(x[6], 1000)
-	JuMP.set_upper_bound(x[7], 1000)
-	JuMP.set_upper_bound(x[8], 1000)
 
 	@constraint(m, 0.0025*(x[4]*y[1] + x[6]*y[2]) <= 1)
 	@constraint(m, 0.0025*(x[5] - x[4]*y[1] + x[7]) <= 1)

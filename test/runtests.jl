@@ -10,12 +10,10 @@ using Random
 
 alpine_dir = joinpath(dirname(pathof(Alpine)), "..")
 
-examples = readdir(joinpath(alpine_dir, "test", "examples"))
+examples = readdir(joinpath(alpine_dir, "examples", "MINLPs"))
 
 for i in examples
-    if !(i in ["Manifest.toml", "Project.toml", "run_example.jl"])
-        include(joinpath(alpine_dir, "test", "examples", i))
-    end
+    include(joinpath(alpine_dir, "examples", "MINLPs", i))
 end
 
 const MOI = MathOptInterface

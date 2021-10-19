@@ -83,7 +83,6 @@ end
 end
 
 # FIXME Pavito terminates with `NUMERICAL_ERROR` on Julia v1.0:
-# https://travis-ci.org/github/lanl-ansi/Alpine.jl/jobs/717281623
 @testset " Validation Test || PBT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,

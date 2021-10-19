@@ -336,7 +336,7 @@ function bounding_solve(m::Optimizer)
 
    # Updates time metric and the termination bounds
    set_mip_time_limit(m)
-   update_boundstop_options(m)
+   # update_boundstop_options(m)
 
    # ================= Solve Start ================ #
    start_bounding_solve = time()
@@ -364,7 +364,7 @@ function bounding_solve(m::Optimizer)
          m.detected_bound = true
       end
       
-      collect_lb_pool(m)    # Collect a pool of sub-optimal solutions - currently implemented for Gurobi only
+      # collect_lb_pool(m)    # Collect a pool of sub-optimal solutions - currently implemented for Gurobi only
 
    elseif status in STATUS_INF || status == MOI.INFEASIBLE_OR_UNBOUNDED
       

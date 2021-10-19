@@ -382,7 +382,7 @@ function update_disc_ratio(m::Optimizer, presolve=false)
         get_option(m, :log_level) > 0 && println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
-    if std(res_collector) >= 1e-2    # Detect if all solution are similar to each other
+    if Statistics.std(res_collector) >= 1e-2    # Detect if all solutions are similar to each other
         get_option(m, :log_level) > 0 && println("RATIO BRANCHING OFF due to solution variance test passed.")
         set_option(m, :disc_ratio_branch, false) # If an incumbent ratio is selected, then stop the branching scheme
     end
