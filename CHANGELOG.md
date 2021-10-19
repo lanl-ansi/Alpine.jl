@@ -6,6 +6,7 @@
 - Moved `examples` out of `test` folder
 - Updated `run_examples` to handle Gurobi as the MIP solver
 - Removed dependency on the `Distributed` package
+- Improved code coverage
 - Typos fixed in docs
 
 ## v0.2.5

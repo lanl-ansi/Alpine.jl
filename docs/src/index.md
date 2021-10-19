@@ -4,7 +4,7 @@
 CurrentModule = Alpine
 ```
 ## Overview
-[Alpine](https://github.com/lanl-ansi/Alpine.jl) is a Julia/JuMP-based global optimization solver for noncovex programs. Alpine applies a two-stage approach to strengthen piecewise convex relaxations for mixed-integer nonlinear programs (MINLP) with multi-linear terms. In the first stage, Alpine exploits Constraint Programing techniques to contract the variable bounds. Further, it applies optimality-based bound tightening (OBBT) methods iteratively until a fixed point with respect to the bounds are achieved. In the second stage, Alpine partitions the variable domains using an adaptive multivariate partitioning scheme (a parametrized partition at the current solution of sequentially solved MILPs), leading to sparser but tighter relaxations. This approach decouples the number of partitions from the size of the variable domains, leading to a significant reduction in computation time, and limits the number of binary variables that are introduced by the partitioning. Alpine also applies polyhedral cutting plane methods to handle convex relaxations of higher-order monomial terms.
+[Alpine.jl](https://github.com/lanl-ansi/Alpine.jl) is a Julia/JuMP-based global optimization solver for noncovex programs. Alpine applies a two-stage approach to strengthen piecewise convex relaxations for mixed-integer nonlinear programs (MINLP) with multi-linear terms. In the first stage, Alpine exploits Constraint Programing techniques to contract the variable bounds. Further, it applies optimality-based bound tightening (OBBT) methods iteratively until a fixed point with respect to the bounds are achieved. In the second stage, Alpine partitions the variable domains using an adaptive multivariate partitioning scheme (a parametrized partition at the current solution of sequentially solved MILPs), leading to sparser but tighter relaxations. This approach decouples the number of partitions from the size of the variable domains, leading to a significant reduction in computation time, and limits the number of binary variables that are introduced by the partitioning. Alpine also applies polyhedral cutting plane methods to handle convex relaxations of higher-order monomial terms.
 
 **Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadratically Constrainted Quadradic Programs (MIQCQPs), Non-Linear Programs (NLPs), etc.
 
@@ -27,7 +27,7 @@ import Pkg
 Pkg.add("Ipopt")
 Pkg.add("Gurobi")
 ```
-For more details on choosing sub-solvers for Alpine, check out 
+For more details on choosing sub-solvers for Alpine, check out [here](https://lanl-ansi.github.io/Alpine.jl/latest/choosingsolver/). 
 
 ## Unit Tests
 To run the tests in the package, run the following command after installing the Alpine package.
@@ -40,7 +40,7 @@ Pkg.test("Alpine")
 ## Citing Alpine
 If you find Alpine useful in your work, we request you to cite the following paper [\[link\]](https://harshangrjn.github.io/pdf/JOGO_2018.pdf): 
 ```bibtex
-@article{NagarajanLuWangBentSundar2019,
+@article{alpine_JOGO2019,
   author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
   title = {An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs},
   journal = {Journal of Global Optimization},
