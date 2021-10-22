@@ -125,7 +125,7 @@ function ebd_link_xα(m::Optimizer, α::Vector, λCnt::Int, disc_vec::Vector, co
 	end
 
 	# Construct Variable Vector
-	α_A = @variable(m.model_mip, [1:length(keys(lifters))], lower_bound=0.0, upper_bound=1.0, base_name="αA$(var_idx)")
+	α_A = JuMP.@variable(m.model_mip, [1:length(keys(lifters))], lower_bound=0.0, upper_bound=1.0, base_name="αA$(var_idx)")
 	for i in keys(lifters) # Build first-level evaluation
 		binprod_relax(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
 	end
@@ -137,8 +137,8 @@ function ebd_link_xα(m::Optimizer, α::Vector, λCnt::Int, disc_vec::Vector, co
 	end
 
 	# Contructing final constraints
-	@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, var_idx) >= sum(exprs[j][:expr]*disc_vec[j] for j in 1:P))
-	@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, var_idx) <= sum(exprs[j-1][:expr]*disc_vec[j] for j in 2:(P+1)))
+	JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, var_idx) >= sum(exprs[j][:expr]*disc_vec[j] for j in 1:P))
+	JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, var_idx) <= sum(exprs[j-1][:expr]*disc_vec[j] for j in 2:(P+1)))
 
 	return
 end

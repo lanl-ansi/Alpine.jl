@@ -5,8 +5,8 @@ Initialize internal bound vectors (placeholders) to be used in other places.
 In this case, we don't have to mess with the original bound information.
 """
 function init_tight_bound(m::Optimizer)
-    m.l_var_tight = [m.l_var_orig; fill(-Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
-    m.u_var_tight = [m.u_var_orig; fill(Inf, m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+    m.l_var_tight = [m.l_var_orig; fill(-Inf, m.num_var_linear_mip + m.num_var_nonlinear_mip)]
+    m.u_var_tight = [m.u_var_orig; fill(Inf, m.num_var_linear_mip + m.num_var_nonlinear_mip)]
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
@@ -33,8 +33,8 @@ function init_disc(m::Optimizer)
             ub = m.u_var_tight[var]
             m.discretization[var] = [lb, ub]
         elseif m.var_type[var] in [:Int]
-            get_option(m, :int_enable) ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
-            get_option(m, :int_enable) ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
+            Alp.get_option(m, :int_enable) ? lb = floor(m.l_var_tight[var]) - 0.5 : lb = floor(m.l_var_tight[var])
+            Alp.get_option(m, :int_enable) ? ub = ceil(m.u_var_tight[var]) + 0.5 : ub = floor(m.u_var_tight[var])
             m.discretization[var] = [lb, ub]
         else
             error("[EXCEPTION] Unexpected variable type when initializing discretization dictionary.")
@@ -62,7 +62,7 @@ function to_discretization(m::Optimizer, lbs::Vector{Float64}, ubs::Vector{Float
         var_discretization[var] = [lb, ub]
     end
 
-    total_var_cnt = m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip
+    total_var_cnt = m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
     orig_var_cnt = m.num_var_orig
 
     if length(lbs) == total_var_cnt
@@ -107,8 +107,10 @@ x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_
 This function can potential grow to be smarter.
 """
 function bound_propagation(m::Optimizer)
+    
     exhausted = false
     infeasible = false
+
     while !exhausted
         exhausted = true
         for aff in m.bounding_constr_mip
@@ -116,6 +118,7 @@ function bound_propagation(m::Optimizer)
                 var_idx = aff[:vars][i].args[2]
                 var_coef = aff[:coefs][i]
                 @assert (isa(var_idx, Float64) || isa(var_idx, Int))
+
                 if aff[:sense] == :(==) && var_coef > 0.0
                     eval_l_bound = aff[:rhs] / var_coef
                     eval_u_bound = aff[:rhs] / var_coef
@@ -128,25 +131,29 @@ function bound_propagation(m::Optimizer)
                             (eval_u_bound != Inf) && (eval_u_bound += abs(aff[:coefs][j]/var_coef)*m.u_var_tight[aff[:vars][j].args[2]])
                         end
                     end
-                    if eval_l_bound > m.l_var_tight[var_idx] + get_option(m, :tol)
+
+                    if eval_l_bound > m.l_var_tight[var_idx] + Alp.get_option(m, :tol)
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
-                    elseif eval_l_bound > m.u_var_tight[var_idx] + get_option(m, :tol)
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
+                    elseif eval_l_bound > m.u_var_tight[var_idx] + Alp.get_option(m, :tol)
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
-                    if eval_u_bound < m.u_var_tight[var_idx] - get_option(m, :tol)
+
+                    if eval_u_bound < m.u_var_tight[var_idx] - Alp.get_option(m, :tol)
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_u_bound < m.l_var_tight[var_idx] - get_option(m, :tol)
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_u_bound < m.l_var_tight[var_idx] - Alp.get_option(m, :tol)
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
+
                 elseif aff[:sense] == :(>=) && var_coef > 0.0  # a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
+                    
                     eval_bound = aff[:rhs] / var_coef
                     for j in 1:length(aff[:vars])
                         if j != i && aff[:coefs][j] > 0.0
@@ -156,15 +163,17 @@ function bound_propagation(m::Optimizer)
                         end
                         (eval_bound == -Inf) && break
                     end
-                    if eval_bound > m.l_var_tight[var_idx] + get_option(m, :tol)
+
+                    if eval_bound > m.l_var_tight[var_idx] + Alp.get_option(m, :tol)
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound > m.u_var_tight[var_idx] + get_option(m, :tol)
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound > m.u_var_tight[var_idx] + Alp.get_option(m, :tol)
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
+
                 elseif aff[:sense] == :(>=) && var_coef < 0.0  # -a($) - by + cz >= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
                     for j in 1:length(aff[:vars])
@@ -175,15 +184,17 @@ function bound_propagation(m::Optimizer)
                         end
                         (eval_bound == Inf) && break
                     end
-                    if eval_bound < m.u_var_tight[var_idx] - get_option(m, :tol)
+
+                    if eval_bound < m.u_var_tight[var_idx] - Alp.get_option(m, :tol)
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound < m.l_var_tight[var_idx] - get_option(m, :tol)
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound < m.l_var_tight[var_idx] - Alp.get_option(m, :tol)
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
+
                 elseif (aff[:sense] == :(<=) && aff[:coefs][i] > 0.0) # a($) - by + cz <= 100, y∈[1,10], z∈[2,50], a,b,c > 0
                     eval_bound = aff[:rhs] / var_coef
                     for j in 1:length(aff[:vars])
@@ -194,12 +205,13 @@ function bound_propagation(m::Optimizer)
                         end
                         (eval_bound == Inf) && break
                     end
-                    if eval_bound < m.u_var_tight[var_idx] - get_option(m, :tol)
+
+                    if eval_bound < m.u_var_tight[var_idx] - Alp.get_option(m, :tol)
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound < m.l_var_tight[var_idx] - get_option(m, :tol)
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound < m.l_var_tight[var_idx] - Alp.get_option(m, :tol)
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
@@ -213,19 +225,21 @@ function bound_propagation(m::Optimizer)
                         end
                         (eval_bound == -Inf) && break
                     end
-                    if eval_bound > m.l_var_tight[var_idx] + get_option(m, :tol)
+
+                    if eval_bound > m.l_var_tight[var_idx] + Alp.get_option(m, :tol)
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound > m.u_var_tight[var_idx] + get_option(m, :tol)
-                        (get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
+                    elseif eval_bound > m.u_var_tight[var_idx] + Alp.get_option(m, :tol)
+                        (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
+
                 end
             end
         end
-        (exhausted == true && get_option(m, :log_level) > 99) && println("Initial constraint-based bound evaluation exhausted...")
+        (exhausted == true && Alp.get_option(m, :log_level) > 99) && println("Initial constraint-based bound evaluation exhausted...")
     end
 
     if infeasible
@@ -260,8 +274,8 @@ in known or trivial bounds information to deduce lifted variable bounds and to p
 function resolve_var_bounds(m::Optimizer)
 
     # Basic Bound propagation
-    if get_option(m, :presolve_bp)
-        setproperty!(m, :presolve_infeasible, bound_propagation(m)) # Fetch bounds from constraints
+    if Alp.get_option(m, :presolve_bp)
+        setproperty!(m, :presolve_infeasible, Alp.bound_propagation(m)) # Fetch bounds from constraints
     end
 
     # Resolve unbounded variables in the original formulation 
@@ -275,7 +289,7 @@ function resolve_var_bounds(m::Optimizer)
         if haskey(m.nonconvex_terms, k)
             m.nonconvex_terms[k][:bound_resolver](m, k)
         elseif haskey(m.linear_terms, k)
-            basic_linear_bounds(m, k)
+            Alp.basic_linear_bounds(m, k)
         else
             error("[RARE] Found homeless term key $(k) during bound resolution.")
         end
@@ -296,20 +310,20 @@ function resolve_inf_bounds(m::Optimizer)
     for i = 1:length(m.l_var_orig)
         if m.l_var_tight[i] == -Inf
             warnuser = true
-            m.l_var_tight[i] = -get_option(m, :large_bound)
+            m.l_var_tight[i] = -Alp.get_option(m, :large_bound)
             infcount_l += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
-            m.u_var_tight[i] = get_option(m, :large_bound)
+            m.u_var_tight[i] = Alp.get_option(m, :large_bound)
             infcount_u +=1
         end
     end
     infcount = min(infcount_l, infcount_u)
     if infcount == 1
-        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(get_option(m, :large_bound)). This may affect global optimal values and run times.")
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(Alp.get_option(m, :large_bound)). This may affect global optimal values and run times.")
     elseif infcount > 1
-        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(get_option(m, :large_bound)). This may affect global optimal values and run times.")
+        warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(Alp.get_option(m, :large_bound)). This may affect global optimal values and run times.")
     end
     return
 end
@@ -331,15 +345,15 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
         if haskey(m.nonconvex_terms, k)
             nlk = k
             if m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_MONOMIAL
-                d = basic_monomial_bounds(m, nlk, d)
+                d = Alp.basic_monomial_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BININT]
-                d = basic_binint_bounds(m, nlk, d)
+                d = Alp.basic_binint_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
-                d = basic_binprod_bounds(m, nlk, d)
+                d = Alp.basic_binprod_bounds(m, nlk, d)
             # elseif m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_TRIGONOMETRIC
             #     d = basic_sincos_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
-                d = basic_binlin_bounds(m, nlk, d)
+                d = Alp.basic_binlin_bounds(m, nlk, d)
             # elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
             #     d = basic_intlin_bounds(m, nlk, d)
             # elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTPROD]
@@ -348,7 +362,7 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
                 error("EXPECTED ERROR : NEED IMPLEMENTATION")
             end
         elseif haskey(m.linear_terms, k)
-            d = basic_linear_bounds(m, k, d)
+            d = Alp.basic_linear_bounds(m, k, d)
         else
             error("Found a homeless term key $(k) during bound resolution im resolve_var_bounds.")
         end
@@ -368,7 +382,7 @@ and the .discretization will be cleared with the tight bounds for basic McCormic
 function resolve_closed_var_bounds(m::Optimizer; kwargs...)
 
     for var in m.candidate_disc_vars
-        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < get_option(m, :presolve_bt_width_tol)         # Closed Bound Criteria
+        if abs(m.l_var_tight[var] - m.u_var_tight[var]) < Alp.get_option(m, :presolve_bt_width_tol)         # Closed Bound Criteria
             deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonconvex_terms by deleting the info
             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
         end

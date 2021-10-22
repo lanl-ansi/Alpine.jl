@@ -3,17 +3,17 @@ __precompile__()
 module Alpine
 
 using JuMP
-using LinearAlgebra
-using Random
-using Statistics
+
+import LinearAlgebra as LA
+import Random
+import Statistics
 
 const ALPINE_DEBUG = false
-const ALP = Alpine
-const LA = LinearAlgebra
+const Alp = Alpine
 
 include("const.jl")
 
-# Engine for High-level Algorithmic Control and User-interface
+# Engine for high-level algorithmic control and user-interface
 include("matrix_opt_interface.jl")
 include("moi_function2expr.jl")
 include("solver.jl")
@@ -22,7 +22,7 @@ include("solver.jl")
 include("nlexpr.jl")
 include("operators.jl")
 
-# Main Algorithm
+# Main algorithm
 include("algorithm.jl")
 include("presolve.jl")
 include("amp.jl")
@@ -37,7 +37,7 @@ include("tmc.jl")
 include("bounds.jl")
 include("utility.jl")
 
-# Othes
+# Logging
 include("log.jl")
 
 end # module

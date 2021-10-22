@@ -1,5 +1,12 @@
 # Alpine.jl Change Log
 
+## v0.2.7
+- Support for module shortcut `Alp` in function calls
+- Solver options clean up in `examples` folder
+- Dropped support for unsued functions `_bound_sense`, `update_boundstop_options`
+- Improved code coverage
+- Docs cleanup
+
 ## v0.2.6
 - Bug fix in `algorithm.jl` to handle Gurobi as the MIP solver with updated MOI 
 - Deactivated redundant functions `collect_lb_pool`, `merge_solution_pool` and `track_new_partition_idx`

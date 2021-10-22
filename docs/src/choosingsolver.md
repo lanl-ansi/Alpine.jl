@@ -18,13 +18,13 @@ Alpine's global optimization algorithm requires a few types of optimization prob
 As the development of Alpine continues, supports for solvers such as [Mosek](http://www.mosek.com/), [GLPK](http://www.gnu.org/software/glpk/), [NLopt](http://ab-initio.mit.edu/wiki/index.php/NLopt) and [Xpress](http://www.fico.com/en/products/fico-xpress-optimization-suite) are in the development roadmap.
 
 !!! tip
-    Performance of Alpine is significantly faster and robust while using [Gurobi](https://www.gurobi.com) as the convex mixed-integer programming (MIP) solver. Note that this solver's individual-usage license is available [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. 
+    Performance of Alpine is significantly faster and robust while using [Gurobi](https://www.gurobi.com) as the underlying convex mixed-integer programming (MIP) solver. Note that Gurobi's individual-usage license is available [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. 
 
-To solve nonlinear program with only continuous variables to global optimality, here is an example to utilize different sub-solvers for the best performance of Alpine:
+To solve any nonlinear program with only continuous variables to global optimality, here is an example to utilize different sub-solvers with default options set for Alpine:
 
 ```julia
-using JuMP
-using Alpine 
+using Alpine
+using JuMP 
 using Gurobi 
 using Ipopt
 

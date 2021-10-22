@@ -8,25 +8,6 @@ _sense(::Type{<:MOI.Interval}) = INTERVAL
 _no_upper(bound) = bound != typemax(bound)
 _no_lower(bound) = bound != typemin(bound)
 
-function _bound_sense(lb::T, ub::T) where T
-    if _no_upper(ub)
-        if _no_lower(lb)
-            if lb == ub
-                return EQUAL_TO
-            else
-                return INTERVAL
-            end
-        else
-            return LESS_THAN
-        end
-    else
-        if _no_lower(lb)
-            return GREATER_THAN
-        else
-            return
-        end
-    end
-end
 function _bound_set(lb::T, ub::T) where T
     if _no_upper(ub)
         if _no_lower(lb)
@@ -46,3 +27,25 @@ function _bound_set(lb::T, ub::T) where T
         end
     end
 end
+
+#=
+function _bound_sense(lb::T, ub::T) where T
+    if _no_upper(ub)
+        if _no_lower(lb)
+            if lb == ub
+                return EQUAL_TO
+            else
+                return INTERVAL
+            end
+        else
+            return LESS_THAN
+        end
+    else
+        if _no_lower(lb)
+            return GREATER_THAN
+        else
+            return
+        end
+    end
+end
+=#

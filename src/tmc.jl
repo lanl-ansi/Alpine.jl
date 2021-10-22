@@ -1,6 +1,5 @@
-"""
-    TODO: docstring
-"""
+import LinearAlgebra: dot, Diagonal
+
 function amp_post_mccormick(m::Optimizer; kwargs...)
 
     options = Dict(kwargs)
@@ -16,9 +15,9 @@ function amp_post_mccormick(m::Optimizer; kwargs...)
 
     for bi in keys(m.nonconvex_terms)
         nl_type = m.nonconvex_terms[bi][:nonlinear_type]
-        if ((!get_option(m, :monomial_convexhull))*(nl_type == :MONOMIAL) || (!get_option(m, :bilinear_convexhull))*(nl_type == :BILINEAR)) && (m.nonconvex_terms[bi][:convexified] == false)
+        if ((!Alp.get_option(m, :monomial_convexhull))*(nl_type == :MONOMIAL) || (!Alp.get_option(m, :bilinear_convexhull))*(nl_type == :BILINEAR)) && (m.nonconvex_terms[bi][:convexified] == false)
             @assert length(bi) == 2
-            m.nonconvex_terms[bi][:convexified] = true  # Bookeeping the examined terms
+            m.nonconvex_terms[bi][:convexified] = true  # Bookkeeping the examined terms
             idx_a = bi[1].args[2]
             idx_b = bi[2].args[2]
             idx_ab = m.nonconvex_terms[bi][:lifted_var_ref].args[2]
@@ -38,51 +37,52 @@ function amp_post_mccormick(m::Optimizer; kwargs...)
 
             if (length(lb[idx_a]) == 1) && (length(lb[idx_b]) == 1)  # Basic McCormick
                 if m.nonconvex_terms[bi][:nonlinear_type] == :MONOMIAL
-                    mccormick_monomial(m.model_mip, _index_to_variable_ref(m.model_mip, idx_ab), _index_to_variable_ref(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
+                    Alp.mccormick_monomial(m.model_mip, _index_to_variable_ref(m.model_mip, idx_ab), _index_to_variable_ref(m.model_mip,idx_a), lb[idx_a][1], ub[idx_a][1])
                 elseif m.nonconvex_terms[bi][:nonlinear_type] == :BILINEAR
-                    mccormick(m.model_mip, _index_to_variable_ref(m.model_mip, idx_ab), _index_to_variable_ref(m.model_mip, idx_a), _index_to_variable_ref(m.model_mip, idx_b),
+                    Alp.mccormick(m.model_mip, _index_to_variable_ref(m.model_mip, idx_ab), _index_to_variable_ref(m.model_mip, idx_a), _index_to_variable_ref(m.model_mip, idx_b),
                         lb[idx_a][1], ub[idx_a][1], lb[idx_b][1], ub[idx_b][1])
                 end
-            else                                                    # Tighten McCormick
+            else  # Tighten McCormick
+
                 # if m.nonconvex_terms[bi][:MONOMIAL_satus]
                 if m.nonconvex_terms[bi][:nonlinear_type] == :MONOMIAL
-                    λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                    λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-                    amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                    amp_post_tmc_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
+                    λ = Alp.amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                    λX = Alp.amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+                    Alp.amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+                    Alp.amp_post_tmc_monomial_mc(m.model_mip, idx_ab, λ, λX, lb, ub, part_cnt_a, idx_a)
                 # else
                 elseif m.nonconvex_terms[bi][:nonlinear_type] == :BILINEAR
                     # Partitioning on left
                     if (idx_a in m.disc_vars) && !(idx_b in m.disc_vars) && (part_cnt_b == 1)
-                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                        λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+                        λ = Alp.amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                        λX = Alp.amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
                         λX[(idx_b,idx_a)] = [_index_to_variable_ref(m.model_mip, idx_a)]
-                        λλ = amp_post_tmc_λλ(m.model_mip, λλ, λ, idx_a, idx_b)
-                        amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                        amp_post_tmc_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+                        λλ = Alp.amp_post_tmc_λλ(λλ, λ, idx_a, idx_b)
+                        Alp.amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+                        Alp.amp_post_tmc_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
                     end
 
                     # Partitioning of right
                     if !(idx_a in m.disc_vars) && (idx_b in m.disc_vars) && (part_cnt_a == 1)
-                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                        λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+                        λ = Alp.amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+                        λX = Alp.amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
                         λX[(idx_a,idx_b)] = [_index_to_variable_ref(m.model_mip, idx_b)]
-                        λλ = amp_post_tmc_λλ(m.model_mip, λλ, λ, idx_b, idx_a)
-                        amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
-                        amp_post_tmc_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
+                        λλ = Alp.amp_post_tmc_λλ(λλ, λ, idx_b, idx_a)
+                        Alp.amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+                        Alp.amp_post_tmc_XX_mc(m.model_mip,idx_ab, λX, λλ, lb, ub, idx_b, idx_a)
                     end
 
                     # Partitioning on both variables
                     if (idx_a in m.disc_vars) && (idx_b in m.disc_vars)
-                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
-                        λ = amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
-                        λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
-                        λX = amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
-                        λλ = amp_post_tmc_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
-                        amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
-                        amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
-                        amp_post_tmc_λxλ_mc(m.model_mip, λλ, λ, idx_a, idx_b)
-                        amp_post_tmc_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
+                        λ = Alp.amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_a, idx_a)
+                        λ = Alp.amp_post_tmc_λ(m.model_mip, λ, lb, ub, part_cnt_b, idx_b)
+                        λX = Alp.amp_post_tmc_λX(m.model_mip, λX, part_cnt_a, idx_a, idx_b)
+                        λX = Alp.amp_post_tmc_λX(m.model_mip, λX, part_cnt_b, idx_b, idx_a)
+                        λλ = Alp.amp_post_tmc_λλ(m.model_mip, λλ, part_cnt_a, part_cnt_b, idx_a, idx_b)
+                        Alp.amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_a, idx_b)
+                        Alp.amp_post_tmc_λxX_mc(m.model_mip, λX, λ, lb, ub, idx_b, idx_a)
+                        Alp.amp_post_tmc_λxλ_mc(m.model_mip, λλ, λ, idx_a, idx_b)
+                        Alp.amp_post_tmc_XX_mc(m.model_mip, idx_ab, λX, λλ, lb, ub, idx_a, idx_b)
                     end
 
                     # Error condition
@@ -98,59 +98,65 @@ end
 
 function amp_post_tmc_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, idx::Int, relax=false)
     if !haskey(λ, idx)
-        λ[idx] = @variable(m, [1:dim], Bin, base_name=string("L",idx))
-        @constraint(m, sum(λ[idx]) == 1) # The SOS-1 Constraints, not all MIP solver has SOS feature
-        @constraint(m, _index_to_variable_ref(m, idx) >= dot(lb[idx], λ[idx]))
-        @constraint(m, _index_to_variable_ref(m, idx) <= dot(ub[idx], λ[idx]))
+        λ[idx] = JuMP.@variable(m, [1:dim], Bin, base_name=string("L",idx))
+        JuMP.@constraint(m, sum(λ[idx]) == 1) # SOS-1 Constraints
+        JuMP.@constraint(m, _index_to_variable_ref(m, idx) >= dot(lb[idx], λ[idx]))
+        JuMP.@constraint(m, _index_to_variable_ref(m, idx) <= dot(ub[idx], λ[idx]))
     end
+
     return λ
 end
 
 function amp_post_tmc_monomial_mc(m::JuMP.Model, idx_aa::Int, λ::Dict, λX::Dict, LB::Dict, UB::Dict, dim::Int, idx_a::Int)
-    @constraint(m, _index_to_variable_ref(m, idx_aa) >= _index_to_variable_ref(m, idx_a)^(2))
-    @constraint(m, _index_to_variable_ref(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(Matrix(Diagonal(LB[idx_a])), UB[idx_a])))
+    JuMP.@constraint(m, _index_to_variable_ref(m, idx_aa) >= _index_to_variable_ref(m, idx_a)^(2))
+    JuMP.@constraint(m, _index_to_variable_ref(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(Matrix(Diagonal(LB[idx_a])), UB[idx_a])))
+
     return
 end
 
 function amp_post_tmc_λX(m::JuMP.Model, λX::Dict, dim::Int, idx_a::Int, idx_b::Int)
     if !haskey(λX, (idx_a,idx_b))
-        λX[(idx_a,idx_b)] = @variable(m, [1:dim], base_name=string("L",idx_a,"X",idx_b))
+        λX[(idx_a,idx_b)] = JuMP.@variable(m, [1:dim], base_name=string("L",idx_a,"X",idx_b))
     end
+
     return λX
 end
 
 function amp_post_tmc_λλ(m::JuMP.Model, λλ::Dict, dim_a::Int, dim_b::Int, idx_a::Int, idx_b::Int)
     if !haskey(λλ, (idx_a, idx_b))
-        λλ[(idx_a,idx_b)] = @variable(m, [1:dim_a, 1:dim_b], base_name=string("L",idx_a,"L",idx_b))
+        λλ[(idx_a,idx_b)] = JuMP.@variable(m, [1:dim_a, 1:dim_b], base_name=string("L",idx_a,"L",idx_b))
         for i in 1:dim_a
     		for j in 1:dim_b
-    			JuMP.set_lower_bound(λλ[(idx_a, idx_b)][i,j], 0);
-    			JuMP.set_upper_bound(λλ[(idx_a, idx_b)][i,j], 1);
+    			JuMP.set_lower_bound(λλ[(idx_a, idx_b)][i,j], 0)
+    			JuMP.set_upper_bound(λλ[(idx_a, idx_b)][i,j], 1)
     		end
     	end
         λλ[(idx_b,idx_a)] = λλ[(idx_a,idx_b)]'
     end
+
     return λλ
 end
 
-function amp_post_tmc_λλ(m::JuMP.Model, λλ::Dict, λ::Dict, idx_a::Int, idx_b::Int)
+function amp_post_tmc_λλ(λλ::Dict, λ::Dict, idx_a::Int, idx_b::Int)
     if !haskey(λλ, (idx_a, idx_b))
         λλ[(idx_a,idx_b)] = λ[idx_a]
         λλ[(idx_a,idx_b)] = reshape(λλ[(idx_a,idx_b)], (length(λ[idx_a]), 1))
         λλ[(idx_b,idx_a)] = λλ[(idx_a,idx_b)]'
     end
+
     return λλ
 end
 
-function amp_post_tmc_XX_mc(m, ab, λX, λλ, LB, UB, a, b)
+function amp_post_tmc_XX_mc(m::JuMP.Model, ab, λX, λλ, LB, UB, a, b)
     @assert length(LB[a]) == length(UB[a])
     @assert length(LB[b]) == length(UB[b])
     dim_A = length(LB[a])
     dim_B = length(LB[b])
-    @constraint(m, _index_to_variable_ref(m, ab) .>= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],LB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
-	@constraint(m, _index_to_variable_ref(m, ab) .>= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],UB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
-	@constraint(m, _index_to_variable_ref(m, ab) .<= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],UB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
-	@constraint(m, _index_to_variable_ref(m, ab) .<= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],LB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
+    JuMP.@constraint(m, _index_to_variable_ref(m, ab) .>= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],LB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
+	JuMP.@constraint(m, _index_to_variable_ref(m, ab) .>= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],UB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
+	JuMP.@constraint(m, _index_to_variable_ref(m, ab) .<= dot(λX[(a,b)],LB[a]) + dot(λX[(b,a)],UB[b]) - reshape(LB[a], (1, dim_A))*λλ[(a,b)]*reshape(UB[b], (dim_B, 1)))
+	JuMP.@constraint(m, _index_to_variable_ref(m, ab) .<= dot(λX[(a,b)],UB[a]) + dot(λX[(b,a)],LB[b]) - reshape(UB[a], (1, dim_A))*λλ[(a,b)]*reshape(LB[b], (dim_B, 1)))
+
     return
 end
 
@@ -171,8 +177,9 @@ function amp_post_tmc_λxX_mc(m::JuMP.Model, λX::Dict, λ::Dict, lb::Dict, ub::
         lb_λ = _lower_bound(λ[ind_λ][i])
 		ub_λ = _upper_bound(λ[ind_λ][i])
         @assert (lb_λ == 0.0) && (ub_λ == 1.0)
-		mccormick(m, λX[(ind_λ,ind_X)][i], λ[ind_λ][i], v, lb_λ, ub_λ, lb_X, ub_X)
+		Alp.mccormick(m, λX[(ind_λ,ind_X)][i], λ[ind_λ][i], v, lb_λ, ub_λ, lb_X, ub_X)
 	end
+
     return
 end
 
@@ -197,7 +204,7 @@ function amp_post_tmc_λxλ_mc(m::JuMP.Model, λλ::Dict, λ::Dict, ind_A::Int, 
 
 	for i in 1:dim_A
 		for j in 1:dim_B
-			mccormick_bin(m, λλ[(ind_A,ind_B)][i,j], λ[ind_A][i], λ[ind_B][j])
+			Alp.mccormick_bin(m, λλ[(ind_A,ind_B)][i,j], λ[ind_A][i], λ[ind_B][j])
 		end
 	end
 
@@ -209,17 +216,17 @@ end
 
 Generic function to add a McCormick convex envelop, where `xy=x*y` and `x_l, x_u, y_l, y_u` are variable bounds.
 """
-function mccormick(m::JuMP.Model,xy::JuMP.VariableRef,x::JuMP.VariableRef,y::JuMP.VariableRef,xˡ,xᵘ,yˡ,yᵘ)
+function mccormick(m::JuMP.Model, xy::JuMP.VariableRef, x::JuMP.VariableRef, y::JuMP.VariableRef, lb_x, ub_x, lb_y, ub_y)
 
-    @constraint(m, xy >= xˡ*y + yˡ*x - xˡ*yˡ)
-    @constraint(m, xy >= xᵘ*y + yᵘ*x - xᵘ*yᵘ)
-    @constraint(m, xy <= xˡ*y + yᵘ*x - xˡ*yᵘ)
-    @constraint(m, xy <= xᵘ*y + yˡ*x - xᵘ*yˡ)
+    JuMP.@constraint(m, xy >= lb_x*y + lb_y*x - lb_x*lb_y)
+    JuMP.@constraint(m, xy >= ub_x*y + ub_y*x - ub_x*ub_y)
+    JuMP.@constraint(m, xy <= lb_x*y + ub_y*x - lb_x*ub_y)
+    JuMP.@constraint(m, xy <= ub_x*y + lb_y*x - ub_x*lb_y)
 
     return
 end
 
-function mccormick_binlin(m::JuMP.Model,binlin::JuMP.VariableRef,bin::JuMP.VariableRef,lin::JuMP.VariableRef,lb,ub)
+function mccormick_binlin(m::JuMP.Model, binlin::JuMP.VariableRef, bin::JuMP.VariableRef, lin::JuMP.VariableRef, lb, ub)
 
     # TODO think about how to address this issue
     warnuser = false
@@ -234,16 +241,16 @@ function mccormick_binlin(m::JuMP.Model,binlin::JuMP.VariableRef,bin::JuMP.Varia
     end
 
     if lb >= 0
-        @constraint(m, binlin <= ub*bin)
-        @constraint(m, binlin <= lin)
-        @constraint(m, binlin >= lin - (1-bin)*ub)
+        JuMP.@constraint(m, binlin <= ub*bin)
+        JuMP.@constraint(m, binlin <= lin)
+        JuMP.@constraint(m, binlin >= lin - (1-bin)*ub)
     else
-        @constraint(m, binlin <= ub)
-        @constraint(m, binlin >= lb)
-        @constraint(m, binlin <= bin*ub)
-        @constraint(m, binlin >= bin*lb)
-        @constraint(m, binlin <= lin - (1-bin)*lb)
-        @constraint(m, binlin >= lin - (1-bin)*ub)
+        JuMP.@constraint(m, binlin <= ub)
+        JuMP.@constraint(m, binlin >= lb)
+        JuMP.@constraint(m, binlin <= bin*ub)
+        JuMP.@constraint(m, binlin >= bin*lb)
+        JuMP.@constraint(m, binlin <= lin - (1-bin)*lb)
+        JuMP.@constraint(m, binlin >= lin - (1-bin)*ub)
     end
 
     # Second position to handle inf bounds
@@ -252,50 +259,56 @@ function mccormick_binlin(m::JuMP.Model,binlin::JuMP.VariableRef,bin::JuMP.Varia
     return
 end
 
-function mccormick_bin(m::JuMP.Model,xy::JuMP.VariableRef,x::JuMP.VariableRef,y::JuMP.VariableRef)
-    @constraint(m, xy <= x)
-    @constraint(m, xy <= y)
-    @constraint(m, xy >= x+y-1)
+function mccormick_bin(m::JuMP.Model, xy::JuMP.VariableRef, x::JuMP.VariableRef, y::JuMP.VariableRef)
+    JuMP.@constraint(m, xy <= x)
+    JuMP.@constraint(m, xy <= y)
+    JuMP.@constraint(m, xy >= x+y-1)
     return
 end
 
 # [TODO] Unused functions but will be used for later
-function mccormick_monomial(m,xy,x,xˡ,xᵘ)
-    @constraint(m, xy >= x^2)
-    @constraint(m, xy <= (xˡ+xᵘ)*x - (xˡ*xᵘ))
-    return
-end
-#
-# function tightmccormick_monomial(m,x_p,x,xz,xˡ,xᵘ,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
-#     if lazy == 1
-#         function GetLazyCuts_quad(cb)
-#             TOL1 = 1e-6
-#             if (getvalue(x)^p > (getvalue(x_p) + TOL1))
-#                 a = p*getvalue(x)^(p-1)
-#                 b = (1-p)*getvalue(x)^p
-#                 @lazyconstraint(cb, a*x + b <= x_p)
-#             end
-#         end
-#         addlazycallback(m, GetLazyCuts_quad)
-#     elseif p == 2 && quad == 1
-#         @constraint(m, x_p >= x^2)
-#     else
-#         x0_vec = sort(union(xˡ, xᵘ))
-#         for x0 in x0_vec
-#             @constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
-#         end
-#     end
-#
-#     A = ((xᵘ).^p-(xˡ).^p)./(xᵘ-xˡ)
-#     @constraint(m, x_p .<= A'*xz - (A.*xˡ)'*z + ((xˡ).^p)'*z)
-#
-#     return
-# end
+function mccormick_monomial(m::JuMP.Model, xy::JuMP.VariableRef, x::JuMP.VariableRef, lb_x, ub_x)
+    JuMP.@constraint(m, xy >= x^2)
+    JuMP.@constraint(m, xy <= (lb_x+ub_x)*x - (lb_x*ub_x))
 
-function binprod_relax(m, z, x::Vector)
-    for i in x
-        @constraint(m, z <= i)
-    end
-    @constraint(m, z >= sum(x) - (length(x)-1))
     return
 end
+
+# Fortet linearization
+function binprod_relax(m::JuMP.Model, z::JuMP.VariableRef, x::Vector)
+
+    for i in x
+        JuMP.@constraint(m, z <= i)
+    end
+    JuMP.@constraint(m, z >= sum(x) - (length(x)-1))
+
+    return
+end
+
+#=
+function tightmccormick_monomial(m,x_p,x,xz,lb_x,ub_x,z,p,lazy,quad) # if p=2, tightened_lazycuts = tightmccormick_quad
+    if lazy == 1
+        function GetLazyCuts_quad(cb)
+            TOL1 = 1e-6
+            if (getvalue(x)^p > (getvalue(x_p) + TOL1))
+                a = p*getvalue(x)^(p-1)
+                b = (1-p)*getvalue(x)^p
+                @lazyconstraint(cb, a*x + b <= x_p)
+            end
+        end
+        addlazycallback(m, GetLazyCuts_quad)
+    elseif p == 2 && quad == 1
+        JuMP.@constraint(m, x_p >= x^2)
+    else
+        x0_vec = sort(union(lb_x, ub_x))
+        for x0 in x0_vec
+            JuMP.@constraint(m, x_p >= (1-p)*(x0)^p + p*(x0)^(p-1)*x)
+        end
+    end
+
+    A = ((ub_x).^p-(lb_x).^p)./(ub_x-lb_x)
+    JuMP.@constraint(m, x_p .<= A'*xz - (A.*lb_x)'*z + ((lb_x).^p)'*z)
+
+    return
+end
+=#

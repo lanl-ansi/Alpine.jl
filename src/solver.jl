@@ -347,10 +347,10 @@ end
 MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
-    set_option(model, Symbol(param.name), value)
+    Alp.set_option(model, Symbol(param.name), value)
 end
 function MOI.get(model::Optimizer, param::MOI.RawParameter)
-    get_option(model, Symbol(param.name))
+    Alp.get_option(model, Symbol(param.name))
 end
 
 function MOI.add_variables(model::Optimizer, n::Int)
@@ -500,7 +500,7 @@ function load!(m::Optimizer)
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
     if !isempty(m.int_vars) || !isempty(m.bin_vars)
-        (get_option(m, :minlp_solver) === nothing) && (error("No MINLP local solver specified; use option 'minlp_solver' to specify a MINLP local solver"))
+        (Alp.get_option(m, :minlp_solver) === nothing) && (error("No MINLP local solver specified; use option 'minlp_solver' to specify a MINLP local solver"))
     end
 
     m.num_constr_orig += length(m.nl_constraint_bounds_orig)
@@ -536,37 +536,37 @@ function load!(m::Optimizer)
     recategorize_var(m)             # Initial round of variable re-categorization
 
     :Int in m.var_type_orig && error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
-    :Int in m.var_type_orig ? set_option(m, :int_enable, true) : set_option(m, :int_enable, false) # Separator for safer runs
+    :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) : Alp.set_option(m, :int_enable, false) # Separator for safer runs
 
     # Conduct solver-dependent detection
     fetch_mip_solver_identifier(m)
-    (get_option(m, :nlp_solver) !== nothing) && (fetch_nlp_solver_identifier(m))
-    (get_option(m, :minlp_solver) !== nothing) && (fetch_minlp_solver_identifier(m))
+    (Alp.get_option(m, :nlp_solver) !== nothing) && (fetch_nlp_solver_identifier(m))
+    (Alp.get_option(m, :minlp_solver) !== nothing) && (fetch_minlp_solver_identifier(m))
 
     # Solver Dependent Options
     if m.mip_solver_id != :Gurobi
-        get_option(m, :convhull_warmstart) == false
-        get_option(m, :convhull_no_good_cuts) == false
+        Alp.get_option(m, :convhull_warmstart) == false
+        Alp.get_option(m, :convhull_no_good_cuts) == false
     end
 
     # Main Algorithmic Initialization
-    process_expr(m)                         # Compact process of every expression
-    init_tight_bound(m)                     # Initialize bounds for algorithmic processes
-    resolve_var_bounds(m)                   # resolve lifted var bounds
-    pick_disc_vars(m)                       # Picking variables to be discretized
-    init_disc(m)                            # Initialize discretization dictionaries
+    Alp.process_expr(m)                         # Compact process of every expression
+    Alp.init_tight_bound(m)                     # Initialize bounds for algorithmic processes
+    Alp.resolve_var_bounds(m)                   # resolve lifted var bounds
+    Alp.pick_disc_vars(m)                       # Picking variables to be discretized
+    Alp.init_disc(m)                            # Initialize discretization dictionaries
 
-    # Turn-on bt presolver if variables are not discrete
-    if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && get_option(m, :presolve_bt) == nothing
-        set_option(m, :presolve_bt, true)
+    # Turn-on bt presolve if variables are not discrete
+    if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && Alp.get_option(m, :presolve_bt) == nothing
+        Alp.set_option(m, :presolve_bt, true)
         println("Automatically turning on bound-tightening presolve")
-    elseif get_option(m, :presolve_bt) == nothing  # If no use indication
-        set_option(m, :presolve_bt, false)
+    elseif Alp.get_option(m, :presolve_bt) == nothing  # If no use indication
+        Alp.set_option(m, :presolve_bt, false)
     end
 
     if length(m.bin_vars) > 200 || m.num_var_orig > 2000
         println("Automatically turning OFF 'disc_ratio_branch' due to the size of the problem")
-        set_option(m, :disc_ratio_branch, false)
+        Alp.set_option(m, :disc_ratio_branch, false)
     end
 
     # Initialize the solution pool

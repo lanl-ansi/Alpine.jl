@@ -12,15 +12,15 @@ If no local feasible solution is obtained, the algorithm defaults to OBBT withou
 """
 function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
 
-    get_option(m, :presolve_bt) || return
+    Alp.get_option(m, :presolve_bt) || return
 
-    if get_option(m, :presolve_bt_algo) == 1
+    if Alp.get_option(m, :presolve_bt_algo) == 1
         minmax_bound_tightening(m, use_bound=use_bound)
-    elseif get_option(m, :presolve_bt_algo) == 2
+    elseif Alp.get_option(m, :presolve_bt_algo) == 2
         minmax_bound_tightening(m, use_bound=use_bound, use_tmc=true)
-    elseif isa(get_option(m, :presolve_bt_algo), Function)
-        # eval(get_option(m, :presolve_bt_algo))(m)
-        get_option(m, :presolve_bt_algo)(m)
+    elseif isa(Alp.get_option(m, :presolve_bt_algo), Function)
+        # eval(Alp.get_option(m, :presolve_bt_algo))(m)
+        Alp.get_option(m, :presolve_bt_algo)(m)
     else
         error("Unrecognized optimization-based bound tightening algorithm")
     end
@@ -60,7 +60,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
 
     st = time() # Track start time
     if timelimit == Inf
-        timelimit = get_option(m, :presolve_time_limit)
+        timelimit = Alp.get_option(m, :presolve_time_limit)
     end
 
     # Regulating special input conditions: default use best feasible solution objective value
@@ -70,38 +70,38 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
 
     discretization = to_discretization(m, m.l_var_tight, m.u_var_tight)
     if use_bound == false && haskey(options, :use_tmc)
-        (get_option(m, :log_level) > 0) && @warn " Local solve infeasible; defaulting to doing bound-tightening without partitions."
+        (Alp.get_option(m, :log_level) > 0) && @warn " Local solve infeasible; defaulting to doing bound-tightening without partitions."
     end
     if use_bound == true && haskey(options, :use_tmc)
-        discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=discretization)
+        discretization = Alp.add_adaptive_partition(m, use_solution=m.best_sol, use_disc=discretization)
     end
-    discretization = resolve_var_bounds(m, discretization) # recomputation of bounds for lifted_variables
+    discretization = Alp.resolve_var_bounds(m, discretization) # recomputation of bounds for lifted_variables
 
-    (get_option(m, :log_level) > 0) && println("  Starting bound-tightening")
+    (Alp.get_option(m, :log_level) > 0) && println("  Starting bound-tightening")
 
     # start of the solve
     keep_tightening = true
     avg_reduction = Inf
     total_reduction = 0.0
-    while keep_tightening && (m.logs[:time_left] > get_option(m, :tol)) && (m.logs[:bt_iter] < get_option(m, :presolve_bt_max_iter)) # Stopping criteria
+    while keep_tightening && (m.logs[:time_left] > Alp.get_option(m, :tol)) && (m.logs[:bt_iter] < Alp.get_option(m, :presolve_bt_max_iter)) # Stopping criteria
 
         keep_tightening = false
         m.logs[:bt_iter] += 1
-        get_option(m, :log_level) > 199 && println("  Iteration - $(m.logs[:bt_iter])")
+        Alp.get_option(m, :log_level) > 199 && println("  Iteration - $(m.logs[:bt_iter])")
         temp_bounds = Dict()
 
         # Perform Bound Contraction
         for var_idx in 1:m.num_var_orig
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
-            if (discretization[var_idx][end] - discretization[var_idx][1]) > get_option(m, :presolve_bt_width_tol)
+            if (discretization[var_idx][end] - discretization[var_idx][1]) > Alp.get_option(m, :presolve_bt_width_tol)
                 create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
-                    @objective(m.model_mip, sense, _index_to_variable_ref(m.model_mip, var_idx))
+                    JuMP.@objective(m.model_mip, sense, _index_to_variable_ref(m.model_mip, var_idx))
                     status = solve_bound_tightening_model(m)
                     if status in STATUS_OPT
-                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_value(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
+                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_value(m.model_mip)/Alp.get_option(m, :presolve_bt_output_tol))*Alp.get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
                     elseif status in STATUS_LIMIT
-                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_bound(m.model_mip)/get_option(m, :presolve_bt_output_tol))*get_option(m, :presolve_bt_output_tol)
+                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_bound(m.model_mip)/Alp.get_option(m, :presolve_bt_output_tol))*Alp.get_option(m, :presolve_bt_output_tol)
                     else
                         print("!")
                     end
@@ -119,27 +119,27 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
             end
 
             bound_reduction = 0.0
-            if (temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]) <= get_option(m, :presolve_bt_width_tol)
+            if (temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]) <= Alp.get_option(m, :presolve_bt_width_tol)
                 midpoint = (temp_bounds[var_idx][1] + temp_bounds[var_idx][end]) / 2
-                if (midpoint - discretization[var_idx][1] < get_option(m, :presolve_bt_width_tol)/2)
+                if (midpoint - discretization[var_idx][1] < Alp.get_option(m, :presolve_bt_width_tol)/2)
                     temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = discretization[var_idx][1]
-                    temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = discretization[var_idx][1] + (get_option(m, :presolve_bt_width_tol))
-                elseif (discretization[var_idx][end] - midpoint < get_option(m, :presolve_bt_width_tol)/2)
-                    temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = discretization[var_idx][end] - (get_option(m, :presolve_bt_width_tol))
+                    temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = discretization[var_idx][1] + (Alp.get_option(m, :presolve_bt_width_tol))
+                elseif (discretization[var_idx][end] - midpoint < Alp.get_option(m, :presolve_bt_width_tol)/2)
+                    temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = discretization[var_idx][end] - (Alp.get_option(m, :presolve_bt_width_tol))
                     temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = discretization[var_idx][end]
                 else
-                    temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = midpoint - (get_option(m, :presolve_bt_width_tol)/2)
-                    temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = midpoint + (get_option(m, :presolve_bt_width_tol)/2)
+                    temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]] = midpoint - (Alp.get_option(m, :presolve_bt_width_tol)/2)
+                    temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] = midpoint + (Alp.get_option(m, :presolve_bt_width_tol)/2)
                 end
             end
             new_range = temp_bounds[var_idx][tell_side[MOI.MAX_SENSE]] - temp_bounds[var_idx][tell_side[MOI.MIN_SENSE]]
             old_range = discretization[var_idx][end] - discretization[var_idx][1]
             bound_reduction = old_range - new_range
             total_reduction += bound_reduction
-            (get_option(m, :log_level) > 99) && print("+")
-            (get_option(m, :log_level) > 99) && println("  VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
-            (get_option(m, :log_level) > 99) && print("+")
-            (get_option(m, :log_level) > 99) && println("  VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
+            (Alp.get_option(m, :log_level) > 99) && print("+")
+            (Alp.get_option(m, :log_level) > 99) && println("  VAR $(var_idx) LB contracted $(discretization[var_idx][1])=>$(temp_bounds[var_idx][1])")
+            (Alp.get_option(m, :log_level) > 99) && print("+")
+            (Alp.get_option(m, :log_level) > 99) && println("  VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
             discretization[var_idx][1] = temp_bounds[var_idx][1]
             discretization[var_idx][end] = temp_bounds[var_idx][end]
         end
@@ -147,27 +147,27 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
         avg_reduction = total_reduction/length(keys(temp_bounds))
         keep_tightening = (avg_reduction > 1e-3)
 
-        discretization = resolve_var_bounds(m, discretization)
+        discretization = Alp.resolve_var_bounds(m, discretization)
         if haskey(options, :use_tmc)
-            discretization = add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization))
+            discretization = Alp.add_adaptive_partition(m, use_solution=m.best_sol, use_disc=flatten_discretization(discretization))
         else
             discretization = discretization
         end
         time() - st > timelimit && break
     end
 
-    # (get_option(m, :log_level) > 0) && println("Completed bound-tightening in $(m.logs[:bt_iter]) iterations. Here are the tightened bounds:")
-    (get_option(m, :log_level) > 1) && println("  Variables whose bounds were tightened:")
-    m.l_var_tight, m.u_var_tight = update_var_bounds(discretization)
-    m.discretization = add_adaptive_partition(m, use_solution=m.best_sol)
+    # (Alp.get_option(m, :log_level) > 0) && println("Completed bound-tightening in $(m.logs[:bt_iter]) iterations. Here are the tightened bounds:")
+    (Alp.get_option(m, :log_level) > 1) && println("  Variables whose bounds were tightened:")
+    m.l_var_tight, m.u_var_tight = Alp.update_var_bounds(discretization)
+    m.discretization = Alp.add_adaptive_partition(m, use_solution=m.best_sol)
 
     for i in m.disc_vars
         contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]); digits=2)*100
-        if get_option(m, :log_level) > 0 && contract_ratio > 0.0001
-            (get_option(m, :log_level) > 1) && (println("    VAR $(i): $(contract_ratio)% contraction |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |"))
+        if Alp.get_option(m, :log_level) > 0 && contract_ratio > 0.0001
+            (Alp.get_option(m, :log_level) > 1) && (println("    VAR $(i): $(contract_ratio)% contraction |$(round(l_var_orig[i]; digits=4)) --> | $(round(m.l_var_tight[i]; digits=4)) - $(round(m.u_var_tight[i]; digits=4)) | <-- $(round(u_var_orig[i]; digits=4)) |"))
         end
     end
-    # (get_option(m, :log_level) > 0) && print("\n")
+    # (Alp.get_option(m, :log_level) > 0) && print("\n")
     return
 end
 
@@ -182,8 +182,8 @@ function create_bound_tightening_model(m::Optimizer, discretization, bound; kwar
     # options = Dict(kwargs)
 
     start_build = time()
-    m.model_mip = Model(get_option(m, :mip_solver)) # Construct JuMP model
-    amp_post_vars(m, use_disc=discretization)
+    m.model_mip = Model(Alp.get_option(m, :mip_solver)) # Construct JuMP model
+    Alp.amp_post_vars(m, use_disc=discretization)
     amp_post_lifted_constraints(m)
     amp_post_convexification(m, use_disc=discretization)  # Convexify problem
 
@@ -193,7 +193,7 @@ function create_bound_tightening_model(m::Optimizer, discretization, bound; kwar
 
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
-    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])
 
     return
 end
@@ -208,25 +208,25 @@ A function that solves the min and max OBBT model.
 function solve_bound_tightening_model(m::Optimizer; kwargs...)
 
     # ========= MILP Solve ========= #
-    time_limit = max(0.0, if get_option(m, :presolve_bt_mip_time_limit) < Inf
-        min(get_option(m, :presolve_bt_mip_time_limit), get_option(m, :time_limit) - m.logs[:total_time])
+    time_limit = max(0.0, if Alp.get_option(m, :presolve_bt_mip_time_limit) < Inf
+        min(Alp.get_option(m, :presolve_bt_mip_time_limit), Alp.get_option(m, :time_limit) - m.logs[:total_time])
     else
-        get_option(m, :time_limit) - m.logs[:total_time]
+        Alp.get_option(m, :time_limit) - m.logs[:total_time]
     end)
     MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 
     start_solve = time()
-    if get_option(m, :presolve_bt_relax_integrality) #TODO Double check here
+    if Alp.get_option(m, :presolve_bt_relax_integrality) #TODO Double check here
         unrelax = JuMP.relax_integrality(m.model_mip)
     end
     JuMP.optimize!(m.model_mip)
     status = MOI.get(m.model_mip, MOI.TerminationStatus())
-    if get_option(m, :presolve_bt_relax_integrality)
+    if Alp.get_option(m, :presolve_bt_relax_integrality)
         unrelax() # FIXME should this be called ?
     end
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve
-    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])
     # ========= MILP Solve ========= #
 
     return status
@@ -237,10 +237,10 @@ end
 """
 function post_obj_bounds(m::Optimizer, bound::Float64; kwargs...)
     if is_max_sense(m)
-        @constraint(m.model_mip,
+        JuMP.@constraint(m.model_mip,
             sum(m.bounding_obj_mip[:coefs][j]*_index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) >= bound)
     elseif is_min_sense(m)
-        @constraint(m.model_mip,
+        JuMP.@constraint(m.model_mip,
             sum(m.bounding_obj_mip[:coefs][j]*_index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for j in 1:m.bounding_obj_mip[:cnt]) <= bound)
     end
 
