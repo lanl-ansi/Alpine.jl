@@ -3,7 +3,12 @@
 ## v0.2.7
 - Support for module shortcut `Alp` in function calls
 - Solver options clean up in `examples` folder
-- Dropped support for unsued functions `_bound_sense`, `update_boundstop_options`
+- Dropped support for unsued functions:
+     `_bound_sense`
+     `update_boundstop_options`
+     `amp_post_inequalities_int`
+     `amp_pick_ratevec`
+     `amp_collect_tight_regions`
 - Improved code coverage
 - Docs cleanup
 
