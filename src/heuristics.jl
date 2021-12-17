@@ -65,12 +65,14 @@ function heu_pool_multistart(m::Optimizer)
 
     for i in 1:m.bound_sol_pool[:cnt]
         if !m.bound_sol_pool[:ubstart][i]
-            rounded_sol = round_sol(m, m.bound_sol_pool[:sol][i])
-            l_var, u_var = fix_domains(m, discrete_sol=rounded_sol, use_orig=true)
+            
+            rounded_sol = Alp.round_sol(m, m.bound_sol_pool[:sol][i])
+            l_var, u_var = Alp.fix_domains(m, discrete_sol=rounded_sol, use_orig=true)
             heuristic_model = MOI.instantiate(Alp.get_option(m, :nlp_solver), with_bridge_type=Float64)
-            x = load_nonlinear_model(m, heuristic_model, l_var, u_var)
+            x = Alp.load_nonlinear_model(m, heuristic_model, l_var, u_var)
             MOI.optimize!(heuristic_model)
             heuristic_model_status = MOI.get(heuristic_model, MOI.TerminationStatus())
+
             if heuristic_model_status in STATUS_OPT || heuristic_model_status in STATUS_LIMIT
                 candidate_obj = MOI.get(heuristic_model, MOI.ObjectiveValue())
                 if eval(convertor[m.sense_orig])(candidate_obj, incumb_obj)
@@ -82,12 +84,13 @@ function heu_pool_multistart(m::Optimizer)
             else
                 Alp.get_option(m, :log_level) > 99 && println("Multi-start heuristic returns $(heuristic_model_status) [SOL:$(i)]")
             end
+
             m.bound_sol_pool[:ubstart][i] = true
         end
     end
 
     if found_feasible
-        update_incumb_objective(m, incumb_obj, incumb_sol)
+        Alp.update_incumb_objective(m, incumb_obj, incumb_sol)
         return MOI.LOCALLY_SOLVED
     end
 

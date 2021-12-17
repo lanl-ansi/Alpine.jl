@@ -17,7 +17,7 @@ This function is implemented in the following manner:
 """
 function create_bounding_mip(m::Optimizer; use_disc=nothing)
 
-    use_disc == nothing ? discretization = m.discretization : discretization = use_disc
+    use_disc === nothing ? discretization = m.discretization : discretization = use_disc
 
     m.model_mip = Model(Alp.get_option(m, :mip_solver)) # Construct JuMP Model
     start_build = time()
@@ -42,7 +42,7 @@ to finish the last step required during the construction of bounding model.
 """
 function amp_post_convexification(m::Optimizer; use_disc=nothing)
 
-    use_disc == nothing ? discretization = m.discretization : discretization = use_disc
+    use_disc === nothing ? discretization = m.discretization : discretization = use_disc
 
     for i in 1:length(Alp.get_option(m, :method_convexification))             # Additional user-defined convexification method
         # eval(Alp.get_option(m, :method_convexification)[i])(m)
@@ -249,9 +249,9 @@ function add_adaptive_partition(m::Optimizer;kwargs...)
             @warn "  Warning: Binary variable in m.disc_vars. Check out what is wrong..."
             continue  # No partition should be added to binary variable unless user specified
         elseif m.var_type[i] == :Int
-            error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
+            error("Alpine does not support MINLPs with generic integer (non-binary) variables yet!")
         else
-            error("Unexpected variable types during injecting partitions")
+            error("Unexpected variable types while injecting partitions")
         end
     end
 
@@ -309,7 +309,7 @@ function insert_partition(m::Optimizer, var::Int, partidx::Int, point::Number, r
         lb_touch = false
     end
 
-    if (ub_touch && lb_touch) || check_solution_history(m, var)
+    if (ub_touch && lb_touch) || Alp.check_solution_history(m, var)
         distvec = [(j, partvec[j+1]-partvec[j]) for j in 1:length(partvec)-1]
         sort!(distvec, by=x->x[2])
         point_orig = point

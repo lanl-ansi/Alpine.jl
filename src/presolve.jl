@@ -15,12 +15,15 @@ function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
     Alp.get_option(m, :presolve_bt) || return
 
     if Alp.get_option(m, :presolve_bt_algo) == 1
-        minmax_bound_tightening(m, use_bound=use_bound)
+        Alp.minmax_bound_tightening(m, use_bound=use_bound)
+
     elseif Alp.get_option(m, :presolve_bt_algo) == 2
-        minmax_bound_tightening(m, use_bound=use_bound, use_tmc=true)
+        Alp.minmax_bound_tightening(m, use_bound=use_bound, use_tmc=true)
+
     elseif isa(Alp.get_option(m, :presolve_bt_algo), Function)
         # eval(Alp.get_option(m, :presolve_bt_algo))(m)
         Alp.get_option(m, :presolve_bt_algo)(m)
+
     else
         error("Unrecognized optimization-based bound tightening algorithm")
     end

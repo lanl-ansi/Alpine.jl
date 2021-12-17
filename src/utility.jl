@@ -40,6 +40,7 @@ function update_opt_gap(m::Optimizer)
    end
 
    m.best_abs_gap = abs(m.best_obj - m.best_bound)
+   
    return
 end
 

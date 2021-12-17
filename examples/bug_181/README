@@ -1,0 +1,8 @@
+To reproduce bug associated with issue #181
+
+1) Unzip the contents of the compressed file
+2) Start julia from within the folder containing those files
+3) Execute julia> include("bug_alpine.jl")
+4) Execute julia> solve("instance.txt")
+
+* You may need to manually install some dependencies

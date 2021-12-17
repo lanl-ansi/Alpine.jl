@@ -6,12 +6,12 @@ function embedding_map(λCnt::Int, encoding::Any=ebd_gray, ibs::Bool=false)
 
 	map = Dict()
 
-	encoding = resolve_encoding_key(encoding)
+	encoding = Alp.resolve_encoding_key(encoding)
 	L = Int(ceil(log(2, λCnt-1)))
 	for i in 1:L*2 map[i]=Set() end
 	H = [encoding(i, L) for i in 0:max(1,(2^L-1))]
 	map[:H_orig] = H
-	map[:H] = [ebd_support_binary_vec(H[i]) for i in 1:length(H)] 		# Store the map
+	map[:H] = [Alp.ebd_support_binary_vec(H[i]) for i in 1:length(H)] 		# Store the map
 	map[:L] = L
 
 	!is_compatible_encoding(H) && error("Encodign method is not SOS-2 compatible...")
@@ -56,7 +56,7 @@ end
 	This function is the same σ() function described in Vielma and Nemhauser 2011.
 """
 function ebd_σ(b::String)
-	sv = ebd_support_bool_vec(b)
+	sv = Alp.ebd_support_bool_vec(b)
 	return [i for i in 1:length(sv) if sv[i]]
 end
 
@@ -80,7 +80,7 @@ end
 """
 function is_compatible_encoding(code_seq::Vector)
 	for i in 1:(length(code_seq)-1)
-		sum(abs.(ebd_support_bool_vec(code_seq[i])-ebd_support_bool_vec(code_seq[i+1]))) != 1 && return false
+		sum(abs.(Alp.ebd_support_bool_vec(code_seq[i]) - Alp.ebd_support_bool_vec(code_seq[i+1]))) != 1 && return false
 	end
 	return true
 end
@@ -120,20 +120,20 @@ function ebd_link_xα(m::Optimizer, α::Vector, λCnt::Int, disc_vec::Vector, co
 
 	# Expression expansion
 	for i in 1:P
-		code_vec = ebd_support_bool_vec(code_seq[i])
-		lifters, exprs = ebd_link_expression(code_vec, lifters, exprs, i)
+		code_vec = Alp.ebd_support_bool_vec(code_seq[i])
+		lifters, exprs = Alp.ebd_link_expression(code_vec, lifters, exprs, i)
 	end
 
 	# Construct Variable Vector
 	α_A = JuMP.@variable(m.model_mip, [1:length(keys(lifters))], lower_bound=0.0, upper_bound=1.0, base_name="αA$(var_idx)")
 	for i in keys(lifters) # Build first-level evaluation
-		binprod_relax(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
+		Alp.binprod_relax(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
 	end
 
-	α_R = [α; α_A] # Iintialize Rearrgange the variable sequence
+	α_R = [α; α_A] # Initialize/re-arrgange the variable sequence
 
 	for i in 1:P # Start populating sub-expressions
-		exprs[i][:expr] = @expression(m.model_mip, sum(exprs[i][:coefs][j]*α_R[exprs[i][:vars][j]] for j in 1:exprs[i][:length] if exprs[i][:vars][j] != 0) + exprs[i][:vals])
+		exprs[i][:expr] = JuMP.@expression(m.model_mip, sum(exprs[i][:coefs][j]*α_R[exprs[i][:vars][j]] for j in 1:exprs[i][:length] if exprs[i][:vars][j] != 0) + exprs[i][:vals])
 	end
 
 	# Contructing final constraints

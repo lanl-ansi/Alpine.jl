@@ -275,6 +275,7 @@ function mccormick_monomial(m::JuMP.Model, xy::JuMP.VariableRef, x::JuMP.Variabl
 end
 
 # Fortet linearization
+# Reference: https://doi.org/10.1007/s10288-006-0015-3
 function binprod_relax(m::JuMP.Model, z::JuMP.VariableRef, x::Vector)
 
     for i in x

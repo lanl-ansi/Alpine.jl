@@ -14,17 +14,17 @@ const STATUS_INF = [
    High-level Function
 """
 function MOI.optimize!(m::Optimizer)
-    load!(m)
-    if getproperty(m, :presolve_infeasible)
-        Alp.summary_status(m)
-        return
-    end
-    Alp.presolve(m)
-    Alp.global_solve(m)
-    Alp.get_option(m, :log_level)  > 0 && Alp.logging_row_entry(m, finish_entry=true)
-    println("====================================================================================================")
-    Alp.summary_status(m)
-    return
+   Alp.load!(m)
+   if getproperty(m, :presolve_infeasible)
+      Alp.summary_status(m)
+      return
+   end
+   Alp.presolve(m)
+   Alp.global_solve(m)
+   Alp.get_option(m, :log_level)  > 0 && Alp.logging_row_entry(m, finish_entry=true)
+   println("====================================================================================================")
+   Alp.summary_status(m)
+   return
 end
 
 """
@@ -38,8 +38,8 @@ Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorith
 """
 function global_solve(m::Optimizer)
 
-   Alp.get_option(m, :log_level) > 0 && logging_head(m)
-   Alp.get_option(m, :presolve_track_time) || reset_timer(m)
+   Alp.get_option(m, :log_level) > 0 && Alp.logging_head(m)
+   Alp.get_option(m, :presolve_track_time) || Alp.reset_timer(m)
 
    while !Alp.check_exit(m)
       m.logs[:n_iter] += 1
@@ -54,26 +54,6 @@ function global_solve(m::Optimizer)
       Alp.algorithm_automation(m)                 # Automated adjustments
       Alp.add_partition(m)                        # Add extra discretizations
    end
-
-   return
-end
-
-function run_bounding_iteration(m::Optimizer)
-   Alp.get_option(m, :log_level) > 0 && logging_head(m)
-   Alp.get_option(m, :presolve_track_time) || reset_timer(m)
-
-   m.logs[:n_iter] += 1
-   Alp.create_bounding_mip(m)                  # Build the relaxation model
-   Alp.bounding_solve(m)                       # Solve the relaxation model
-   Alp.update_opt_gap(m)                       # Update optimality gap
-   Alp.check_exit(m) && return                 # Feasibility check
-   Alp.get_option(m, :log_level) > 0 && logging_row_entry(m)  # Logging
-   Alp.local_solve(m)                          # Solve local model for feasible solution
-   Alp.update_opt_gap(m)                       # Update optimality gap
-   Alp.check_exit(m) && return                 # Detect optimality termination
-   Alp.algorithm_automation(m)                 # Automated adjustments
-   Alp.add_partition(m)                        # Add extra discretizations
-
 
    return
 end
@@ -94,7 +74,7 @@ function presolve(m::Optimizer)
 
       Alp.get_option(m, :log_level) > 0 && println("  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))")
       
-      bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
+      Alp.bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
       
       Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
       
@@ -106,7 +86,7 @@ function presolve(m::Optimizer)
 
       (Alp.get_option(m, :log_level) > 0) && println("  Bound tightening without objective bounds (OBBT)")
       
-      bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
+      Alp.bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
       
       (Alp.get_option(m, :disc_ratio_branch)) && (Alp.set_option(m, :disc_ratio, update_disc_ratio(m, true)))
       
@@ -136,11 +116,11 @@ end
 """
 function algorithm_automation(m::Optimizer)
 
-   Alp.get_option(m, :disc_var_pick) == 3 && update_disc_cont_var(m)
-   Alp.get_option(m, :int_cumulative_disc) && update_disc_int_var(m)
+   Alp.get_option(m, :disc_var_pick) == 3 && Alp.update_disc_cont_var(m)
+   Alp.get_option(m, :int_cumulative_disc) && Alp.update_disc_int_var(m)
 
    if Alp.get_option(m, :disc_ratio_branch)
-      Alp.set_option(m, :disc_ratio, update_disc_ratio(m, true))    # Only perform for a maximum three times
+      Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true))    # Only perform for a maximum three times
    end
 
    return
@@ -185,7 +165,7 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
     for i in eachindex(x)
         set = Alp._bound_set(l_var[i], u_var[i])
         if set !== nothing
-            fx = MOI.SingleVariable(x[i])
+            fx = MOI.VariableIndex(x[i])
             MOI.add_constraint(model, fx, set)
         end
     end
@@ -198,12 +178,13 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
     end
     block = MOI.NLPBlockData(m.nl_constraint_bounds_orig, m.d_orig, m.has_nl_objective)
     MOI.set(model, MOI.NLPBlock(), block)
+    
     return x
 end
 
 function set_variable_type(model::MOI.ModelLike, xs, variable_types)
     for (x, variable_type) in zip(xs, variable_types)
-        fx = MOI.SingleVariable(x)
+        fx = MOI.VariableIndex(x)
         if variable_type == :Int
             MOI.add_constraint(model, fx, MOI.Integer())
         elseif variable_type == :Bin
@@ -247,7 +228,7 @@ function local_solve(m::Optimizer; presolve = false)
       l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
    end
 
-   x = load_nonlinear_model(m, local_solve_model, l_var, u_var)
+   x = Alp.load_nonlinear_model(m, local_solve_model, l_var, u_var)
    (!m.d_orig.want_hess) && MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
 
    if !presolve
@@ -288,12 +269,12 @@ function local_solve(m::Optimizer; presolve = false)
    if local_nlp_status in STATUS_OPT || local_nlp_status in STATUS_LIMIT
       candidate_obj = MOI.get(local_solve_model, MOI.ObjectiveValue())
       candidate_sol = round.(MOI.get(local_solve_model, MOI.VariablePrimal(), x); digits=5)
-      update_incumb_objective(m, candidate_obj, candidate_sol)
+      Alp.update_incumb_objective(m, candidate_obj, candidate_sol)
       m.status[:local_solve] = local_nlp_status
       return
 
    elseif local_nlp_status in STATUS_INF
-      heu_pool_multistart(m) == MOI.LOCALLY_SOLVED && return
+      Alp.heu_pool_multistart(m) == MOI.LOCALLY_SOLVED && return
       push!(m.logs[:obj], "INF")
       m.status[:local_solve] = MOI.LOCALLY_INFEASIBLE
       return

@@ -57,7 +57,7 @@ mutable struct OptimizerOptions
     presolve_bt_width_tol::Float64                              # Width tolerance for bound-tightening
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol (change to precision)
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
-    presolve_bt_relax_integrality::Bool                                     # Relax the MIP solved in built-in relaxation scheme for time performance
+    presolve_bt_relax_integrality::Bool                         # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
 
     # Domain Reduction
@@ -115,7 +115,7 @@ function default_options()
         presolve_track_time = true
         presolve_bt = true
         presolve_time_limit = 900
-        presolve_bt_max_iter = 10
+        presolve_bt_max_iter = 5
         presolve_bt_width_tol = 1e-3
         presolve_bt_output_tol = 1e-5
         presolve_bt_algo = 1
@@ -174,15 +174,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # Additional initial data  
     is_obj_linear_orig::Bool                                      # Boolean parameter for type of objective
-    
-    # (un-populated options for later use)
-    # A_orig::Any                                                 # Linear constraint matrix
-    # A_l_orig::Vector{Float64}                                   # Linear constraint matrix LHS
-    # A_u_orig::Vector{Float64}                                   # Linear constraint matrix RHS
-    # c_orig::Vector{Float64}                                     # Coefficient vector for linear objective
-    # num_lconstr_updated::Int                                    # Updated number of linear constraints - includes linear constraints added via @NLconstraint macro
-    # num_nlconstr_updated::Int                                   # Updated number of non-linear constraints
-    # indices_lconstr_updated::Vector{Int}                        # Indexes of updated linear constraints
 
     # Local solution model (extra data for each iteration)
     l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
@@ -261,7 +252,7 @@ MOI.get(m::Optimizer, ::NumberOfPresolveIterations) = m.logs[:bt_iter]
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
-MOI.get(m::Optimizer, ::MOI.SolveTime) = m.logs[:total_time]
+MOI.get(m::Optimizer, ::MOI.SolveTimeSec) = m.logs[:total_time]
 
 function get_option(m::Optimizer, s::Symbol)
     getproperty(m.options, s)
@@ -271,8 +262,8 @@ function set_option(m::Optimizer, s::Symbol, val)
     setproperty!(m.options, s, val)
 end
 
-function MOI.is_empty(model::Optimizer)
-    return iszero(model.num_var_orig)
+function MOI.is_empty(m::Optimizer)
+    return iszero(m.num_var_orig)
 end
 
 function MOI.empty!(m::Optimizer)
@@ -334,22 +325,26 @@ function MOI.empty!(m::Optimizer)
     m.best_abs_gap = Inf
     m.alpine_status = MOI.OPTIMIZE_NOT_CALLED
 
-    create_status!(m)
-    create_logs!(m)
+    Alp.create_status!(m)
+    Alp.create_logs!(m)
 end
 
+# """
+# Copy constructor for the optimizer
+# """
 MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
-
-function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; copy_names = false)
-    return MOIU.default_copy_to(model, src, copy_names)
+function MOI.copy_to(model::Optimizer, src::MOI.ModelLike)
+    return MOIU.default_copy_to(model, src)
 end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
+MOI.get(::Optimizer, ::MOI.SolverVersion) = "v0.3.0"
 
-function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
+function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     Alp.set_option(model, Symbol(param.name), value)
 end
-function MOI.get(model::Optimizer, param::MOI.RawParameter)
+
+function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
     Alp.get_option(model, Symbol(param.name))
 end
 
@@ -370,6 +365,7 @@ function MOI.supports(::Optimizer, ::MOI.VariablePrimalStart,
                       ::Type{MOI.VariableIndex})
     return true
 end
+
 function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart,
                  vi::MOI.VariableIndex, value::Union{Real, Nothing})
     model.best_sol[vi.value] = model.initial_warmval[vi.value] = something(value, 0.0)
@@ -378,7 +374,7 @@ end
 
 const SCALAR_SET = Union{MOI.EqualTo{Float64}, MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.Interval{Float64}}
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{<:SCALAR_SET}) = true
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:SCALAR_SET}) = true
 
 _lower(set::MOI.EqualTo) = set.value
 _upper(set::MOI.EqualTo) = set.value
@@ -389,7 +385,7 @@ _upper(set::MOI.GreaterThan) = nothing
 _lower(set::MOI.Interval) = set.lower
 _upper(set::MOI.Interval) = set.upper
 
-function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR_SET)
+function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::SCALAR_SET)
     vi = f.variable
     l = _lower(set)
     if l !== nothing
@@ -402,15 +398,15 @@ function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR
     return MOI.ConstraintIndex{typeof(f), typeof(set)}(vi.value)
 end
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.Integer}) = true
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.Integer}) = true
 
-function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.Integer)
+function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::MOI.Integer)
     model.var_type_orig[f.variable.value] = :Int
     return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.variable.value)
 end
-MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.ZeroOne}) = true
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.ZeroOne}) = true
 
-function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.ZeroOne)
+function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::MOI.ZeroOne)
     model.var_type_orig[f.variable.value] = :Bin
     return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.variable.value)
 end
@@ -422,7 +418,7 @@ function MOI.add_constraint(model::Optimizer, f::Union{MOI.ScalarAffineFunction{
     push!(model.constraint_bounds_orig, MOI.NLPBoundsPair(something(_lower(set), -Inf), something(_upper(set), Inf)))
     iszero(f.constant) || throw(MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(set)}(f.constant))
     push!(model.lin_quad_constraints, (copy(f), copy(set)))
-    push!(model.constr_expr_orig, _constraint_expr(_moi_function_to_expr(f), set))
+    push!(model.constr_expr_orig, Alp._constraint_expr(Alp._moi_function_to_expr(f), set))
     if f isa MOI.ScalarAffineFunction
         model.num_lconstr_orig += 1
         push!(model.constr_structure, :generic_linear)
@@ -487,11 +483,11 @@ function load!(m::Optimizer)
 
     # Collect objective & constraint expressions
     if m.has_nl_objective
-        m.obj_expr_orig = expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
+        m.obj_expr_orig = Alp.expr_isolate_const(Alp._variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
     elseif m.objective_function isa Nothing
         m.obj_expr_orig = Expr(:call, :+)
     else
-        m.obj_expr_orig = _moi_function_to_expr(m.objective_function)
+        m.obj_expr_orig = Alp._moi_function_to_expr(m.objective_function)
     end
 
     # Collect original variable type and build dynamic variable type space
@@ -507,7 +503,7 @@ function load!(m::Optimizer)
     m.num_nlconstr_orig += length(m.nl_constraint_bounds_orig)
     append!(m.constraint_bounds_orig, m.nl_constraint_bounds_orig)
     for i in eachindex(m.nl_constraint_bounds_orig)
-        push!(m.constr_expr_orig, _variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
+        push!(m.constr_expr_orig, Alp._variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
         push!(m.constr_structure, :generic_nonlinear)
     end
 
@@ -533,15 +529,15 @@ function load!(m::Optimizer)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
     # populate data to create the bounding model
-    recategorize_var(m)             # Initial round of variable re-categorization
+    Alp.recategorize_var(m)             # Initial round of variable re-categorization
 
     :Int in m.var_type_orig && error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
     :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) : Alp.set_option(m, :int_enable, false) # Separator for safer runs
 
     # Conduct solver-dependent detection
-    fetch_mip_solver_identifier(m)
-    (Alp.get_option(m, :nlp_solver) !== nothing) && (fetch_nlp_solver_identifier(m))
-    (Alp.get_option(m, :minlp_solver) !== nothing) && (fetch_minlp_solver_identifier(m))
+    Alp.fetch_mip_solver_identifier(m)
+    (Alp.get_option(m, :nlp_solver) !== nothing)   && (Alp.fetch_nlp_solver_identifier(m))
+    (Alp.get_option(m, :minlp_solver) !== nothing) && (Alp.fetch_minlp_solver_identifier(m))
 
     # Solver Dependent Options
     if m.mip_solver_id != :Gurobi
@@ -570,13 +566,13 @@ function load!(m::Optimizer)
     end
 
     # Initialize the solution pool
-    m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
+    m.bound_sol_pool = Alp.initialize_solution_pool(m, 0)  # Initialize the solution pool
 
     # Check if any illegal term exist in the warm-solution
     any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
 
     # Initialize log
-    logging_summary(m)
+    Alp.logging_summary(m)
 
     return
 end
@@ -586,10 +582,20 @@ function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableInd
 
     MOI.check_result_index_bounds(model, attr)
     MOI.throw_if_not_valid(model, vi)
-    return model.best_sol[vi.value]
     
+    return model.best_sol[vi.value]
 end
 
 MOI.get(model::Optimizer, ::MOI.ResultCount) = model.alpine_status == MOI.OPTIMIZE_NOT_CALLED ? 0 : 1
 
 MOI.is_valid(model::Alpine.Optimizer, vi::MOI.VariableIndex) = 1 <= vi.value <= model.num_var_orig
+
+
+# (un-populated Optimizer struct options for later use)
+# A_orig::Any                                                 # Linear constraint matrix
+# A_l_orig::Vector{Float64}                                   # Linear constraint matrix LHS
+# A_u_orig::Vector{Float64}                                   # Linear constraint matrix RHS
+# c_orig::Vector{Float64}                                     # Coefficient vector for linear objective
+# num_lconstr_updated::Int                                    # Updated number of linear constraints - includes linear constraints added via @NLconstraint macro
+# num_nlconstr_updated::Int                                   # Updated number of non-linear constraints
+# indices_lconstr_updated::Vector{Int}                        # Indexes of updated linear constraints

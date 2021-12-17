@@ -1,5 +1,11 @@
 # Alpine.jl Change Log
 
+## v0.3.0
+- Support for JuMP v0.22 and MOI 0.10+ 
+- Default `presolve_bt_max_iter` updated to 5 iterations (from 10)
+- Typos fixed in warn/error messages
+- Dropped support for redundant `run_bounding_iteration` function 
+
 ## v0.2.7
 - Support for module shortcut `Alp` in function calls
 - Solver options clean up in `examples` folder

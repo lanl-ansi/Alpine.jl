@@ -1,0 +1,9 @@
+2 2
+cap 1 952
+cap 2 48
+dem 1 787
+dem 2 213
+cost 1 1 91
+cost 1 2 67
+cost 2 1 98
+cost 2 2 52

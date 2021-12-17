@@ -1,4 +1,5 @@
-# Taken from MatrixOptInterface.jl
+# Source: MatrixOptInterface.jl
+
 @enum ConstraintSense EQUAL_TO GREATER_THAN LESS_THAN INTERVAL
 _sense(::Type{<:MOI.EqualTo}) = EQUAL_TO
 _sense(::Type{<:MOI.LessThan}) = LESS_THAN
