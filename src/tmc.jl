@@ -108,8 +108,8 @@ function amp_post_tmc_λ(m::JuMP.Model, λ::Dict, lb::Dict, ub::Dict, dim::Int, 
 end
 
 function amp_post_tmc_monomial_mc(m::JuMP.Model, idx_aa::Int, λ::Dict, λX::Dict, LB::Dict, UB::Dict, dim::Int, idx_a::Int)
-    JuMP.@constraint(m, _index_to_variable_ref(m, idx_aa) >= _index_to_variable_ref(m, idx_a)^(2))
-    JuMP.@constraint(m, _index_to_variable_ref(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(Matrix(Diagonal(LB[idx_a])), UB[idx_a])))
+    JuMP.@constraint(m, Alp._index_to_variable_ref(m, idx_aa) >= Alp._index_to_variable_ref(m, idx_a)^(2))
+    JuMP.@constraint(m, Alp._index_to_variable_ref(m, idx_aa) <= dot(λX[(idx_a,idx_a)],LB[idx_a]) + dot(λX[(idx_a,idx_a)],UB[idx_a]) - dot(λ[idx_a], *(Matrix(Diagonal(LB[idx_a])), UB[idx_a])))
 
     return
 end

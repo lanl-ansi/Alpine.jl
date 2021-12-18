@@ -18,7 +18,7 @@ bounding_solve
 create_bounding_mip
 pick_disc_vars
 fix_domains
-min_vertex_cover
+get_min_vertex_cover_vars
 ```
 
 ## Presolve Methods

@@ -10,6 +10,107 @@ const STATUS_INF = [
     MOI.INFEASIBLE, MOI.LOCALLY_INFEASIBLE
 ]
 
+function load!(m::Optimizer)
+   # Initialize NLP interface
+   MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
+
+   # Collect objective & constraint expressions
+   if m.has_nl_objective
+       m.obj_expr_orig = Alp.expr_isolate_const(Alp._variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
+   elseif m.objective_function isa Nothing
+       m.obj_expr_orig = Expr(:call, :+)
+   else
+       m.obj_expr_orig = Alp._moi_function_to_expr(m.objective_function)
+   end
+
+   # Collect original variable type and build dynamic variable type space
+   m.var_type = copy(m.var_type_orig)
+   m.int_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Int]
+   m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
+
+   if !isempty(m.int_vars) || !isempty(m.bin_vars)
+       (Alp.get_option(m, :minlp_solver) === nothing) && (error("No MINLP local solver specified; use option 'minlp_solver' to specify a MINLP local solver"))
+   end
+
+   m.num_constr_orig += length(m.nl_constraint_bounds_orig)
+   m.num_nlconstr_orig += length(m.nl_constraint_bounds_orig)
+   append!(m.constraint_bounds_orig, m.nl_constraint_bounds_orig)
+   for i in eachindex(m.nl_constraint_bounds_orig)
+       push!(m.constr_expr_orig, Alp._variable_index_to_index(MOI.constraint_expr(m.d_orig, i)))
+       push!(m.constr_structure, :generic_nonlinear)
+   end
+
+   # Summarize constraints information in original model
+   m.constr_type_orig = Array{Symbol}(undef, m.num_constr_orig)
+
+   for i in 1:m.num_constr_orig
+       if m.constraint_bounds_orig[i].lower > -Inf && m.constraint_bounds_orig[i].upper < Inf
+           m.constr_type_orig[i] = :(==)
+       elseif m.constraint_bounds_orig[i].lower > -Inf
+           m.constr_type_orig[i] = :(>=)
+       else
+           m.constr_type_orig[i] = :(<=)
+       end
+   end
+
+   # Initialize recognizable structure properties with :none
+   m.obj_structure = :none
+
+   @assert m.num_constr_orig == m.num_nlconstr_orig + m.num_lconstr_orig
+   m.is_obj_linear_orig = !m.has_nl_objective && m.objective_function isa MOI.ScalarAffineFunction{Float64}
+   m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
+   isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
+
+   # populate data to create the bounding model
+   Alp.recategorize_var(m)             # Initial round of variable re-categorization
+
+   :Int in m.var_type_orig && error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
+   :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) : Alp.set_option(m, :int_enable, false) # Separator for safer runs
+
+   # Conduct solver-dependent detection
+   Alp.fetch_mip_solver_identifier(m)
+   (Alp.get_option(m, :nlp_solver) !== nothing)   && (Alp.fetch_nlp_solver_identifier(m))
+   (Alp.get_option(m, :minlp_solver) !== nothing) && (Alp.fetch_minlp_solver_identifier(m))
+
+   # Solver Dependent Options
+   if m.mip_solver_id != :Gurobi
+       Alp.get_option(m, :convhull_warmstart) == false
+       Alp.get_option(m, :convhull_no_good_cuts) == false
+   end
+
+   # Main Algorithmic Initialization
+   Alp.process_expr(m)                         # Compact process of every expression
+   Alp.init_tight_bound(m)                     # Initialize bounds for algorithmic processes
+   Alp.resolve_var_bounds(m)                   # resolve lifted var bounds
+   Alp.pick_disc_vars(m)                       # Picking variables to be discretized
+   Alp.init_disc(m)                            # Initialize discretization dictionaries
+
+   # Turn-on bt presolve if variables are not discrete
+   if isempty(m.int_vars) && length(m.bin_vars) <= 50 && m.num_var_orig <= 10000 && length(m.candidate_disc_vars)<=300 && Alp.get_option(m, :presolve_bt) === nothing
+       Alp.set_option(m, :presolve_bt, true)
+       println("Automatically turning on bound-tightening presolve")
+   elseif Alp.get_option(m, :presolve_bt) === nothing  # If no use indication
+       Alp.set_option(m, :presolve_bt, false)
+   end
+
+   if length(m.bin_vars) > 200 || m.num_var_orig > 2000
+       println("Automatically turning OFF 'disc_ratio_branch' due to the size of the problem")
+       Alp.set_option(m, :disc_ratio_branch, false)
+   end
+
+   # Initialize the solution pool
+   m.bound_sol_pool = Alp.initialize_solution_pool(m, 0)  # Initialize the solution pool
+
+   # Check if any illegal term exists in the warm-start solution
+   any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
+
+   # Initialize log
+   Alp.logging_summary(m)
+
+   return
+end
+
+
 """
    High-level Function
 """
@@ -78,7 +179,7 @@ function presolve(m::Optimizer)
       
       Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
       
-      Alp.get_option(m, :disc_ratio_branch) && (Alp.set_option(m, :disc_ratio, update_disc_ratio(m, true)))
+      Alp.get_option(m, :disc_ratio_branch) && (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
       
       Alp.add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
 
@@ -88,7 +189,7 @@ function presolve(m::Optimizer)
       
       Alp.bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
       
-      (Alp.get_option(m, :disc_ratio_branch)) && (Alp.set_option(m, :disc_ratio, update_disc_ratio(m, true)))
+      (Alp.get_option(m, :disc_ratio_branch)) && (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
       
       Alp.get_option(m, :presolve_bt) && init_disc(m)
 
@@ -108,6 +209,7 @@ function presolve(m::Optimizer)
    m.logs[:time_left] -= m.logs[:presolve_time]
    # (Alp.get_option(m, :log_level) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
    (Alp.get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s")
+   
    return
 end
 
@@ -246,7 +348,7 @@ function local_solve(m::Optimizer; presolve = false)
          error("Provide a valid MINLP solver")
          # do_heuristic = true
       else
-         set_variable_type(local_solve_model, x, m.var_type_orig)
+         Alp.set_variable_type(local_solve_model, x, m.var_type_orig)
       end
    end
 
@@ -298,6 +400,7 @@ function local_solve(m::Optimizer; presolve = false)
          @warn " Warning: NLP local solve failure."
       end
       return
+
    end
 
    return
@@ -316,7 +419,7 @@ function bounding_solve(m::Optimizer)
    convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
 
    # Updates time metric and the termination bounds
-   set_mip_time_limit(m)
+   Alp.set_mip_time_limit(m)
    # update_boundstop_options(m)
 
    # ================= Solve Start ================ #
@@ -377,8 +480,9 @@ This function helps pick the variables for discretization. The method chosen dep
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
 there are two built-in options for users as follows:
 
+* `Default (Alp.get_option(m, :disc_var_pick)=2)`: pick a minimum vertex cover for variables involved in non-linear terms if the input problem has greater than 15 variables participating in nonlinear terms
 * `max_cover (Alp.get_option(m, :disc_var_pick)=0, default)`: pick all variables involved in the non-linear term for discretization
-* `min_vertex_cover (Alp.get_option(m, :disc_var_pick)=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+* `get_min_vertex_cover_vars (Alp.get_option(m, :disc_var_pick)=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
 For advanced usage, `Alp.get_option(m, :disc_var_pick)` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
 
@@ -391,18 +495,20 @@ function pick_disc_vars(m::Optimizer)
       # eval(Alp.get_option(m, :disc_var_pick))(m)
       disc_var_pick(m)
       length(m.disc_vars) == 0 && length(m.nonconvex_terms) > 0 && error("[USER FUNCTION] must select at least one variable to perform discretization for convexificiation purpose")
+
    elseif isa(disc_var_pick, Int)
       if disc_var_pick == 0
-         ncvar_collect_nodes(m)
+         Alp.get_all_candidate_vars(m)
       elseif disc_var_pick == 1
-         min_vertex_cover(m)
+         Alp.get_min_vertex_cover_vars(m)
       elseif disc_var_pick == 2
-         (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
+         (length(m.candidate_disc_vars) > 15) ? Alp.get_min_vertex_cover_vars(m) : Alp.get_all_candidate_vars(m)
       elseif disc_var_pick == 3 # Initial
-         (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) : ncvar_collect_nodes(m)
+         (length(m.candidate_disc_vars) > 15) ? Alp.get_min_vertex_cover_vars(m) : Alp.get_all_candidate_vars(m)
       else
          error("Unsupported default indicator for picking variables for discretization")
       end
+
    else
       error("Input for parameter :disc_var_pick is illegal. Should be either a Int for default methods indexes or functional inputs.")
    end

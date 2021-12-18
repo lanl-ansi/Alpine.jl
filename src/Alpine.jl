@@ -8,15 +8,16 @@ import LinearAlgebra as LA
 import Random
 import Statistics
 
+const _ALPINE_VERSION = "v0.3.0"
 const ALPINE_DEBUG = false
 const Alp = Alpine
 
 include("const.jl")
 
 # Engine for high-level algorithmic control and user-interface
-include("matrix_opt_interface.jl")
-include("moi_function2expr.jl")
 include("solver.jl")
+include("MOI_wrapper/MOI_wrapper.jl")
+include("MOI_wrapper/expressions.jl")
 
 # Engine for expression handling
 include("nlexpr.jl")

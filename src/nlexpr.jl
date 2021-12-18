@@ -226,7 +226,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
             push!(power, 1)
          elseif (expr.args[i].head == :call)
             scalar, var_idxs, power = Alp.expr_is_axn(expr.args[i], scalar, var_idxs, power)
-            scalar == nothing && return nothing, nothing, nothing
+            scalar === nothing && return nothing, nothing, nothing
          end
       end
    elseif expr.args[1] == :^
@@ -244,8 +244,8 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
    end
 
    # If the user wants a specific N
-   !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
-   (var_idxs == nothing) && (scalar == nothing) && (power == nothing) && return nothing, nothing, nothing # Unrecognized sub-structure
+   !(N === nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
+   (var_idxs === nothing) && (scalar === nothing) && (power === nothing) && return nothing, nothing, nothing # Unrecognized sub-structure
 
    @assert length(var_idxs) == length(power)
    return scalar, var_idxs, power
@@ -309,10 +309,10 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
    end
 
    if isa(expr, Number) # Capture any coefficients or right hand side
-      (bufferVal != nothing) ? bufferVal *= expr : bufferVal = expr * coef
+      (bufferVal !== nothing) ? bufferVal *= expr : bufferVal = expr * coef
       return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
    elseif expr in [:+, :-]    # TODO: what is this condition?
-      if bufferVal != nothing && bufferVar != nothing
+      if bufferVal !== nothing && bufferVar !== nothing
          push!(lhscoeffs, bufferVal)
          push!(lhsvars, bufferVar)
          bufferVal = 0.0
@@ -342,22 +342,22 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
    for i in start_pos:length(expr.args)
       lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_linear_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
       if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
-         if bufferVal != nothing && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
+         if bufferVal !== nothing && bufferVar !== nothing  # (sign) * (coef) * (var) => linear term
             push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)
             push!(lhsvars, bufferVar)
             bufferVal = nothing
             bufferVar = nothing
          end
-         if bufferVal != nothing && bufferVar == nothing  # (sign) * (coef) => right-hand-side term
+         if bufferVal !== nothing && bufferVar === nothing  # (sign) * (coef) => right-hand-side term
             rhs += sign*sign_convertor(expr, i)*bufferVal
             bufferVal = nothing
          end
-         if bufferVal == nothing && bufferVar != nothing && expr.args[1] == :+
+         if bufferVal === nothing && bufferVar !== nothing && expr.args[1] == :+
             push!(lhscoeffs, sign*1.0*coef)
             push!(lhsvars, bufferVar)
             bufferVar = nothing
          end
-         if bufferVal == nothing && bufferVar != nothing && expr.args[1] == :-
+         if bufferVal === nothing && bufferVar !== nothing && expr.args[1] == :-
             push!(lhscoeffs, sign*sign_convertor(expr, i)*coef)
             push!(lhsvars, bufferVar)
             bufferVar = nothing
@@ -368,7 +368,7 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
    end
 
    if level == 0
-      if bufferVal != nothing && bufferVar != nothing
+      if bufferVal !== nothing && bufferVar !== nothing
          push!(lhscoeffs, bufferVal)
          push!(lhsvars, bufferVar)
          bufferVal = nothing

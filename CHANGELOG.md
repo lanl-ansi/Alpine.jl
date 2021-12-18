@@ -5,6 +5,7 @@
 - Default `presolve_bt_max_iter` updated to 5 iterations (from 10)
 - Typos fixed in warn/error messages
 - Dropped support for redundant `run_bounding_iteration` function 
+- Some clean-up and re-org of types and MOI_wrapper functions
 
 ## v0.2.7
 - Support for module shortcut `Alp` in function calls

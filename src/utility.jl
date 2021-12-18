@@ -186,7 +186,7 @@ function fix_domains(m::Optimizer;discrete_sol=nothing, use_orig=false)
             end
          end
       elseif m.var_type[i] == :Bin || m.var_type[i] == :Int
-         if discrete_sol == nothing
+         if discrete_sol === nothing
             l_var[i] = round(m.best_bound_sol[i])
             u_var[i] = round(m.best_bound_sol[i])
          else
@@ -234,13 +234,13 @@ function get_active_partition_idx(discretization::Dict, val::Float64, idx::Int; 
 end
 
 """
-   ncvar_collect_nodes(m:Optimizer)
+   get_all_candidate_vars(m:Optimizer)
 
-A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
+A built-in method for selecting variables for discretization. This selects all candidate variables in the nonlinear terms.
 """
-function ncvar_collect_nodes(m::Optimizer;getoutput=false)
+function get_all_candidate_vars(m::Optimizer; getoutput=false)
 
-   # Pick variables that is bound width more than tolerance length
+   # Pick variables that has bound width more than tolerance length
    if getoutput
       return [i for i in m.candidate_disc_vars]
    else
@@ -335,8 +335,8 @@ end
 function build_discvar_graph(m::Optimizer)
 
    # Collect the information of nonlinear terms in terms of arcs and nodes
-   nodes = ncvar_collect_nodes(m, getoutput=true)
-   arcs = ncvar_collect_arcs(m, nodes)
+   nodes = Alp.get_all_candidate_vars(m, getoutput=true)
+   arcs = Alp.ncvar_collect_arcs(m, nodes)
 
    # Collect integer variables
    for i in 1:m.num_var_orig
@@ -353,13 +353,13 @@ function build_discvar_graph(m::Optimizer)
 end
 
 """
-   min_vertex_cover(m::Optimizer)
+   get_min_vertex_cover_vars(m::Optimizer)
 
-`min_vertex_cover` chooses the variables based on the minimum vertex cover algorithm for the interaction graph of 
+`get_min_vertex_cover_vars` chooses the variables based on the minimum vertex cover algorithm for the interaction graph of 
 nonlinear terms which are adaptively partitioned for global optimization. This option can be activated by 
 setting `disc_var_pick = 1`. 
 """
-function min_vertex_cover(m::Optimizer)
+function get_min_vertex_cover_vars(m::Optimizer)
 
    nodes, arcs = Alp.build_discvar_graph(m)
 

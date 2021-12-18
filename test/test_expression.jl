@@ -361,7 +361,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[4])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     @test alpine.bounding_constr_mip[1][:rhs] == 3.0
     @test alpine.bounding_constr_mip[1][:vars] == Any[:(x[1]), :(x[2]), :(x[3])]
@@ -385,7 +385,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[5])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi3(solver=test_solver, exprmode=3)
 
@@ -403,7 +403,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[5])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi4(solver=test_solver, exprmode=1)
 
@@ -415,7 +415,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[5])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     @test alpine.nonconvex_terms[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:id] == 1
     @test alpine.nonconvex_terms[[:(x[1]), :(x[2]), :(x[3]), :(x[4])]][:lifted_var_ref] == :(x[5])
@@ -448,7 +448,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[7])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
 
     m = multi4(solver=test_solver, exprmode=3)
@@ -469,7 +469,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[6])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi4(solver=test_solver, exprmode=4)
 
@@ -488,13 +488,13 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[6])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     @test alpine.bounding_obj_mip[:rhs] == 0
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[6])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi4(solver=test_solver, exprmode=5)
 
@@ -516,13 +516,13 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[7])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     @test alpine.bounding_obj_mip[:rhs] == 0
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[7])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi4(solver=test_solver, exprmode=6)
 
@@ -541,7 +541,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[6])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi4(solver=test_solver, exprmode=7)
 
@@ -564,7 +564,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[7])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
 
     m = multi4(solver=test_solver, exprmode=8)
@@ -585,7 +585,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[6])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
 
     m = multi4(solver=test_solver, exprmode=9)
@@ -605,7 +605,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[6])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi4(solver=test_solver, exprmode=10)
 
@@ -627,7 +627,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[7])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 
     m = multi4(solver=test_solver, exprmode=11)
 
@@ -650,7 +650,7 @@ end
     @test alpine.bounding_obj_mip[:vars] == Expr[:(x[7])]
     @test alpine.bounding_obj_mip[:coefs] == [1.0]
     @test alpine.bounding_obj_mip[:cnt] == 1
-    @test alpine.bounding_obj_mip[:sense] == nothing
+    @test alpine.bounding_obj_mip[:sense] === nothing
 end
 
 @testset "Expression Parsing || bilinear || Complex-div || div.jl" begin
@@ -1008,7 +1008,7 @@ end
         @test alpine.nonlinear_constrs[0][:convex_type] == :convexA
         @test alpine.nonlinear_constrs[0][:convexified] == false
 
-        @test alpine.bounding_obj_mip[:sense] == nothing
+        @test alpine.bounding_obj_mip[:sense] === nothing
         @test alpine.bounding_obj_mip[:coefs] == [1.0, 1.0]
         @test alpine.bounding_obj_mip[:vars] == [:(x[1]), :(x[3])]
         @test alpine.bounding_obj_mip[:rhs] == 0.0
