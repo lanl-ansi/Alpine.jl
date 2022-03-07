@@ -53,7 +53,7 @@ mutable struct OptimizerOptions
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
     presolve_time_limit::Float64                                # Time limit for presolving (seconds)
-    presolve_bt_max_iter::Int                                   # Maximum iterations allowed to perform presolve 
+    presolve_bt_max_iter::Int                                   # Maximum iterations allowed to perform presolve
     presolve_bt_width_tol::Float64                              # Width tolerance for bound-tightening
     presolve_bt_output_tol::Float64                             # Variable bounds truncation tol (change to precision)
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
@@ -67,7 +67,7 @@ mutable struct OptimizerOptions
     # Features for Integer Problems (NOTE: no support for int-lin problems)
     int_enable::Bool                                            # Convert integer problem into binary problem
     int_cumulative_disc::Bool                                   #  Cumulatively involve integer variables for discretization
-    
+
 end
 
 function default_options()
@@ -172,9 +172,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     has_nl_objective::Bool
     objective_function::Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
 
-    # Additional initial data  
+    # Additional initial data
     is_obj_linear_orig::Bool                                      # Boolean parameter for type of objective
-    
+
     # (un-populated options for later use)
     # A_orig::Any                                                 # Linear constraint matrix
     # A_l_orig::Vector{Float64}                                   # Linear constraint matrix LHS
@@ -261,7 +261,7 @@ MOI.get(m::Optimizer, ::NumberOfPresolveIterations) = m.logs[:bt_iter]
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
-MOI.get(m::Optimizer, ::MOI.SolveTime) = m.logs[:total_time]
+MOI.get(m::Optimizer, ::MOI.SolveTimeSec) = m.logs[:total_time]
 
 function get_option(m::Optimizer, s::Symbol)
     getproperty(m.options, s)
@@ -338,18 +338,18 @@ function MOI.empty!(m::Optimizer)
     create_logs!(m)
 end
 
-MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
+MOI.supports_incremental_interface(::Optimizer) = true
 
-function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; copy_names = false)
-    return MOIU.default_copy_to(model, src, copy_names)
+function MOI.copy_to(model::Optimizer, src::MOI.ModelLike)
+    return MOIU.default_copy_to(model, src)
 end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
 
-function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
+function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     Alp.set_option(model, Symbol(param.name), value)
 end
-function MOI.get(model::Optimizer, param::MOI.RawParameter)
+function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
     Alp.get_option(model, Symbol(param.name))
 end
 
@@ -378,7 +378,7 @@ end
 
 const SCALAR_SET = Union{MOI.EqualTo{Float64}, MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.Interval{Float64}}
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{<:SCALAR_SET}) = true
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:SCALAR_SET}) = true
 
 _lower(set::MOI.EqualTo) = set.value
 _upper(set::MOI.EqualTo) = set.value
@@ -389,8 +389,7 @@ _upper(set::MOI.GreaterThan) = nothing
 _lower(set::MOI.Interval) = set.lower
 _upper(set::MOI.Interval) = set.upper
 
-function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR_SET)
-    vi = f.variable
+function MOI.add_constraint(model::Optimizer, vi::MOI.VariableIndex, set::SCALAR_SET)
     l = _lower(set)
     if l !== nothing
         model.l_var_orig[vi.value] = l
@@ -399,20 +398,20 @@ function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::SCALAR
     if u !== nothing
         model.u_var_orig[vi.value] = u
     end
-    return MOI.ConstraintIndex{typeof(f), typeof(set)}(vi.value)
+    return MOI.ConstraintIndex{typeof(vi),typeof(set)}(vi.value)
 end
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.Integer}) = true
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.Integer}) = true
 
-function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.Integer)
-    model.var_type_orig[f.variable.value] = :Int
-    return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.variable.value)
+function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::MOI.Integer)
+    model.var_type_orig[f.value] = :Int
+    return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.value)
 end
-MOI.supports_constraint(::Optimizer, ::Type{MOI.SingleVariable}, ::Type{MOI.ZeroOne}) = true
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.ZeroOne}) = true
 
-function MOI.add_constraint(model::Optimizer, f::MOI.SingleVariable, set::MOI.ZeroOne)
-    model.var_type_orig[f.variable.value] = :Bin
-    return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.variable.value)
+function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::MOI.ZeroOne)
+    model.var_type_orig[f.value] = :Bin
+    return MOI.ConstraintIndex{typeof(f), typeof(set)}(f.value)
 end
 
 MOI.supports_constraint(model::Optimizer, ::Type{<:Union{MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}}, ::Type{<:SCALAR_SET}) = true
@@ -587,7 +586,7 @@ function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableInd
     MOI.check_result_index_bounds(model, attr)
     MOI.throw_if_not_valid(model, vi)
     return model.best_sol[vi.value]
-    
+
 end
 
 MOI.get(model::Optimizer, ::MOI.ResultCount) = model.alpine_status == MOI.OPTIMIZE_NOT_CALLED ? 0 : 1

@@ -4,8 +4,7 @@ module Alpine
 
 using JuMP
 
-import LinearAlgebra as LA
-import Random
+import LinearAlgebra: dot, Diagonal
 import Statistics
 
 const ALPINE_DEBUG = false
@@ -29,7 +28,7 @@ include("amp.jl")
 include("embedding.jl")
 include("heuristics.jl")
 
-# Convexification 
+# Convexification
 include("multi.jl")
 include("tmc.jl")
 

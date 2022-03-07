@@ -78,7 +78,7 @@ function run_bounding_iteration(m::Optimizer)
    return
 end
 
-"""   
+"""
    presolve(m::Optimizer)
 """
 function presolve(m::Optimizer)
@@ -93,33 +93,33 @@ function presolve(m::Optimizer)
    if m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT
 
       Alp.get_option(m, :log_level) > 0 && println("  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))")
-      
+
       bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-      
+
       Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
-      
+
       Alp.get_option(m, :disc_ratio_branch) && (Alp.set_option(m, :disc_ratio, update_disc_ratio(m, true)))
-      
+
       Alp.add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
 
    elseif m.status[:local_solve] in STATUS_INF
 
       (Alp.get_option(m, :log_level) > 0) && println("  Bound tightening without objective bounds (OBBT)")
-      
+
       bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-      
+
       (Alp.get_option(m, :disc_ratio_branch)) && (Alp.set_option(m, :disc_ratio, update_disc_ratio(m, true)))
-      
+
       Alp.get_option(m, :presolve_bt) && init_disc(m)
 
    elseif m.status[:local_solve] == MOI.INVALID_MODEL
-      
+
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n This may come from Ipopt's `:Not_Enough_Degrees_Of_Freedom`. \n Consider more replace equality constraints with >= and <= to resolve this."
-   
+
    else
-      
+
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve])."
-   
+
    end
 
    cputime_presolve = time() - start_presolve
@@ -185,8 +185,7 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
     for i in eachindex(x)
         set = Alp._bound_set(l_var[i], u_var[i])
         if set !== nothing
-            fx = MOI.SingleVariable(x[i])
-            MOI.add_constraint(model, fx, set)
+            MOI.add_constraint(model, x[i], set)
         end
     end
     for (func, set) in m.lin_quad_constraints
@@ -203,11 +202,10 @@ end
 
 function set_variable_type(model::MOI.ModelLike, xs, variable_types)
     for (x, variable_type) in zip(xs, variable_types)
-        fx = MOI.SingleVariable(x)
         if variable_type == :Int
-            MOI.add_constraint(model, fx, MOI.Integer())
+            MOI.add_constraint(model, x, MOI.Integer())
         elseif variable_type == :Bin
-            MOI.add_constraint(model, fx, MOI.ZeroOne())
+            MOI.add_constraint(model, x, MOI.ZeroOne())
         else
             @assert variable_type == :Cont
         end
@@ -347,10 +345,10 @@ function bounding_solve(m::Optimizer)
    # ================= Solve End ================ #
 
    if status in STATUS_OPT || status in STATUS_LIMIT
-      
+
       candidate_bound = (status == MOI.OPTIMAL) ? JuMP.objective_value(m.model_mip) : JuMP.objective_bound(m.model_mip)
       candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
-      
+
       # Experimental code
       Alp.measure_relaxed_deviation(m, sol=candidate_bound_sol)
       if Alp.get_option(m, :disc_consecutive_forbid) > 0
@@ -363,11 +361,11 @@ function bounding_solve(m::Optimizer)
          m.status[:bounding_solve] = status
          m.detected_bound = true
       end
-      
+
       # collect_lb_pool(m)    # Collect a pool of sub-optimal solutions - currently implemented for Gurobi only
 
    elseif status in STATUS_INF || status == MOI.INFEASIBLE_OR_UNBOUNDED
-      
+
       push!(m.logs[:bound], "-")
       m.status[:bounding_solve] = MOI.INFEASIBLE
       @warn "  Warning: Infeasibility detected in the MIP solver"
@@ -377,7 +375,7 @@ function bounding_solve(m::Optimizer)
       end
 
    elseif status == :Unbounded
-      
+
       m.status[:bounding_solve] = MOI.DUAL_INFEASIBLE
       @warn "  Warning: MIP solver returns unbounded"
 
@@ -403,7 +401,7 @@ For advanced usage, `Alp.get_option(m, :disc_var_pick)` allows `::Function` inpu
 
 """
 function pick_disc_vars(m::Optimizer)
-   
+
    disc_var_pick = Alp.get_option(m, :disc_var_pick)
 
    if isa(disc_var_pick, Function)

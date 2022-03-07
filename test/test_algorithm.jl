@@ -303,7 +303,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 18
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 18
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/nlp3.jl " begin
@@ -320,7 +320,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 14
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 14
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/castro2m2.jl " begin
@@ -337,7 +337,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 8
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 8
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi3N.jl exprmode=2" begin
@@ -354,7 +354,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 16
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 16
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi3N.jl exprmode=2" begin
@@ -371,7 +371,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 20
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 20
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=1" begin
@@ -388,7 +388,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 12
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 12
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=2" begin
@@ -405,7 +405,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 20
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 20
 end
 
 @testset " Validation Test || AMP || DISC-RATIO-BRANCH || examples/multi4N.jl exprmode=2" begin
@@ -422,7 +422,7 @@ end
     optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test MOI.get(m, MOI.RawParameter("disc_ratio")) == 20
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 20
 end
 
 @testset "Operator :: bmpl && binlin && binprod solve test I" begin
@@ -502,7 +502,7 @@ end
 end
 
 # FIXME Pavito terminates with `NUMERICAL_ERROR` on Julia v1.0 in Mac OS (travis)
-# However, this runs fine in CPLEX. 
+# However, this runs fine in CPLEX.
 # @testset "Embedding Test || AMP || special problem || ... " begin
 #     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
 #                            "mip_solver" => PAVITO,
