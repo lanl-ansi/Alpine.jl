@@ -42,8 +42,8 @@ end
 
 # Perform Tests
 @testset "Alpine tests" begin
-    include("$(alpine_dir)/test/test_solver.jl")
-    include("$(alpine_dir)/test/test_expression.jl")
-    include("$(alpine_dir)/test/test_algorithm.jl")
-    include("$(alpine_dir)/test/test_utility.jl")
+    include(joinpath(@__DIR__, "test_solver.jl"))
+    include(joinpath(@__DIR__, "test_expression.jl"))
+    include(joinpath(@__DIR__, "test_algorithm.jl"))
+    include(joinpath(@__DIR__, "test_utility.jl"))
 end

@@ -259,6 +259,20 @@ MOI.is_set_by_optimize(::NumberOfPresolveIterations) = true
 MOI.get(m::Optimizer, ::NumberOfPresolveIterations) = m.logs[:bt_iter]
 
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
+
+function MOI.get(m::Optimizer, attr::MOI.PrimalStatus)
+    if attr.result_index != 1
+        return MOI.NO_SOLUTION
+    elseif m.alpine_status == MOI.OPTIMAL
+        return MOI.FEASIBLE_POINT
+    elseif m.alpine_status == MOI.LOCALLY_SOLVED
+        return MOI.FEASIBLE_POINT
+    end
+    return MOI.NO_SOLUTION
+end
+
+MOI.get(::Optimizer, ::MOI.PrimalStatus) = MOI.NO_SOLUTION
+
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
 MOI.get(m::Optimizer, ::MOI.SolveTimeSec) = m.logs[:total_time]
