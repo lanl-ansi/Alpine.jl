@@ -21,14 +21,6 @@ const MOI = MathOptInterface
 
 const IPOPT   = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes", "max_iter" => 9999)
 const CBC     = optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
-# function CBC()
-#     model = MOI.Utilities.CachingOptimizer(
-#         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
-#         MOI.instantiate(Cbc.Optimizer; with_bridge_type = Float64),
-#     )
-#     MOI.set(model, MOI.Silent(), true)
-#     return model
-# end
 const JUNIPER = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "nl_solver" => IPOPT)
 const PAVITO  = optimizer_with_attributes(Pavito.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "cont_solver" => IPOPT, "mip_solver_drives" => false)
 

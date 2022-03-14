@@ -85,8 +85,8 @@ end
 
 @testset "Utility Function Tests: check_solution_history test" begin
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
-    "nlp_solver" => IPOPT,  
+    test_solver=optimizer_with_attributes(Alpine.Optimizer,
+    "nlp_solver" => IPOPT,
     "mip_solver" => PAVITO,
     "presolve_bt" => false,
     "disc_ratio" => 8,
@@ -97,8 +97,8 @@ end
 
     Alpine.print_solution_values(m1)
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
-    "nlp_solver" => IPOPT,  
+    test_solver=optimizer_with_attributes(Alpine.Optimizer,
+    "nlp_solver" => IPOPT,
     "mip_solver" => PAVITO,
     "presolve_bt" => false,
     "disc_ratio" => 8,
