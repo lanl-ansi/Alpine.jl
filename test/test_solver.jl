@@ -33,7 +33,7 @@ end
     @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
     @test length(alpine.candidate_disc_vars) == 8
     @test length(alpine.disc_vars) == 8
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 0
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Select all NL variable
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
@@ -52,7 +52,7 @@ end
     @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
     @test length(alpine.candidate_disc_vars) == 8
     @test length(alpine.disc_vars) == 8
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 2
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 2
 
     # Minimum vertex cover algorithm
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
@@ -71,7 +71,7 @@ end
     @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
     @test length(alpine.candidate_disc_vars) == 8
     @test length(alpine.disc_vars) == 3
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 1
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Adaptive variable selection scheme :: disc_var_pick = 3
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
@@ -89,7 +89,7 @@ end
     @test isapprox(JuMP.objective_value(m), 7049.2478976; atol=1e-3)
     @test length(alpine.candidate_disc_vars) == 8
     @test length(alpine.disc_vars) == 8
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 3
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 3
 end
 
 @testset "Partitioning variable selection tests :: castro2m2" begin
@@ -113,7 +113,7 @@ end
 
     @test length(alpine.candidate_disc_vars) == 10
     @test length(alpine.disc_vars) == 10
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 0
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Select minimum vertex cover
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
@@ -133,7 +133,7 @@ end
     @test JuMP.objective_value(m) <= 470.3176
     @test length(alpine.candidate_disc_vars) == 10
     @test length(alpine.disc_vars) == 4
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 1
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Criteria 15 static selection
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
@@ -154,7 +154,7 @@ end
 
     @test length(alpine.candidate_disc_vars) == 10
     @test length(alpine.disc_vars) == 10
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 2
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 2
 end
 
 @testset "Partitioning variable selection tests :: blend029" begin
@@ -175,7 +175,7 @@ end
     @test length(alpine.candidate_disc_vars) == 26
     @test Set(alpine.candidate_disc_vars) == Set([26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60])
     @test length(alpine.disc_vars) == 26
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 0
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Minimum vertex cover
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
@@ -194,7 +194,7 @@ end
     @test length(alpine.candidate_disc_vars) == 26
     @test Set(alpine.candidate_disc_vars) == Set([26, 27, 29, 30, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60])
     @test length(alpine.disc_vars) == 10
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 1
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Adaptive Scheme vertex cover
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
@@ -214,7 +214,7 @@ end
     @test length(Set(alpine.candidate_disc_vars)) == 26
     # TODO provide a check to see if candidate_disc_vars are all covered
     @test length(alpine.disc_vars) == 10
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 2
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 2
 end
 
 @testset "Partitioning variable selection tests :: castro6m2" begin
@@ -239,7 +239,7 @@ end
     @test length(Set(alpine.candidate_disc_vars)) == 24
     @test length(alpine.disc_vars) == 12
     @test length(Set(alpine.disc_vars)) == 12
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 3
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 3
 
     # Dynamic Scheme step 2
     test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
@@ -261,7 +261,7 @@ end
     @test length(Set(alpine.candidate_disc_vars)) == 24
     @test length(alpine.disc_vars) == 12
     @test length(Set(alpine.disc_vars)) == 12
-    @test MOI.get(m, MOI.RawParameter("disc_var_pick")) == 3
+    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 3
 end
 
 @testset "Test getsolvetime for time tracking" begin

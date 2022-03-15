@@ -1,7 +1,7 @@
 using JuMP, MathOptInterface
 using LinearAlgebra
 using Ipopt
-using Cbc 
+using Cbc
 using Juniper
 import Pavito
 using GLPK
@@ -33,7 +33,9 @@ function _build(model::JuMP.Model)
 end
 
 # Perform Tests
-include("$(alpine_dir)/test/test_solver.jl")
-include("$(alpine_dir)/test/test_expression.jl")
-include("$(alpine_dir)/test/test_algorithm.jl")
-include("$(alpine_dir)/test/test_utility.jl")
+@testset "Alpine tests" begin
+    include(joinpath(@__DIR__, "test_solver.jl"))
+    include(joinpath(@__DIR__, "test_expression.jl"))
+    include(joinpath(@__DIR__, "test_algorithm.jl"))
+    include(joinpath(@__DIR__, "test_utility.jl"))
+end

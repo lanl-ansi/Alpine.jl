@@ -1,5 +1,3 @@
-import LinearAlgebra: dot, Diagonal
-
 function amp_post_mccormick(m::Optimizer; kwargs...)
 
     options = Dict(kwargs)

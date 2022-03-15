@@ -18,15 +18,15 @@ function _add_constant(expr::Expr, constant)
 end
 
 function _term_to_expr(t::MOI.ScalarAffineTerm)
-    return Expr(:call, :*, t.coefficient, _variable_index_to_expr(t.variable_index))
+    return Expr(:call, :*, t.coefficient, _variable_index_to_expr(t.variable))
 end
 
 function _term_to_expr(t::MOI.ScalarQuadraticTerm)
     coef = t.coefficient
-    if t.variable_index_1 == t.variable_index_2
+    if t.variable_1 == t.variable_2
         coef /= 2
     end
-    return Expr(:call, :*, coef, _variable_index_to_expr(t.variable_index_1), _variable_index_to_expr(t.variable_index_2))
+    return Expr(:call, :*, coef, _variable_index_to_expr(t.variable_1), _variable_index_to_expr(t.variable_2))
 end
 
 function _add_terms(expr::Expr, terms::Vector)
@@ -47,8 +47,8 @@ function _moi_function_to_expr(t::MOI.ScalarQuadraticTerm)
     return Expr(
         :call, :*,
         MOI.coefficient(t),
-        _variable_index_to_expr(t.variable_index_1),
-        _variable_index_to_expr(t.variable_index_2)
+        _variable_index_to_expr(t.variable_1),
+        _variable_index_to_expr(t.variable_2)
     )
 end
 
