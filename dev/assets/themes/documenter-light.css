@@ -2355,16 +2355,16 @@ fieldset[disabled] .button {
 .content ol:not([type]) {
   list-style-type: decimal; }
 
-.content ol:not([type]).is-lower-alpha {
+.content ol.is-lower-alpha:not([type]) {
   list-style-type: lower-alpha; }
 
-.content ol:not([type]).is-lower-roman {
+.content ol.is-lower-roman:not([type]) {
   list-style-type: lower-roman; }
 
-.content ol:not([type]).is-upper-alpha {
+.content ol.is-upper-alpha:not([type]) {
   list-style-type: upper-alpha; }
 
-.content ol:not([type]).is-upper-roman {
+.content ol.is-upper-roman:not([type]) {
   list-style-type: upper-roman; }
 
 .content ul {
@@ -3070,53 +3070,53 @@ fieldset[disabled] .button {
   margin-left: 0.25rem;
   margin-right: -0.375rem; }
 
-.tag:not(body).is-white, .docstring > section > a.docs-sourcelink:not(body).is-white, .content kbd:not(body).is-white {
+.tag.is-white:not(body), .docstring > section > a.docs-sourcelink.is-white:not(body), .content kbd.is-white:not(body) {
   background-color: white;
   color: #0a0a0a; }
 
-.tag:not(body).is-black, .docstring > section > a.docs-sourcelink:not(body).is-black, .content kbd:not(body).is-black {
+.tag.is-black:not(body), .docstring > section > a.docs-sourcelink.is-black:not(body), .content kbd.is-black:not(body) {
   background-color: #0a0a0a;
   color: white; }
 
-.tag:not(body).is-light, .docstring > section > a.docs-sourcelink:not(body).is-light, .content kbd:not(body).is-light {
+.tag.is-light:not(body), .docstring > section > a.docs-sourcelink.is-light:not(body), .content kbd.is-light:not(body) {
   background-color: whitesmoke;
   color: #363636; }
 
-.tag:not(body).is-dark, .docstring > section > a.docs-sourcelink:not(body).is-dark, .content kbd:not(body) {
+.tag.is-dark:not(body), .docstring > section > a.docs-sourcelink.is-dark:not(body), .content kbd:not(body) {
   background-color: #363636;
   color: whitesmoke; }
 
-.tag:not(body).is-primary, .docstring > section > a.docs-sourcelink:not(body), .content kbd:not(body).is-primary {
+.tag.is-primary:not(body), .docstring > section > a.docs-sourcelink:not(body), .content kbd.is-primary:not(body) {
   background-color: #4eb5de;
   color: #fff; }
 
-.tag:not(body).is-link, .docstring > section > a.docs-sourcelink:not(body).is-link, .content kbd:not(body).is-link {
+.tag.is-link:not(body), .docstring > section > a.docs-sourcelink.is-link:not(body), .content kbd.is-link:not(body) {
   background-color: #ac5118;
   color: #fff; }
 
-.tag:not(body).is-info, .docstring > section > a.docs-sourcelink:not(body).is-info, .content kbd:not(body).is-info {
+.tag.is-info:not(body), .docstring > section > a.docs-sourcelink.is-info:not(body), .content kbd.is-info:not(body) {
   background-color: #209cee;
   color: #fff; }
 
-.tag:not(body).is-success, .docstring > section > a.docs-sourcelink:not(body).is-success, .content kbd:not(body).is-success {
+.tag.is-success:not(body), .docstring > section > a.docs-sourcelink.is-success:not(body), .content kbd.is-success:not(body) {
   background-color: #22c35b;
   color: #fff; }
 
-.tag:not(body).is-warning, .docstring > section > a.docs-sourcelink:not(body).is-warning, .content kbd:not(body).is-warning {
+.tag.is-warning:not(body), .docstring > section > a.docs-sourcelink.is-warning:not(body), .content kbd.is-warning:not(body) {
   background-color: #ffdd57;
   color: rgba(0, 0, 0, 0.7); }
 
-.tag:not(body).is-danger, .docstring > section > a.docs-sourcelink:not(body).is-danger, .content kbd:not(body).is-danger {
+.tag.is-danger:not(body), .docstring > section > a.docs-sourcelink.is-danger:not(body), .content kbd.is-danger:not(body) {
   background-color: #da0b00;
   color: #fff; }
 
-.tag:not(body).is-normal, .docstring > section > a.docs-sourcelink:not(body).is-normal, .content kbd:not(body).is-normal {
+.tag.is-normal:not(body), .docstring > section > a.docs-sourcelink.is-normal:not(body), .content kbd.is-normal:not(body) {
   font-size: 0.75rem; }
 
-.tag:not(body).is-medium, .docstring > section > a.docs-sourcelink:not(body).is-medium, .content kbd:not(body).is-medium {
+.tag.is-medium:not(body), .docstring > section > a.docs-sourcelink.is-medium:not(body), .content kbd.is-medium:not(body) {
   font-size: 1rem; }
 
-.tag:not(body).is-large, .docstring > section > a.docs-sourcelink:not(body).is-large, .content kbd:not(body).is-large {
+.tag.is-large:not(body), .docstring > section > a.docs-sourcelink.is-large:not(body), .content kbd.is-large:not(body) {
   font-size: 1.25rem; }
 
 .tag:not(body) .icon:first-child:not(:last-child), .docstring > section > a.docs-sourcelink:not(body) .icon:first-child:not(:last-child), .content kbd:not(body) .icon:first-child:not(:last-child) {
@@ -3131,13 +3131,13 @@ fieldset[disabled] .button {
   margin-left: -0.375em;
   margin-right: -0.375em; }
 
-.tag:not(body).is-delete, .docstring > section > a.docs-sourcelink:not(body).is-delete, .content kbd:not(body).is-delete {
+.tag.is-delete:not(body), .docstring > section > a.docs-sourcelink.is-delete:not(body), .content kbd.is-delete:not(body) {
   margin-left: 1px;
   padding: 0;
   position: relative;
   width: 2em; }
 
-.tag:not(body).is-delete::before, .docstring > section > a.docs-sourcelink:not(body).is-delete::before, .content kbd:not(body).is-delete::before, .tag:not(body).is-delete::after, .docstring > section > a.docs-sourcelink:not(body).is-delete::after, .content kbd:not(body).is-delete::after {
+.tag.is-delete:not(body)::before, .docstring > section > a.docs-sourcelink.is-delete:not(body)::before, .content kbd.is-delete:not(body)::before, .tag.is-delete:not(body)::after, .docstring > section > a.docs-sourcelink.is-delete:not(body)::after, .content kbd.is-delete:not(body)::after {
   background-color: currentColor;
   content: "";
   display: block;
@@ -3147,21 +3147,21 @@ fieldset[disabled] .button {
   transform: translateX(-50%) translateY(-50%) rotate(45deg);
   transform-origin: center center; }
 
-.tag:not(body).is-delete::before, .docstring > section > a.docs-sourcelink:not(body).is-delete::before, .content kbd:not(body).is-delete::before {
+.tag.is-delete:not(body)::before, .docstring > section > a.docs-sourcelink.is-delete:not(body)::before, .content kbd.is-delete:not(body)::before {
   height: 1px;
   width: 50%; }
 
-.tag:not(body).is-delete::after, .docstring > section > a.docs-sourcelink:not(body).is-delete::after, .content kbd:not(body).is-delete::after {
+.tag.is-delete:not(body)::after, .docstring > section > a.docs-sourcelink.is-delete:not(body)::after, .content kbd.is-delete:not(body)::after {
   height: 50%;
   width: 1px; }
 
-.tag:not(body).is-delete:hover, .docstring > section > a.docs-sourcelink:not(body).is-delete:hover, .content kbd:not(body).is-delete:hover, .tag:not(body).is-delete:focus, .docstring > section > a.docs-sourcelink:not(body).is-delete:focus, .content kbd:not(body).is-delete:focus {
+.tag.is-delete:not(body):hover, .docstring > section > a.docs-sourcelink.is-delete:not(body):hover, .content kbd.is-delete:not(body):hover, .tag.is-delete:not(body):focus, .docstring > section > a.docs-sourcelink.is-delete:not(body):focus, .content kbd.is-delete:not(body):focus {
   background-color: #e8e8e8; }
 
-.tag:not(body).is-delete:active, .docstring > section > a.docs-sourcelink:not(body).is-delete:active, .content kbd:not(body).is-delete:active {
+.tag.is-delete:not(body):active, .docstring > section > a.docs-sourcelink.is-delete:not(body):active, .content kbd.is-delete:not(body):active {
   background-color: #dbdbdb; }
 
-.tag:not(body).is-rounded, .docstring > section > a.docs-sourcelink:not(body).is-rounded, .content kbd:not(body).is-rounded, #documenter .docs-sidebar form.docs-search > input.tag:not(body) {
+.tag.is-rounded:not(body), .docstring > section > a.docs-sourcelink.is-rounded:not(body), .content kbd.is-rounded:not(body), #documenter .docs-sidebar form.docs-search > input.tag:not(body) {
   border-radius: 290486px; }
 
 a.tag:hover, .docstring > section > a.docs-sourcelink:hover {
@@ -4144,53 +4144,53 @@ fieldset[disabled] .select select:hover {
   border-bottom-left-radius: 0;
   border-top-left-radius: 0; }
 
-.field.has-addons .control .button:not([disabled]):hover, .field.has-addons .control .button:not([disabled]).is-hovered,
+.field.has-addons .control .button:not([disabled]):hover, .field.has-addons .control .button.is-hovered:not([disabled]),
 .field.has-addons .control .input:not([disabled]):hover,
 .field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]):hover,
 #documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]):hover,
-.field.has-addons .control .input:not([disabled]).is-hovered,
-.field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]).is-hovered,
-#documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]).is-hovered,
+.field.has-addons .control .input.is-hovered:not([disabled]),
+.field.has-addons .control #documenter .docs-sidebar form.docs-search > input.is-hovered:not([disabled]),
+#documenter .docs-sidebar .field.has-addons .control form.docs-search > input.is-hovered:not([disabled]),
 .field.has-addons .control .select select:not([disabled]):hover,
-.field.has-addons .control .select select:not([disabled]).is-hovered {
+.field.has-addons .control .select select.is-hovered:not([disabled]) {
   z-index: 2; }
 
-.field.has-addons .control .button:not([disabled]):focus, .field.has-addons .control .button:not([disabled]).is-focused, .field.has-addons .control .button:not([disabled]):active, .field.has-addons .control .button:not([disabled]).is-active,
+.field.has-addons .control .button:not([disabled]):focus, .field.has-addons .control .button.is-focused:not([disabled]), .field.has-addons .control .button:not([disabled]):active, .field.has-addons .control .button.is-active:not([disabled]),
 .field.has-addons .control .input:not([disabled]):focus,
 .field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]):focus,
 #documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]):focus,
-.field.has-addons .control .input:not([disabled]).is-focused,
-.field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]).is-focused,
-#documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]).is-focused,
+.field.has-addons .control .input.is-focused:not([disabled]),
+.field.has-addons .control #documenter .docs-sidebar form.docs-search > input.is-focused:not([disabled]),
+#documenter .docs-sidebar .field.has-addons .control form.docs-search > input.is-focused:not([disabled]),
 .field.has-addons .control .input:not([disabled]):active,
 .field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]):active,
 #documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]):active,
-.field.has-addons .control .input:not([disabled]).is-active,
-.field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]).is-active,
-#documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]).is-active,
+.field.has-addons .control .input.is-active:not([disabled]),
+.field.has-addons .control #documenter .docs-sidebar form.docs-search > input.is-active:not([disabled]),
+#documenter .docs-sidebar .field.has-addons .control form.docs-search > input.is-active:not([disabled]),
 .field.has-addons .control .select select:not([disabled]):focus,
-.field.has-addons .control .select select:not([disabled]).is-focused,
+.field.has-addons .control .select select.is-focused:not([disabled]),
 .field.has-addons .control .select select:not([disabled]):active,
-.field.has-addons .control .select select:not([disabled]).is-active {
+.field.has-addons .control .select select.is-active:not([disabled]) {
   z-index: 3; }
 
-.field.has-addons .control .button:not([disabled]):focus:hover, .field.has-addons .control .button:not([disabled]).is-focused:hover, .field.has-addons .control .button:not([disabled]):active:hover, .field.has-addons .control .button:not([disabled]).is-active:hover,
+.field.has-addons .control .button:not([disabled]):focus:hover, .field.has-addons .control .button.is-focused:not([disabled]):hover, .field.has-addons .control .button:not([disabled]):active:hover, .field.has-addons .control .button.is-active:not([disabled]):hover,
 .field.has-addons .control .input:not([disabled]):focus:hover,
 .field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]):focus:hover,
 #documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]):focus:hover,
-.field.has-addons .control .input:not([disabled]).is-focused:hover,
-.field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]).is-focused:hover,
-#documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]).is-focused:hover,
+.field.has-addons .control .input.is-focused:not([disabled]):hover,
+.field.has-addons .control #documenter .docs-sidebar form.docs-search > input.is-focused:not([disabled]):hover,
+#documenter .docs-sidebar .field.has-addons .control form.docs-search > input.is-focused:not([disabled]):hover,
 .field.has-addons .control .input:not([disabled]):active:hover,
 .field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]):active:hover,
 #documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]):active:hover,
-.field.has-addons .control .input:not([disabled]).is-active:hover,
-.field.has-addons .control #documenter .docs-sidebar form.docs-search > input:not([disabled]).is-active:hover,
-#documenter .docs-sidebar .field.has-addons .control form.docs-search > input:not([disabled]).is-active:hover,
+.field.has-addons .control .input.is-active:not([disabled]):hover,
+.field.has-addons .control #documenter .docs-sidebar form.docs-search > input.is-active:not([disabled]):hover,
+#documenter .docs-sidebar .field.has-addons .control form.docs-search > input.is-active:not([disabled]):hover,
 .field.has-addons .control .select select:not([disabled]):focus:hover,
-.field.has-addons .control .select select:not([disabled]).is-focused:hover,
+.field.has-addons .control .select select.is-focused:not([disabled]):hover,
 .field.has-addons .control .select select:not([disabled]):active:hover,
-.field.has-addons .control .select select:not([disabled]).is-active:hover {
+.field.has-addons .control .select select.is-active:not([disabled]):hover {
   z-index: 4; }
 
 .field.has-addons .control.is-expanded {
