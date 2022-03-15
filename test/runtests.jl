@@ -6,6 +6,7 @@ import Cbc
 import Ipopt
 import Juniper
 import Pavito
+import Random
 
 const _EXAMPLES_DIR = joinpath(@__DIR__, "..", "examples", "MINLPs")
 for file in readdir(_EXAMPLES_DIR)
