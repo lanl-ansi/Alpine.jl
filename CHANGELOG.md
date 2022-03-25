@@ -1,5 +1,13 @@
 # Alpine.jl Change Log
 
+## v0.2.9
+- Update to JuMP v1.0
+
+## v0.2.8
+- Update to JuMP v0.22, v0.23
+- Update to MOI v1.0
+- Simplify test dependencies
+
 ## v0.2.7
 - Support for module shortcut `Alp` in function calls
 - Solver options clean up in `examples` folder
