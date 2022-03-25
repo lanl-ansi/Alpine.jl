@@ -13,7 +13,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 [compat]
 Cbc = "0.8, 0.9, 1"
 Ipopt = "0.8, 0.9, 1"
-JuMP = "0.22, 0.23"
+JuMP = "0.22, 0.23, 1"
 Juniper = "0.8, 0.9"
 MathOptInterface = "0.10, 1"
 Pavito = "0.3.4"
