@@ -456,6 +456,8 @@ function fetch_mip_solver_identifier(m::Optimizer;override="")
        m.mip_solver_id = "Cbc"
    elseif occursin("GLPK", solverstring)
        m.mip_solver_id = "GLPK"
+   elseif occursin("HiGHS", solverstring)
+       m.mip_solver_id = "HiGHS"
    elseif occursin("Xpress", solverstring)
         m.mip_solver_id = "Xpress" 
    else
