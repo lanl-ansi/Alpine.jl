@@ -1,5 +1,8 @@
 # Alpine.jl Change Log
 
+## v0.2.10
+- Add support for the HiGHS solver
+
 ## v0.2.9
 - Update to JuMP v1.0
 
