@@ -145,8 +145,6 @@ end
                            "disc_ratio" => 8,
                            "max_iter" => 6,
                            "presolve_bt" => false,
-                           "presolve_bt_algo" => 1,
-                           "presolve_bt_output_tol" => 1e-1,
                            "log_level" => 100)
 
     m = circle(solver=test_solver)

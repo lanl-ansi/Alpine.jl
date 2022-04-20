@@ -217,6 +217,7 @@ function MOI.copy_to(model::Optimizer, src::MOI.ModelLike)
 end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
+MOI.get(::Optimizer, ::MOI.SolverVersion) = _ALPINE_VERSION
 
 function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     Alp.set_option(model, Symbol(param.name), value)

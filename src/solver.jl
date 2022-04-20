@@ -37,8 +37,8 @@ mutable struct OptimizerOptions
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
     disc_add_partition_method::Any                              # Additional methods to add discretization
     disc_divert_chunks::Int                                     # How many uniform partitions to construct
-    disc_abs_width_tol::Float64                                 # Absolute tolerance used when setting up partition/discretization
-    disc_rel_width_tol::Float64                                 # Relative width tolerance when setting up partition/discretization
+    disc_abs_width_tol::Float64                                 # Absolute tolerance used when setting up a partition
+    disc_rel_width_tol::Float64                                 # Relative width tolerance when setting up a partition
     disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve
     disc_ratio_branch::Bool                                     # Branching tests for picking fixed discretization ratio
 
