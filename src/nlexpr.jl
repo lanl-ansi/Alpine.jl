@@ -226,7 +226,7 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
             push!(power, 1)
          elseif (expr.args[i].head == :call)
             scalar, var_idxs, power = Alp.expr_is_axn(expr.args[i], scalar, var_idxs, power)
-            scalar == nothing && return nothing, nothing, nothing
+            scalar === nothing && return nothing, nothing, nothing
          end
       end
    elseif expr.args[1] == :^
@@ -244,8 +244,8 @@ function expr_is_axn(expr, scalar=1.0, var_idxs=[], power=[]; N=nothing)
    end
 
    # If the user wants a specific N
-   !(N == nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
-   (var_idxs == nothing) && (scalar == nothing) && (power == nothing) && return nothing, nothing, nothing # Unrecognized sub-structure
+   !(N === nothing) && !(length(var_idxs) == N) && return nothing, nothing, nothing
+   (var_idxs === nothing) && (scalar === nothing) && (power === nothing) && return nothing, nothing, nothing # Unrecognized sub-structure
 
    @assert length(var_idxs) == length(power)
    return scalar, var_idxs, power
@@ -309,10 +309,10 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
    end
 
    if isa(expr, Number) # Capture any coefficients or right hand side
-      (bufferVal != nothing) ? bufferVal *= expr : bufferVal = expr * coef
+      (bufferVal !== nothing) ? bufferVal *= expr : bufferVal = expr * coef
       return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
    elseif expr in [:+, :-]    # TODO: what is this condition?
-      if bufferVal != nothing && bufferVar != nothing
+      if bufferVal !== nothing && bufferVar !== nothing
          push!(lhscoeffs, bufferVal)
          push!(lhsvars, bufferVar)
          bufferVal = 0.0
@@ -342,22 +342,22 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
    for i in start_pos:length(expr.args)
       lhscoeff, lhsvars, rhs, bufferVal, bufferVar = traverse_expr_linear_to_affine(expr.args[i], lhscoeffs, lhsvars, rhs, bufferVal, bufferVar, sign*sign_convertor(expr, i), coef, level+1)
       if expr.args[1] in [:+, :-]  # Term segmentation [:-, :+], see this and wrap-up the current (linear) term
-         if bufferVal != nothing && bufferVar != nothing  # (sign) * (coef) * (var) => linear term
+         if bufferVal !== nothing && bufferVar !== nothing  # (sign) * (coef) * (var) => linear term
             push!(lhscoeffs, sign*sign_convertor(expr, i)*bufferVal)
             push!(lhsvars, bufferVar)
             bufferVal = nothing
             bufferVar = nothing
          end
-         if bufferVal != nothing && bufferVar == nothing  # (sign) * (coef) => right-hand-side term
+         if bufferVal !== nothing && bufferVar === nothing  # (sign) * (coef) => right-hand-side term
             rhs += sign*sign_convertor(expr, i)*bufferVal
             bufferVal = nothing
          end
-         if bufferVal == nothing && bufferVar != nothing && expr.args[1] == :+
+         if bufferVal === nothing && bufferVar !== nothing && expr.args[1] == :+
             push!(lhscoeffs, sign*1.0*coef)
             push!(lhsvars, bufferVar)
             bufferVar = nothing
          end
-         if bufferVal == nothing && bufferVar != nothing && expr.args[1] == :-
+         if bufferVal === nothing && bufferVar !== nothing && expr.args[1] == :-
             push!(lhscoeffs, sign*sign_convertor(expr, i)*coef)
             push!(lhsvars, bufferVar)
             bufferVar = nothing
@@ -368,7 +368,7 @@ function traverse_expr_linear_to_affine(expr, lhscoeffs=[], lhsvars=[], rhs=0.0,
    end
 
    if level == 0
-      if bufferVal != nothing && bufferVar != nothing
+      if bufferVal !== nothing && bufferVar !== nothing
          push!(lhscoeffs, bufferVal)
          push!(lhsvars, bufferVar)
          bufferVal = nothing
@@ -407,7 +407,7 @@ function expr_resolve_sign(expr, level=0; kwargs...)
                expr.args[i] = expr.args[i].args[2]
             end
          elseif expr.args[i].head == :call
-            expr_resolve_sign(expr.args[i], level+1)
+            Alp.expr_resolve_sign(expr.args[i], level+1)
          end
       end
    end
@@ -424,7 +424,7 @@ function expr_flatten(expr, level=0; kwargs...)
 
    isa(expr, Number) && return
    if level > 0  # No trivial constraint is allowed "3>5"
-      flat = expr_arrangeargs(expr.args)
+      flat = Alp.expr_arrangeargs(expr.args)
       if isa(flat, Number)
          return flat
       else
@@ -439,7 +439,7 @@ function expr_flatten(expr, level=0; kwargs...)
    end
 
    if level > 0  #Root level process, no additional processes
-      expr.args = expr_arrangeargs(expr.args)
+      expr.args = Alp.expr_arrangeargs(expr.args)
    end
 
    return expr
@@ -476,7 +476,7 @@ function expr_arrangeargs(args::Array; kwargs...)
    elseif args[1] in [:/]
       # error("Alpine does not currently support `$(args[1])` operator")
       if (typeof(args[3]) == Float64) || (typeof(args[3]) == Int64)
-         args = expr_resolve_divdenominator(args)
+         args = expr_resolve_const_denominator(args)
       else
          error("Alpine does not currently support `$(args[1])` operator with a variable in the denominator")
       end
@@ -563,16 +563,16 @@ function expr_resolve_const(expr)
 end
 
 """
-If the fraction's denominator is a constant, then replace the expression as product of a constant and the expression
+If the expression's fraction has a constant denominator, then replace the expression as product of a constant and the expression
 """
-function expr_resolve_divdenominator(args)
+function expr_resolve_const_denominator(args)
 
    @assert args[1] == :/
    @assert length(args) == 3
    resolvable = true
 
    for i in 3:length(args)
-      resolvable *= expr_isconst(args[i])
+      resolvable *= Alp.expr_isconst(args[i])
    end
 
    if resolvable
@@ -626,7 +626,7 @@ end
 
 # Returns true if the expression is a constant, linear or affine
 function expr_isaffine(expr)
-   expr_isconst(expr) && return true
+   Alp.expr_isconst(expr) && return true
    expr.head == :ref && return true
 
    is_affine = false
@@ -644,7 +644,7 @@ function expr_isaffine(expr)
          if expr.args[i].head == :ref
             k+=1
          elseif expr.args[i].head == :call
-            status = expr_isaffine(expr.args[i])
+            status = Alp.expr_isaffine(expr.args[i])
             status && (k += 1)
          end
       end

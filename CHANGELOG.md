@@ -1,5 +1,13 @@
 # Alpine.jl Change Log
 
+## v0.3.0
+- JuMP v1.0+ for examples
+- Pavito v0.3.5 support
+- Default `presolve_bt_max_iter` updated to 5 iterations (from 10)
+- Dropped support for redundant `run_bounding_iteration` function 
+- Clean-up and re-org of optimizer structs and `MOI_wrapper` functions
+- Bug fix in `relax_integrality` under presolve
+
 ## v0.2.10
 - Add support for the HiGHS solver
 

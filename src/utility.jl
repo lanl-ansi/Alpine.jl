@@ -185,7 +185,7 @@ function fix_domains(m::Optimizer;discrete_sol=nothing, use_orig=false)
             end
          end
       elseif m.var_type[i] == :Bin || m.var_type[i] == :Int
-         if discrete_sol == nothing
+         if discrete_sol === nothing
             l_var[i] = round(m.best_bound_sol[i])
             u_var[i] = round(m.best_bound_sol[i])
          else
@@ -233,11 +233,12 @@ function get_active_partition_idx(discretization::Dict, val::Float64, idx::Int; 
 end
 
 """
-   ncvar_collect_nodes(m:Optimizer)
+   get_candidate_disc_vars(m:Optimizer)
 
-A built-in method for selecting variables for discretization. It selects all variables in the nonlinear terms.
+   A built-in method for selecting variables for discretization. This function selects all candidate variables in the nonlinear terms for discretization, 
+   if under a threshold value of the number of nonlinear terms.
 """
-function ncvar_collect_nodes(m::Optimizer;getoutput=false)
+function get_candidate_disc_vars(m::Optimizer;getoutput=false)
 
    # Pick variables that is bound width more than tolerance length
    if getoutput
@@ -334,7 +335,7 @@ end
 function build_discvar_graph(m::Optimizer)
 
    # Collect the information of nonlinear terms in terms of arcs and nodes
-   nodes = ncvar_collect_nodes(m, getoutput=true)
+   nodes = get_candidate_disc_vars(m, getoutput=true)
    arcs = ncvar_collect_arcs(m, nodes)
 
    # Collect integer variables

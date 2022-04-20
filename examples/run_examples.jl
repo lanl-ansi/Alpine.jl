@@ -8,8 +8,7 @@ using Juniper
 # using Pavito
 
 include("JuMP_models.jl")
-include("solver.jl")
-
+include("optimizers.jl")
 
 # Choose underlying solvers for Alpine
 mip_solver = get_gurobi()
@@ -17,13 +16,13 @@ nlp_solver = get_ipopt()
 minlp_solver = get_juniper(mip_solver, nlp_solver)
 
 # Global solver
-const alpine = optimizer_with_attributes(Alpine.Optimizer, 
-                                        #  "minlp_solver" => minlp_solver,
-                                        "nlp_solver" => nlp_solver,  
-                                        "mip_solver" => mip_solver,
-                                        "presolve_bt" => true,
-                                        "presolve_bt_max_iter" => 5,
-                                        "disc_ratio" => 10)
+const alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
+                                            #  "minlp_solver" => minlp_solver,
+                                              "nlp_solver" => nlp_solver,  
+                                              "mip_solver" => mip_solver,
+                                              "presolve_bt" => true,
+                                              "presolve_bt_max_iter" => 5,
+                                              "disc_ratio" => 10)
 
 # Try different integer values ( >=4 ) for `disc_ratio` to have better Alpine run times 
 # Choose `presolve_bt` to `false` if you prefer the OBBT presolve to be turned off. 

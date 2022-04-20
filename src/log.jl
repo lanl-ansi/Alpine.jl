@@ -147,7 +147,6 @@ function logging_row_entry(m::Optimizer; kwargs...)
       LTIME_block = " "
    end
 
-
    haskey(options, :finish_entry) ? (ITER_block = string(" ", "finish ")) : (ITER_block = string(" ", m.logs[:n_iter]," " ^ (7 - length(string(m.logs[:n_iter])))))
 
    println("|",ITER_block,"|",UB_block,"|",incumb_UB_block,"|",incumb_LB_block,"|",GAP_block,"|",UTIME_block,LTIME_block)

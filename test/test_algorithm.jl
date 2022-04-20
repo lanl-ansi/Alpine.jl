@@ -151,7 +151,7 @@ end
 
     m = circle(solver=test_solver)
     # TODO(odow): cycling detected in Pavito
-    # optimize!(m)
+    # JuMP.optimize!(m)
     # @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 end
 
@@ -167,7 +167,7 @@ end
 
     m = circleN(solver=test_solver, N=4)
     # TODO(odow): cycling detected in Pavito
-    # optimize!(m)
+    # JuMP.optimize!(m)
     # @test isapprox(objective_value(m), 2.0; atol=1e-3)
 end
 
@@ -301,7 +301,7 @@ end
                            "log_level" => 100)
 
     m = nlp3(solver=test_solver)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 18
@@ -318,7 +318,7 @@ end
                            "log_level" => 100)
 
     m = nlp3(solver=test_solver)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 14
@@ -335,7 +335,7 @@ end
                            "log_level" => 100)
 
     m = castro2m2(solver=test_solver)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 8
@@ -352,7 +352,7 @@ end
                            "log_level" => 100)
 
     m = multi3N(solver=test_solver, N=3, exprmode=1)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 16
@@ -369,7 +369,7 @@ end
                            "log_level" => 100)
 
     m = multi3N(solver=test_solver, N=3, exprmode=1)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 20
@@ -386,7 +386,7 @@ end
                            "log_level" => 100)
 
     m = multi4N(solver=test_solver, N=2, exprmode=1)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 12
@@ -403,7 +403,7 @@ end
                            "log_level" => 100)
 
     m = multi4N(solver=test_solver, N=2, exprmode=1)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 20
@@ -420,7 +420,7 @@ end
                            "log_level" => 100)
 
     m = multi4N(solver=test_solver, N=2, exprmode=2)
-    optimize!(m)
+    JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_ratio")) == 20
@@ -434,7 +434,7 @@ end
                           "log_level" => 100)
 
     m = bpml_lnl(test_solver)
-    optimize!(m)
+    JuMP.optimize!(m)
     @test isapprox(objective_value(m), 0.3; atol=1e-6)
     alpine = JuMP.backend(m).optimizer.model
     @test haskey(alpine.nonconvex_terms, Expr[:(x[1]), :(x[6])])
@@ -458,7 +458,7 @@ end
                           "log_level" => 100)
 
     m = bpml_binl(test_solver)
-    optimize!(m)
+    JuMP.optimize!(m)
     # TODO(odow): Variable solution is outside of the discretiszation
     # @test isapprox(objective_value(m), 15422.058099086951; atol=1e-1)
 
@@ -519,7 +519,7 @@ end
 #                            "log_level" => 100)
 
 #     m = circle(solver=test_solver)
-#     optimize!(m)
+#     JuMP.optimize!(m)
 #     @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 # end
 
@@ -575,7 +575,7 @@ end
 
     m = circle(solver=test_solver)
     # TODO(odow): mixed-integer cycling detected, terminating Pavito
-    # optimize!(m)
+    # JuMP.optimize!(m)
     # @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 end
 
@@ -667,7 +667,7 @@ end
                            "time_limit" => 100000,
                            "log_level" => 100)
     m = nlp3(solver=test_solver)
-    optimize!(m)
+    JuMP.optimize!(m)
     @test isapprox(objective_bound(m), 6561.7841; atol=1e-3)
 end
 

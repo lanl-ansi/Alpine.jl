@@ -68,7 +68,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
     l_var_orig = copy(m.l_var_tight)
     u_var_orig = copy(m.u_var_tight)
 
-    discretization = to_discretization(m, m.l_var_tight, m.u_var_tight)
+    discretization = Alp.to_discretization(m, m.l_var_tight, m.u_var_tight)
     if use_bound == false && haskey(options, :use_tmc)
         (Alp.get_option(m, :log_level) > 0) && @warn " Local solve infeasible; defaulting to doing bound-tightening without partitions."
     end
@@ -83,6 +83,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
     keep_tightening = true
     avg_reduction = Inf
     total_reduction = 0.0
+
     while keep_tightening && (m.logs[:time_left] > Alp.get_option(m, :tol)) && (m.logs[:bt_iter] < Alp.get_option(m, :presolve_bt_max_iter)) # Stopping criteria
 
         keep_tightening = false
@@ -90,14 +91,14 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
         Alp.get_option(m, :log_level) > 199 && println("  Iteration - $(m.logs[:bt_iter])")
         temp_bounds = Dict()
 
-        # Perform Bound Contraction
+        # Perform bound tightening
         for var_idx in 1:m.num_var_orig
             temp_bounds[var_idx] = [discretization[var_idx][1], discretization[var_idx][end]]
             if (discretization[var_idx][end] - discretization[var_idx][1]) > Alp.get_option(m, :presolve_bt_width_tol)
-                create_bound_tightening_model(m, discretization, bound)
+                Alp.create_bound_tightening_model(m, discretization, bound)
                 for sense in both_senses
                     JuMP.@objective(m.model_mip, sense, _index_to_variable_ref(m.model_mip, var_idx))
-                    status = solve_bound_tightening_model(m)
+                    status = Alp.solve_bound_tightening_model(m)
                     if status in STATUS_OPT
                         temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_value(m.model_mip)/Alp.get_option(m, :presolve_bt_output_tol))*Alp.get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
                     elseif status in STATUS_LIMIT
@@ -159,7 +160,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
     # (Alp.get_option(m, :log_level) > 0) && println("Completed bound-tightening in $(m.logs[:bt_iter]) iterations. Here are the tightened bounds:")
     (Alp.get_option(m, :log_level) > 1) && println("  Variables whose bounds were tightened:")
     m.l_var_tight, m.u_var_tight = Alp.update_var_bounds(discretization)
-    m.discretization = Alp.add_adaptive_partition(m, use_solution=m.best_sol)
+    m.discretization = Alp.add_adaptive_partition(m, use_solution = m.best_sol)
 
     for i in m.disc_vars
         contract_ratio = round(1-abs(m.l_var_tight[i] - m.u_var_tight[i])/abs(l_var_orig[i] - u_var_orig[i]); digits=2)*100
@@ -184,11 +185,11 @@ function create_bound_tightening_model(m::Optimizer, discretization, bound; kwar
     start_build = time()
     m.model_mip = Model(Alp.get_option(m, :mip_solver)) # Construct JuMP model
     Alp.amp_post_vars(m, use_disc=discretization)
-    amp_post_lifted_constraints(m)
-    amp_post_convexification(m, use_disc=discretization)  # Convexify problem
+    Alp.amp_post_lifted_constraints(m)
+    Alp.amp_post_convexification(m, use_disc=discretization)  # Convexify problem
 
     if bound != Inf
-        post_obj_bounds(m, bound)
+        Alp.post_obj_bounds(m, bound)
     end
 
     cputime_build = time() - start_build
@@ -221,9 +222,11 @@ function solve_bound_tightening_model(m::Optimizer; kwargs...)
     end
     JuMP.optimize!(m.model_mip)
     status = MOI.get(m.model_mip, MOI.TerminationStatus())
-    if Alp.get_option(m, :presolve_bt_relax_integrality)
-        unrelax() # FIXME should this be called ?
-    end
+
+    # if Alp.get_option(m, :presolve_bt_relax_integrality)
+    #     unrelax() # FIXME should this be called ?
+    # end
+    
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve
     m.logs[:time_left] = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])

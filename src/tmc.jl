@@ -229,12 +229,12 @@ function mccormick_binlin(m::JuMP.Model, binlin::JuMP.VariableRef, bin::JuMP.Var
     # TODO think about how to address this issue
     warnuser = false
     if ub == Inf
-        ub = 1e4
+        ub = 1e6
         warnuser = true
     end
 
     if lb == -Inf
-        lb = -1e4
+        lb = -1e6
         warnuser = true
     end
 
@@ -252,7 +252,7 @@ function mccormick_binlin(m::JuMP.Model, binlin::JuMP.VariableRef, bin::JuMP.Var
     end
 
     # Second position to handle inf bounds
-    warnuser && @warn "BINLIN term exception using -1e4/1e4 as lb/ub"
+    warnuser && @warn "BINLIN term exception using -1e6/1e6 as lb/ub"
 
     return
 end
@@ -273,6 +273,7 @@ function mccormick_monomial(m::JuMP.Model, xy::JuMP.VariableRef, x::JuMP.Variabl
 end
 
 # Fortet linearization
+# Reference: https://doi.org/10.1007/s10288-006-0015-3
 function binprod_relax(m::JuMP.Model, z::JuMP.VariableRef, x::Vector)
 
     for i in x

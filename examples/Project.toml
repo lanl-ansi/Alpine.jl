@@ -10,5 +10,5 @@ Pavito = "cd433a01-47d1-575d-afb7-6db927ee8d8f"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
 [compat]
-JuMP = "^0.21.0"
+JuMP = "^0.21.0, ~1.0"
 julia = "1"
