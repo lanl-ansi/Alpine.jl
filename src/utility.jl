@@ -89,13 +89,17 @@ function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
 end
 
 """
-   print_solution_values(m::JuMP.Model)
+   variable_values(m::JuMP.Model)
 
 Prints values of all the variables after optimizing the original JuMP model. 
 """
-function print_solution_values(m::JuMP.Model)
+function variable_values(m::JuMP.Model)
    for var in all_variables(m)
-      println("$var=$(JuMP.value(var))")
+      if isapprox(abs(JuMP.value(var)), 0, atol = 1E-6)
+         println("$var = 0.0")
+      else
+         println("$var = $(round(JuMP.value(var), digits = 5))")
+      end
    end
 
    return
@@ -258,7 +262,7 @@ function initialize_solution_pool(m::Optimizer, cnt::Int)
    s[:cnt] = cnt
 
    # Column dimension changing variable
-   s[:len] = m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip
+   s[:len] = m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
 
    # !! Be careful with the :vars when utilizing the dynamic discretization variable selection !!
    s[:vars] = [i for i in m.candidate_disc_vars if length(m.discretization[i]) > 2]
@@ -335,8 +339,8 @@ end
 function build_discvar_graph(m::Optimizer)
 
    # Collect the information of nonlinear terms in terms of arcs and nodes
-   nodes = get_candidate_disc_vars(m, getoutput=true)
-   arcs = ncvar_collect_arcs(m, nodes)
+   nodes = Alp.get_candidate_disc_vars(m, getoutput=true)
+   arcs = Alp.ncvar_collect_arcs(m, nodes)
 
    # Collect integer variables
    for i in 1:m.num_var_orig
@@ -366,7 +370,7 @@ function min_vertex_cover(m::Optimizer)
    # Set up minimum vertex cover problem
    minvertex = Model(Alp.get_option(m, :mip_solver))
    MOI.set(minvertex, MOI.TimeLimitSec(), 60.0) # Time limit for min vertex cover formulation
-   JuMP.@variable(minvertex, x[nodes], Bin)
+   JuMP.@variable(minvertex, 0 <= x[nodes] <= 1, Bin)
    JuMP.@constraint(minvertex, [a in arcs], x[a[1]] + x[a[2]] >= 1)
    JuMP.@objective(minvertex, Min, sum(x))
 
@@ -400,7 +404,7 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
    # Set up minimum vertex cover problem
    minvertex = Model(Alp.get_option(m, :mip_solver))
    MOI.set(minvertex, MOI.TimeLimitSec(), 60.0)  # Set a timer to avoid waste of time in proving optimality
-   JuMP.@variable(minvertex, x[nodes], Bin)
+   JuMP.@variable(minvertex, 0 <= x[nodes] <= 1, Bin)
    for arc in arcs
       JuMP.@constraint(minvertex, x[arc[1]] + x[arc[2]] >= 1)
    end

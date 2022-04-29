@@ -1,4 +1,4 @@
-function blend029(;solver=nothing)
+function blend029(;solver = nothing)
 
     m = Model(solver)
 
@@ -236,7 +236,7 @@ function blend029(;solver=nothing)
     return m
 end
 
-function blend029_gl(;solver=nothing)
+function blend029_gl(;solver = nothing)
 
     m = Model(solver)
 
@@ -249,6 +249,7 @@ function blend029_gl(;solver=nothing)
       set_lower_bound(x[i], 0)
       set_upper_bound(x[i], 1)
     end
+
     for i=49:66
       set_lower_bound(x[i], 0)
       set_upper_bound(x[i], 2)

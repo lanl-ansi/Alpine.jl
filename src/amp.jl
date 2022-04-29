@@ -62,17 +62,17 @@ function amp_post_vars(m::Optimizer; kwargs...)
     options = Dict(kwargs)
 
     if haskey(options, :use_disc)
-        l_var = [options[:use_disc][i][1]   for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
-        u_var = [options[:use_disc][i][end] for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+        l_var = [options[:use_disc][i][1]   for i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)]
+        u_var = [options[:use_disc][i][end] for i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)]
     else
         l_var = m.l_var_tight
         u_var = m.u_var_tight
     end
 
-    JuMP.@variable(m.model_mip, x[i=1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)])
+    JuMP.@variable(m.model_mip, x[i=1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)])
 
-    for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
-        # This is a tricky step, not enforcing category of lifted variables is able to improve performance
+    for i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
+        # Interestingly, not enforcing category of lifted variables is able to improve performance
         if i <= m.num_var_orig
             if m.var_type_orig[i] == :Bin
                 set_binary(x[i])
@@ -217,18 +217,18 @@ function add_adaptive_partition(m::Optimizer;kwargs...)
     haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) : point_vec = copy(m.best_bound_sol)
     haskey(options, :use_ratio) ? ratio = options[:use_ratio] : ratio = Alp.get_option(m, :disc_ratio)
     haskey(options, :branching) ? branching = options[:branching] : branching = false
-
+    
     if length(point_vec) < m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
         point_vec = Alp.resolve_lifted_var_value(m, point_vec)  # Update the solution vector for lifted variable
     end
-
+    
     if branching
         discretization = deepcopy(discretization)
     end
 
     processed = Set{Int}()
 
-    # ? Perform discretization based on type of nonlinear terms ? #
+    # Perform discretization based on type of nonlinear terms #
     for i in m.disc_vars
         point = point_vec[i]                # Original Variable
         λCnt = length(discretization[i])
@@ -264,7 +264,7 @@ end
 function correct_point(m::Optimizer, partvec::Vector, point::Float64, var::Int)
 
     if point < partvec[1] - Alp.get_option(m, :tol) || point > partvec[end] + Alp.get_option(m, :tol)
-        @warn "  Warning: VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Hence, taking middle point."
+        @warn "  Warning: VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Hence, taking the middle point."
         return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
     end
 
@@ -322,9 +322,9 @@ function insert_partition(m::Optimizer, var::Int, partidx::Int, point::Number, r
         for i in 2:Alp.get_option(m, :disc_divert_chunks)
             insert!(partvec, pos+1, lb_local + chunk * (Alp.get_option(m, :disc_divert_chunks)-(i-1)))
         end
-        (Alp.get_option(m, :log_level) > 199) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig; digits=4))=>$(point) |$(round(lb_local; digits=4)) | $(Alp.get_option(m, :disc_divert_chunks)) SEGMENTS | $(round(ub_local; digits=4))|")
+        (Alp.get_option(m, :log_level) > 199) && println("[DEBUG] !D! VAR$(var): SOL=$(round(point_orig; digits = 4))=>$(point) |$(round(lb_local; digits = 4)) | $(Alp.get_option(m, :disc_divert_chunks)) SEGMENTS | $(round(ub_local; digits = 4))|")
     else
-        (Alp.get_option(m, :log_level) > 199) && println("[DEBUG] VAR$(var): SOL=$(round(point; digits=4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local; digits=4)) |$(round(lb_new; digits=6)) <- * -> $(round(ub_new; digits=6))| $(round(ub_local; digits=4))|")
+        (Alp.get_option(m, :log_level) > 199) && println("[DEBUG] VAR$(var): SOL=$(round(point; digits = 4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local; digits = 4)) |$(round(lb_new; digits = 6)) <- * -> $(round(ub_new; digits = 6))| $(round(ub_local; digits = 4))|")
     end
 
     return

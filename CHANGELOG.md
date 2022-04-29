@@ -1,12 +1,17 @@
 # Alpine.jl Change Log
 
 ## v0.3.0
-- JuMP v1.0+ for examples
+- JuMP v1.0+ in examples
 - Pavito v0.3.5 support
-- Default `presolve_bt_max_iter` updated to 5 iterations (from 10)
 - Dropped support for redundant `run_bounding_iteration` function 
 - Clean-up and re-org of optimizer structs and `MOI_wrapper` functions
 - Bug fix in `relax_integrality` under presolve
+- Added Rosenbrock function
+- Added user-definable `presolve_bt_improv_tol` for variable range reductions in OBBT
+- Minor update on finite values for obj-bound in `create_bound_tightening_model`
+- NLP solution rounding issue resolved (now compatible with default tol, 1e-6), to avoid the variable solution outside discretization (#190)
+- `circleN` instance updated to `circle_MINLPLib` to eliminate Pavito's mixed-integer cycling in unit tests (#190)
+- Clean-up in printing variable solutions (`variable_values`)
 
 ## v0.2.10
 - Add support for the HiGHS solver

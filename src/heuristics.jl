@@ -17,7 +17,7 @@ function update_disc_cont_var(m::Optimizer)
     var_diffs = Vector{Float64}(undef, m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonconvex_terms)))
 
     for i in 1:m.num_var_orig       # Original Variables
-        var_diffs[i] = abs(m.best_sol[i]-m.best_bound_sol[i])
+        var_diffs[i] = abs(m.best_sol[i] - m.best_bound_sol[i])
     end
 
     for i in 1:length(keys(m.linear_terms))

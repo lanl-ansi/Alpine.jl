@@ -1,4 +1,4 @@
-function ex1225a(;solver=nothing)
+function ex1225a(;solver = nothing)
     # GOpt: 131670.377903
     # This problem may be numerically sensitive 
 
@@ -9,7 +9,7 @@ function ex1225a(;solver=nothing)
     x_Idx = Any[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     @variable(m, x[x_Idx] >= 0)
     b_Idx = Any[22, 23, 24]
-    @variable(m, b[b_Idx], Bin)
+    @variable(m, 0 <= b[b_Idx] <= 1, Bin)
     i_Idx = Any[16, 17, 18, 19, 20, 21]
     @variable(m, 0 <= i[i_Idx] <= 3, Int)
 
@@ -74,7 +74,7 @@ function ex1225a(;solver=nothing)
     return m
 end
 
-function ex1264a(;solver=nothing)
+function ex1264a(;solver = nothing)
     # Source: http://minlplib.org/ex1264a.html
     # GOpt: 8.6
 
@@ -82,7 +82,7 @@ function ex1264a(;solver=nothing)
 
     @variable(m, objvar)
     b_Idx = Any[17, 18, 19, 20]
-    @variable(m, b[b_Idx], Bin)
+    @variable(m, 0 <= b[b_Idx] <= 1, Bin)
     i_Idx = Any[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 21, 22, 23, 24]
     @variable(m, i[i_Idx] >= 0, Int)
 
@@ -138,7 +138,7 @@ function ex1264a(;solver=nothing)
     return m
 end
 
-function prob03(;solver=nothing)
+function prob03(;solver = nothing)
     # Source: http://minlplib.org/prob03.html
     # GOpt: 10.0000
 
@@ -156,7 +156,7 @@ function prob03(;solver=nothing)
     return m
 end
 
-function prob10(;solver=nothing)
+function prob10(;solver = nothing)
     # Source: http://minlplib.org/prob10.html
     # GOpt: 3.44550379
 
@@ -177,7 +177,7 @@ function prob10(;solver=nothing)
     return m
 end
 
-function st_miqp1(;solver=nothing)
+function st_miqp1(;solver = nothing)
     # source: http://minlplib.org/st_miqp1.html
     # GOpt: 281.0000
 
@@ -199,7 +199,7 @@ function st_miqp1(;solver=nothing)
     return m
 end
 
-function st_miqp2(;solver=nothing)
+function st_miqp2(;solver = nothing)
     # Source: http://minlplib.org/st_miqp2.html
     # GOpt: 2.0000
     
@@ -226,7 +226,7 @@ function st_miqp2(;solver=nothing)
     return m
 end
 
-function st_miqp3(;solver=nothing)
+function st_miqp3(;solver = nothing)
     # Source: http://minlplib.org/st_miqp3.html
     # GOpt: -6.0000
 
@@ -250,7 +250,7 @@ function st_miqp3(;solver=nothing)
     return m
 end
 
-function st_miqp4(;solver=nothing)
+function st_miqp4(;solver = nothing)
     # Source: http://minlplib.org/st_miqp4.html
     # GOpt: -4574.0000
 
@@ -276,7 +276,7 @@ function st_miqp4(;solver=nothing)
     return m
 end
 
-function st_miqp5(;solver=nothing)
+function st_miqp5(;solver = nothing)
     # Source: http://minlplib.org/st_miqp5.html
     # GOpt: -333.88888890
 

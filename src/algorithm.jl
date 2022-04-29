@@ -322,12 +322,12 @@ function local_solve(m::Optimizer; presolve = false)
    end
 
    if presolve == false
-      l_var, u_var = fix_domains(m)
+      l_var, u_var = Alp.fix_domains(m)
    else
       l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
    end
 
-   x = load_nonlinear_model(m, local_solve_model, l_var, u_var)
+   x = Alp.load_nonlinear_model(m, local_solve_model, l_var, u_var)
    (!m.d_orig.want_hess) && MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
 
    if !presolve
@@ -367,7 +367,22 @@ function local_solve(m::Optimizer; presolve = false)
 
    if local_nlp_status in STATUS_OPT || local_nlp_status in STATUS_LIMIT
       candidate_obj = MOI.get(local_solve_model, MOI.ObjectiveValue())
-      candidate_sol = round.(MOI.get(local_solve_model, MOI.VariablePrimal(), x); digits=5)
+      sol_temp = MOI.get(local_solve_model, MOI.VariablePrimal(), x)
+      candidate_sol = Vector{Float64}()
+
+      feas_tol = 1E-5
+
+      for i = 1:length(sol_temp)
+         if (sol_temp[i] >= m.l_var_orig[i] - feas_tol) && (sol_temp[i] <= m.l_var_orig[i] + feas_tol)
+            push!(candidate_sol, m.l_var_orig[i])
+         elseif (sol_temp[i] >= m.u_var_orig[i] - feas_tol) && (sol_temp[i] <= m.u_var_orig[i] + feas_tol)
+            push!(candidate_sol, m.u_var_orig[i])
+         else
+            push!(candidate_sol, round(sol_temp[i], digits = 7))
+         end
+      end
+
+      @assert length(candidate_sol) == length(sol_temp)
       Alp.update_incumb_objective(m, candidate_obj, candidate_sol)
       m.status[:local_solve] = local_nlp_status
       return
@@ -429,7 +444,8 @@ function bounding_solve(m::Optimizer)
    if status in STATUS_OPT || status in STATUS_LIMIT
 
       candidate_bound = (status == MOI.OPTIMAL) ? JuMP.objective_value(m.model_mip) : JuMP.objective_bound(m.model_mip)
-      candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits=6) for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+      candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits = 7) 
+                                    for i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)]
 
       # Experimental code
       Alp.measure_relaxed_deviation(m, sol=candidate_bound_sol)

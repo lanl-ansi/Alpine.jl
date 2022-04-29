@@ -9,7 +9,7 @@
     @test isa(alpine, Alpine.Optimizer)
 
     # Expression Model 1
-    m = exprstest(solver=test_solver)
+    m = exprstest(solver = test_solver)
     alpine = _build(m)
     @test isa(alpine, Alpine.Optimizer)
 end
@@ -25,7 +25,7 @@ end
         "presolve_bt" => false,
         "max_iter" => 1,
         "log_level" => 100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -44,7 +44,7 @@ end
                             "presolve_bt" =>  false,
                             "max_iter" => 1,
                             "log_level" => 100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -63,7 +63,7 @@ end
                             "presolve_bt" =>  false,
                             "max_iter" => 1,
                             "log_level" => 100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -81,7 +81,7 @@ end
                             "presolve_bt" =>  false,
                             "max_iter" => 2,
                             "log_level" => 100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -104,7 +104,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = castro2m2(solver=test_solver)
+    m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -125,7 +125,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = castro2m2(solver=test_solver)
+    m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -145,7 +145,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = castro2m2(solver=test_solver)
+    m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -169,7 +169,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = blend029_gl(solver=test_solver)
+    m = blend029_gl(solver = test_solver)
     alpine = _build(m)
 
     @test length(alpine.candidate_disc_vars) == 26
@@ -188,7 +188,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = blend029_gl(solver=test_solver)
+    m = blend029_gl(solver = test_solver)
     alpine = _build(m)
 
     @test length(alpine.candidate_disc_vars) == 26
@@ -207,7 +207,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = blend029_gl(solver=test_solver)
+    m = blend029_gl(solver = test_solver)
     alpine = _build(m)
 
     @test length(alpine.candidate_disc_vars) == 26
@@ -228,7 +228,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = castro6m2(solver=test_solver)
+    m = castro6m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -250,7 +250,7 @@ end
                             "max_iter" => 2,
                             "log_level" => 100)
 
-    m = castro6m2(solver=test_solver)
+    m = castro6m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
@@ -274,7 +274,7 @@ end
                             "max_iter" => 1,
                             "log_level" => 100)
 
-    m = castro2m2(solver=test_solver)
+    m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     @test solve_time(m) > 0.0
 end

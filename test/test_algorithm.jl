@@ -8,7 +8,7 @@
                        "presolve_bp" => true,
                        "presolve_bt_output_tol" => 1e-1,
                        "log_level" =>100)
-    m = nlp1(solver=test_solver)
+    m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -28,7 +28,7 @@ end
     					   "presolve_bt_width_tol" => 1e-3,
     					   "presolve_bt" => false,
     					   "disc_var_pick" => 0)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OTHER_LIMIT
@@ -73,7 +73,7 @@ end
 							   "presolve_bt_max_iter" => 2,
                                "presolve_track_time" => true,
 							   "disc_var_pick" => max_cover_var_picker)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
 
     JuMP.optimize!(m)
 
@@ -98,7 +98,7 @@ end
                               "presolve_bt_max_iter" => 2,
                               "disc_var_pick" => max_cover_var_picker)
 
-   m = nlp3(solver=test_solver)
+   m = nlp3(solver = test_solver)
    JuMP.optimize!(m)
    @test termination_status(m) == MOI.OTHER_LIMIT
    @test MOI.get(m, Alpine.NumberOfIterations()) == 2
@@ -112,7 +112,7 @@ end
                        "presolve_bt" => false,
                        "presolve_bp" => true,
                        "log_level" => 100)
-    m = nlp1(solver=test_solver)
+    m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -129,7 +129,7 @@ end
                        "presolve_bp" => false,
                        "disc_ratio" => 14,
                        "log_level" =>100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -141,32 +141,34 @@ end
     test_solver=optimizer_with_attributes(Alpine.Optimizer,
                            "nlp_solver" => IPOPT,
                            "mip_solver" => PAVITO,
-                           "disc_abs_width_tol" => 1e-2,
+                           "disc_abs_width_tol" => 1e-3,
                            "disc_ratio" => 8,
                            "max_iter" => 6,
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = circle(solver=test_solver)
-    # TODO(odow): cycling detected in Pavito
-    # JuMP.optimize!(m)
-    # @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
+    m = circle(solver = test_solver)
+    # This is fixed in Alpine - TODO (odow): cycling detected in Pavito when disc_abs_width_tol = 1E-2
+    JuMP.optimize!(m)
+    @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 end
 
-@testset " Validation Test || AMP || basic solve || examples/circleN.jl" begin
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => PAVITO,
-                           "disc_abs_width_tol" => 1e-2,
-                           "disc_ratio" => 8,
-                           "presolve_bt" => false,
-                           "presolve_bt_algo" => 1,
-                           "presolve_bt_output_tol" => 1e-1,
-                           "log_level" => 100)
+@testset " Validation Test || AMP || basic solve || examples/circle_MINLPLib.jl" begin
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+                                          "nlp_solver" => IPOPT,
+                                          "mip_solver" => PAVITO,
+                                          "disc_abs_width_tol" => 1e-2,
+                                          "disc_ratio" => 5,
+                                          "presolve_bt" => true,
+                                          "presolve_bt_max_iter" => 1,
+                                          "presolve_bt_algo" => 1,
+                                          "presolve_bt_output_tol" => 1e-2,
+                                          "log_level" => 100)
 
-    m = circleN(solver=test_solver, N=4)
-    # TODO(odow): cycling detected in Pavito
-    # JuMP.optimize!(m)
-    # @test isapprox(objective_value(m), 2.0; atol=1e-3)
+    m = circle_MINLPLib(solver = test_solver)
+    
+    JuMP.optimize!(m)
+    @test isapprox(objective_value(m), 4.45670663096; atol=1E-6)
 end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
@@ -179,7 +181,7 @@ end
                       "convhull_formulation" => "facet",
                       "max_iter" => 3,
                       "log_level" =>100)
-   m = nlp3(solver=test_solver)
+   m = nlp3(solver = test_solver)
    JuMP.optimize!(m)
 
    @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
@@ -200,7 +202,7 @@ end
                                "presolve_bt" => false,
                                "log_level" => 1)
 
-        m = multi4N(solver=test_solver, N=2, exprmode=i)
+        m = multi4N(solver = test_solver, N=2, exprmode=i)
         JuMP.optimize!(m)
 
         @test termination_status(m) == MOI.OTHER_LIMIT
@@ -214,17 +216,14 @@ end
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => CBC,
                            "disc_abs_width_tol" => 1e-2,
-                           "max_iter" => 4,
-                           "presolve_bp" => false,
+                           "max_iter" => 5,
                            "presolve_bt" => false,
                            "log_level" => 1)
 
-    m = multi2(solver=test_solver)
+    m = multi2(solver = test_solver)
     JuMP.optimize!(m)
-    # TODO(odow): some bound issue? Alpine claims OPTIMAL
-    # @test termination_status(m) == MOI.OTHER_LIMIT
-    # @test isapprox(objective_value(m), 1.00000;atol=1e-3)
-    # @test isapprox(objective_bound(m), 1.0074;atol=1e-3)
+    @test termination_status(m) == MOI.OPTIMAL
+    @test isapprox(objective_value(m), 0.92906489; atol=1e-3)
 end
 
 @testset " Validation Test || AMP || multi3N || N = 2 || exprmode=1:11" begin
@@ -240,7 +239,7 @@ end
                                "presolve_bt" => false,
                                "log_level" => 1)
 
-        m = multi3N(solver=test_solver, N=2, exprmode=i)
+        m = multi3N(solver = test_solver, N=2, exprmode=i)
         JuMP.optimize!(m)
 
         @test termination_status(m) == MOI.OTHER_LIMIT
@@ -259,7 +258,7 @@ end
                            "presolve_bt" => false,
                            "log_level" =>1)
 
-    m = multiKND(solver=test_solver, randomub=50, K=3, N=3, D=0)
+    m = multiKND(solver = test_solver, randomub=50, K=3, N=3, D=0)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OTHER_LIMIT
@@ -277,7 +276,7 @@ end
                        "max_iter" => 4,
                        "convhull_formulation" => "facet",
                        "log_level" =>100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OTHER_LIMIT
@@ -298,7 +297,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -315,7 +314,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -332,7 +331,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = castro2m2(solver=test_solver)
+    m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -349,7 +348,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = multi3N(solver=test_solver, N=3, exprmode=1)
+    m = multi3N(solver = test_solver, N=3, exprmode=1)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -366,7 +365,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = multi3N(solver=test_solver, N=3, exprmode=1)
+    m = multi3N(solver = test_solver, N=3, exprmode=1)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -383,7 +382,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = multi4N(solver=test_solver, N=2, exprmode=1)
+    m = multi4N(solver = test_solver, N=2, exprmode=1)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -400,7 +399,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = multi4N(solver=test_solver, N=2, exprmode=1)
+    m = multi4N(solver = test_solver, N=2, exprmode=1)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -417,7 +416,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = multi4N(solver=test_solver, N=2, exprmode=2)
+    m = multi4N(solver = test_solver, N=2, exprmode=2)
     JuMP.optimize!(m)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
@@ -425,13 +424,14 @@ end
 end
 
 @testset "Operator :: bmpl && binlin && binprod solve test I" begin
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+                          "minlp_solver" => PAVITO,
                           "nlp_solver" => IPOPT,
                           "mip_solver" => CBC,
                           "presolve_bt" => false,
                           "log_level" => 100)
 
-    m = bpml_lnl(test_solver)
+    m = bpml_lnl(solver = test_solver)
     JuMP.optimize!(m)
     @test isapprox(objective_value(m), 0.3; atol=1e-6)
     alpine = JuMP.backend(m).optimizer.model
@@ -455,10 +455,9 @@ end
                           "presolve_bt" => false,
                           "log_level" => 100)
 
-    m = bpml_binl(test_solver)
+    m = bpml_binl(solver = test_solver)
     JuMP.optimize!(m)
-    # TODO(odow): Variable solution is outside of the discretiszation
-    # @test isapprox(objective_value(m), 15422.058099086951; atol=1e-1)
+    @test isapprox(JuMP.objective_value(m), 22812.76415926; atol=1e-6)
 
     alpine = JuMP.backend(m).optimizer.model
     @test haskey(alpine.nonconvex_terms, Expr[:(x[6]), :(x[7])])
@@ -493,7 +492,7 @@ end
                        "presolve_bp" => true,
                        "convhull_ebd" => true,
                        "log_level" => 100)
-    m = nlp1(solver=test_solver)
+    m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -516,7 +515,7 @@ end
 #                            "convhull_ebd" => true,
 #                            "log_level" => 100)
 
-#     m = circle(solver=test_solver)
+#     m = circle(solver = test_solver)
 #     JuMP.optimize!(m)
 #     @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
 # end
@@ -531,7 +530,7 @@ end
                        "convhull_ebd" => true,
                        "convhull_ebd_ibs" => true,
                        "log_level" => 100)
-    m = nlp1(solver=test_solver)
+    m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -549,7 +548,7 @@ end
                        "convhull_ebd" => true,
                        "convhull_ebd_ibs" => true,
                        "log_level" => 100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -560,7 +559,7 @@ end
 @testset "Embedding IBS Test || AMP || special problem || ... " begin
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                            "mip_solver" => PAVITO,
-                           "disc_abs_width_tol" => 1e-2,
+                           "disc_abs_width_tol" => 1e-3,
                            "disc_ratio" => 8,
                            "max_iter" => 6,
                            "presolve_bt" => false,
@@ -571,10 +570,10 @@ end
                            "convhull_ebd_ibs" => true,
                            "log_level" => 100)
 
-    m = circle(solver=test_solver)
-    # TODO(odow): mixed-integer cycling detected, terminating Pavito
-    # JuMP.optimize!(m)
-    # @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
+    m = circle(solver = test_solver)
+    # This is fixed in Alpine - TODO(odow): mixed-integer cycling detected, terminating Pavito
+    JuMP.optimize!(m)
+    @test isapprox(objective_value(m), 1.41421355; atol=1e-3)
 end
 
 @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
@@ -587,7 +586,7 @@ end
                        "convhull_ebd" => true,
                        "convhull_ebd_link" => true,
                        "log_level" => 100)
-    m = nlp1(solver=test_solver)
+    m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -605,7 +604,7 @@ end
                        "convhull_ebd" => true,
                        "convhull_ebd_link" => true,
                        "log_level" => 100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
@@ -620,7 +619,7 @@ end
                            "presolve_bt" => false,
                            "log_level" => 100)
 
-    m = castro4m2(solver=test_solver)
+    m = castro4m2(solver = test_solver)
     JuMP.optimize!(m)
     @test termination_status(m) == MOI.OTHER_LIMIT
 end
@@ -636,7 +635,7 @@ end
                           "max_iter" => 3,
                           "presolve_bt_width_tol" => 1e-3,
                           "presolve_bt" => false)
-    m = blend029_gl(solver=test_solver)
+    m = blend029_gl(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OTHER_LIMIT
@@ -650,7 +649,7 @@ end
                            "max_iter" => 1,
                            "presolve_bt" => false,
                            "log_level" => 100)
-    m = convex_solve(solver=test_solver)
+    m = convex_solve(solver = test_solver)
     JuMP.optimize!(m)
     @test termination_status(m) == MOI.OPTIMAL
 end
@@ -664,7 +663,7 @@ end
                            "presolve_bt" => false,
                            "time_limit" => 100000,
                            "log_level" => 100)
-    m = nlp3(solver=test_solver)
+    m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     @test isapprox(objective_bound(m), 6561.7841; atol=1e-3)
 end
@@ -679,7 +678,7 @@ end
                             "presolve_bp" => true,
                             "presolve_bt" => false,
                             "log_level" => 100)
-    m = binprod_nlp3(solver=test_solver)
+    m = binprod_nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL

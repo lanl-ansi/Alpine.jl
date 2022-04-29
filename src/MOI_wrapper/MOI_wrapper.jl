@@ -121,15 +121,23 @@ MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 function MOI.get(m::Optimizer, attr::MOI.PrimalStatus)
     if attr.result_index != 1
         return MOI.NO_SOLUTION
-    elseif m.alpine_status == MOI.OPTIMAL
+    end
+    
+    status = m.alpine_status
+    if status == MOI.OPTIMAL
         return MOI.FEASIBLE_POINT
-    elseif m.alpine_status == MOI.LOCALLY_SOLVED
+    elseif status == MOI.NEARLY_FEASIBLE_POINT
+        return MOI.NEARLY_FEASIBLE_POINT
+    elseif status == MOI.INFEASIBLE_POINT
+        return MOI.INFEASIBLE_POINT
+    elseif status == MOI.LOCALLY_SOLVED
         return MOI.FEASIBLE_POINT
     end
+
     return MOI.NO_SOLUTION
 end
 
-MOI.get(::Optimizer, ::MOI.PrimalStatus) = MOI.NO_SOLUTION
+# MOI.get(::Optimizer, ::MOI.PrimalStatus) = MOI.NO_SOLUTION
 
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
@@ -253,14 +261,14 @@ const SCALAR_SET = Union{MOI.EqualTo{Float64}, MOI.LessThan{Float64}, MOI.Greate
 
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:SCALAR_SET}) = true
 
-_lower(set::MOI.EqualTo) = set.value
-_upper(set::MOI.EqualTo) = set.value
-_lower(set::MOI.LessThan) = nothing
-_upper(set::MOI.LessThan) = set.upper
+_lower(set::MOI.EqualTo)     = set.value
+_upper(set::MOI.EqualTo)     = set.value
+_lower(set::MOI.LessThan)    = nothing
+_upper(set::MOI.LessThan)    = set.upper
 _lower(set::MOI.GreaterThan) = set.lower
 _upper(set::MOI.GreaterThan) = nothing
-_lower(set::MOI.Interval) = set.lower
-_upper(set::MOI.Interval) = set.upper
+_lower(set::MOI.Interval)    = set.lower
+_upper(set::MOI.Interval)    = set.upper
 
 function MOI.add_constraint(model::Optimizer, vi::MOI.VariableIndex, set::SCALAR_SET)
     l = _lower(set)
@@ -360,7 +368,6 @@ function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableInd
     MOI.throw_if_not_valid(model, vi)
     
     return model.best_sol[vi.value]
-
 end
 
 MOI.get(model::Optimizer, ::MOI.ResultCount) = model.alpine_status == MOI.OPTIMIZE_NOT_CALLED ? 0 : 1

@@ -1,4 +1,4 @@
-function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
+function nlp1(;verbose = false,solver = nothing, convhull=false, presolve=0)
 
 	if solver === nothing
 		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
@@ -21,7 +21,7 @@ function nlp1(;verbose=false,solver=nothing, convhull=false, presolve=0)
 	return m
 end
 
-function nlp2(;verbose=false,solver=nothing, convhull=false, presolve=0)
+function nlp2(;verbose = false,solver = nothing, convhull=false, presolve=0)
 
 	if solver === nothing
 		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(print_level=0),
@@ -58,7 +58,7 @@ function max_cover_var_picker(m::Alpine.Optimizer)
 end
 
 
-function nlp3(;solver=nothing)
+function nlp3(;solver = nothing)
 
 	m = Model(solver)
 

@@ -1,4 +1,4 @@
-function div(;verbose=false,solver=nothing)
+function div(;verbose = false,solver = nothing)
 
 	m = Model(solver)
 

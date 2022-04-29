@@ -1,4 +1,4 @@
-function castro2m2(;solver=nothing)
+function castro2m2(;solver = nothing)
 
 	m = Model(solver)
 
@@ -56,7 +56,7 @@ function castro2m2(;solver=nothing)
     return m
 end
 
-function castro6m2(;solver=nothing)
+function castro6m2(;solver = nothing)
 
 	m = Model(solver)
 
@@ -223,7 +223,7 @@ function castro6m2(;solver=nothing)
     return m
 end
 
-function castro4m2(;solver=nothing)
+function castro4m2(;solver = nothing)
 
     m = Model(solver)
 

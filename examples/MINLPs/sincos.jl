@@ -1,6 +1,6 @@
 # Functions in this file are not tested until support for trigonometric functions is added. 
 
-function sincos_p1(;solver=nothing)
+function sincos_p1(;solver = nothing)
 
     m = Model(solver)
 
@@ -12,7 +12,7 @@ function sincos_p1(;solver=nothing)
     return m
 end
 
-function trig(;solver=nothing)
+function trig(;solver = nothing)
 
     m = Model(solver)
 
@@ -30,7 +30,7 @@ function trig(;solver=nothing)
     return m
 end
 
-function specialopts(;verbose=false, solver=nothing)
+function specialopts(;verbose = false, solver = nothing)
 
 	m = Model(solver)
 

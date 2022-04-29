@@ -1,4 +1,4 @@
-function brainpc3(;solver=nothing)
+function brainpc3(;solver = nothing)
 
     m = Model(solver)
 

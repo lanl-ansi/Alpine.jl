@@ -1,4 +1,4 @@
-function exprstest(;solver=nothing)
+function exprstest(;solver = nothing)
 
 	m = Model(solver)
 
@@ -19,7 +19,7 @@ function exprstest(;solver=nothing)
 	return m
 end
 
-function operator_b(;solver=nothing)
+function operator_b(;solver = nothing)
 
 	m = Model(solver)
 
@@ -64,7 +64,7 @@ function operator_b(;solver=nothing)
 	return m
 end
 
-function operator_basic(;solver=nothing)
+function operator_basic(;solver = nothing)
 
 	m = Model(solver)
 
@@ -167,7 +167,7 @@ function operator_basic(;solver=nothing)
 	return m
 end
 
-function operator_c(;solver=nothing)
+function operator_c(;solver = nothing)
 
 	m = Model(solver)
 

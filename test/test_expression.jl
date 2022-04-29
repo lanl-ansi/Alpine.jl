@@ -2,7 +2,7 @@
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"log_level" =>  100)
 
-    m=exprstest(solver=test_solver)
+    m=exprstest(solver = test_solver)
 
     alpine = _build(m)
 
@@ -116,7 +116,7 @@ end
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,
                            "mip_solver" =>  CBC,
                            "log_level" =>  100)
-    m=nlp1(solver=test_solver)
+    m=nlp1(solver = test_solver)
 
     alpine = _build(m)
 
@@ -136,7 +136,7 @@ end
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"log_level" =>  100)
 
-    m=nlp3(solver=test_solver)
+    m=nlp3(solver = test_solver)
 
     alpine = _build(m)
 
@@ -213,7 +213,7 @@ end
                            "mip_solver" =>  CBC,
                            "log_level" =>  100)
 
-    m = operator_c(solver=test_solver)
+    m = operator_c(solver = test_solver)
 
     alpine = _build(m) # Setup internal model
 
@@ -235,7 +235,7 @@ end
                                             "mip_solver" =>  CBC,
                                             "log_level" =>  100)
 
-    m = blend029(solver=test_solver)
+    m = blend029(solver = test_solver)
 
     alpine = _build(m) # Setup internal model
 
@@ -348,7 +348,7 @@ end
 
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"log_level" =>  100)
 
-    m = multi3(solver=test_solver, exprmode=1)
+    m = multi3(solver = test_solver, exprmode=1)
 
     alpine = _build(m) # Setup internal model
 
@@ -369,7 +369,7 @@ end
     @test alpine.bounding_constr_mip[1][:coefs] == Any[1.0, 1.0, 1.0]
     @test alpine.bounding_constr_mip[1][:cnt] == 3
 
-    m = multi3(solver=test_solver, exprmode=2)
+    m = multi3(solver = test_solver, exprmode=2)
 
     alpine = _build(m)
 
@@ -387,7 +387,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi3(solver=test_solver, exprmode=3)
+    m = multi3(solver = test_solver, exprmode=3)
 
     alpine = _build(m)
 
@@ -405,7 +405,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi4(solver=test_solver, exprmode=1)
+    m = multi4(solver = test_solver, exprmode=1)
 
     alpine = _build(m)
 
@@ -427,7 +427,7 @@ end
     @test alpine.bounding_constr_mip[1][:coefs] == Any[1.0, 1.0, 1.0, 1.0]
     @test alpine.bounding_constr_mip[1][:cnt] == 4
 
-    m = multi4(solver=test_solver, exprmode=2)
+    m = multi4(solver = test_solver, exprmode=2)
 
     alpine = _build(m)
 
@@ -451,7 +451,7 @@ end
     @test alpine.bounding_obj_mip[:sense] === nothing
 
 
-    m = multi4(solver=test_solver, exprmode=3)
+    m = multi4(solver = test_solver, exprmode=3)
 
     alpine = _build(m)
 
@@ -471,7 +471,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi4(solver=test_solver, exprmode=4)
+    m = multi4(solver = test_solver, exprmode=4)
 
     alpine = _build(m)
 
@@ -496,7 +496,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi4(solver=test_solver, exprmode=5)
+    m = multi4(solver = test_solver, exprmode=5)
 
     alpine = _build(m)
 
@@ -524,7 +524,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi4(solver=test_solver, exprmode=6)
+    m = multi4(solver = test_solver, exprmode=6)
 
     alpine = _build(m)
 
@@ -543,7 +543,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi4(solver=test_solver, exprmode=7)
+    m = multi4(solver = test_solver, exprmode=7)
 
     alpine = _build(m)
 
@@ -567,7 +567,7 @@ end
     @test alpine.bounding_obj_mip[:sense] === nothing
 
 
-    m = multi4(solver=test_solver, exprmode=8)
+    m = multi4(solver = test_solver, exprmode=8)
 
     alpine = _build(m)
 
@@ -588,7 +588,7 @@ end
     @test alpine.bounding_obj_mip[:sense] === nothing
 
 
-    m = multi4(solver=test_solver, exprmode=9)
+    m = multi4(solver = test_solver, exprmode=9)
 
     alpine = _build(m)
 
@@ -607,7 +607,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi4(solver=test_solver, exprmode=10)
+    m = multi4(solver = test_solver, exprmode=10)
 
     alpine = _build(m)
     @test length(keys(alpine.nonconvex_terms)) == 3
@@ -629,7 +629,7 @@ end
     @test alpine.bounding_obj_mip[:cnt] == 1
     @test alpine.bounding_obj_mip[:sense] === nothing
 
-    m = multi4(solver=test_solver, exprmode=11)
+    m = multi4(solver = test_solver, exprmode=11)
 
     alpine = _build(m)
 
@@ -656,7 +656,7 @@ end
 @testset "Expression Parsing || bilinear || Complex-div || div.jl" begin
     test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"log_level" =>  100)
 
-    m = div(solver=test_solver)
+    m = div(solver = test_solver)
 
     alpine = _build(m) # Setup internal model
 
@@ -996,7 +996,7 @@ end
     @testset "Convex Parsing :: PART I" begin
 
         test_solver = optimizer_with_attributes(Alpine.Optimizer,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"log_level" =>  100)
-        m = convex_test(test_solver)
+        m = convex_test(solver = test_solver)
 
         alpine = _build(m)
 
@@ -1205,7 +1205,7 @@ end
                                "disc_ratio" => 8,
                                "log_level" =>  100)
 
-        m = nlp2(solver=test_solver)
+        m = nlp2(solver = test_solver)
 
         alpine = _build(m)
 
@@ -1253,7 +1253,7 @@ end
                                "mip_solver" =>  CBC,
                                "log_level" =>  100)
 
-        m = basic_linear_lift(solver=test_solver)
+        m = basic_linear_lift(solver = test_solver)
 
         alpine = _build(m) # Setup internal model
 
@@ -1338,7 +1338,7 @@ end
             "disc_ratio" =>  8,
             "log_level" =>  100)
 
-        m = brainpc3(solver=test_solver)
+        m = brainpc3(solver = test_solver)
 
         alpine = _build(m)
 
@@ -1980,7 +1980,7 @@ end
                            "mip_solver" =>  CBC,
                            "log_level" =>  100)
 
-    m = operator_basic(solver=test_solver)
+    m = operator_basic(solver = test_solver)
     MOI.Utilities.attach_optimizer(m)
     MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
 
@@ -2493,7 +2493,7 @@ end
                                 "log_level" =>  100)
 
         m = Model(test_solver)
-        @variable(m, x[1:5], Bin)
+        @variable(m, 0 <= x[1:5] <= 1, Bin)
         @NLconstraint(m, x[1] + -x[2] >= 2)
         @objective(m, Min, x[1]+x[2])
         alpine = _build(m)
@@ -2560,7 +2560,7 @@ end
 
         test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"log_level" =>  100)
 
-        m = bpml(solver=test_solver)
+        m = bpml(solver = test_solver)
 
         alpine = _build(m) # Setup internal model
 
@@ -2611,7 +2611,7 @@ end
 
         test_solver=optimizer_with_attributes(Alpine.Optimizer,"minlp_solver" =>  JUNIPER,"nlp_solver" =>  IPOPT,"mip_solver" =>  CBC,"log_level" =>  100)
 
-        m = bmpl_linearlifting(solver=test_solver)
+        m = bmpl_linearlifting(solver = test_solver)
 
         alpine = _build(m)
 
