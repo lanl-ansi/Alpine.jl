@@ -475,7 +475,7 @@ end
 function fetch_nlp_solver_identifier(m::Optimizer;override="")
 
     isempty(override) ? solverstring = string(Alp.get_option(m, :nlp_solver)) : solverstring = override
-
+    
    # Higher-level solver
    if occursin("Pajarito", solverstring)
        m.nlp_solver_id =  "Pajarito"
