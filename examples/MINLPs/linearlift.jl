@@ -1,6 +1,6 @@
-function basic_linear_lift(;verbose=false, solver=nothing)
+function basic_linear_lift(;verbose = false, solver = nothing)
 
-	if solver == nothing
+	if solver === nothing
 		m = Model(Alpine.Optimizer(nlp_solver=IpoptSolver(),
 									mip_solver=CbcSolver(log_level=0),
 									log_level=10000))

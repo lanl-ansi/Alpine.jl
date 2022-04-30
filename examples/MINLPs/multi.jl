@@ -19,7 +19,7 @@
 # println("N | K | convhull | exprmode | unifrom | randomub | sos2 | presolve | delta")
 # println("--------------------------------------------------------------------------")
 
-function multi4(;verbose=false,solver=nothing, exprmode=1)
+function multi4(;verbose = false,solver = nothing, exprmode=1)
 
 	m = Model(solver)
 
@@ -59,7 +59,7 @@ function multi4(;verbose=false,solver=nothing, exprmode=1)
 	return m
 end
 
-function multi3(;verbose=false, solver=nothing, exprmode=1)
+function multi3(;verbose = false, solver = nothing, exprmode=1)
 
 	m = Model(solver)
 
@@ -85,7 +85,8 @@ function multi3(;verbose=false, solver=nothing, exprmode=1)
 	return m
 end
 
-function multi2(;verbose=false,solver=nothing)
+function multi2(;verbose = false,solver = nothing)
+	# Global solution: 0.92906489 (arg min: [0.7336635, 1.266336])
 
 	m = Model(solver)
 
@@ -101,7 +102,7 @@ function multi2(;verbose=false,solver=nothing)
 	return m
 end
 
-function multi4N(;verbose=false, exprmode=1, solver=nothing, N=1, randomub=true)
+function multi4N(;verbose = false, exprmode=1, solver = nothing, N=1, randomub=true)
 
 	m = Model(solver)
 
@@ -144,7 +145,7 @@ function multi4N(;verbose=false, exprmode=1, solver=nothing, N=1, randomub=true)
 	return m
 end
 
-function multi3N(;verbose=false, randomub=nothing, solver=nothing, exprmode=1, N=1, delta=4)
+function multi3N(;verbose = false, randomub=nothing, solver = nothing, exprmode=1, N=1, delta=4)
 
 	m = Model(solver)
 
@@ -170,7 +171,7 @@ function multi3N(;verbose=false, randomub=nothing, solver=nothing, exprmode=1, N
 	return m
 end
 
-function multiKND(;verbose=false, solver=nothing, exprmode=1, randomub=true, N=1, K=2, D=1)
+function multiKND(;verbose = false, solver = nothing, exprmode=1, randomub=true, N=1, K=2, D=1)
 
 	m = Model(solver)
 

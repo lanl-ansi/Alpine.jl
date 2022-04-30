@@ -1,4 +1,4 @@
-function convex_test(solver=nothing)
+function convex_test(;solver = nothing)
 
 	m = Model(solver)
 
@@ -45,7 +45,7 @@ function convex_test(solver=nothing)
 	return m
 end
 
-function convex_solve(;solver=nothing)
+function convex_solve(;solver = nothing)
 
 	m = Model(solver)
 

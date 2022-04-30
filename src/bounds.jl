@@ -6,7 +6,7 @@ In this case, we don't have to mess with the original bound information.
 """
 function init_tight_bound(m::Optimizer)
     m.l_var_tight = [m.l_var_orig; fill(-Inf, m.num_var_linear_mip + m.num_var_nonlinear_mip)]
-    m.u_var_tight = [m.u_var_orig; fill(Inf, m.num_var_linear_mip + m.num_var_nonlinear_mip)]
+    m.u_var_tight = [m.u_var_orig;  fill(Inf, m.num_var_linear_mip + m.num_var_nonlinear_mip)]
     for i in 1:m.num_var_orig
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
@@ -16,6 +16,7 @@ function init_tight_bound(m::Optimizer)
             m.u_var_tight[i] = ceil(m.u_var_tight[i])
         end
     end
+
     return
 end
 
@@ -27,7 +28,7 @@ The output is a dictionary with MathProgBase variable indices keys attached to t
 """
 function init_disc(m::Optimizer)
 
-    for var in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+    for var in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
         if m.var_type[var] in [:Bin, :Cont]
             lb = m.l_var_tight[var]
             ub = m.u_var_tight[var]
@@ -279,7 +280,7 @@ function resolve_var_bounds(m::Optimizer)
     end
 
     # Resolve unbounded variables in the original formulation 
-    resolve_inf_bounds(m)
+    Alp.resolve_inf_bounds(m)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
@@ -291,7 +292,7 @@ function resolve_var_bounds(m::Optimizer)
         elseif haskey(m.linear_terms, k)
             Alp.basic_linear_bounds(m, k)
         else
-            error("[RARE] Found homeless term key $(k) during bound resolution.")
+            error("Found homeless term key $(k) during bound resolution.")
         end
     end
 
@@ -299,7 +300,7 @@ function resolve_var_bounds(m::Optimizer)
 end
 
 """
-    Critically assumed since Alpine relies on finite bound to work
+    Resolving Inf variable bounds since Alpine relies on finite bounds to construct relaxations
 """
 function resolve_inf_bounds(m::Optimizer)
     warnuser = false
@@ -325,6 +326,7 @@ function resolve_inf_bounds(m::Optimizer)
     elseif infcount > 1
         warnuser && println("Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(Alp.get_option(m, :large_bound)). This may affect global optimal values and run times.")
     end
+
     return
 end
 

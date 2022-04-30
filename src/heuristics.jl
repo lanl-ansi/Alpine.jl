@@ -17,7 +17,7 @@ function update_disc_cont_var(m::Optimizer)
     var_diffs = Vector{Float64}(undef, m.num_var_orig+length(keys(m.linear_terms))+length(keys(m.nonconvex_terms)))
 
     for i in 1:m.num_var_orig       # Original Variables
-        var_diffs[i] = abs(m.best_sol[i]-m.best_bound_sol[i])
+        var_diffs[i] = abs(m.best_sol[i] - m.best_bound_sol[i])
     end
 
     for i in 1:length(keys(m.linear_terms))
@@ -65,11 +65,14 @@ function heu_pool_multistart(m::Optimizer)
 
     for i in 1:m.bound_sol_pool[:cnt]
         if !m.bound_sol_pool[:ubstart][i]
-            rounded_sol = round_sol(m, m.bound_sol_pool[:sol][i])
-            l_var, u_var = fix_domains(m, discrete_sol=rounded_sol, use_orig=true)
+
+            rounded_sol = Alp.round_sol(m, m.bound_sol_pool[:sol][i])
+            l_var, u_var = Alp.fix_domains(m, discrete_sol=rounded_sol, use_orig=true)
             heuristic_model = MOI.instantiate(Alp.get_option(m, :nlp_solver), with_bridge_type=Float64)
-            x = load_nonlinear_model(m, heuristic_model, l_var, u_var)
+            x = Alp.load_nonlinear_model(m, heuristic_model, l_var, u_var)
+            
             MOI.optimize!(heuristic_model)
+
             heuristic_model_status = MOI.get(heuristic_model, MOI.TerminationStatus())
             if heuristic_model_status in STATUS_OPT || heuristic_model_status in STATUS_LIMIT
                 candidate_obj = MOI.get(heuristic_model, MOI.ObjectiveValue())
@@ -87,7 +90,7 @@ function heu_pool_multistart(m::Optimizer)
     end
 
     if found_feasible
-        update_incumb_objective(m, incumb_obj, incumb_sol)
+        Alp.update_incumb_objective(m, incumb_obj, incumb_sol)
         return MOI.LOCALLY_SOLVED
     end
 
