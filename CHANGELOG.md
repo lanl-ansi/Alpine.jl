@@ -9,7 +9,7 @@
 - Added Rosenbrock function
 - Added user-definable `presolve_bt_improv_tol` for variable range reductions in OBBT
 - Minor update on finite values for obj-bound in `create_bound_tightening_model`
-- NLP solution rounding issue resolved (now compatible with default tol, 1e-6), to avoid the variable solution outside discretization (#190)
+- NLP solution rounding issue resolved (now compatible with default tol, 1e-6), to avoid the variable solution outside discretization (#190)     
 - `circleN` instance updated to `circle_MINLPLib` to eliminate Pavito's mixed-integer cycling in unit tests (#190)
 - Clean-up in printing variable solutions (`variable_values`)
 

@@ -104,8 +104,10 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
                         temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_value(m.model_mip)/Alp.get_option(m, :presolve_bt_output_tol))*Alp.get_option(m, :presolve_bt_output_tol)  # Objective truncation for numerical issues
                     elseif status in STATUS_LIMIT
                         temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_bound(m.model_mip)/Alp.get_option(m, :presolve_bt_output_tol))*Alp.get_option(m, :presolve_bt_output_tol)
+                    elseif status in STATUS_INF
+                        @warn("Infeasible model detected within bound tightening - bounds not updated")
                     else
-                        print("!")
+                        @warn("Unknown status within  bound tightening models")
                     end
                 end
             end
@@ -160,6 +162,7 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
         else
             discretization = discretization
         end
+
         time() - st > timelimit && break
 
     end
