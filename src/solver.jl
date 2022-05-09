@@ -58,7 +58,8 @@ mutable struct OptimizerOptions
     presolve_bt_max_iter::Int                                   # Maximum iterations allowed to perform presolve
     presolve_bt_width_tol::Float64                              # Width tolerance for bound-tightening
     presolve_bt_improv_tol::Float64                             # Improvement tolerance for average reduction of variable ranges
-    presolve_bt_output_tol::Float64                             # Variable bounds truncation tol (change to precision)
+    presolve_bt_bound_tol::Float64                             # Variable bounds truncation tol (change to precision)
+    presolve_bt_obj_bound_tol::Float64                        # Upper bound truncation tol
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
     presolve_bt_relax_integrality::Bool                         # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
@@ -121,7 +122,8 @@ function get_default_options()
         presolve_bt_max_iter = 10
         presolve_bt_width_tol = 1e-3
         presolve_bt_improv_tol = 1e-3
-        presolve_bt_output_tol = 1e-5
+        presolve_bt_bound_tol = 1e-4
+        presolve_bt_obj_bound_tol = 1e-3
         presolve_bt_algo = 1
         presolve_bt_relax_integrality = false
         presolve_bt_mip_time_limit = Inf
@@ -137,7 +139,7 @@ function get_default_options()
                              method_convexification, disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
                              disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch,
                              convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts,
-                             presolve_track_time, presolve_bt, presolve_time_limit, presolve_bt_max_iter, presolve_bt_width_tol, presolve_bt_improv_tol, presolve_bt_output_tol,
-                             presolve_bt_algo, presolve_bt_relax_integrality, presolve_bt_mip_time_limit, presolve_bp,
+                             presolve_track_time, presolve_bt, presolve_time_limit, presolve_bt_max_iter, presolve_bt_width_tol, presolve_bt_improv_tol, presolve_bt_bound_tol,
+                             presolve_bt_obj_bound_tol, presolve_bt_algo, presolve_bt_relax_integrality, presolve_bt_mip_time_limit, presolve_bp,
                              user_parameters, int_enable, int_cumulative_disc)
 end

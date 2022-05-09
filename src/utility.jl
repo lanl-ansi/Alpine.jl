@@ -27,15 +27,21 @@ function update_opt_gap(m::Optimizer)
          m.best_rel_gap = 0.0
          return
       end
-      if Alp.get_option(m, :gap_ref) == :ub
+      #if Alp.get_option(m, :gap_ref) == :ub
+      if is_min_sense(m)
          if isapprox(m.best_obj, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
             eps = 1 # shift factor
-            m.best_rel_gap = (m.best_obj + eps) - (m.best_bound + eps)/(Alp.get_option(m, :tol)+(m.best_obj + eps))
+            m.best_rel_gap = abs((m.best_obj + eps) - (m.best_bound + eps))/(Alp.get_option(m, :tol)+abs(m.best_obj) + eps)
          else
             m.best_rel_gap = abs(m.best_obj - m.best_bound)/(Alp.get_option(m, :tol)+abs(m.best_obj))
          end
-      else
-         m.best_rel_gap = abs(m.best_obj - m.best_bound)/(Alp.get_option(m, :tol)+abs(m.best_bound))
+      elseif is_max_sense(m)
+         if isapprox(m.best_bound, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
+            eps = 1 # shift factor
+            m.best_rel_gap = abs((m.best_obj + eps) - (m.best_bound + eps))/(Alp.get_option(m, :tol)+abs(m.best_bound) + eps)
+         else
+            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(Alp.get_option(m, :tol)+abs(m.best_bound))
+         end
       end
    end
 

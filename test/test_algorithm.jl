@@ -6,7 +6,7 @@
                        "monomial_convexhull" => false,
                        "presolve_bt" => false,
                        "presolve_bp" => true,
-                       "presolve_bt_output_tol" => 1e-1,
+                       "presolve_bt_bound_tol" => 1e-1,
                        "log_level" =>100)
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
@@ -66,7 +66,7 @@ end
 							   "log_level" =>100,
                                "max_iter" => 3,
 							   "presolve_bt_width_tol" => 1e-3,
-							   "presolve_bt_output_tol" => 1e-1,
+							   "presolve_bt_bound_tol" => 1e-1,
 							   "presolve_bt" => true,
                                "presolve_bt_algo" => 1,
                                "presolve_bp" => true,
@@ -92,7 +92,7 @@ end
                               "max_iter" => 2,
                               "presolve_bt" => true,
                               "presolve_bt_width_tol" => 1e-3,
-                              "presolve_bt_output_tol" => 1e-1,
+                              "presolve_bt_bound_tol" => 1e-1,
                               "presolve_bt_algo" => 2,
                               "presolve_bp" => true,
                               "presolve_bt_max_iter" => 2,
@@ -162,7 +162,7 @@ end
                                           "presolve_bt" => true,
                                           "presolve_bt_max_iter" => 1,
                                           "presolve_bt_algo" => 1,
-                                          "presolve_bt_output_tol" => 1e-2,
+                                          "presolve_bt_bound_tol" => 1e-2,
                                           "log_level" => 100)
 
     m = circle_MINLPLib(solver = test_solver)
@@ -511,7 +511,7 @@ end
 #                            "presolve_bt" => false,
 #                            "presolve_bp" => true,
 #                            "presolve_bt_algo" => 1,
-#                            "presolve_bt_output_tol" => 1e-1,
+#                            "presolve_bt_bound_tol" => 1e-1,
 #                            "convhull_ebd" => true,
 #                            "log_level" => 100)
 
@@ -565,7 +565,7 @@ end
                            "presolve_bt" => false,
                            "presolve_bp" => true,
                            "presolve_bt_algo" => 1,
-                           "presolve_bt_output_tol" => 1e-1,
+                           "presolve_bt_bound_tol" => 1e-1,
                            "convhull_ebd" => true,
                            "convhull_ebd_ibs" => true,
                            "log_level" => 100)

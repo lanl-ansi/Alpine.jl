@@ -7,7 +7,7 @@ function nlp1(;verbose = false,solver = nothing, convhull=false, presolve=0)
 								   monomial_convexhull=convhull,
 								   presolve_bt=(presolve>0),
 								   presolve_bt_algo=presolve,
-								   presolve_bt_output_tol=1e-1,
+								   presolve_bt_bound_tol=1e-1,
 								   log_level=10000))
 	else
 		m = Model(solver)
@@ -30,7 +30,7 @@ function nlp2(;verbose = false,solver = nothing, convhull=false, presolve=0)
 								   monomial_convexhull=convhull,
 								   presolve_bt=(presolve>0),
 								   presolve_bt_algo=presolve,
-								   presolve_bt_output_tol=1e-1,
+								   presolve_bt_bound_tol=1e-1,
 								   log_level=10000))
 	else
 		m = Model(solver)
