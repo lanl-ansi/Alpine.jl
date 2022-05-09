@@ -167,21 +167,11 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, timelimit = Inf
 
         if keep_tightening
             stats = Alp.relaxation_model_obbt(m, discretization, bound)
-            
+
             if is_min_sense(m)
-                if isapprox(bound, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
-                    eps = 1 # shift factor
-                    current_rel_gap = ((bound + eps) - (stats["relaxed_obj"] + eps))/(Alp.get_option(m, :tol)+(bound + eps))
-                else
-                    current_rel_gap = abs(bound - stats["relaxed_obj"])/(Alp.get_option(m, :tol)+abs(bound))
-                end
+                current_rel_gap = Alp.eval_opt_gap(m, stats["relaxed_obj"], bound)
             elseif is_max_sense(m)
-                if isapprox(stats["relaxed_obj"], 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
-                    eps = 1 # shift factor
-                    m.best_rel_gap = abs((bound + eps) - (stats["relaxed_obj"] + eps))/(Alp.get_option(m, :tol)+abs(stats["relaxed_obj"]) + eps)
-                 else
-                    m.best_rel_gap = abs(bound - stats["relaxed_obj"])/(Alp.get_option(m, :tol)+abs(stats["relaxed_obj"]))
-                end
+                current_rel_gap = Alp.eval_opt_gap(m, bound, stats["relaxed_obj"])
             end
             
             keep_tightening_rel_gap = (current_rel_gap > Alp.get_option(m, :rel_gap))

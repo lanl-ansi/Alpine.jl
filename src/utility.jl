@@ -21,32 +21,48 @@ function update_opt_gap(m::Optimizer)
       return
    else
       p = convert(Int, round(abs(log(10,Alp.get_option(m, :rel_gap)))))
-      n = round(abs(m.best_obj-m.best_bound); digits=p)
-      dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
+      n = round(abs(m.best_obj - m.best_bound); digits=p)
+      # dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
       if isapprox(n, 0.0;atol=Alp.get_option(m, :tol)) && isapprox(m.best_obj,0.0;atol=Alp.get_option(m, :tol))
          m.best_rel_gap = 0.0
          return
       end
       #if Alp.get_option(m, :gap_ref) == :ub
       if is_min_sense(m)
-         if isapprox(m.best_obj, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
-            eps = 1 # shift factor
-            m.best_rel_gap = abs((m.best_obj + eps) - (m.best_bound + eps))/(Alp.get_option(m, :tol)+abs(m.best_obj) + eps)
-         else
-            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(Alp.get_option(m, :tol)+abs(m.best_obj))
-         end
+         m.best_rel_gap = Alp.eval_opt_gap(m, m.best_bound, m.best_obj)
       elseif is_max_sense(m)
-         if isapprox(m.best_bound, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
-            eps = 1 # shift factor
-            m.best_rel_gap = abs((m.best_obj + eps) - (m.best_bound + eps))/(Alp.get_option(m, :tol)+abs(m.best_bound) + eps)
-         else
-            m.best_rel_gap = abs(m.best_obj - m.best_bound)/(Alp.get_option(m, :tol)+abs(m.best_bound))
-         end
+         m.best_rel_gap = Alp.eval_opt_gap(m, m.best_obj, m.best_bound)
       end
+
    end
 
    m.best_abs_gap = abs(m.best_obj - m.best_bound)
    return
+end
+
+function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
+
+   if isapprox(lower_bound, upper_bound, atol = Alp.get_option(m, :tol))
+      m.best_rel_gap = 0.0
+
+   elseif lower_bound > upper_bound
+      @error("Lower bound cannot cross the upper bound in optimality gap evaluation")
+
+   elseif isinf(lower_bound) || isinf(upper_bound)
+      @error("Infinite bounds detected in optimality gap evalutation")
+   
+   else
+      if isapprox(upper_bound, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
+         eps = 1 # shift factor
+         m.best_rel_gap = abs((upper_bound + eps) - (lower_bound + eps))/(Alp.get_option(m, :tol)+abs(upper_bound) + eps)
+   
+      else
+         m.best_rel_gap = abs(upper_bound - lower_bound)/(Alp.get_option(m, :tol)+abs(upper_bound))
+      end
+   
+   end
+   
+   return m.best_rel_gap
 end
 
 function measure_relaxed_deviation(m::Optimizer;sol=nothing)
