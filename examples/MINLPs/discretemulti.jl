@@ -91,7 +91,7 @@ function bpml_binl(;solver = nothing)
 
 	Random.seed!(10)
 	@variable(m, 0 <= X[1:5] <= 1, Bin)
-	@variable(m, 50<=Y[1:5]<=50+100*rand()*rand())
+	@variable(m, 50 <= Y[1:5] <= 50+100*rand()*rand())
 	@constraint(m, sum(X) >= 3)
 	@NLobjective(m, Max, sum(X[i]*Y[i]*Y[i+1] for i in 1:4) - X[5]*Y[5]*Y[1])
 

@@ -68,9 +68,9 @@ function load!(m::Optimizer)
    :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) : Alp.set_option(m, :int_enable, false) # Separator for safer runs
 
    # Conduct solver-dependent detection
-   fetch_mip_solver_identifier(m)
-   (Alp.get_option(m, :nlp_solver) !== nothing) && (fetch_nlp_solver_identifier(m))
-   (Alp.get_option(m, :minlp_solver) !== nothing) && (fetch_minlp_solver_identifier(m))
+   Alp.fetch_mip_solver_identifier(m)
+   (Alp.get_option(m, :nlp_solver) !== nothing)   && (Alp.fetch_nlp_solver_identifier(m))
+   (Alp.get_option(m, :minlp_solver) !== nothing) && (Alp.fetch_minlp_solver_identifier(m))
 
    # Solver Dependent Options
    if m.mip_solver_id != :Gurobi
@@ -139,8 +139,8 @@ Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorith
 """
 function global_solve(m::Optimizer)
 
-   Alp.get_option(m, :log_level) > 0 && logging_head(m)
-   Alp.get_option(m, :presolve_track_time) || reset_timer(m)
+   Alp.get_option(m, :log_level) > 0 && Alp.logging_head(m)
+   Alp.get_option(m, :presolve_track_time) || Alp.reset_timer(m)
 
    while !Alp.check_exit(m)
       m.logs[:n_iter] += 1

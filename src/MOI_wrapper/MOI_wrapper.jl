@@ -320,12 +320,13 @@ end
 
 is_min_sense(model::Optimizer) = model.sense_orig == MOI.MIN_SENSE
 is_max_sense(model::Optimizer) = model.sense_orig == MOI.MAX_SENSE
+
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     model.sense_orig = sense
-    if is_max_sense(model)
+    if Alp.is_max_sense(model)
         model.best_obj = -Inf
         model.best_bound = Inf
-    elseif is_min_sense(model)
+    elseif Alp.is_min_sense(model)
         model.best_obj = Inf
         model.best_bound = -Inf
     else

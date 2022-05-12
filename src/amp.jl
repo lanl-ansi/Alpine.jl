@@ -357,7 +357,7 @@ function update_disc_ratio(m::Optimizer, presolve=false)
     # revconvertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
 
     incumb_ratio = ratio_pool[1]
-    is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
+    Alp.is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
     res_collector = Float64[]
 
     for r in ratio_pool
@@ -417,7 +417,7 @@ function disc_branch_solve(m::Optimizer)
     end
 
     # Safety scheme
-    if is_min_sense(m)
+    if Alp.is_min_sense(m)
         return -Inf
     else
         return Inf

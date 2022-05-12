@@ -54,21 +54,20 @@ mutable struct OptimizerOptions
     # Presolving parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
-    presolve_time_limit::Float64                                # Time limit for presolving (seconds)
+    presolve_bt_time_limit::Float64                             # Time limit for presolving (seconds)
     presolve_bt_max_iter::Int                                   # Maximum iterations allowed to perform presolve
     presolve_bt_width_tol::Float64                              # Width tolerance for bound-tightening
     presolve_bt_improv_tol::Float64                             # Improvement tolerance for average reduction of variable ranges
-    presolve_bt_bound_tol::Float64                             # Variable bounds truncation tol (change to precision)
-    presolve_bt_obj_bound_tol::Float64                        # Upper bound truncation tol
+    presolve_bt_bound_tol::Float64                              # Variable bounds truncation tol (change to precision)
+    presolve_bt_obj_bound_tol::Float64                          # Objective upper bound truncation tol
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
     presolve_bt_relax_integrality::Bool                         # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
-    user_parameters::Dict                                       # [INACTIVE] Additional parameters used for user-defined functional inputs
 
-    # Features for Integer Problems (NOTE: no support for int-lin problems)
+    # Features for integer variable problems
     int_enable::Bool                                            # Convert integer problem into binary problem
     int_cumulative_disc::Bool                                   # Cumulatively involve integer variables for discretization
 
@@ -98,7 +97,7 @@ function get_default_options()
         # term_patterns = Array{Function}(undef, 0)
         # constr_patterns = Array{Function}(undef, 0)
 
-        disc_var_pick = 2                      # By default use the 15-variable selective rule
+        disc_var_pick = 2                      # By default, uses the 15-variable selective rule
         disc_ratio = 4
         disc_uniform_rate = 2
         disc_add_partition_method = "adaptive"
@@ -118,7 +117,7 @@ function get_default_options()
 
         presolve_track_time = true
         presolve_bt = true
-        presolve_time_limit = 900
+        presolve_bt_time_limit = 900
         presolve_bt_max_iter = 10
         presolve_bt_width_tol = 1e-3
         presolve_bt_improv_tol = 1e-3
@@ -129,7 +128,6 @@ function get_default_options()
         presolve_bt_mip_time_limit = Inf
         presolve_bp = false
 
-        user_parameters = Dict()
         int_enable = false
         int_cumulative_disc = true
 
@@ -139,7 +137,7 @@ function get_default_options()
                              method_convexification, disc_var_pick, disc_ratio, disc_uniform_rate, disc_add_partition_method, disc_divert_chunks,
                              disc_abs_width_tol, disc_rel_width_tol, disc_consecutive_forbid, disc_ratio_branch,
                              convhull_formulation, convhull_ebd, convhull_ebd_encode, convhull_ebd_ibs, convhull_ebd_link, convhull_warmstart, convhull_no_good_cuts,
-                             presolve_track_time, presolve_bt, presolve_time_limit, presolve_bt_max_iter, presolve_bt_width_tol, presolve_bt_improv_tol, presolve_bt_bound_tol,
-                             presolve_bt_obj_bound_tol, presolve_bt_algo, presolve_bt_relax_integrality, presolve_bt_mip_time_limit, presolve_bp,
-                             user_parameters, int_enable, int_cumulative_disc)
+                             presolve_track_time, presolve_bt, presolve_bt_time_limit, presolve_bt_max_iter, presolve_bt_width_tol, presolve_bt_improv_tol, presolve_bt_bound_tol,
+                             presolve_bt_obj_bound_tol, presolve_bt_algo, presolve_bt_relax_integrality, presolve_bt_mip_time_limit, presolve_bp, 
+                             int_enable, int_cumulative_disc)
 end

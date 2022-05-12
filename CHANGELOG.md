@@ -1,5 +1,13 @@
 # Alpine.jl Change Log
 
+## Staged
+- Fixed OBBT convergence issue due to average bound reduction
+- Added new termination criteria to OBBT: max_reduction, max_width, rel_gap at every iteration of OBBT
+- Fixed the issue to tighten only original nonlinear variables (aux vars were counted before)
+- `presolve_bt_bound_tol` changed to `1E-4` (numerically stable)
+- `presolve_bt_obj_bound_tol` added to avoid infeasibility in OBBT iterations when bounds are tights
+- Fixed bug in `best_rel_gap` evaluation
+
 ## v0.3.0
 - JuMP v1.0+ in examples
 - Pavito v0.3.5 support

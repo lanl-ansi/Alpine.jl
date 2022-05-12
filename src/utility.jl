@@ -28,15 +28,16 @@ function update_opt_gap(m::Optimizer)
          return
       end
       #if Alp.get_option(m, :gap_ref) == :ub
-      if is_min_sense(m)
+      if Alp.is_min_sense(m)
          m.best_rel_gap = Alp.eval_opt_gap(m, m.best_bound, m.best_obj)
-      elseif is_max_sense(m)
+      elseif Alp.is_max_sense(m)
          m.best_rel_gap = Alp.eval_opt_gap(m, m.best_obj, m.best_bound)
       end
 
    end
 
    m.best_abs_gap = abs(m.best_obj - m.best_bound)
+
    return
 end
 
@@ -46,10 +47,12 @@ function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
       m.best_rel_gap = 0.0
 
    elseif lower_bound > upper_bound
-      @error("Lower bound cannot cross the upper bound in optimality gap evaluation")
+      @warn("Lower bound cannot cross the upper bound in optimality gap evaluation")
+      @assert(lower_bound < upper_bound)
 
    elseif isinf(lower_bound) || isinf(upper_bound)
-      @error("Infinite bounds detected in optimality gap evalutation")
+      @warn("Infinite bounds detected in optimality gap evalutation")
+      @assert(!(isinf(lower_bound) || isinf(upper_bound)))
    
    else
       if isapprox(upper_bound, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
@@ -187,7 +190,7 @@ This function is used to fix variables to certain domains during the local solve
 More specifically, it is used in [`local_solve`](@ref) to fix binary and integer variables to lower bound solutions
 and discretizing variables to the active domain according to lower bound solution.
 """
-function fix_domains(m::Optimizer;discrete_sol=nothing, use_orig=false)
+function fix_domains(m::Optimizer; discrete_sol = nothing, use_orig = false)
 
    discrete_sol !== nothing && @assert length(discrete_sol) >= m.num_var_orig
 
