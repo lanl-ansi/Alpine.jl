@@ -79,10 +79,13 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, time_limit = In
 
     (Alp.get_option(m, :log_level) > 0) && println("  Starting bound-tightening")
 
-    # start of the solve
-    width_tol = Alp.get_option(m, :presolve_bt_width_tol)
+    width_tol  = Alp.get_option(m, :presolve_bt_width_tol)
+    bound_tol  = Alp.get_option(m, :presolve_bt_bound_tol)
+    improv_tol = Alp.get_option(m, :presolve_bt_improv_tol)
+
     keep_tightening = true
 
+    # start of the solve
     while keep_tightening && (m.logs[:time_left] > Alp.get_option(m, :tol)) && (m.logs[:bt_iter] < Alp.get_option(m, :presolve_bt_max_iter)) # Stopping criteria
 
         keep_tightening = false
@@ -106,9 +109,9 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, time_limit = In
                     JuMP.@objective(m.model_mip, sense, _index_to_variable_ref(m.model_mip, var_idx))
                     stats = Alp.solve_bound_tightening_model(m)
                     if stats["status"] in STATUS_OPT
-                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_value(m.model_mip)/Alp.get_option(m, :presolve_bt_bound_tol))*Alp.get_option(m, :presolve_bt_bound_tol)  # Objective truncation for numerical issues
+                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_value(m.model_mip)/bound_tol)*bound_tol  # Objective truncation for numerical issues
                     elseif stats["status"] in STATUS_LIMIT
-                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_bound(m.model_mip)/Alp.get_option(m, :presolve_bt_bound_tol))*Alp.get_option(m, :presolve_bt_bound_tol)
+                        temp_bounds[var_idx][tell_side[sense]] = tell_round[sense](JuMP.objective_bound(m.model_mip)/bound_tol)*bound_tol
                     elseif stats["status"] in STATUS_INF
                         @warn("Infeasible model detected within bound tightening - bounds not updated")
                     else
@@ -154,20 +157,21 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, time_limit = In
             (Alp.get_option(m, :log_level) > 99) && print("+")
             (Alp.get_option(m, :log_level) > 99) && println("  VAR $(var_idx) UB contracted $(discretization[var_idx][end])=>$(temp_bounds[var_idx][end])")
             
-            discretization[var_idx][1] = temp_bounds[var_idx][1]
+            discretization[var_idx][1]   = temp_bounds[var_idx][1]
             discretization[var_idx][end] = temp_bounds[var_idx][end]
 
         end
 
         avg_reduction = total_reduction/length(keys(temp_bounds))
 
-        bound_avg_reduction = (avg_reduction > Alp.get_option(m, :presolve_bt_improv_tol))
-        bound_max_reduction = (max_reduction > Alp.get_option(m, :presolve_bt_improv_tol))
+        bound_avg_reduction = (avg_reduction > improv_tol)
+        bound_max_reduction = (max_reduction > improv_tol)
         bound_max_width = (max_width > width_tol)
         
         keep_tightening = (bound_avg_reduction) && (bound_max_reduction) && (bound_max_width)
 
-        if keep_tightening  # deactivate this termination criterion if it slows down the OBBT convergence 
+        # Deactivate this termination criterion if it slows down the OBBT convergence 
+        if keep_tightening  
             stats = Alp.relaxation_model_obbt(m, discretization, bound)
 
             if Alp.is_min_sense(m)
@@ -271,8 +275,8 @@ function solve_bound_tightening_model(m::Optimizer; kwargs...)
     MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 
     start_solve = time()
-    if Alp.get_option(m, :presolve_bt_relax_integrality) #TODO Double check here
-        unrelax = JuMP.relax_integrality(m.model_mip)
+    if Alp.get_option(m, :presolve_bt_relax_integrality)
+        JuMP.relax_integrality(m.model_mip)
     end
 
     JuMP.optimize!(m.model_mip)
@@ -280,10 +284,6 @@ function solve_bound_tightening_model(m::Optimizer; kwargs...)
 
     stats["status"] = status
     stats["relaxed_obj"] = JuMP.objective_value(m.model_mip)
-
-    # if Alp.get_option(m, :presolve_bt_relax_integrality)
-    #     unrelax() # FIXME should this be called ?
-    # end
     
     cputime_solve = time() - start_solve
     m.logs[:total_time] += cputime_solve

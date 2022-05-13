@@ -6,6 +6,7 @@
 - Fixed the issue to tighten only original nonlinear variables (aux vars were counted before)
 - `presolve_bt_bound_tol` changed to `1E-4` (numerically stable)
 - `presolve_bt_obj_bound_tol` added to avoid infeasibility in OBBT iterations when bounds are tights
+- Parameter tuning (tolerances) for stable OBBT convergence
 - Fixed bug in `best_rel_gap` evaluation
 
 ## v0.3.0

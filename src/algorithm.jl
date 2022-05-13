@@ -245,18 +245,18 @@ function check_exit(m::Optimizer)
    end
 
    # Infeasibility check
-   m.status[:bounding_solve] == MOI.INFEASIBLE && return true
+   m.status[:bounding_solve] == MOI.INFEASIBLE      && return true
 
    # Unbounded check
    m.status[:bounding_solve] == MOI.DUAL_INFEASIBLE && return true
 
    # Optimality check
-   m.best_rel_gap <= Alp.get_option(m, :rel_gap) && return true
-   m.logs[:n_iter] >= Alp.get_option(m, :max_iter) && return true
-   m.best_abs_gap <= Alp.get_option(m, :abs_gap) && return true
+   m.best_rel_gap <= Alp.get_option(m, :rel_gap)    && return true
+   m.logs[:n_iter] >= Alp.get_option(m, :max_iter)  && return true
+   m.best_abs_gap <= Alp.get_option(m, :abs_gap)    && return true
 
    # User-limits check
-   m.logs[:time_left] < Alp.get_option(m, :tol) && return true
+   m.logs[:time_left] < Alp.get_option(m, :tol)     && return true
 
    return false
 end

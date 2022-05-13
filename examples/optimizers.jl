@@ -37,7 +37,7 @@ end
 # Non-convex Local MINLP solver
 function get_juniper(mip_solver, nl_solver)
     return optimizer_with_attributes(Juniper.Optimizer, 
-                                    MOI.Silent() => true, 
+                                    MOI.Silent() => false, 
                                     "mip_solver" => mip_solver, 
                                     "nl_solver" => nl_solver)
 end

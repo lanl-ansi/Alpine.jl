@@ -16,6 +16,8 @@ The absolute gap calculation is
 """
 function update_opt_gap(m::Optimizer)
 
+   tol = Alp.get_option(m, :tol)
+
    if m.best_obj in [Inf, -Inf]
       m.best_rel_gap = Inf
       return
@@ -23,11 +25,11 @@ function update_opt_gap(m::Optimizer)
       p = convert(Int, round(abs(log(10,Alp.get_option(m, :rel_gap)))))
       n = round(abs(m.best_obj - m.best_bound); digits=p)
       # dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
-      if isapprox(n, 0.0;atol=Alp.get_option(m, :tol)) && isapprox(m.best_obj,0.0;atol=Alp.get_option(m, :tol))
+      if isapprox(n, 0.0; atol = tol) && isapprox(m.best_obj,0.0; atol = tol)
          m.best_rel_gap = 0.0
          return
       end
-      #if Alp.get_option(m, :gap_ref) == :ub
+      
       if Alp.is_min_sense(m)
          m.best_rel_gap = Alp.eval_opt_gap(m, m.best_bound, m.best_obj)
       elseif Alp.is_max_sense(m)
@@ -43,26 +45,24 @@ end
 
 function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
 
-   if isapprox(lower_bound, upper_bound, atol = Alp.get_option(m, :tol))
+   tol = Alp.get_option(m, :tol)
+
+   if isapprox(lower_bound, upper_bound, atol = tol)
       m.best_rel_gap = 0.0
 
-   elseif lower_bound > upper_bound
-      @warn("Lower bound cannot cross the upper bound in optimality gap evaluation")
-      @assert(lower_bound < upper_bound)
+   elseif (lower_bound - upper_bound) > 1E-5
+      error("Lower bound cannot cross the upper bound in optimality gap evaluation")
 
    elseif isinf(lower_bound) || isinf(upper_bound)
-      @warn("Infinite bounds detected in optimality gap evalutation")
-      @assert(!(isinf(lower_bound) || isinf(upper_bound)))
+      error("Infinite bounds detected in optimality gap evalutation")
    
    else
-      if isapprox(upper_bound, 0.0; atol = Alp.get_option(m, :tol)) # zero upper bound case
+      if isapprox(upper_bound, 0.0; atol = tol) # zero upper bound case
          eps = 1 # shift factor
-         m.best_rel_gap = abs((upper_bound + eps) - (lower_bound + eps))/(Alp.get_option(m, :tol)+abs(upper_bound) + eps)
-   
+         m.best_rel_gap = abs((upper_bound + eps) - (lower_bound + eps))/(tol + abs(upper_bound) + eps)
       else
-         m.best_rel_gap = abs(upper_bound - lower_bound)/(Alp.get_option(m, :tol)+abs(upper_bound))
+         m.best_rel_gap = abs(upper_bound - lower_bound)/(tol + abs(upper_bound))
       end
-   
    end
    
    return m.best_rel_gap
