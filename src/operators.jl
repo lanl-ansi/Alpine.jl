@@ -5,15 +5,14 @@ Recognize and process nonlinear terms in an expression
 """
 function expr_term_parsing(expr::Any, constr_id::Int, m::Optimizer, level=0; options...)
    
-
    isa(expr, Number) && return expr
     cnt = 0
     for node in expr.args
         cnt += 1
-        if isa(node, Float64) || isa(node, Int) || isa(node, Symbol)
+        if isa(node, Float64) || isa(node, Int64) || isa(node, Symbol)
             continue
         elseif node.head == :call
-            expr.args[cnt] = expr_term_parsing(node, constr_id, m, level+1)
+            expr.args[cnt] = Alp.expr_term_parsing(node, constr_id, m, level+1)
         elseif node.head == :ref
             continue
         else

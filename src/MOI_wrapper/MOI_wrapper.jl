@@ -8,113 +8,112 @@
 """
 mutable struct Optimizer <: MOI.AbstractOptimizer
 
-    options::OptimizerOptions                                   # Options set by user
+    options           :: OptimizerOptions                           # Options set by user
 
     # Sub-solver identifier for customized solver option
-    nlp_solver_id::AbstractString                               # NLP Solver identifier string
-    minlp_solver_id::AbstractString                             # MINLP local solver identifier string
-    mip_solver_id::AbstractString                               # MIP solver identifier string
+    nlp_solver_id     :: AbstractString                             # NLP Solver identifier string
+    minlp_solver_id   :: AbstractString                             # MINLP local solver identifier string
+    mip_solver_id     :: AbstractString                             # MIP solver identifier string
 
     # User inputs
-    num_var_orig::Int                                           # Initial number of variables
-    num_cont_var_orig::Int                                      # Initial number of continuous variables
-    num_int_var_orig::Int                                       # Initial number of binary/integer variables
-    num_constr_orig::Int                                        # Initial number of constraints
-    num_lconstr_orig::Int                                       # Initial number of linear constraints
-    num_nlconstr_orig::Int                                      # Initial number of non-linear constraints
-    var_type_orig::Vector{Symbol}                               # Variable type vector on original variables (only :Bin, :Cont, :Int)
-    var_start_orig::Vector{Float64}                             # Variable warm start vector on original variables
-    constr_type_orig::Vector{Symbol}                            # Constraint type vector on original variables (only :(==), :(>=), :(<=))
-    lin_quad_constraints::Vector{Any}                           # Constraint `func`-in-`set` values
-    constr_expr_orig::Vector{Expr}                              # Constraint expressions
-    obj_expr_orig::Union{Expr,Number}                           # Objective expression
+    num_var_orig           :: Int                                   # Initial number of variables
+    num_cont_var_orig      :: Int                                   # Initial number of continuous variables
+    num_int_var_orig       :: Int                                   # Initial number of binary/integer variables
+    num_constr_orig        :: Int                                   # Initial number of constraints
+    num_lconstr_orig       :: Int                                   # Initial number of linear constraints
+    num_nlconstr_orig      :: Int                                   # Initial number of non-linear constraints
+    var_type_orig          :: Vector{Symbol}                        # Variable type vector on original variables (only :Bin, :Cont, :Int)
+    var_start_orig         :: Vector{Float64}                       # Variable warm start vector on original variables
+    constr_type_orig       :: Vector{Symbol}                        # Constraint type vector on original variables (only :(==), :(>=), :(<=))
+    lin_quad_constraints   :: Vector{Any}                           # Constraint `func`-in-`set` values
+    constr_expr_orig       :: Vector{Expr}                          # Constraint expressions
+    obj_expr_orig          :: Union{Expr,Number}                    # Objective expression
 
     # Additional user inputs concerning local solves
-    l_var_orig::Vector{Float64}                                 # Variable lower bounds
-    u_var_orig::Vector{Float64}                                 # Variable upper bounds
-    constraint_bounds_orig::Vector{MOI.NLPBoundsPair}           # Constraint lower bounds
-    nl_constraint_bounds_orig::Vector{MOI.NLPBoundsPair}        # Constraint lower bounds
-    sense_orig::MOI.OptimizationSense                           # Problem type (:Min, :Max)
-    d_orig::Union{Nothing, JuMP.NLPEvaluator}                   # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
-    has_nl_objective::Bool
-    objective_function::Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
+    l_var_orig                :: Vector{Float64}                    # Variable lower bounds
+    u_var_orig                :: Vector{Float64}                    # Variable upper bounds
+    constraint_bounds_orig    :: Vector{MOI.NLPBoundsPair}          # Constraint lower bounds
+    nl_constraint_bounds_orig :: Vector{MOI.NLPBoundsPair}          # Constraint lower bounds
+    sense_orig                :: MOI.OptimizationSense              # Problem type (:Min, :Max)
+    d_orig                    :: Union{Nothing, JuMP.NLPEvaluator}  # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
+    disable_hessian           :: Bool                               # Check if there are any user-defined operators, and disable hessians if necessary.
+    has_nl_objective          :: Bool
+    objective_function        :: Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
 
     # Additional initial data
-    is_obj_linear_orig::Bool                                      # Boolean parameter for type of objective
+    is_obj_linear_orig        :: Bool                               # Boolean parameter for type of objective
 
     # Local solution model (extra data for each iteration)
-    l_var::Vector{Float64}                                      # Updated variable lower bounds for local solve
-    u_var::Vector{Float64}                                      # Updated variable upper bounds for local solve
+    l_var                     :: Vector{Float64}                    # Updated variable lower bounds for local solve
+    u_var                     :: Vector{Float64}                    # Updated variable upper bounds for local solve
 
     # MIP bounding model
-    model_mip::JuMP.Model                                       # JuMP's convex-MIP model for bounding
+    model_mip                 :: JuMP.Model                         # JuMP's convex-MIP model for bounding
 
-    num_var_linear_mip::Int                                     # Number of linear lifted variables required
-    num_var_nonlinear_mip::Int                                  # Number of lifted variables
-    num_var_disc_mip::Int                                       # Number of variables which are discretized
-    num_constr_convex::Int                                      # Number of convex constraints
+    num_var_linear_mip        :: Int                                # Number of linear lifted variables required
+    num_var_nonlinear_mip     :: Int                                # Number of lifted variables
+    num_var_disc_mip          :: Int                                # Number of variables which are discretized
+    num_constr_convex         :: Int                                # Number of convex constraints
 
     # Expression-related and structural property placeholder
-    linear_terms::Dict{Any, Any}                                # Dictionary containing details of lifted linear terms
-    nonconvex_terms::Dict{Any,Any}                              # Dictionary containing details of lifted non-linear terms
-    term_seq::Dict{Int, Any}                                    # Vector-Dictionary for NL terms detection
-    nonlinear_constrs::Dict{Any,Any}                            # Dictionary containing details of special constraints
-    obj_structure::Symbol                                       # A symbolic indicator of the expression type of objective function
-    constr_structure::Vector{Symbol}                            # A vector indicating whether a constraint is with the special structure
-    bounding_obj_expr_mip::Union{Expr,Number}                   # Lifted objective expression; if linear, same as obj_expr_orig
-    bounding_constr_expr_mip::Vector{Expr}                      # Lifted constraints; if linear, same as corresponding constr_expr_orig
-    bounding_obj_mip::Dict{Any, Any}                            # Lifted objective expression in affine form
-    bounding_constr_mip::Vector{Dict{Any, Any}}                 # Lifted constraint expressions in affine form
+    linear_terms             :: Dict{Any, Any}                      # Dictionary containing details of lifted linear terms
+    nonconvex_terms          :: Dict{Any,Any}                       # Dictionary containing details of lifted non-linear terms
+    term_seq                 :: Dict{Int, Any}                      # Vector-Dictionary for NL terms detection
+    nonlinear_constrs        :: Dict{Any,Any}                       # Dictionary containing details of special constraints
+    obj_structure            :: Symbol                              # A symbolic indicator of the expression type of objective function
+    constr_structure         :: Vector{Symbol}                      # A vector indicating whether a constraint is with the special structure
+    bounding_obj_expr_mip    :: Union{Expr,Number}                  # Lifted objective expression; if linear, same as obj_expr_orig
+    bounding_constr_expr_mip :: Vector{Expr}                        # Lifted constraints; if linear, same as corresponding constr_expr_orig
+    bounding_obj_mip         :: Dict{Any, Any}                      # Lifted objective expression in affine form
+    bounding_constr_mip      :: Vector{Dict{Any, Any}}              # Lifted constraint expressions in affine form
 
     # Discretization Related options
-    candidate_disc_vars::Vector{Int}                            # A vector of all original variable indices that is involved in the nonlinear terms
-    discretization::Dict{Any,Any}                               # Discretization points with variable keys
-    disc_vars::Vector{Int}                                      # Variables chosen for discretization
-    int_vars::Vector{Int}                                       # Index vector of integer variables
-    bin_vars::Vector{Int}                                       # Index vector of binary variables
+    candidate_disc_vars :: Vector{Int}                              # A vector of all original variable indices that is involved in the nonlinear terms
+    discretization      :: Dict{Any,Any}                            # Discretization points with variable keys
+    disc_vars           :: Vector{Int}                              # Variables chosen for discretization
+    int_vars            :: Vector{Int}                              # Index vector of integer variables
+    bin_vars            :: Vector{Int}                              # Index vector of binary variables
 
     # Reformulated problem options
-    l_var_tight::Vector{Float64}                                # Tightened variable upper bounds
-    u_var_tight::Vector{Float64}                                # Tightened variable lower bounds
-    var_type::Vector{Symbol}                                    # Updated variable type for local solve
+    l_var_tight :: Vector{Float64}                                  # Tightened variable upper bounds
+    u_var_tight :: Vector{Float64}                                  # Tightened variable lower bounds
+    var_type    :: Vector{Symbol}                                   # Updated variable type for local solve
 
     # Solution information
-    presolve_infeasible::Bool                                   # Presolve infeasibility detection flag
-    best_bound::Float64                                         # Best bound from MIP
-    best_obj::Float64                                           # Best feasible objective value
-    initial_warmval::Vector{Float64}                            # Warmstart values set to Alpine
-    best_sol::Vector{Float64}                                   # Best feasible solution
-    best_bound_sol::Vector{Float64}                             # Best bound solution (arg-min)
-    best_rel_gap::Float64                                       # Relative optimality gap = |best_obj - best_bound|/|best_obj|*100
-    best_abs_gap::Float64                                       # Absolute gap = |best_obj - best_bound|
-    bound_sol_history::Vector{Vector{Float64}}                  # History of bounding solutions limited by "parameter disc_consecutive_forbid"
-    bound_sol_pool::Dict{Any, Any}                              # A pool of solutions from solving model_mip
+    presolve_infeasible :: Bool                                     # Presolve infeasibility detection flag
+    best_bound          :: Float64                                  # Best bound from MIP
+    best_obj            :: Float64                                  # Best feasible objective value
+    initial_warmval     :: Vector{Float64}                          # Warmstart values set to Alpine
+    best_sol            :: Vector{Float64}                          # Best feasible solution
+    best_bound_sol      :: Vector{Float64}                          # Best bound solution (arg-min)
+    best_rel_gap        :: Float64                                  # Relative optimality gap = |best_obj - best_bound|/|best_obj|*100
+    best_abs_gap        :: Float64                                  # Absolute gap = |best_obj - best_bound|
+    bound_sol_history   :: Vector{Vector{Float64}}                  # History of bounding solutions limited by "parameter disc_consecutive_forbid"
+    bound_sol_pool      :: Dict{Any, Any}                           # A pool of solutions from solving model_mip
 
     # Logging information and status
-    logs::Dict{Symbol,Any}                                      # Logging information
-    detected_feasible_solution::Bool
-    detected_bound::Bool
-    status::Dict{Symbol, MOI.TerminationStatusCode}             # Detailed status of every iteration in the algorithm
-    alpine_status::MOI.TerminationStatusCode                    # Current Alpine's status
+    logs                       :: Dict{Symbol,Any}                          # Logging information
+    detected_feasible_solution :: Bool
+    detected_bound             :: Bool
+    status                     :: Dict{Symbol, MOI.TerminationStatusCode}   # Detailed status of every iteration in the algorithm
+    alpine_status              :: MOI.TerminationStatusCode                 # Current Alpine's status
 
     # Constructor for Alpine.Optimizer
     function Optimizer()
-
         m = new()
         m.options = Alp.get_default_options()
         MOI.empty!(m)
-
         return m
     end
 end
 
 struct NumberOfIterations <: MOI.AbstractModelAttribute end
 MOI.is_set_by_optimize(::NumberOfIterations) = true
-MOI.get(m::Optimizer, ::NumberOfIterations) = m.logs[:n_iter]
+MOI.get(m::Optimizer, ::NumberOfIterations)  = m.logs[:n_iter]
 
 struct NumberOfPresolveIterations <: MOI.AbstractModelAttribute end
 MOI.is_set_by_optimize(::NumberOfPresolveIterations) = true
-MOI.get(m::Optimizer, ::NumberOfPresolveIterations) = m.logs[:bt_iter]
+MOI.get(m::Optimizer, ::NumberOfPresolveIterations)  = m.logs[:bt_iter]
 
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 
@@ -141,7 +140,7 @@ end
 
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
-MOI.get(m::Optimizer, ::MOI.SolveTimeSec) = m.logs[:total_time]
+MOI.get(m::Optimizer, ::MOI.SolveTimeSec)   = m.logs[:total_time]
 
 function get_option(m::Optimizer, s::Symbol)
     getproperty(m.options, s)
@@ -156,63 +155,63 @@ function MOI.is_empty(model::Optimizer)
 end
 
 function MOI.empty!(m::Optimizer)
-    m.nlp_solver_id = ""
+    m.nlp_solver_id   = ""
     m.minlp_solver_id = ""
-    m.mip_solver_id = ""
+    m.mip_solver_id   = ""
 
-    m.num_var_orig = 0
-    m.num_cont_var_orig = 0
-    m.num_int_var_orig = 0
-    m.num_constr_orig = 0
-    m.num_lconstr_orig = 0
-    m.num_nlconstr_orig = 0
-    m.var_type_orig = Symbol[]
-    m.var_start_orig = Float64[]
-    m.constr_type_orig = Symbol[]
+    m.num_var_orig         = 0
+    m.num_cont_var_orig    = 0
+    m.num_int_var_orig     = 0
+    m.num_constr_orig      = 0
+    m.num_lconstr_orig     = 0
+    m.num_nlconstr_orig    = 0
+    m.var_type_orig        = Symbol[]
+    m.var_start_orig       = Float64[]
+    m.constr_type_orig     = Symbol[]
     m.lin_quad_constraints = Any[]
-    m.constr_expr_orig = Expr[]
+    m.constr_expr_orig     = Expr[]
     # m.num_lconstr_updated = 0
     # m.num_nlconstr_updated = 0
     # m.indices_lconstr_updated = Int[]
 
-    m.l_var_orig = Float64[]
-    m.u_var_orig = Float64[]
-    m.constraint_bounds_orig = MOI.NLPBoundsPair[]
+    m.l_var_orig                = Float64[]
+    m.u_var_orig                = Float64[]
+    m.constraint_bounds_orig    = MOI.NLPBoundsPair[]
     m.nl_constraint_bounds_orig = MOI.NLPBoundsPair[]
-    m.sense_orig = MOI.FEASIBILITY_SENSE
+    m.sense_orig                = MOI.FEASIBILITY_SENSE
 
-    m.d_orig = nothing
-    m.has_nl_objective = false
+    m.d_orig             = nothing
+    m.has_nl_objective   = false
     m.objective_function = nothing
 
-    m.linear_terms = Dict()
-    m.nonconvex_terms = Dict()
-    m.term_seq = Dict()
-    m.nonlinear_constrs = Dict()
-    m.candidate_disc_vars = Int[]
+    m.linear_terms             = Dict()
+    m.nonconvex_terms          = Dict()
+    m.term_seq                 = Dict()
+    m.nonlinear_constrs        = Dict()
+    m.candidate_disc_vars      = Int[]
     m.bounding_constr_expr_mip = []
-    m.bounding_constr_mip = []
-    m.disc_vars = []
-    m.int_vars = []
-    m.bin_vars = []
-    m.discretization = Dict()
-    m.num_var_linear_mip = 0
-    m.num_var_nonlinear_mip = 0
-    m.num_var_disc_mip = 0
-    m.num_constr_convex = 0
-    m.constr_structure = Symbol[]
-    m.best_bound_sol = []
-    m.bound_sol_history = []
-    m.presolve_infeasible = false
-    m.bound_sol_history = Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
+    m.bounding_constr_mip      = []
+    m.disc_vars                = []
+    m.int_vars                 = []
+    m.bin_vars                 = []
+    m.discretization           = Dict()
+    m.num_var_linear_mip       = 0
+    m.num_var_nonlinear_mip    = 0
+    m.num_var_disc_mip         = 0
+    m.num_constr_convex        = 0
+    m.constr_structure         = Symbol[]
+    m.best_bound_sol           = []
+    m.bound_sol_history        = []
+    m.presolve_infeasible      = false
+    m.bound_sol_history        = Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
 
-    m.best_obj = Inf
+    m.best_obj        = Inf
     m.initial_warmval = Float64[]
-    m.best_sol = Float64[]
-    m.best_bound = -Inf
-    m.best_rel_gap = Inf
-    m.best_abs_gap = Inf
-    m.alpine_status = MOI.OPTIMIZE_NOT_CALLED
+    m.best_sol        = Float64[]
+    m.best_bound      = -Inf
+    m.best_rel_gap    = Inf
+    m.best_abs_gap    = Inf
+    m.alpine_status   = MOI.OPTIMIZE_NOT_CALLED
 
     create_status!(m)
     create_logs!(m)
@@ -330,7 +329,7 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
         model.best_obj = Inf
         model.best_bound = -Inf
     else
-        error("Feasibility sense not supported yet by Alpine.")
+        error("Feasibility sense is not supported by Alpine.")
     end
 end
 
@@ -340,7 +339,9 @@ end
 
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     m.d_orig = block.evaluator
+    m.disable_hessian = !((:Hess in MOI.features_available(block.evaluator)) && (:HessVec in MOI.features_available(block.evaluator)))
     m.has_nl_objective = block.has_objective
+
     # We cache it to add it in `load!` as we cannot call `MOI.constraint_expr` yet
     # so we will add the nonlinear `constr_expr_orig` at the end so we need
     # to add the bounds at the end too.
@@ -377,10 +378,10 @@ MOI.is_valid(model::Alpine.Optimizer, vi::MOI.VariableIndex) = 1 <= vi.value <= 
 
 # Taken from MatrixOptInterface.jl
 @enum ConstraintSense EQUAL_TO GREATER_THAN LESS_THAN INTERVAL
-_sense(::Type{<:MOI.EqualTo}) = EQUAL_TO
-_sense(::Type{<:MOI.LessThan}) = LESS_THAN
+_sense(::Type{<:MOI.EqualTo})     = EQUAL_TO
+_sense(::Type{<:MOI.LessThan})    = LESS_THAN
 _sense(::Type{<:MOI.GreaterThan}) = GREATER_THAN
-_sense(::Type{<:MOI.Interval}) = INTERVAL
+_sense(::Type{<:MOI.Interval})    = INTERVAL
 
 _no_upper(bound) = bound != typemax(bound)
 _no_lower(bound) = bound != typemin(bound)

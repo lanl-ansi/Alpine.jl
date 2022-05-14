@@ -18,7 +18,7 @@ minlp_solver = get_juniper(mip_solver, nlp_solver)
 
 # Global solver
 const alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
-                                            #   "minlp_solver" => minlp_solver,
+                                              # "minlp_solver" => minlp_solver,
                                               "nlp_solver"   => nlp_solver,  
                                               "mip_solver"   => mip_solver,
                                               "presolve_bt"  => true,
@@ -27,7 +27,7 @@ const alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer,
 # Try different integer values ( >=4 ) for `disc_ratio` to observe better Alpine run times, as this can be instance specific.
 # Choose `presolve_bt` to `false` if you prefer the bound tightening (OBBT) presolve to be turned off. 
 
-m = rosenbrock(solver = alpine)
+m = nlp3(solver = alpine)
 
 JuMP.optimize!(m)
 # Alpine.variable_values(m)

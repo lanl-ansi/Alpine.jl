@@ -10,9 +10,27 @@ const STATUS_INF = [
     MOI.INFEASIBLE, MOI.LOCALLY_INFEASIBLE
 ]
 
+function features_available(m::Optimizer)
+   features = [:Grad, :Jac, :JacVec, :ExprGraph]
+   if !m.disable_hessian
+       push!(features, :Hess)
+       push!(features, :HessVec)
+   end
+
+   return features
+end
+
 function load!(m::Optimizer)
-   # Initialize NLP interface
-   MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
+   
+   # Initialize NLP interface 
+   requested_features = Alp.features_available(m)
+   MOI.initialize(m.d_orig, requested_features::Vector{Symbol}) 
+
+   for feat in requested_features
+      if !(feat in Alp.features_available(m))
+          error("Unsupported feature $feat")
+      end
+  end
 
    # Collect objective & constraint expressions
    if m.has_nl_objective

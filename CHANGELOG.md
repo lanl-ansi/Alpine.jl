@@ -8,6 +8,7 @@
 - `presolve_bt_obj_bound_tol` added to avoid infeasibility in OBBT iterations when bounds are tights
 - Parameter tuning (tolerances) for stable OBBT convergence
 - Fixed bug in `best_rel_gap` evaluation
+- Bug fixed to check if there are any user-defined operators, and disable hessians based on availabe features. Unit test added for this 
 
 ## v0.3.0
 - JuMP v1.0+ in examples

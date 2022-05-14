@@ -19,7 +19,7 @@ mutable struct OptimizerOptions
 
     # Convexification methods
     recognize_convex    :: Bool                                    # Recognize convex expressions in parsing objective functions and constraints
-    bilinear_mccormick  :: Bool                                    # [INACTIVE] Convexify bilinear terms using piecwise McCormick representation
+    bilinear_mccormick  :: Bool                                    # Convexify bilinear terms using piecwise McCormick representation
     bilinear_convexhull :: Bool                                    # Convexify bilinear terms using lambda representation
     monomial_convexhull :: Bool                                    # Convexify monomial terms using convex-hull representation
 
