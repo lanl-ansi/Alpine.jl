@@ -116,7 +116,6 @@ function logging_row_entry(m::Optimizer; kwargs...)
    end
    UB_block = string(" ", objstr, " " ^ spc)
 
-
    if expr_isconst(m.obj_expr_orig)
       bdstr = eval(m.obj_expr_orig)
       spc = b_len - length(bdstr)
@@ -184,7 +183,7 @@ function summary_status(m::Optimizer)
    # :Heuristic : termination with feasible solution found but not bounds detected
    #               happens when lower bound problem is extremely hard to solve
    # :Unknown : termination with no exception recorded
-
+   
    if m.detected_bound && m.detected_feasible_solution
       m.alpine_status = m.best_rel_gap > Alp.get_option(m, :rel_gap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
    elseif m.status[:bounding_solve] == MOI.INFEASIBLE

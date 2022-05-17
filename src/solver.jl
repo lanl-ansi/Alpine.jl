@@ -28,7 +28,7 @@ mutable struct OptimizerOptions
 
     # Parameters used in Alpine's MIP-based partitioning algorithm
     disc_var_pick                 :: Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
-    disc_ratio                    :: Any                           # Discretization ratio parameter (use a fixed value for now, later switch to a function)
+    disc_ratio                    :: Any                           # Discretization ratio parameter, which is critical for convergence (using a fixed value for now, later switch to a function)
     disc_uniform_rate             :: Int                           # Discretization rate parameter when using uniform partitions
     disc_add_partition_method     :: Any                           # Additional methods to add discretization
     disc_divert_chunks            :: Int                           # How many uniform partitions to construct
@@ -92,7 +92,7 @@ function get_default_options()
         # constr_patterns = Array{Function}(undef, 0)
 
         disc_var_pick                 = 2                # By default, uses the 15-variable selective rule
-        disc_ratio                    = 4
+        disc_ratio                    = 10
         disc_uniform_rate             = 2
         disc_add_partition_method     = "adaptive"
         disc_divert_chunks            = 5
@@ -112,7 +112,7 @@ function get_default_options()
         presolve_track_time           = true
         presolve_bt                   = true
         presolve_bt_time_limit        = 900
-        presolve_bt_max_iter          = 10
+        presolve_bt_max_iter          = 25
         presolve_bt_width_tol         = 1e-2
         presolve_bt_improv_tol        = 1e-3
         presolve_bt_bound_tol         = 1e-4

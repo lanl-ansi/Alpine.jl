@@ -22,7 +22,7 @@ function update_opt_gap(m::Optimizer)
       m.best_rel_gap = Inf
       return
    else
-      p = convert(Int, round(abs(log(10,Alp.get_option(m, :rel_gap)))))
+      p = convert(Int, round(abs(log(10, Alp.get_option(m, :rel_gap)))))
       n = round(abs(m.best_obj - m.best_bound); digits=p)
       # dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
       if isapprox(n, 0.0; atol = tol) && isapprox(m.best_obj,0.0; atol = tol)

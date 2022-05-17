@@ -173,7 +173,6 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, time_limit = In
         # Deactivate this termination criterion if it slows down the OBBT convergence 
         if keep_tightening  
             stats = Alp.relaxation_model_obbt(m, discretization, bound)
-
             if Alp.is_min_sense(m)
                 current_rel_gap = Alp.eval_opt_gap(m, stats["relaxed_obj"], bound)
             elseif Alp.is_max_sense(m)

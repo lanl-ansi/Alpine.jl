@@ -1,6 +1,6 @@
 # Alpine.jl Change Log
 
-## Staged
+## v0.4.0
 - Fixed OBBT convergence issue due to average bound reduction
 - Added new termination criteria to OBBT: max_reduction, max_width, rel_gap at every iteration of OBBT
 - Fixed the issue to tighten only original nonlinear variables (aux vars were counted before)
@@ -8,7 +8,9 @@
 - `presolve_bt_obj_bound_tol` added to avoid infeasibility in OBBT iterations when bounds are tights
 - Parameter tuning (tolerances) for stable OBBT convergence
 - Fixed bug in `best_rel_gap` evaluation
-- Bug fixed to check if there are any user-defined operators, and disable hessians based on availabe features. Unit test added for this 
+- Bug fixed to check any user-defined operators, and disable hessians based on availabe features. Unit test added for this 
+- Now, Alpine terminates (w/o invoking `global_solve`) when presolve finds the global optimum due to `rel_gap` eval at every OBBT iteration. Unit test added for this
+- Revised unit test (in `test_algorithm`) for reduced run times
 
 ## v0.3.0
 - JuMP v1.0+ in examples

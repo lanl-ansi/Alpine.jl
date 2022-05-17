@@ -138,11 +138,19 @@ function MOI.optimize!(m::Optimizer)
       Alp.summary_status(m)
       return
    end
+
    Alp.presolve(m)
-   Alp.global_solve(m)
-   Alp.get_option(m, :log_level)  > 0 && Alp.logging_row_entry(m, finish_entry=true)
-   println("====================================================================================================")
+
+   if !Alp.check_exit(m)
+      Alp.global_solve(m)
+      Alp.get_option(m, :log_level)  > 0 && Alp.logging_row_entry(m, finish_entry=true)
+      println("====================================================================================================")
+   else
+      println("  Presolve terminated with a global optimal solution")
+   end
+   
    Alp.summary_status(m)
+   
    return
 end
 
@@ -159,7 +167,6 @@ function global_solve(m::Optimizer)
 
    Alp.get_option(m, :log_level) > 0 && Alp.logging_head(m)
    Alp.get_option(m, :presolve_track_time) || Alp.reset_timer(m)
-
    while !Alp.check_exit(m)
       m.logs[:n_iter] += 1
       Alp.create_bounding_mip(m)                  # Build the relaxation model
@@ -181,34 +188,25 @@ end
    presolve(m::Optimizer)
 """
 function presolve(m::Optimizer)
-
    start_presolve = time()
    Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color=:cyan)
    Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
    Alp.local_solve(m, presolve = true)
 
-   # Solver status - returns error when see different
-
+   # Solver status
    if m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT
 
       Alp.get_option(m, :log_level) > 0 && println("  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))")
-
       Alp.bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-
       Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
-
       Alp.get_option(m, :disc_ratio_branch) && (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
-
       Alp.add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
 
    elseif m.status[:local_solve] in STATUS_INF
 
       (Alp.get_option(m, :log_level) > 0) && println("  Bound tightening without objective bounds (OBBT)")
-
       Alp.bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-
       (Alp.get_option(m, :disc_ratio_branch)) && (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
-
       Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)
 
    elseif m.status[:local_solve] == MOI.INVALID_MODEL
@@ -227,6 +225,7 @@ function presolve(m::Optimizer)
    m.logs[:time_left] -= m.logs[:presolve_time]
    # (Alp.get_option(m, :log_level) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
    (Alp.get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s")
+   
    return
 end
 
@@ -269,7 +268,10 @@ function check_exit(m::Optimizer)
    m.status[:bounding_solve] == MOI.DUAL_INFEASIBLE && return true
 
    # Optimality check
-   m.best_rel_gap <= Alp.get_option(m, :rel_gap)    && return true
+   if m.best_rel_gap <= Alp.get_option(m, :rel_gap)
+      m.detected_bound = true
+      return true
+   end
    m.logs[:n_iter] >= Alp.get_option(m, :max_iter)  && return true
    m.best_abs_gap <= Alp.get_option(m, :abs_gap)    && return true
 
