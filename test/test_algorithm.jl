@@ -615,14 +615,14 @@ end
                                             "presolve_bp" => true,
                                             "convhull_ebd" => true,
                                             "convhull_ebd_link" => true,
-                                            "disc_ratio" => 10,
+                                            "disc_ratio" => 12,
                                             "log_level" => 100)
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
     @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
 @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
