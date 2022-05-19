@@ -111,6 +111,7 @@ function bound_propagation(m::Optimizer)
     
     exhausted = false
     infeasible = false
+    tol = Alp.get_option(m, :tol)
 
     while !exhausted
         exhausted = true
@@ -133,21 +134,21 @@ function bound_propagation(m::Optimizer)
                         end
                     end
 
-                    if eval_l_bound > m.l_var_tight[var_idx] + Alp.get_option(m, :tol)
+                    if eval_l_bound > m.l_var_tight[var_idx] + tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint")
-                    elseif eval_l_bound > m.u_var_tight[var_idx] + Alp.get_option(m, :tol)
+                    elseif eval_l_bound > m.u_var_tight[var_idx] + tol
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
                     end
 
-                    if eval_u_bound < m.u_var_tight[var_idx] - Alp.get_option(m, :tol)
+                    if eval_u_bound < m.u_var_tight[var_idx] - tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_u_bound < m.l_var_tight[var_idx] - Alp.get_option(m, :tol)
+                    elseif eval_u_bound < m.l_var_tight[var_idx] - tol
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
@@ -165,11 +166,11 @@ function bound_propagation(m::Optimizer)
                         (eval_bound == -Inf) && break
                     end
 
-                    if eval_bound > m.l_var_tight[var_idx] + Alp.get_option(m, :tol)
+                    if eval_bound > m.l_var_tight[var_idx] + tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound > m.u_var_tight[var_idx] + Alp.get_option(m, :tol)
+                    elseif eval_bound > m.u_var_tight[var_idx] + tol
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
@@ -186,11 +187,11 @@ function bound_propagation(m::Optimizer)
                         (eval_bound == Inf) && break
                     end
 
-                    if eval_bound < m.u_var_tight[var_idx] - Alp.get_option(m, :tol)
+                    if eval_bound < m.u_var_tight[var_idx] - tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound < m.l_var_tight[var_idx] - Alp.get_option(m, :tol)
+                    elseif eval_bound < m.l_var_tight[var_idx] - tol
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
@@ -207,11 +208,11 @@ function bound_propagation(m::Optimizer)
                         (eval_bound == Inf) && break
                     end
 
-                    if eval_bound < m.u_var_tight[var_idx] - Alp.get_option(m, :tol)
+                    if eval_bound < m.u_var_tight[var_idx] - tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound < m.l_var_tight[var_idx] - Alp.get_option(m, :tol)
+                    elseif eval_bound < m.l_var_tight[var_idx] - tol
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break
@@ -227,11 +228,11 @@ function bound_propagation(m::Optimizer)
                         (eval_bound == -Inf) && break
                     end
 
-                    if eval_bound > m.l_var_tight[var_idx] + Alp.get_option(m, :tol)
+                    if eval_bound > m.l_var_tight[var_idx] + tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints")
-                    elseif eval_bound > m.u_var_tight[var_idx] + Alp.get_option(m, :tol)
+                    elseif eval_bound > m.u_var_tight[var_idx] + tol
                         (Alp.get_option(m, :log_level) > 199) && println("[VAR$(var_idx)] Infeasibility detection during bound propagation")
                         infeasible = true
                         break

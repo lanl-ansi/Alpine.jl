@@ -10,9 +10,27 @@ const STATUS_INF = [
     MOI.INFEASIBLE, MOI.LOCALLY_INFEASIBLE
 ]
 
+function features_available(m::Optimizer)
+   features = [:Grad, :Jac, :JacVec, :ExprGraph]
+   if !m.disable_hessian
+       push!(features, :Hess)
+       push!(features, :HessVec)
+   end
+
+   return features
+end
+
 function load!(m::Optimizer)
-   # Initialize NLP interface
-   MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
+   
+   # Initialize NLP interface 
+   requested_features = Alp.features_available(m)
+   MOI.initialize(m.d_orig, requested_features::Vector{Symbol}) 
+
+   for feat in requested_features
+      if !(feat in Alp.features_available(m))
+          error("Unsupported feature $feat")
+      end
+  end
 
    # Collect objective & constraint expressions
    if m.has_nl_objective
@@ -68,9 +86,9 @@ function load!(m::Optimizer)
    :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) : Alp.set_option(m, :int_enable, false) # Separator for safer runs
 
    # Conduct solver-dependent detection
-   fetch_mip_solver_identifier(m)
-   (Alp.get_option(m, :nlp_solver) !== nothing) && (fetch_nlp_solver_identifier(m))
-   (Alp.get_option(m, :minlp_solver) !== nothing) && (fetch_minlp_solver_identifier(m))
+   Alp.fetch_mip_solver_identifier(m)
+   (Alp.get_option(m, :nlp_solver) !== nothing)   && (Alp.fetch_nlp_solver_identifier(m))
+   (Alp.get_option(m, :minlp_solver) !== nothing) && (Alp.fetch_minlp_solver_identifier(m))
 
    # Solver Dependent Options
    if m.mip_solver_id != :Gurobi
@@ -120,11 +138,19 @@ function MOI.optimize!(m::Optimizer)
       Alp.summary_status(m)
       return
    end
+
    Alp.presolve(m)
-   Alp.global_solve(m)
-   Alp.get_option(m, :log_level)  > 0 && Alp.logging_row_entry(m, finish_entry=true)
-   println("====================================================================================================")
+
+   if !Alp.check_exit(m) && Alp.get_option(m, :apply_partitioning)
+      Alp.global_solve(m)
+      Alp.get_option(m, :log_level)  > 0 && Alp.logging_row_entry(m, finish_entry=true)
+      println("====================================================================================================")
+   else
+      println("  Presolve terminated with a global optimal solution")
+   end
+   
    Alp.summary_status(m)
+   
    return
 end
 
@@ -139,9 +165,8 @@ Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorith
 """
 function global_solve(m::Optimizer)
 
-   Alp.get_option(m, :log_level) > 0 && logging_head(m)
-   Alp.get_option(m, :presolve_track_time) || reset_timer(m)
-
+   Alp.get_option(m, :log_level) > 0 && Alp.logging_head(m)
+   Alp.get_option(m, :presolve_track_time) || Alp.reset_timer(m)
    while !Alp.check_exit(m)
       m.logs[:n_iter] += 1
       Alp.create_bounding_mip(m)                  # Build the relaxation model
@@ -163,34 +188,25 @@ end
    presolve(m::Optimizer)
 """
 function presolve(m::Optimizer)
-
    start_presolve = time()
    Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color=:cyan)
    Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
    Alp.local_solve(m, presolve = true)
 
-   # Solver status - returns error when see different
-
+   # Solver status
    if m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT
 
       Alp.get_option(m, :log_level) > 0 && println("  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))")
-
       Alp.bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-
       Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
-
       Alp.get_option(m, :disc_ratio_branch) && (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
-
       Alp.add_partition(m, use_solution=m.best_sol)  # Setting up the initial discretization
 
    elseif m.status[:local_solve] in STATUS_INF
 
       (Alp.get_option(m, :log_level) > 0) && println("  Bound tightening without objective bounds (OBBT)")
-
       Alp.bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-
       (Alp.get_option(m, :disc_ratio_branch)) && (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
-
       Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)
 
    elseif m.status[:local_solve] == MOI.INVALID_MODEL
@@ -207,8 +223,12 @@ function presolve(m::Optimizer)
    m.logs[:presolve_time] += cputime_presolve
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
-   # (Alp.get_option(m, :log_level) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-   (Alp.get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s")
+   
+   if Alp.get_option(m, :presolve_bt)
+      (Alp.get_option(m, :log_level) > 0) && println("  Post-presolve optimality gap: $(round(m.presolve_best_rel_gap; digits = 3))%")
+   end
+   (Alp.get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits = 2))s")
+   
    return
 end
 
@@ -245,18 +265,21 @@ function check_exit(m::Optimizer)
    end
 
    # Infeasibility check
-   m.status[:bounding_solve] == MOI.INFEASIBLE && return true
+   m.status[:bounding_solve] == MOI.INFEASIBLE      && return true
 
    # Unbounded check
    m.status[:bounding_solve] == MOI.DUAL_INFEASIBLE && return true
 
    # Optimality check
-   m.best_rel_gap <= Alp.get_option(m, :rel_gap) && return true
-   m.logs[:n_iter] >= Alp.get_option(m, :max_iter) && return true
-   m.best_abs_gap <= Alp.get_option(m, :abs_gap) && return true
+   if m.best_rel_gap <= Alp.get_option(m, :rel_gap)
+      m.detected_bound = true
+      return true
+   end
+   m.logs[:n_iter] >= Alp.get_option(m, :max_iter)  && return true
+   m.best_abs_gap <= Alp.get_option(m, :abs_gap)    && return true
 
    # User-limits check
-   m.logs[:time_left] < Alp.get_option(m, :tol) && return true
+   m.logs[:time_left] < Alp.get_option(m, :tol)     && return true
 
    return false
 end

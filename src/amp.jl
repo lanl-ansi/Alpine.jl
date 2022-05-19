@@ -44,10 +44,10 @@ function amp_post_convexification(m::Optimizer; use_disc=nothing)
 
     use_disc === nothing ? discretization = m.discretization : discretization = use_disc
 
-    for i in 1:length(Alp.get_option(m, :method_convexification))             # Additional user-defined convexification method
-        # eval(Alp.get_option(m, :method_convexification)[i])(m)
-        Alp.get_option(m, :method_convexification)[i](m)
-    end
+    # for i in 1:length(Alp.get_option(m, :method_convexification))             # Additional user-defined convexification method
+    #    eval(Alp.get_option(m, :method_convexification)[i])(m)
+    #    Alp.get_option(m, :method_convexification)[i](m)
+    # end
 
     Alp.amp_post_mccormick(m, use_disc=discretization)          # handles all bi-linear and monomial convexificaitons
     Alp.amp_post_convhull(m, use_disc=discretization)           # convex hull representation
@@ -193,7 +193,7 @@ end
 # TODO: also need to document the special diverted cases when new partition touches both corners
 """
 
-    Alp.add_adaptive_partition(m::Optimizer; use_disc::Dict, use_solution::Vector)
+    add_adaptive_partition(m::Optimizer; use_disc::Dict, use_solution::Vector)
 
 A built-in method used to add a new partition on feasible domains of variables chosen for partitioning.
 
@@ -263,13 +263,15 @@ end
 """
 function correct_point(m::Optimizer, partvec::Vector, point::Float64, var::Int)
 
-    if point < partvec[1] - Alp.get_option(m, :tol) || point > partvec[end] + Alp.get_option(m, :tol)
+    tol = Alp.get_option(m, :tol)
+
+    if point < partvec[1] - tol || point > partvec[end] + tol
         @warn "  Warning: VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Hence, taking the middle point."
         return 0.5*(partvec[1] + partvec[end]) # Should choose the longest range
     end
 
-    isapprox(point, partvec[1];atol=Alp.get_option(m, :tol)) && return partvec[1]
-    isapprox(point, partvec[end];atol=Alp.get_option(m, :tol)) && return partvec[end]
+    isapprox(point, partvec[1];   atol = tol) && return partvec[1]
+    isapprox(point, partvec[end]; atol = tol) && return partvec[end]
 
     return point
 end
@@ -316,7 +318,7 @@ function insert_partition(m::Optimizer, var::Int, partidx::Int, point::Number, r
         pos = distvec[end][1]
         lb_local = partvec[pos]
         ub_local = partvec[pos+1]
-        isapprox(lb_local, ub_local;atol=Alp.get_option(m, :tol)) && return
+        isapprox(lb_local, ub_local; atol = Alp.get_option(m, :tol)) && return
         chunk = (ub_local - lb_local) / Alp.get_option(m, :disc_divert_chunks)
         point = lb_local + (ub_local - lb_local) / Alp.get_option(m, :disc_divert_chunks)
         for i in 2:Alp.get_option(m, :disc_divert_chunks)
@@ -357,17 +359,17 @@ function update_disc_ratio(m::Optimizer, presolve=false)
     # revconvertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
 
     incumb_ratio = ratio_pool[1]
-    is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
+    Alp.is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
     res_collector = Float64[]
 
     for r in ratio_pool
         st = time()
         if !isempty(m.best_sol)
-            branch_disc = Alp.add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r, use_solution=m.best_sol)
+            branch_disc = Alp.add_adaptive_partition(m, use_disc = m.discretization, branching = true, use_ratio = r, use_solution = m.best_sol)
         else
-            branch_disc = Alp.add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=r)
+            branch_disc = Alp.add_adaptive_partition(m, use_disc = m.discretization, branching = true, use_ratio = r)
         end
-        Alp.create_bounding_mip(m, use_disc=branch_disc)
+        Alp.create_bounding_mip(m, use_disc = branch_disc)
         res = Alp.disc_branch_solve(m)
         push!(res_collector, res)
         if eval(convertor[m.sense_orig])(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
@@ -388,9 +390,9 @@ function update_disc_ratio(m::Optimizer, presolve=false)
     end
 
     if !isempty(m.best_sol)
-        m.discretization = Alp.add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio, use_solution=m.best_sol)
+        m.discretization = Alp.add_adaptive_partition(m, use_disc = m.discretization, branching = true, use_ratio = incumb_ratio, use_solution = m.best_sol)
     else
-        m.discretization = Alp.add_adaptive_partition(m, use_disc=m.discretization, branching=true, use_ratio=incumb_ratio)
+        m.discretization = Alp.add_adaptive_partition(m, use_disc = m.discretization, branching = true, use_ratio = incumb_ratio)
     end
 
     Alp.get_option(m, :log_level) > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
@@ -417,9 +419,9 @@ function disc_branch_solve(m::Optimizer)
     end
 
     # Safety scheme
-    if is_min_sense(m)
+    if Alp.is_min_sense(m)
         return -Inf
-    else
+    elseif Alp.is_max_sense(m)
         return Inf
     end
 end

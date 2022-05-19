@@ -59,7 +59,7 @@ end
 function heu_pool_multistart(m::Optimizer)
 
     convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
-    is_min_sense(m) ? incumb_obj = Inf : incumb_obj = -Inf
+    Alp.is_min_sense(m) ? incumb_obj = Inf : incumb_obj = -Inf
     incumb_sol = []
     found_feasible = false
 

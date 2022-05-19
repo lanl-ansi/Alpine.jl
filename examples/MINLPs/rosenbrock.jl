@@ -1,4 +1,5 @@
 # Reference: https://direct.mit.edu/evco/article/14/1/119/1232/A-Note-on-the-Extended-Rosenbrock-Function
+# Global optimum = 0.0, arg min = (1,1)
 
 function rosenbrock(;solver = nothing)
 

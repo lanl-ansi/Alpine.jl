@@ -257,7 +257,7 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
 
     if m.bound_sol_pool[:cnt] >= 2 # can only warm-start the problem when pool is large enough
         ws_idx = -1
-        is_min_sense(m) ? ws_obj = Inf : ws_obj = -Inf
+        Alp.is_min_sense(m) ? ws_obj = Inf : ws_obj = -Inf
         comp_opr = Dict(MOI.MIN_SENSE => :<, MOI.MAX_SENSE => :>)
 
         # Search for the pool for incumbent warm starter

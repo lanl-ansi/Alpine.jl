@@ -17,14 +17,15 @@ end
 @testset "Partitioning variable selection tests :: nlp3" begin
     # Select all NL variable
     test_solver = optimizer_with_attributes(Alpine.Optimizer,
-        "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
-        "disc_var_pick" => 0,
-        "disc_uniform_rate" => 10,
-        "presolve_bp" => false,
-        "presolve_bt" => false,
-        "max_iter" => 1,
-        "log_level" => 100)
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 0,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" => false,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
+
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -36,14 +37,15 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Select all NL variable
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 2,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bp" =>  false,
-                            "presolve_bt" =>  false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 2,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" =>  false,
+                                            "presolve_bt" =>  false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -55,14 +57,15 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 2
 
     # Minimum vertex cover algorithm
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 1,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bp" =>  false,
-                            "presolve_bt" =>  false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 1,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" =>  false,
+                                            "presolve_bt" =>  false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -74,13 +77,14 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Adaptive variable selection scheme :: disc_var_pick = 3
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 3,
-                            "presolve_bp" =>  false,
-                            "presolve_bt" =>  false,
-                            "max_iter" => 2,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 3,
+                                            "presolve_bp" =>  false,
+                                            "presolve_bt" =>  false,
+                                            "max_iter" => 2,
+                                            "log_level" => 100)
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
@@ -95,14 +99,15 @@ end
 @testset "Partitioning variable selection tests :: castro2m2" begin
 
     # Select all NL variable
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 0,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bp" => false,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 0,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" => false,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
@@ -116,14 +121,15 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Select minimum vertex cover
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 1,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bp" => false,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 1,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" => false,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
@@ -136,14 +142,15 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Criteria 15 static selection
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 2,
-                            "disc_uniform_rate" => 15,
-                            "presolve_bp" => false,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 2,
+                                            "disc_uniform_rate" => 15,
+                                            "presolve_bp" => false,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
@@ -160,14 +167,15 @@ end
 @testset "Partitioning variable selection tests :: blend029" begin
 
     # Select all NL variable
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
-                            "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 0,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "minlp_solver" => PAVITO,
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 0,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = blend029_gl(solver = test_solver)
     alpine = _build(m)
@@ -178,15 +186,16 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Minimum vertex cover
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
-                            "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 1,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bp" => false,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "minlp_solver" => PAVITO,
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 1,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" => false,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = blend029_gl(solver = test_solver)
     alpine = _build(m)
@@ -197,15 +206,16 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Adaptive Scheme vertex cover
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
-                            "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 2,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bp" => false,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "minlp_solver" => PAVITO,
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 2,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" => false,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = blend029_gl(solver = test_solver)
     alpine = _build(m)
@@ -220,13 +230,14 @@ end
 @testset "Partitioning variable selection tests :: castro6m2" begin
 
     # Dynamic Scheme step 2
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 3,
-                            "presolve_bp" => true,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 3,
+                                            "presolve_bp" => true,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = castro6m2(solver = test_solver)
     JuMP.optimize!(m)
@@ -242,13 +253,14 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 3
 
     # Dynamic Scheme step 2
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 3,
-                            "presolve_bp" => true,
-                            "presolve_bt" => false,
-                            "max_iter" => 2,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 3,
+                                            "presolve_bp" => true,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 2,
+                                            "log_level" => 100)
 
     m = castro6m2(solver = test_solver)
     JuMP.optimize!(m)
@@ -265,16 +277,34 @@ end
 end
 
 @testset "Test getsolvetime for time tracking" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "disc_var_pick" => 0,
-                            "disc_uniform_rate" => 10,
-                            "presolve_bp" => false,
-                            "presolve_bt" => false,
-                            "max_iter" => 1,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "disc_var_pick" => 0,
+                                            "disc_uniform_rate" => 10,
+                                            "presolve_bp" => false,
+                                            "presolve_bt" => false,
+                                            "max_iter" => 1,
+                                            "log_level" => 100)
 
     m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     @test solve_time(m) > 0.0
+end
+
+@testset "Hessians disabled with user-defined multivariate functions" begin
+    test_solver = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
+                                                 "nlp_solver" => IPOPT,
+                                                 "mip_solver" => CBC,
+                                                 "log_level"  => 100)
+    m = Model(test_solver)
+    my_f(x, y) = (x - 1)^2 + (y - 2)^2
+    JuMP.register(m, :my_f, 2, my_f, autodiff = true)
+    @variable(m, x[1:2])
+    @NLobjective(m, Min, my_f(x[1], x[2]))
+    
+    MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
+    MOI.Utilities.attach_optimizer(m)
+    alpine = JuMP.backend(m).optimizer.model
+    @test !(:Hess in Alpine.features_available(alpine))
 end

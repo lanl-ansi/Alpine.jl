@@ -32,8 +32,8 @@ function logging_summary(m::Optimizer)
 
     if Alp.get_option(m, :log_level) > 0
       printstyled("\nPROBLEM STATISTICS\n", color=:cyan)
-      is_min_sense(m) && (println("  Objective sense = Min", ))
-      is_max_sense(m) && (println("  Objective sense = Max", ))
+      Alp.is_min_sense(m) && (println("  Objective sense = Min", ))
+      Alp.is_max_sense(m) && (println("  Objective sense = Max", ))
       println("  # Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
       println("  # Bin-Int Variables = ", length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]))
       println("  # Constraints = ", m.num_constr_orig)
@@ -53,9 +53,9 @@ function logging_summary(m::Optimizer)
       println("  MIP solver = ", m.mip_solver_id)
 
       printstyled("ALPINE CONFIGURATION\n", color=:cyan)
-      if is_min_sense(m)
+      if Alp.is_min_sense(m)
          println("  Maximum iterations (lower-bounding MIPs) =  ", Alp.get_option(m, :max_iter))
-      elseif is_max_sense(m)
+      elseif Alp.is_max_sense(m)
          println("  Maximum iterations (upper-bounding MIPs) =  ", Alp.get_option(m, :max_iter))
       else 
          println("  Maximum iterations (bounding MIPs) =  ", Alp.get_option(m, :max_iter))
@@ -78,19 +78,19 @@ function logging_summary(m::Optimizer)
       (Alp.get_option(m, :convhull_ebd)) && println("  Using convhull_ebd formulation")
        (Alp.get_option(m, :convhull_ebd)) && println("  Encoding method = $(Alp.get_option(m, :convhull_ebd_encode))")
        (Alp.get_option(m, :convhull_ebd)) && println("  Independent branching scheme = $(Alp.get_option(m, :convhull_ebd_ibs))")
-      println("  Bound-tightening (OBBT) presolve = ", Alp.get_option(m, :presolve_bt))
+      println("  Bound-tightening presolve = ", Alp.get_option(m, :presolve_bt))
       Alp.get_option(m, :presolve_bt) && println("  Maximum iterations (OBBT) = ", Alp.get_option(m, :presolve_bt_max_iter))
    end
 
 end
 
 function logging_head(m::Optimizer)
-   if is_min_sense(m)
+   if Alp.is_min_sense(m)
       printstyled("LOWER-BOUNDING ITERATIONS", color=:cyan)
       UB_iter = "Incumbent"
       UB = "Best Incumbent"
       LB = "Lower Bound"
-   elseif is_max_sense(m)
+   elseif Alp.is_max_sense(m)
       printstyled("UPPER-BOUNDING ITERATIONS", color=:cyan)
       UB_iter = "Incumbent"
       UB = "Best Incumbent"
@@ -115,7 +115,6 @@ function logging_row_entry(m::Optimizer; kwargs...)
       spc = max(0, b_len - length(objstr))
    end
    UB_block = string(" ", objstr, " " ^ spc)
-
 
    if expr_isconst(m.obj_expr_orig)
       bdstr = eval(m.obj_expr_orig)
@@ -184,7 +183,7 @@ function summary_status(m::Optimizer)
    # :Heuristic : termination with feasible solution found but not bounds detected
    #               happens when lower bound problem is extremely hard to solve
    # :Unknown : termination with no exception recorded
-
+   
    if m.detected_bound && m.detected_feasible_solution
       m.alpine_status = m.best_rel_gap > Alp.get_option(m, :rel_gap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
    elseif m.status[:bounding_solve] == MOI.INFEASIBLE

@@ -1,22 +1,24 @@
 @testset " Validation Test || AMP-TMC || basic solve || examples/nlp1.jl" begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => PAVITO,
-                       "bilinear_convexhull" => false,
-                       "monomial_convexhull" => false,
-                       "presolve_bt" => false,
-                       "presolve_bp" => true,
-                       "presolve_bt_output_tol" => 1e-1,
-                       "log_level" =>100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => PAVITO,
+                                            "bilinear_convexhull" => false,
+                                            "monomial_convexhull" => false,
+                                            "presolve_bt" => false,
+                                            "presolve_bp" => true,
+                                            "presolve_bt_bound_tol" => 1e-1,
+                                            "disc_ratio" => 10,
+                                            "log_level" =>100)
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
     @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 7
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
 end
 
-@testset " Validation Test || AMP-TMC || basic solve || examples/nlp3.jl (3 iterations)" begin
+@testset " Validation Test || AMP-TMC || basic solve || examples/nlp3.jl (2 iterations)" begin
 
     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
     					   "mip_solver" => CBC,
@@ -24,9 +26,10 @@ end
                            "monomial_convexhull" => false,
                            "presolve_bp" => true,
     					   "log_level" =>100,
-                           "max_iter" => 3,
+                           "max_iter" => 2,
     					   "presolve_bt_width_tol" => 1e-3,
     					   "presolve_bt" => false,
+                           "disc_ratio" => 10,
     					   "disc_var_pick" => 0)
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
@@ -34,7 +37,7 @@ end
     @test termination_status(m) == MOI.OTHER_LIMIT
 
     @test isapprox(objective_value(m), 7049.247897696512; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 2
 end
 
 @testset " Validation Test || AMP-TMC || minimum-vertex solving || examples/nlp3.jl (3 iterations)" begin
@@ -46,7 +49,8 @@ end
                            "presolve_bp" => true,
                            "disc_var_pick" => 1,
                            "log_level" =>100,
-                           "max_iter" => 3,
+                           "max_iter" => 2,
+                           "disc_ratio" => 10,
                            "presolve_bt_width_tol" => 1e-3,
                            "presolve_bt" => false)
     m = nlp3(solver = test_solver)
@@ -54,31 +58,32 @@ end
 
     @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 7049.247897696512; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
-    @test isapprox(objective_bound(m), 3647.178; atol=1e-2)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 2
 end
 
 @testset " Validation Test || BT-AMP-TMC || basic solve || examples/nlp3.jl" begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-							   "mip_solver" => CBC,
-                               "bilinear_convexhull" => false,
-							   "log_level" =>100,
-                               "max_iter" => 3,
-							   "presolve_bt_width_tol" => 1e-3,
-							   "presolve_bt_output_tol" => 1e-1,
-							   "presolve_bt" => true,
-                               "presolve_bt_algo" => 1,
-                               "presolve_bp" => true,
-							   "presolve_bt_max_iter" => 2,
-                               "presolve_track_time" => true,
-							   "disc_var_pick" => max_cover_var_picker)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "bilinear_convexhull" => false,
+                                            "log_level" =>100,
+                                            "max_iter" => 2,
+                                            "disc_ratio" => 10,
+                                            "presolve_bt_width_tol" => 1e-3,
+                                            "presolve_bt_bound_tol" => 1e-1,
+                                            "presolve_bt" => true,
+                                            "presolve_bt_algo" => 1,
+                                            "presolve_bp" => true,
+                                            "presolve_bt_max_iter" => 2,
+                                            "presolve_track_time" => true,
+                                            "disc_var_pick" => max_cover_var_picker)
     m = nlp3(solver = test_solver)
 
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OTHER_LIMIT
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 2
     @test MOI.get(m, Alpine.NumberOfPresolveIterations()) == 2
 end
 
@@ -90,9 +95,10 @@ end
                               "bilinear_convexhull" => false,
                               "log_level" =>100,
                               "max_iter" => 2,
+                              "disc_ratio" => 10,
                               "presolve_bt" => true,
                               "presolve_bt_width_tol" => 1e-3,
-                              "presolve_bt_output_tol" => 1e-1,
+                              "presolve_bt_bound_tol" => 1e-1,
                               "presolve_bt_algo" => 2,
                               "presolve_bp" => true,
                               "presolve_bt_max_iter" => 2,
@@ -111,30 +117,34 @@ end
                        "monomial_convexhull" => true,
                        "presolve_bt" => false,
                        "presolve_bp" => true,
+                       "disc_ratio" => 10,
                        "log_level" => 100)
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
     @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 7
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
 end
 
 @testset " Validation Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => CBC,
-                       "bilinear_convexhull" => true,
-                       "monomial_convexhull" => true,
-                       "presolve_bt" => false,
-                       "presolve_bp" => false,
-                       "disc_ratio" => 14,
-                       "log_level" =>100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "bilinear_convexhull" => true,
+                                            "monomial_convexhull" => true,
+                                            "presolve_bt" => false,
+                                            "presolve_bp" => false,
+                                            "disc_ratio" => 14,
+                                            "max_iter" => 4,
+                                            "log_level" => 100)
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
-    @test termination_status(m) == MOI.OPTIMAL
+    @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 7049.24789; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 8
+    @test isapprox(objective_bound(m), 6839.487709940, atol = 1E-4)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
 end
 
 @testset " Validation Test || AMP || basic solve || examples/circle.jl" begin
@@ -162,7 +172,7 @@ end
                                           "presolve_bt" => true,
                                           "presolve_bt_max_iter" => 1,
                                           "presolve_bt_algo" => 1,
-                                          "presolve_bt_output_tol" => 1e-2,
+                                          "presolve_bt_bound_tol" => 1e-2,
                                           "log_level" => 100)
 
     m = circle_MINLPLib(solver = test_solver)
@@ -172,42 +182,45 @@ end
 end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
-   test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                      "mip_solver" => CBC,
-                      "bilinear_convexhull" => true,
-                      "monomial_convexhull" => true,
-                      "presolve_bt" => false,
-                      "presolve_bp" => true,
-                      "convhull_formulation" => "facet",
-                      "max_iter" => 3,
-                      "log_level" =>100)
+   test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                          "nlp_solver" => IPOPT,
+                                          "mip_solver" => CBC,
+                                          "bilinear_convexhull" => true,
+                                          "monomial_convexhull" => true,
+                                          "presolve_bt" => false,
+                                          "presolve_bp" => true,
+                                          "convhull_formulation" => "facet",
+                                          "max_iter" => 3,
+                                          "log_level" => 100)
    m = nlp3(solver = test_solver)
    JuMP.optimize!(m)
 
    @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
-   @test isapprox(objective_bound(m), 6485.882935627451; atol=1e-4)
+   @test isapprox(objective_bound(m), 6654.6983279983; atol=1e-4)
    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
 @testset " Validation Test || AMP || multi4N || N = 2 || exprmode=1:11" begin
 
-    objBoundVec = Any[4.68059, 12.0917, 8.94604, 10.0278, 8.100, 6.6384, 12.5674, 7.3975, 6.0292, 7.9146, 7.8830]
-    objValVec = Any[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
-    for i in 1:11
-        test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                               "mip_solver" => CBC,
-                               "disc_abs_width_tol" => 1e-2,
-                               "max_iter" => 4,
-                               "presolve_bp" => false,
-                               "presolve_bt" => false,
-                               "log_level" => 1)
+    n_instances = 11
+    objValVec = 2.0 * ones(n_instances)
+    
+    for i in 1:n_instances
+        test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+                                              "nlp_solver" => IPOPT,
+                                              "mip_solver" => CBC,
+                                              "disc_abs_width_tol" => 1e-2,
+                                              "max_iter" => 4,
+                                              "disc_ratio" => 4,
+                                              "presolve_bp" => false,
+                                              "presolve_bt" => false,
+                                              "log_level" => 1)
 
         m = multi4N(solver = test_solver, N=2, exprmode=i)
         JuMP.optimize!(m)
 
         @test termination_status(m) == MOI.OTHER_LIMIT
-        @test isapprox(objective_value(m), objValVec[i];atol=1e-3)
-#         @test isapprox(objective_bound(m), objBoundVec[i];atol=1e-3)
+        @test isapprox(objective_value(m), objValVec[i]; atol=1e-3)
     end
 end
 
@@ -228,13 +241,17 @@ end
 
 @testset " Validation Test || AMP || multi3N || N = 2 || exprmode=1:11" begin
 
+    n_instances = 3
+    objValVec = 2.0 * ones(n_instances)
+
     objBoundVec = Any[2.97186, 3.85492, 4.23375]
-    objValVec = Any[2.0, 2.0, 2.0]
-    for i in 1:3
+
+    for i in 1:n_instances
         test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
                                "mip_solver" => CBC,
                                "disc_abs_width_tol" => 1e-2,
                                "max_iter" => 4,
+                               "disc_ratio" => 4,
                                "presolve_bp" => false,
                                "presolve_bt" => false,
                                "log_level" => 1)
@@ -243,20 +260,22 @@ end
         JuMP.optimize!(m)
 
         @test termination_status(m) == MOI.OTHER_LIMIT
-        @test isapprox(objective_value(m), objValVec[i];atol=1e-3)
+        @test isapprox(objective_value(m), objValVec[i]; atol=1e-3)
         @test objective_bound(m) <= objBoundVec[i] + 1e-3
     end
 end
 
 @testset " Validation Test || AMP || multiKND || K = 3, N = 3, D = 0 " begin
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => CBC,
-                           "disc_abs_width_tol" => 1e-2,
-                           "max_iter" => 3,
-                           "presolve_bp" => false,
-                           "presolve_bt" => false,
-                           "log_level" =>1)
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+                                          "nlp_solver" => IPOPT,
+                                          "mip_solver" => CBC,
+                                          "disc_abs_width_tol" => 1e-2,
+                                          "max_iter" => 3,
+                                          "disc_ratio" => 4,
+                                          "presolve_bp" => false,
+                                          "presolve_bt" => false,
+                                          "log_level" =>1)
 
     m = multiKND(solver = test_solver, randomub=50, K=3, N=3, D=0)
     JuMP.optimize!(m)
@@ -267,23 +286,24 @@ end
 end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => CBC,
-                       "bilinear_convexhull" => true,
-                       "monomial_convexhull" => true,
-                       "presolve_bt" => false,
-                       "presolve_bp" => false,
-                       "max_iter" => 4,
-                       "convhull_formulation" => "facet",
-                       "log_level" =>100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "bilinear_convexhull" => true,
+                                            "monomial_convexhull" => true,
+                                            "presolve_bt" => false,
+                                            "presolve_bp" => false,
+                                            "max_iter" => 3,
+                                            "disc_ratio" => 4,
+                                            "convhull_formulation" => "facet",
+                                            "log_level" =>100)
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
-    @test objective_bound(m) >= 6717.00
-    @test objective_bound(m) <= 6718.00
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
+    @test isapprox(objective_bound(m), 5871.530692199214; atol = 1E-5)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
 @testset " Validation Test || AMP || DISC-RATIO || examples/nlp3.jl " begin
@@ -449,17 +469,22 @@ end
 end
 
 @testset "Operator :: bmpl && binlin && binprod solve test II" begin
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+                          "minlp_solver" => JUNIPER,
                           "nlp_solver" => IPOPT,
                           "mip_solver" => CBC,
                           "presolve_bt" => false,
+                          "disc_ratio" => 4,
                           "log_level" => 100)
 
     m = bpml_binl(solver = test_solver)
-    JuMP.optimize!(m)
-    @test isapprox(JuMP.objective_value(m), 22812.76415926; atol=1e-6)
 
-    alpine = JuMP.backend(m).optimizer.model
+    # FIXME: Deactivating this until Juniper v0.9.0's numerical issues are fixed. 
+    # JuMP.optimize!(m)
+    # @test isapprox(JuMP.objective_value(m), 22812.76415926; atol=1e-6)
+    # alpine = JuMP.backend(m).optimizer.model
+
+    alpine = _build(m)
     @test haskey(alpine.nonconvex_terms, Expr[:(x[6]), :(x[7])])
     @test haskey(alpine.nonconvex_terms, Expr[:(x[7]), :(x[8])])
     @test haskey(alpine.nonconvex_terms, Expr[:(x[8]), :(x[9])])
@@ -484,20 +509,24 @@ end
 end
 
 @testset "Embedding Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => PAVITO,
-                       "bilinear_convexhull" => true,
-                       "monomial_convexhull" => true,
-                       "presolve_bt" => false,
-                       "presolve_bp" => true,
-                       "convhull_ebd" => true,
-                       "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => PAVITO,
+                                            "bilinear_convexhull" => true,
+                                            "monomial_convexhull" => true,
+                                            "presolve_bt" => false,
+                                            "presolve_bp" => true,
+                                            "convhull_ebd" => true,
+                                            "max_iter" => 4,
+                                            "disc_ratio" => 4,
+                                            "log_level" => 100)
+
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
-    @test termination_status(m) == MOI.OPTIMAL
+    @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 7
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
 end
 
 # FIXME Pavito terminates with `NUMERICAL_ERROR` on Julia v1.0 in Mac OS (travis)
@@ -511,7 +540,7 @@ end
 #                            "presolve_bt" => false,
 #                            "presolve_bp" => true,
 #                            "presolve_bt_algo" => 1,
-#                            "presolve_bt_output_tol" => 1e-1,
+#                            "presolve_bt_bound_tol" => 1e-1,
 #                            "convhull_ebd" => true,
 #                            "log_level" => 100)
 
@@ -535,7 +564,7 @@ end
 
     @test termination_status(m) == MOI.OPTIMAL
     @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 7
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
 end
 
 @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
@@ -565,7 +594,7 @@ end
                            "presolve_bt" => false,
                            "presolve_bp" => true,
                            "presolve_bt_algo" => 1,
-                           "presolve_bt_output_tol" => 1e-1,
+                           "presolve_bt_bound_tol" => 1e-1,
                            "convhull_ebd" => true,
                            "convhull_ebd_ibs" => true,
                            "log_level" => 100)
@@ -577,21 +606,23 @@ end
 end
 
 @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                       "mip_solver" => PAVITO,
-                       "bilinear_convexhull" => true,
-                       "monomial_convexhull" => true,
-                       "presolve_bt" => false,
-                       "presolve_bp" => true,
-                       "convhull_ebd" => true,
-                       "convhull_ebd_link" => true,
-                       "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => PAVITO,
+                                            "bilinear_convexhull" => true,
+                                            "monomial_convexhull" => true,
+                                            "presolve_bt" => false,
+                                            "presolve_bp" => true,
+                                            "convhull_ebd" => true,
+                                            "convhull_ebd_link" => true,
+                                            "disc_ratio" => 12,
+                                            "log_level" => 100)
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
     @test isapprox(objective_value(m), 58.38367169858795; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 7
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
 @testset "Embedding LINK Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
@@ -603,21 +634,25 @@ end
                        "presolve_bp" => false,
                        "convhull_ebd" => true,
                        "convhull_ebd_link" => true,
+                       "disc_ratio" => 10,
+                       "max_iter" => 3,
                        "log_level" => 100)
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
-    @test termination_status(m) == MOI.OPTIMAL
+    @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 7049.247897696188; atol=1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 9
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
 @testset "Algorithm Logic Test || castro4m2 || 1 iteration || Error case" begin
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-                           "mip_solver" => CBC,
-                           "max_iter" => 1,
-                           "presolve_bt" => false,
-                           "log_level" => 100)
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+                                          "nlp_solver" => IPOPT,
+                                          "mip_solver" => CBC,
+                                          "max_iter" => 1,
+                                          "presolve_bt" => false,
+                                          "disc_ratio" => 10,
+                                          "log_level" => 100)
 
     m = castro4m2(solver = test_solver)
     JuMP.optimize!(m)
@@ -626,15 +661,17 @@ end
 
 @testset " Algorithm Logic Test || blend029_gl || 3 iterations || Infeasible Case" begin
 
-    test_solver=optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
-                          "nlp_solver" => IPOPT,
-                          "mip_solver" => CBC,
-                          "presolve_bp" => true,
-                          "disc_var_pick" => 1,
-                          "log_level" => 100,
-                          "max_iter" => 3,
-                          "presolve_bt_width_tol" => 1e-3,
-                          "presolve_bt" => false)
+    test_solver=optimizer_with_attributes(Alpine.Optimizer, 
+                                          "minlp_solver" => PAVITO,
+                                          "nlp_solver" => IPOPT,
+                                          "mip_solver" => CBC,
+                                          "presolve_bp" => true,
+                                          "disc_var_pick" => 1,
+                                          "log_level" => 100,
+                                          "max_iter" => 3,
+                                          "disc_ratio" => 10,
+                                          "presolve_bt_width_tol" => 1e-3,
+                                          "presolve_bt" => false)
     m = blend029_gl(solver = test_solver)
     JuMP.optimize!(m)
 
@@ -670,20 +707,22 @@ end
 
 @testset "Algorithm Test with binprod terms" begin
 
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, "minlp_solver" => PAVITO,
-                            "nlp_solver" => IPOPT,
-                            "mip_solver" => CBC,
-                            "bilinear_convexhull" => true,
-                            "monomial_convexhull" => true,
-                            "presolve_bp" => true,
-                            "presolve_bt" => false,
-                            "log_level" => 100)
+    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+                                            "minlp_solver" => PAVITO,
+                                            "nlp_solver" => IPOPT,
+                                            "mip_solver" => CBC,
+                                            "bilinear_convexhull" => true,
+                                            "monomial_convexhull" => true,
+                                            "presolve_bp" => true,
+                                            "presolve_bt" => false,
+                                            "disc_ratio" => 10,
+                                            "log_level" => 100)
     m = binprod_nlp3(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(objective_value(m), 3651.020370626844;atol=1e-3)
-    @test isapprox(objective_bound(m), 3650.791316892635;atol=1e-3)
+    @test isapprox(objective_value(m), 3651.020370626844; atol = 1e-4)
+    @test isapprox(objective_bound(m), 3650.786358471944; atol = 1e-4)
 
     alpine = JuMP.backend(m).optimizer.model
     @test alpine.nonconvex_terms[Expr[:(x[2]), :(x[4])]][:y_idx] == 19
@@ -810,4 +849,29 @@ end
     @test alpine.bounding_constr_mip[9][:coefs] == Any[1.0, -1.0]
     @test alpine.bounding_constr_mip[9][:sense] == :(<=)
     @test alpine.bounding_constr_mip[9][:cnt] == 2
+end
+
+@testset "TESTS for closing the optimality gap in OBBT" begin
+    test_solver = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
+                                                 "nlp_solver" => IPOPT,
+                                                 "mip_solver" => PAVITO,
+                                                 "presolve_bt" => true,
+                                                 "presolve_bt_max_iter" => 2,
+                                                 "log_level" => 1)
+    m = JuMP.Model(test_solver)
+
+    # From issue #108
+    @variable(m, -2 <= x[1:2] <= 2)
+    @variable(m, -10 <= y[1:3] <= 10)
+    @NLobjective(m, Min, y[2] + y[1]*y[2]*y[3])
+    @constraint(m, y[1] == x[1])
+    @constraint(m, y[2] == x[2])
+    @NLconstraint(m, y[3] == x[2]^2)
+
+    JuMP.optimize!(m)
+    alp = JuMP.backend(m).optimizer.model
+    @test isapprox(JuMP.objective_value(m), -18, atol = 1E-6)
+    @test isapprox(value.(m[:x]), [2, -2], atol=1E-6)
+    @test alp.logs[:n_iter] == 0 
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 0
 end
