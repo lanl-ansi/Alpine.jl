@@ -68,28 +68,29 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     bounding_constr_mip      :: Vector{Dict{Any, Any}}              # Lifted constraint expressions in affine form
 
     # Discretization Related options
-    candidate_disc_vars :: Vector{Int}                              # A vector of all original variable indices that is involved in the nonlinear terms
-    discretization      :: Dict{Any,Any}                            # Discretization points with variable keys
-    disc_vars           :: Vector{Int}                              # Variables chosen for discretization
-    int_vars            :: Vector{Int}                              # Index vector of integer variables
-    bin_vars            :: Vector{Int}                              # Index vector of binary variables
+    candidate_disc_vars   :: Vector{Int}                            # A vector of all original variable indices that is involved in the nonlinear terms
+    discretization        :: Dict{Any,Any}                          # Discretization points with variable keys
+    disc_vars             :: Vector{Int}                            # Variables chosen for discretization
+    int_vars              :: Vector{Int}                            # Index vector of integer variables
+    bin_vars              :: Vector{Int}                            # Index vector of binary variables
 
     # Reformulated problem options
-    l_var_tight :: Vector{Float64}                                  # Tightened variable upper bounds
-    u_var_tight :: Vector{Float64}                                  # Tightened variable lower bounds
-    var_type    :: Vector{Symbol}                                   # Updated variable type for local solve
+    l_var_tight           :: Vector{Float64}                        # Post-presolve variable upper bounds
+    u_var_tight           :: Vector{Float64}                        # Post-presolve variable lower bounds
+    var_type              :: Vector{Symbol}                         # Updated variable type for local solve
 
     # Solution information
-    presolve_infeasible :: Bool                                     # Presolve infeasibility detection flag
-    best_bound          :: Float64                                  # Best bound from MIP
-    best_obj            :: Float64                                  # Best feasible objective value
-    initial_warmval     :: Vector{Float64}                          # Warmstart values set to Alpine
-    best_sol            :: Vector{Float64}                          # Best feasible solution
-    best_bound_sol      :: Vector{Float64}                          # Best bound solution (arg-min)
-    best_rel_gap        :: Float64                                  # Relative optimality gap = |best_obj - best_bound|/|best_obj|*100
-    best_abs_gap        :: Float64                                  # Absolute gap = |best_obj - best_bound|
-    bound_sol_history   :: Vector{Vector{Float64}}                  # History of bounding solutions limited by "parameter disc_consecutive_forbid"
-    bound_sol_pool      :: Dict{Any, Any}                           # A pool of solutions from solving model_mip
+    presolve_infeasible   :: Bool                                   # Presolve infeasibility detection flag
+    best_bound            :: Float64                                # Best bound from MIP
+    best_obj              :: Float64                                # Best feasible objective value
+    initial_warmval       :: Vector{Float64}                        # Warmstart values set to Alpine
+    best_sol              :: Vector{Float64}                        # Best feasible solution
+    best_bound_sol        :: Vector{Float64}                        # Best bound solution (arg-min)
+    presolve_best_rel_gap :: Float64                                # Post-OBBT relative optimality gap = |best_obj - best_bound|/|best_obj|*100
+    best_rel_gap          :: Float64                                # Relative optimality gap = |best_obj - best_bound|/|best_obj|*100
+    best_abs_gap          :: Float64                                # Absolute gap = |best_obj - best_bound|
+    bound_sol_history     :: Vector{Vector{Float64}}                # History of bounding solutions limited by "parameter disc_consecutive_forbid"
+    bound_sol_pool        :: Dict{Any, Any}                         # A pool of solutions from solving model_mip
 
     # Logging information and status
     logs                       :: Dict{Symbol,Any}                          # Logging information
@@ -205,13 +206,14 @@ function MOI.empty!(m::Optimizer)
     m.presolve_infeasible      = false
     m.bound_sol_history        = Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
 
-    m.best_obj        = Inf
-    m.initial_warmval = Float64[]
-    m.best_sol        = Float64[]
-    m.best_bound      = -Inf
-    m.best_rel_gap    = Inf
-    m.best_abs_gap    = Inf
-    m.alpine_status   = MOI.OPTIMIZE_NOT_CALLED
+    m.best_obj              = Inf
+    m.initial_warmval       = Float64[]
+    m.best_sol              = Float64[]
+    m.best_bound            = -Inf
+    m.presolve_best_rel_gap = Inf
+    m.best_rel_gap          = Inf
+    m.best_abs_gap          = Inf
+    m.alpine_status         = MOI.OPTIMIZE_NOT_CALLED
 
     create_status!(m)
     create_logs!(m)

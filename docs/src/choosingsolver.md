@@ -31,16 +31,16 @@ using Ipopt
 # MIP solver
 const gurobi = optimizer_with_attributes(Gurobi.Optimizer, 
                                          MOI.Silent() => true,
-                                         "Presolve" => 1) 
+                                         "Presolve"   => 1) 
 
 # NLP solver
 const ipopt = optimizer_with_attributes(Ipopt.Optimizer, 
                                         MOI.Silent() => true, 
-                                        "max_iter" => 9999)
+                                        "max_iter"   => 9999)
 
 # Global solver
 const alpine = optimizer_with_attributes(Alpine.Optimizer, 
-                                        "nlp_solver" => ipopt,
-                                        "mip_solver" => gurobi)
+                                         "nlp_solver" => ipopt,
+                                         "mip_solver" => gurobi)
 m = Model(alpine)
 ```

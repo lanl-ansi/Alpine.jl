@@ -166,21 +166,21 @@ function minmax_bound_tightening(m::Optimizer; use_bound = true, time_limit = In
 
         bound_avg_reduction = (avg_reduction > improv_tol)
         bound_max_reduction = (max_reduction > improv_tol)
-        bound_max_width = (max_width > width_tol)
-        
-        keep_tightening = (bound_avg_reduction) && (bound_max_reduction) && (bound_max_width)
+        bound_max_width     = (max_width > width_tol)
 
         # Deactivate this termination criterion if it slows down the OBBT convergence 
-        if keep_tightening  
-            stats = Alp.relaxation_model_obbt(m, discretization, bound)
-            if Alp.is_min_sense(m)
-                current_rel_gap = Alp.eval_opt_gap(m, stats["relaxed_obj"], bound)
-            elseif Alp.is_max_sense(m)
-                current_rel_gap = Alp.eval_opt_gap(m, bound, stats["relaxed_obj"])
-            end
-            
-            keep_tightening = (current_rel_gap > Alp.get_option(m, :rel_gap))
+        stats = Alp.relaxation_model_obbt(m, discretization, bound)
+        if Alp.is_min_sense(m)
+            current_rel_gap = Alp.eval_opt_gap(m, stats["relaxed_obj"], bound)
+        elseif Alp.is_max_sense(m)
+            current_rel_gap = Alp.eval_opt_gap(m, bound, stats["relaxed_obj"])
         end
+
+        keep_tightening = (bound_avg_reduction) && (bound_max_reduction) && (bound_max_width) && (current_rel_gap > Alp.get_option(m, :rel_gap))
+
+        if !keep_tightening && !isinf(current_rel_gap)
+            m.presolve_best_rel_gap = current_rel_gap * 100
+        end 
 
         discretization = Alp.resolve_var_bounds(m, discretization)
         

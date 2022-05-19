@@ -141,7 +141,7 @@ function MOI.optimize!(m::Optimizer)
 
    Alp.presolve(m)
 
-   if !Alp.check_exit(m)
+   if !Alp.check_exit(m) && Alp.get_option(m, :apply_partitioning)
       Alp.global_solve(m)
       Alp.get_option(m, :log_level)  > 0 && Alp.logging_row_entry(m, finish_entry=true)
       println("====================================================================================================")
@@ -223,8 +223,11 @@ function presolve(m::Optimizer)
    m.logs[:presolve_time] += cputime_presolve
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
-   # (Alp.get_option(m, :log_level) > 0) && println("Presolve time = $(round.(m.logs[:total_time]; digits=2))s")
-   (Alp.get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits=2))s")
+   
+   if Alp.get_option(m, :presolve_bt)
+      (Alp.get_option(m, :log_level) > 0) && println("  Post-presolve optimality gap: $(round(m.presolve_best_rel_gap; digits = 3))%")
+   end
+   (Alp.get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits = 2))s")
    
    return
 end

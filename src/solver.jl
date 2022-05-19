@@ -27,6 +27,7 @@ mutable struct OptimizerOptions
     # method_convexification :: Array{Function}                    # Array of functions that user can choose to convexify specific non-linear terms : no over-ride privilege
 
     # Parameters used in Alpine's MIP-based partitioning algorithm
+    apply_partitioning            :: Bool                          # Apply the partitioning algorithm only if thhis true, else terminate after presolve
     disc_var_pick                 :: Any                           # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
     disc_ratio                    :: Any                           # Discretization ratio parameter, which is critical for convergence (using a fixed value for now, later switch to a function)
     disc_uniform_rate             :: Int                           # Discretization rate parameter when using uniform partitions
@@ -91,6 +92,7 @@ function get_default_options()
         # term_patterns = Array{Function}(undef, 0)
         # constr_patterns = Array{Function}(undef, 0)
 
+        apply_partitioning            = true
         disc_var_pick                 = 2                # By default, uses the 15-variable selective rule
         disc_ratio                    = 10
         disc_uniform_rate             = 2
@@ -139,6 +141,7 @@ function get_default_options()
                             bilinear_mccormick, 
                             bilinear_convexhull, 
                             monomial_convexhull,
+                            apply_partitioning,
                             disc_var_pick, 
                             disc_ratio, 
                             disc_uniform_rate, 
