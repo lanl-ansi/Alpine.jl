@@ -10,8 +10,8 @@
 - Fixed bug in `best_rel_gap` evaluation
 - Bug fixed to check any user-defined operators, and disable hessians based on availabe features. Unit test added for this 
 - Now, Alpine terminates (w/o invoking `global_solve`) when presolve finds the global optimum due to `rel_gap` eval at every OBBT iteration. Unit test added for this.
-- Post-OBBT optimality gap (`presolve_best_rel_gap`) user-option added to be able to extract best opt gap after Alpine terminates
-- `apply_partitioning` feature added to terminate Alpine with/without applying the MIP-based paritioning algorithm
+- Post-OBBT optimality gap (`presolve_best_rel_gap`) user-option added to be able to extract best opt gap after OBBT when Alpine terminates
+- `apply_partitioning` feature added to be able to terminate Alpine without applying the MIP-based paritioning algorithm (mainly to run only OBBT)
 - Revised unit test (in `test_algorithm`) for reduced run times
 
 ## v0.3.0
