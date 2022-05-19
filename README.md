@@ -12,7 +12,7 @@ Alpine globally solves a given MINLP by:
 
 * Analyzing the problem's expressions (objective & constraints) and applies approporite convex relaxations and polyhedral outer-approximations
 
-* Performing sequential optimization-based bound tightening and an iterative adaptive partitioning scheme to piecewise polyhedral relaxations with a guarantee of global convergence
+* Performing sequential optimization-based bound tightening (OBBT) and an iterative MIP-based adaptive partitioning scheme via piecewise polyhedral relaxations with a guarantee of global convergence
 
 **Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadratically Constrainted Quadradic Programs (MIQCQPs), Non-Linear Programs (NLPs), etc.
 
@@ -37,7 +37,7 @@ Check the "test/examples" folder on how to use this package.
 
 ## Underlying solvers
 
-Though the algorithm implemented in Alpine is quite involved, most of the computational bottleneck arises in the underlying MIP solvers. Since every iteration of Alpine solves an MIP sub-problem, which is typically a convex MILP/MIQCQP, Alpine's run time heavily depends on the run-time of these solvers. For the best performance of Alpine, we recommend using the commercial solver [Gurobi](https://www.gurobi.com), which is avaible [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. However, due to the flexibility offered by JuMP.jl, the following solvers are supported in Alpine: 
+Though the MIP-based bounding algorithm implemented in Alpine is quite involved, most of the computational bottleneck arises in the underlying MIP solvers. Since every iteration of Alpine solves an MIP sub-problem, which is typically a convex MILP/MIQCQP, Alpine's run time heavily depends on the run-time of these solvers. For the best performance of Alpine, we recommend using the commercial solver [Gurobi](https://www.gurobi.com), which is avaible [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. However, due to the flexibility offered by [JuMP](https://github.com/jump-dev/JuMP.jl), the following MIP and NLP solvers are supported in Alpine: 
 
 
 | Solver                                                                         | Julia Package                                                |
@@ -49,6 +49,7 @@ Though the algorithm implemented in Alpine is quite involved, most of the comput
 | [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/jump-dev/AmplNLWriter.jl)   |
 | [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/jump-dev/KNITRO.jl)           |
 | [Xpress](https://www.fico.com/en/products/fico-xpress-optimization)            | [Xpress.jl](https://github.com/jump-dev/Xpress.jl)
+| [HiGHS](https://highs.dev/)            | [HiGHS.jl](https://github.com/jump-dev/HiGHS.jl)
 
 ## Bug reports and support
 Please report any issues via the Github **[issue tracker]**. All types of issues are welcome and encouraged; this includes bug reports, documentation typos, feature requests, etc. 

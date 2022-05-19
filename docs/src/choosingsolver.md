@@ -20,7 +20,7 @@ As the development of Alpine continues, supports for solvers such as [Mosek](htt
 !!! tip
     Performance of Alpine is significantly faster and robust while using [Gurobi](https://www.gurobi.com) as the underlying convex mixed-integer programming (MIP) solver. Note that Gurobi's individual-usage license is available [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. 
 
-To solve any nonlinear program with only continuous variables to global optimality, here is an example to utilize different sub-solvers with default options set for Alpine:
+To solve any continuous nonlinear program to global optimality, here is an example to utilize different sub-solvers with default options set for Alpine:
 
 ```julia
 using Alpine
@@ -28,19 +28,21 @@ using JuMP
 using Gurobi 
 using Ipopt
 
-# MIP solver
+# MIP optimizer
 const gurobi = optimizer_with_attributes(Gurobi.Optimizer, 
                                          MOI.Silent() => true,
                                          "Presolve"   => 1) 
 
-# NLP solver
+# NLP optimizer
 const ipopt = optimizer_with_attributes(Ipopt.Optimizer, 
                                         MOI.Silent() => true, 
+                                        "sb" => "yes", 
                                         "max_iter"   => 9999)
 
-# Global solver
+# Global optimizer
 const alpine = optimizer_with_attributes(Alpine.Optimizer, 
                                          "nlp_solver" => ipopt,
                                          "mip_solver" => gurobi)
 m = Model(alpine)
 ```
+Similarly, many such optimizer options and nonconvex problems (both NLPs and MINLPs) can be found in the [examples](https://github.com/lanl-ansi/Alpine.jl/tree/master/examples) folder. 

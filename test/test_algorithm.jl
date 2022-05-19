@@ -853,16 +853,16 @@ end
 
 @testset "TESTS for closing the optimality gap in OBBT" begin
     test_solver = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
-                                                "nlp_solver" => IPOPT,
-                                                "mip_solver" => PAVITO,
-                                                "presolve_bt" => true,
-                                                "presolve_bt_max_iter" => 2,
-                                                "log_level" =>1)
+                                                 "nlp_solver" => IPOPT,
+                                                 "mip_solver" => PAVITO,
+                                                 "presolve_bt" => true,
+                                                 "presolve_bt_max_iter" => 2,
+                                                 "log_level" => 1)
     m = JuMP.Model(test_solver)
 
     # From issue #108
     @variable(m, -2 <= x[1:2] <= 2)
-    @variable(m, y[1:3])
+    @variable(m, -10 <= y[1:3] <= 10)
     @NLobjective(m, Min, y[2] + y[1]*y[2]*y[3])
     @constraint(m, y[1] == x[1])
     @constraint(m, y[2] == x[2])

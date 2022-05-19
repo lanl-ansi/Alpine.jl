@@ -21,8 +21,11 @@ juniper = get_juniper(gurobi, ipopt)
 
 #= Global solver
  Hints: 
- -> Try different integer values ( >=4 ) for `disc_ratio` to potentially observe better Alpine run times (can be instance specific).
- -> Choose `presolve_bt` to `false` if you prefer the bound tightening (OBBT) presolve to be turned off. 
+ => Try different integer values (>=4) for `disc_ratio` to potentially observe 
+    better Alpine run times (can be instance specific).
+ => Choose `presolve_bt` to `false` if you prefer the bound tightening (OBBT) presolve to be turned off. 
+ => If you prefer to use Alpine for only OBBT presolve, without any paritioning applied to the 
+    nonlinear terms, include option "apply_partitioning" below and set it to false. 
 =#
 const alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
                                               "minlp_solver" => juniper,
