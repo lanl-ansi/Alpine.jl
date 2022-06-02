@@ -1,4 +1,4 @@
-# Alpine, A global solver for nonconvex MINLPs <span style="color:black"></span>
+# Alpine, A global solver for non-convex MINLPs <span style="color:black"></span>
 
 STATUS: [![CI](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
@@ -10,7 +10,7 @@ Alpine is entirely built upon [JuMP](https://github.com/jump-dev/JuMP.jl) and [M
 
 Alpine globally solves a given MINLP by:
 
-* Analyzing the problem's expressions (objective & constraints) and applies approporite convex relaxations and polyhedral outer-approximations
+* Analyzing the problem's expressions (objective & constraints) and applies appropriate convex relaxations and polyhedral outer-approximations
 
 * Performing sequential optimization-based bound tightening (OBBT) and an iterative MIP-based adaptive partitioning scheme via piecewise polyhedral relaxations with a guarantee of global convergence
 
