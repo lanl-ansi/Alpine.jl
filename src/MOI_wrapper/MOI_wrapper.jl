@@ -116,6 +116,18 @@ struct NumberOfPresolveIterations <: MOI.AbstractModelAttribute end
 MOI.is_set_by_optimize(::NumberOfPresolveIterations) = true
 MOI.get(m::Optimizer, ::NumberOfPresolveIterations)  = m.logs[:bt_iter]
 
+struct TightenedLowerBound <: MOI.AbstractVariableAttribute end
+MOI.is_set_by_optimize(::TightenedLowerBound) = true
+function MOI.get(m::Optimizer, ::TightenedLowerBound, vi::MOI.VariableIndex)
+    return m.l_var_tight[vi.value]
+end
+
+struct TightenedUpperBound <: MOI.AbstractVariableAttribute end
+MOI.is_set_by_optimize(::TightenedUpperBound) = true
+function MOI.get(m::Optimizer, ::TightenedUpperBound, vi::MOI.VariableIndex)
+    return m.u_var_tight[vi.value]
+end
+
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 
 function MOI.get(m::Optimizer, attr::MOI.PrimalStatus)

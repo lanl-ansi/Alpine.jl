@@ -85,6 +85,10 @@ end
     @test termination_status(m) == MOI.OTHER_LIMIT
     @test MOI.get(m, Alpine.NumberOfIterations()) == 2
     @test MOI.get(m, Alpine.NumberOfPresolveIterations()) == 2
+
+    vars = all_variables(m)
+    @test MOI.get.(m, Alpine.TightenedLowerBound(), vars) ≈ [100, 999.9, 999.9, 10, 150.2, 10, 35.4, 168] rtol=1e-6
+    @test MOI.get.(m, Alpine.TightenedUpperBound(), vars) ≈ [4573.8, 5547.9, 5913.4, 332.4, 551, 390, 571.1, 638.7] rtol=1e-6
 end
 
 # FIXME Pavito terminates with `NUMERICAL_ERROR` on Julia v1.0:
