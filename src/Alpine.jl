@@ -7,7 +7,7 @@ using JuMP
 import LinearAlgebra: dot, Diagonal
 import Statistics
 
-const _ALPINE_VERSION = "v0.4.0"
+const _ALPINE_VERSION = "v0.4.1"
 const ALPINE_DEBUG = false
 const Alp = Alpine
 
