@@ -1,7 +1,7 @@
 # Alpine.jl Change Log
 
 ## v0.4.1
-- Add MOI attribute for tightened bound (@blegat)
+- Added MOI attribute for tightened bounds post-OBBT (@blegat)
 
 ## v0.4.0
 - Fixed OBBT convergence issue due to average bound reduction
