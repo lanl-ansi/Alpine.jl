@@ -67,6 +67,8 @@ mutable struct OptimizerOptions
     int_enable                    :: Bool                          # Convert integer problem into binary problem
     int_cumulative_disc           :: Bool                          # Cumulatively involve integer variables for discretization
 
+    # Linking constraint feature
+    linking_constraints           :: Bool
 end
 
 function get_default_options()
@@ -127,6 +129,8 @@ function get_default_options()
         int_enable                    = false
         int_cumulative_disc           = true
 
+        linking_constraints           = false
+
     return OptimizerOptions(log_level, 
                             time_limit, 
                             max_iter, 
@@ -171,6 +175,7 @@ function get_default_options()
                             presolve_bt_mip_time_limit, 
                             presolve_bp, 
                             int_enable, 
-                            int_cumulative_disc)
+                            int_cumulative_disc,
+                            linking_constraints)
                             
 end
