@@ -6,6 +6,7 @@ using JuMP
 
 import LinearAlgebra: dot, Diagonal
 import Statistics
+import Combinatorics
 
 const _ALPINE_VERSION = "v0.4.1"
 const ALPINE_DEBUG = false
@@ -29,6 +30,7 @@ include("presolve.jl")
 include("amp.jl")
 include("embedding.jl")
 include("heuristics.jl")
+include("linking.jl")
 
 # Convexification
 include("multi.jl")
