@@ -1,5 +1,9 @@
 # Alpine.jl Change Log
 
+## Staged
+- New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (speed up in run times for multilinear termed problems)
+- Added dependency on Combinatorics package for linking constraints 
+
 ## v0.4.1
 - Added MOI attribute for tightened bounds post-OBBT (@blegat)
 

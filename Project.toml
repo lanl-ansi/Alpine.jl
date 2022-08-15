@@ -5,6 +5,7 @@ repo = "https://github.com/lanl-ansi/Alpine.jl.git"
 version = "0.4.1"
 
 [deps]
+Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
@@ -18,6 +19,7 @@ Juniper = "0.8, 0.9"
 MathOptInterface = "0.10, 1"
 Pavito = "0.3.4, 0.3.5"
 julia = "1"
+Combinatorics = "1"
 
 [extras]
 Cbc = "9961bab8-2fa3-5c5a-9d89-47fab24efd76"
