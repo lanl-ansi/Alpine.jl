@@ -35,7 +35,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     constraint_bounds_orig    :: Vector{MOI.NLPBoundsPair}          # Constraint lower bounds
     nl_constraint_bounds_orig :: Vector{MOI.NLPBoundsPair}          # Constraint lower bounds
     sense_orig                :: MOI.OptimizationSense              # Problem type (:Min, :Max)
-    d_orig                    :: Union{Nothing, JuMP.NLPEvaluator}  # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
+    d_orig                    :: Union{Nothing, MOI.AbstractNLPEvaluator}  # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
     disable_hessian           :: Bool                               # Check if there are any user-defined operators, and disable hessians if necessary.
     has_nl_objective          :: Bool
     objective_function        :: Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
