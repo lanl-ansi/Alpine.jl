@@ -24,8 +24,9 @@ function load!(m::Optimizer)
 
    # Initialize NLP interface
    requested_features = Alp.features_available(m)
-   MOI.initialize(m.d_orig, requested_features::Vector{Symbol})
-
+   if m.d_orig !== nothing
+      MOI.initialize(m.d_orig, requested_features::Vector{Symbol})
+   end
    for feat in requested_features
       if !(feat in Alp.features_available(m))
           error("Unsupported feature $feat")
