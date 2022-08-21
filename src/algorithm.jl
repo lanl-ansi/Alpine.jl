@@ -21,10 +21,10 @@ function features_available(m::Optimizer)
 end
 
 function load!(m::Optimizer)
-   
-   # Initialize NLP interface 
+
+   # Initialize NLP interface
    requested_features = Alp.features_available(m)
-   MOI.initialize(m.d_orig, requested_features::Vector{Symbol}) 
+   MOI.initialize(m.d_orig, requested_features::Vector{Symbol})
 
    for feat in requested_features
       if !(feat in Alp.features_available(m))
@@ -148,9 +148,9 @@ function MOI.optimize!(m::Optimizer)
    else
       println("  Presolve terminated with a global optimal solution")
    end
-   
+
    Alp.summary_status(m)
-   
+
    return
 end
 
@@ -223,12 +223,12 @@ function presolve(m::Optimizer)
    m.logs[:presolve_time] += cputime_presolve
    m.logs[:total_time] = m.logs[:presolve_time]
    m.logs[:time_left] -= m.logs[:presolve_time]
-   
+
    if Alp.get_option(m, :presolve_bt)
       (Alp.get_option(m, :log_level) > 0) && println("  Post-presolve optimality gap: $(round(m.presolve_best_rel_gap; digits = 3))%")
    end
    (Alp.get_option(m, :log_level) > 0) && println("  Completed presolve in $(round.(m.logs[:total_time]; digits = 2))s")
-   
+
    return
 end
 
@@ -351,7 +351,9 @@ function local_solve(m::Optimizer; presolve = false)
    end
 
    x = Alp.load_nonlinear_model(m, local_solve_model, l_var, u_var)
-   (!m.d_orig.want_hess) && MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
+   if m.d_orig !== nothing
+      MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
+   end
 
    if !presolve
       warmval = m.best_sol[1:m.num_var_orig]
@@ -467,7 +469,7 @@ function bounding_solve(m::Optimizer)
    if status in STATUS_OPT || status in STATUS_LIMIT
 
       candidate_bound = (status == MOI.OPTIMAL) ? JuMP.objective_value(m.model_mip) : JuMP.objective_bound(m.model_mip)
-      candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits = 7) 
+      candidate_bound_sol = [round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits = 7)
                                     for i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)]
 
       # Experimental code

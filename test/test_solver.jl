@@ -37,7 +37,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Select all NL variable
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 2,
@@ -57,7 +57,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 2
 
     # Minimum vertex cover algorithm
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 1,
@@ -77,7 +77,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Adaptive variable selection scheme :: disc_var_pick = 3
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 3,
@@ -99,7 +99,7 @@ end
 @testset "Partitioning variable selection tests :: castro2m2" begin
 
     # Select all NL variable
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 0,
@@ -121,7 +121,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Select minimum vertex cover
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 1,
@@ -142,7 +142,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Criteria 15 static selection
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 2,
@@ -167,7 +167,7 @@ end
 @testset "Partitioning variable selection tests :: blend029" begin
 
     # Select all NL variable
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "minlp_solver" => PAVITO,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
@@ -186,7 +186,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 0
 
     # Minimum vertex cover
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "minlp_solver" => PAVITO,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
@@ -206,7 +206,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
 
     # Adaptive Scheme vertex cover
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "minlp_solver" => PAVITO,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
@@ -230,7 +230,7 @@ end
 @testset "Partitioning variable selection tests :: castro6m2" begin
 
     # Dynamic Scheme step 2
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 3,
@@ -253,7 +253,7 @@ end
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 3
 
     # Dynamic Scheme step 2
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 3,
@@ -277,7 +277,7 @@ end
 end
 
 @testset "Test getsolvetime for time tracking" begin
-    test_solver = optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                             "nlp_solver" => IPOPT,
                                             "mip_solver" => CBC,
                                             "disc_var_pick" => 0,
@@ -293,7 +293,7 @@ end
 end
 
 @testset "Hessians disabled with user-defined multivariate functions" begin
-    test_solver = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
+    test_solver = JuMP.optimizer_with_attributes(Alpine.Optimizer,
                                                  "nlp_solver" => IPOPT,
                                                  "mip_solver" => CBC,
                                                  "log_level"  => 100)
@@ -302,9 +302,10 @@ end
     JuMP.register(m, :my_f, 2, my_f, autodiff = true)
     @variable(m, x[1:2])
     @NLobjective(m, Min, my_f(x[1], x[2]))
-    
-    MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
-    MOI.Utilities.attach_optimizer(m)
+
+    JuMP.set_optimize_hook(m, (model; kwargs...) -> nothing)
+    JuMP.optimize!(m)
+    JuMP.set_optimize_hook(m, nothing)
     alpine = JuMP.backend(m).optimizer.model
     @test !(:Hess in Alpine.features_available(alpine))
 end

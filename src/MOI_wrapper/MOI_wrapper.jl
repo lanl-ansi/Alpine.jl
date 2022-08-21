@@ -134,7 +134,7 @@ function MOI.get(m::Optimizer, attr::MOI.PrimalStatus)
     if attr.result_index != 1
         return MOI.NO_SOLUTION
     end
-    
+
     status = m.alpine_status
     if status == MOI.OPTIMAL
         return MOI.FEASIBLE_POINT
@@ -382,7 +382,7 @@ function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableInd
 
     MOI.check_result_index_bounds(model, attr)
     MOI.throw_if_not_valid(model, vi)
-    
+
     return model.best_sol[vi.value]
 end
 
