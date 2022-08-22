@@ -2012,7 +2012,7 @@ end
                                           "log_level" =>  100)
 
     m = operator_basic(solver = test_solver)
-    JuMP.set_optimize_hook(m, (model; kwargs...) -> nothing)
+    JuMP.set_optimize_hook(m, MOI.Utilities.attach_optimizer)
     JuMP.optimize!(m)
     JuMP.set_optimize_hook(m, nothing)
     alpine = JuMP.backend(m).optimizer.model

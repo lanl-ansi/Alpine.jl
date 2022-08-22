@@ -19,7 +19,7 @@ const JUNIPER = MOI.OptimizerWithAttributes(Juniper.Optimizer, MOI.Silent() => t
 const PAVITO  = MOI.OptimizerWithAttributes(Pavito.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "cont_solver" => IPOPT, "mip_solver_drives" => false)
 
 function _build(model::JuMP.Model)
-    JuMP.set_optimize_hook(model, (model; kwargs...) -> nothing)
+    JuMP.set_optimize_hook(model, MOI.Utilities.attach_optimizer)
     JuMP.optimize!(model)
     JuMP.JuMP.set_optimize_hook(model, nothing)
     alpine = JuMP.backend(model).optimizer.model
