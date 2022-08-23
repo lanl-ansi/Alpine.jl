@@ -1,5 +1,4 @@
 function amp_post_convhull(m::Optimizer; kwargs...)
-
     options = Dict(kwargs)
     haskey(options, :use_disc) ? d = options[:use_disc] : d = m.discretization
 
@@ -11,7 +10,8 @@ function amp_post_convhull(m::Optimizer; kwargs...)
     # Convexification Treatment for Complex Non-Convex Terms
     for k in keys(m.nonconvex_terms)
         nl_type = m.nonconvex_terms[k][:nonlinear_type]
-        if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) && (m.nonconvex_terms[k][:convexified] == false)
+        if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) &&
+           (m.nonconvex_terms[k][:convexified] == false)
             λ, α = Alp.amp_convexify_multilinear(m, k, λ, α, d)
         elseif nl_type == :MONOMIAL && !m.nonconvex_terms[k][:convexified]
             λ, α = Alp.amp_convexify_monomial(m, k, λ, α, d)
@@ -36,29 +36,57 @@ function amp_post_convhull(m::Optimizer; kwargs...)
     end
 
     # Experimental code for Warm starting
-    Alp.get_option(m, :convhull_warmstart) && !isempty(m.best_bound_sol) && Alp.amp_warmstart_α(m, α)
+    Alp.get_option(m, :convhull_warmstart) &&
+        !isempty(m.best_bound_sol) &&
+        Alp.amp_warmstart_α(m, α)
 
     return
 end
 
-function amp_convexify_multilinear(m::Optimizer, k::Any, λ::Dict, α::Dict, discretization::Dict)
-
+function amp_convexify_multilinear(
+    m::Optimizer,
+    k::Any,
+    λ::Dict,
+    α::Dict,
+    discretization::Dict,
+)
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     ml_indices, dim, extreme_point_cnt = Alp.amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
     λ = Alp.amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
-    λ = Alp.populate_convhull_extreme_values(m, discretization, ml_indices, λ, dim, ones(Int,length(dim)))
+    λ = Alp.populate_convhull_extreme_values(
+        m,
+        discretization,
+        ml_indices,
+        λ,
+        dim,
+        ones(Int, length(dim)),
+    )
     α = Alp.amp_convhull_α(m, ml_indices, α, dim, discretization)
-    Alp.amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
+    Alp.amp_post_convhull_constrs(
+        m,
+        λ,
+        α,
+        ml_indices,
+        dim,
+        extreme_point_cnt,
+        discretization,
+    )
 
     return λ, α
 end
 
-function amp_convexify_monomial(m::Optimizer, k::Any, λ::Dict, α::Dict, discretization::Dict)
-
+function amp_convexify_monomial(
+    m::Optimizer,
+    k::Any,
+    λ::Dict,
+    α::Dict,
+    discretization::Dict,
+)
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
-    monomial_index, dim, extreme_point_cnt = Alp.amp_convhull_prepare(m, discretization, k, monomial=true)
+    monomial_index, dim, extreme_point_cnt =
+        Alp.amp_convhull_prepare(m, discretization, k, monomial = true)
     λ = Alp.amp_convhull_λ(m, k, monomial_index, λ, extreme_point_cnt, dim)
     λ = Alp.populate_convhull_extreme_values(m, discretization, monomial_index, λ, 2)
     α = Alp.amp_convhull_α(m, [monomial_index], α, dim, discretization)
@@ -68,7 +96,6 @@ function amp_convexify_monomial(m::Optimizer, k::Any, λ::Dict, α::Dict, discre
 end
 
 function amp_convexify_binlin(m::Optimizer, k::Any, β::Dict)
-
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     @assert length(m.nonconvex_terms[k][:var_idxs]) == 2
@@ -89,17 +116,23 @@ function amp_convexify_binlin(m::Optimizer, k::Any, β::Dict)
     bin_idx = bin_idx[1]
     cont_idx = cont_idx[1]
 
-    Alp.mccormick_binlin(m.model_mip, _index_to_variable_ref(m.model_mip, lift_idx),
-        _index_to_variable_ref(m.model_mip, bin_idx), _index_to_variable_ref(m.model_mip, cont_idx),
-        m.l_var_tight[cont_idx], m.u_var_tight[cont_idx])
+    Alp.mccormick_binlin(
+        m.model_mip,
+        _index_to_variable_ref(m.model_mip, lift_idx),
+        _index_to_variable_ref(m.model_mip, bin_idx),
+        _index_to_variable_ref(m.model_mip, cont_idx),
+        m.l_var_tight[cont_idx],
+        m.u_var_tight[cont_idx],
+    )
 
     return β
 end
 
-amp_convexify_binint(m::Optimizer, k::Any, β::Dict) = amp_convexify_binlin(m, k, β)
+function amp_convexify_binint(m::Optimizer, k::Any, β::Dict)
+    return amp_convexify_binlin(m, k, β)
+end
 
 function amp_convexify_binprod(m::Optimizer, k::Any, β::Dict)
-
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     lift_idx = m.nonconvex_terms[k][:y_idx]
@@ -114,7 +147,7 @@ function amp_convexify_binprod(m::Optimizer, k::Any, β::Dict)
     for i in x
         JuMP.@constraint(m.model_mip, z <= i)
     end
-    JuMP.@constraint(m.model_mip, z >= sum(x) - (length(x)-1))
+    JuMP.@constraint(m.model_mip, z >= sum(x) - (length(x) - 1))
 
     return β
 end
@@ -122,8 +155,7 @@ end
 """
     Method for general nonlinear terms
 """
-function amp_convhull_prepare(m::Optimizer, d::Dict, nonlinear_key::Any; monomial=false)
-
+function amp_convhull_prepare(m::Optimizer, d::Dict, nonlinear_key::Any; monomial = false)
     counted_var = []                # Keep both vector and set for collection sake
     id = Set()                      # Coverting the nonlinear indices into a set
 
@@ -164,16 +196,29 @@ end
 """
     Method for general nonlinear terms
 """
-function amp_convhull_λ(m::Optimizer, nonlinear_key::Any, indices::Any, λ::Dict, ext_cnt::Int, dim::Tuple)
-
+function amp_convhull_λ(
+    m::Optimizer,
+    nonlinear_key::Any,
+    indices::Any,
+    λ::Dict,
+    ext_cnt::Int,
+    dim::Tuple,
+)
     y_idx = m.nonconvex_terms[nonlinear_key][:y_idx]
 
     @assert !(y_idx in keys(λ))
-    λ[indices] = Dict(:dim=>dim,
-                     :lifted_var_idx=>y_idx,
-                     :indices=>reshape([1:ext_cnt;], dim),
-                     :vars=>JuMP.@variable(m.model_mip, [1:ext_cnt], lower_bound=0, base_name="L$(y_idx)"),
-                     :vals=>ones(dim))
+    λ[indices] = Dict(
+        :dim => dim,
+        :lifted_var_idx => y_idx,
+        :indices => reshape([1:ext_cnt;], dim),
+        :vars => JuMP.@variable(
+            m.model_mip,
+            [1:ext_cnt],
+            lower_bound = 0,
+            base_name = "L$(y_idx)"
+        ),
+        :vals => ones(dim),
+    )
 
     return λ
 end
@@ -181,7 +226,13 @@ end
 """
     Method for power terms
 """
-function populate_convhull_extreme_values(m::Optimizer, d::Dict, mono_idx::Int, λ::Dict, p::Int)
+function populate_convhull_extreme_values(
+    m::Optimizer,
+    d::Dict,
+    mono_idx::Int,
+    λ::Dict,
+    p::Int,
+)
     λ[mono_idx][:vals] = [d[mono_idx][i]^p for i in 1:length(d[mono_idx])]
     return λ
 end
@@ -189,8 +240,15 @@ end
 """
     Method for regular muiltilinear terms
 """
-function populate_convhull_extreme_values(m::Optimizer, discretization::Dict, indices::Any, λ::Dict, dim::Tuple, locator::Array, level::Int=1)
-
+function populate_convhull_extreme_values(
+    m::Optimizer,
+    discretization::Dict,
+    indices::Any,
+    λ::Dict,
+    dim::Tuple,
+    locator::Array,
+    level::Int = 1,
+)
     if level > length(dim)
         @assert length(indices) == length(dim)
         @assert length(indices) == length(locator)
@@ -205,7 +263,15 @@ function populate_convhull_extreme_values(m::Optimizer, discretization::Dict, in
     else
         for i in 1:dim[level]
             locator[level] = i
-            λ = Alp.populate_convhull_extreme_values(m, discretization, indices, λ, dim, locator, level+1)
+            λ = Alp.populate_convhull_extreme_values(
+                m,
+                discretization,
+                indices,
+                λ,
+                dim,
+                locator,
+                level + 1,
+            )
         end
     end
 
@@ -215,20 +281,43 @@ end
 """
     General Method for all term
 """
-function amp_convhull_α(m::Optimizer, indices::Any, α::Dict, dim::Tuple, discretization::Dict)
-
+function amp_convhull_α(
+    m::Optimizer,
+    indices::Any,
+    α::Dict,
+    dim::Tuple,
+    discretization::Dict,
+)
     for i in indices
         if !(i in keys(α))
             lambda_cnt = length(discretization[i])
             partition_cnt = length(discretization[i]) - 1
             if Alp.get_option(m, :convhull_ebd) && partition_cnt > 2
-                αCnt = Int(ceil(log(2,partition_cnt)))
-                α[i] = JuMP.@variable(m.model_mip, [1:αCnt], Bin, base_name=string("YL",i))
+                αCnt = Int(ceil(log(2, partition_cnt)))
+                α[i] = JuMP.@variable(
+                    m.model_mip,
+                    [1:αCnt],
+                    Bin,
+                    base_name = string("YL", i)
+                )
             else
-                α[i] = JuMP.@variable(m.model_mip, [1:partition_cnt], Bin, base_name="A$(i)")
+                α[i] = JuMP.@variable(
+                    m.model_mip,
+                    [1:partition_cnt],
+                    Bin,
+                    base_name = "A$(i)"
+                )
                 JuMP.@constraint(m.model_mip, sum(α[i]) == 1)
-                JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, i) >= sum(α[i][j]*discretization[i][j] for j in 1:lambda_cnt-1)) # Add x = f(α) for regulating the domains
-                JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, i) <= sum(α[i][j-1]*discretization[i][j] for j in 2:lambda_cnt))
+                JuMP.@constraint(
+                    m.model_mip,
+                    _index_to_variable_ref(m.model_mip, i) >=
+                    sum(α[i][j] * discretization[i][j] for j in 1:lambda_cnt-1)
+                ) # Add x = f(α) for regulating the domains
+                JuMP.@constraint(
+                    m.model_mip,
+                    _index_to_variable_ref(m.model_mip, i) <=
+                    sum(α[i][j-1] * discretization[i][j] for j in 2:lambda_cnt)
+                )
             end
         end
     end
@@ -236,10 +325,11 @@ function amp_convhull_α(m::Optimizer, indices::Any, α::Dict, dim::Tuple, discr
     return α
 end
 
-amp_convhull_α(m::Optimizer, idx::Int, α::Dict, dim, d::Dict) = amp_convhull_α(m, [idx], α, dim, d)
+function amp_convhull_α(m::Optimizer, idx::Int, α::Dict, dim, d::Dict)
+    return amp_convhull_α(m, [idx], α, dim, d)
+end
 
 function amp_no_good_cut_α(m::Optimizer, α::Dict)
-
     println("Global Incumbent solution objective = $(m.best_obj)")
 
     for i in 1:m.bound_sol_pool[:cnt]
@@ -247,8 +337,14 @@ function amp_no_good_cut_α(m::Optimizer, α::Dict)
         if m.best_obj < m.bound_sol_pool[:obj][i] && m.bound_sol_pool[:stat][i] == :Alive
             no_good_idxs = keys(m.bound_sol_pool[:disc][i])
             no_good_size = length(no_good_idxs) - 1
-            JuMP.@constraint(m.model_mip, sum(α[v][m.bound_sol_pool[:disc][i][v]] for v in no_good_idxs) <= no_good_size)
-            Alp.get_option(m, :log_level) > 0 && println("!! GLOBAL cuts off POOL_SOL-$(i) POOL_OBJ=$(m.bound_sol_pool[:obj][i])!")
+            JuMP.@constraint(
+                m.model_mip,
+                sum(α[v][m.bound_sol_pool[:disc][i][v]] for v in no_good_idxs) <=
+                no_good_size
+            )
+            Alp.get_option(m, :log_level) > 0 && println(
+                "!! GLOBAL cuts off POOL_SOL-$(i) POOL_OBJ=$(m.bound_sol_pool[:obj][i])!",
+            )
             m.bound_sol_pool[:stat][i] = :Cutoff
         end
     end
@@ -257,7 +353,6 @@ function amp_no_good_cut_α(m::Optimizer, α::Dict)
 end
 
 function amp_warmstart_α(m::Optimizer, α::Dict)
-
     d = m.discretization
 
     if m.bound_sol_pool[:cnt] >= 2 # can only warm-start the problem when pool is large enough
@@ -267,8 +362,10 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
 
         # Search for the pool for incumbent warm starter
         for i in 1:m.bound_sol_pool[:cnt]
-            m.bound_sol_pool[:stat][i] == :Warmstarter && (m.bound_sol_pool[:stat][i] = :Alive)   # reset the status if not dead
-            if m.bound_sol_pool[:stat][i] != :Dead && eval(comp_opr[m.sense_orig])(m.bound_sol_pool[:obj][i], ws_obj)
+            m.bound_sol_pool[:stat][i] == :Warmstarter &&
+                (m.bound_sol_pool[:stat][i] = :Alive)   # reset the status if not dead
+            if m.bound_sol_pool[:stat][i] != :Dead &&
+               eval(comp_opr[m.sense_orig])(m.bound_sol_pool[:obj][i], ws_obj)
                 ws_idx = i
                 ws_obj = m.bound_sol_pool[:obj][i]
             end
@@ -276,14 +373,18 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
 
         if ws_idx > 0 # If a warm starter is found
             for v in m.bound_sol_pool[:vars]
-                partition_cnt = length(d[v])-1
-                active_j = Alp.get_active_partition_idx(d, m.bound_sol_pool[:sol][ws_idx][v], v)
-                for j = 1:partition_cnt
-                    j == active_j ? set_start_value(α[v][j], 1.0) : set_start_value(α[v][j], 0.0)
+                partition_cnt = length(d[v]) - 1
+                active_j =
+                    Alp.get_active_partition_idx(d, m.bound_sol_pool[:sol][ws_idx][v], v)
+                for j in 1:partition_cnt
+                    j == active_j ? set_start_value(α[v][j], 1.0) :
+                    set_start_value(α[v][j], 0.0)
                 end
             end
             m.bound_sol_pool[:stat][ws_idx] = :Warmstarter
-            Alp.get_option(m, :log_level) > 0 && println("!! WARM START bounding MIP using POOL SOL $(ws_idx) OBJ=$(m.bound_sol_pool[:obj][ws_idx])")
+            Alp.get_option(m, :log_level) > 0 && println(
+                "!! WARM START bounding MIP using POOL SOL $(ws_idx) OBJ=$(m.bound_sol_pool[:obj][ws_idx])",
+            )
         end
     end
 
@@ -293,11 +394,23 @@ end
 """
     Method for general multilinear terms with/without integer variables
 """
-function amp_post_convhull_constrs(m::Optimizer, λ::Dict, α::Dict, indices::Any, dim::Tuple, ext_cnt::Int, d::Dict)
+function amp_post_convhull_constrs(
+    m::Optimizer,
+    λ::Dict,
+    α::Dict,
+    indices::Any,
+    dim::Tuple,
+    ext_cnt::Int,
+    d::Dict,
+)
 
     # Adding λ constraints
     JuMP.@constraint(m.model_mip, sum(λ[indices][:vars]) == 1)
-    JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, λ[indices][:lifted_var_idx]) == dot(λ[indices][:vars], reshape(λ[indices][:vals], ext_cnt)))
+    JuMP.@constraint(
+        m.model_mip,
+        _index_to_variable_ref(m.model_mip, λ[indices][:lifted_var_idx]) ==
+        dot(λ[indices][:vars], reshape(λ[indices][:vals], ext_cnt))
+    )
 
     # Add links on each dimension
     for (cnt, i) in enumerate(indices)
@@ -307,8 +420,17 @@ function amp_post_convhull_constrs(m::Optimizer, λ::Dict, α::Dict, indices::An
         else
             error("EXCEPTION: unexpected variable type during integer related realxation")
         end
-        sliced_indices = [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
-        JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, i) == sum(dot(repeat([d[i][k]],length(sliced_indices[k])), λ[indices][:vars][sliced_indices[k]]) for k in 1:l_cnt))
+        sliced_indices =
+            [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
+        JuMP.@constraint(
+            m.model_mip,
+            _index_to_variable_ref(m.model_mip, i) == sum(
+                dot(
+                    repeat([d[i][k]], length(sliced_indices[k])),
+                    λ[indices][:vars][sliced_indices[k]],
+                ) for k in 1:l_cnt
+            )
+        )
     end
 
     return
@@ -317,42 +439,93 @@ end
 """
     Method for power-2 term
 """
-function amp_post_convhull_constrs(m::Optimizer, λ::Dict, α::Dict, monomial_idx::Int, dim::Tuple, discretization::Dict)
-
-    partition_cnt = length(discretization[monomial_idx])-1
+function amp_post_convhull_constrs(
+    m::Optimizer,
+    λ::Dict,
+    α::Dict,
+    monomial_idx::Int,
+    dim::Tuple,
+    discretization::Dict,
+)
+    partition_cnt = length(discretization[monomial_idx]) - 1
     lambda_cnt = length(discretization[monomial_idx])
 
     # Adding λ constraints
     JuMP.@constraint(m.model_mip, sum(λ[monomial_idx][:vars]) == 1)
-    JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, λ[monomial_idx][:lifted_var_idx]) <= dot(λ[monomial_idx][:vars], λ[monomial_idx][:vals]))
-    JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >= _index_to_variable_ref(m.model_mip, monomial_idx)^2)
+    JuMP.@constraint(
+        m.model_mip,
+        _index_to_variable_ref(m.model_mip, λ[monomial_idx][:lifted_var_idx]) <=
+        dot(λ[monomial_idx][:vars], λ[monomial_idx][:vals])
+    )
+    JuMP.@constraint(
+        m.model_mip,
+        _index_to_variable_ref(m.model_mip, λ[monomial_idx][:lifted_var_idx]) >=
+        _index_to_variable_ref(m.model_mip, monomial_idx)^2
+    )
 
     # Add SOS-2 Constraints with basic encoding
     if Alp.get_option(m, :convhull_ebd) && partition_cnt > 2
-        ebd_map = embedding_map(lambda_cnt, Alp.get_option(m, :convhull_ebd_encode), Alp.get_option(m, :convhull_ebd_ibs))
+        ebd_map = embedding_map(
+            lambda_cnt,
+            Alp.get_option(m, :convhull_ebd_encode),
+            Alp.get_option(m, :convhull_ebd_ibs),
+        )
         YCnt = Int(ebd_map[:L])
         @assert YCnt == length(α[monomial_idx])
         for i in 1:YCnt
-            JuMP.@constraint(m.model_mip, sum(λ[monomial_idx][:vars][collect(ebd_map[i])]) <= α[monomial_idx][i])
-            JuMP.@constraint(m.model_mip, sum(λ[monomial_idx][:vars][collect(ebd_map[i+YCnt])]) <= 1-α[monomial_idx][i])
+            JuMP.@constraint(
+                m.model_mip,
+                sum(λ[monomial_idx][:vars][collect(ebd_map[i])]) <= α[monomial_idx][i]
+            )
+            JuMP.@constraint(
+                m.model_mip,
+                sum(λ[monomial_idx][:vars][collect(ebd_map[i+YCnt])]) <=
+                1 - α[monomial_idx][i]
+            )
         end
     else
         for i in 1:lambda_cnt
             if i == 1
-                JuMP.@constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i])
+                JuMP.@constraint(
+                    m.model_mip,
+                    λ[monomial_idx][:vars][i] <= α[monomial_idx][i]
+                )
             elseif i == lambda_cnt
-                JuMP.@constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1])
+                JuMP.@constraint(
+                    m.model_mip,
+                    λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1]
+                )
             else
-                JuMP.@constraint(m.model_mip, λ[monomial_idx][:vars][i] <= α[monomial_idx][i-1] + α[monomial_idx][i])
+                JuMP.@constraint(
+                    m.model_mip,
+                    λ[monomial_idx][:vars][i] <=
+                    α[monomial_idx][i-1] + α[monomial_idx][i]
+                )
             end
         end
         # Add x = f(α) for regulating the domains
-        JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, monomial_idx) >= sum(α[monomial_idx][j]*discretization[monomial_idx][j] for j in 1:lambda_cnt-1))
-        JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, monomial_idx) <= sum(α[monomial_idx][j-1]*discretization[monomial_idx][j] for j in 2:lambda_cnt))
+        JuMP.@constraint(
+            m.model_mip,
+            _index_to_variable_ref(m.model_mip, monomial_idx) >= sum(
+                α[monomial_idx][j] * discretization[monomial_idx][j] for
+                j in 1:lambda_cnt-1
+            )
+        )
+        JuMP.@constraint(
+            m.model_mip,
+            _index_to_variable_ref(m.model_mip, monomial_idx) <= sum(
+                α[monomial_idx][j-1] * discretization[monomial_idx][j] for
+                j in 2:lambda_cnt
+            )
+        )
     end
 
     # Add x = f(λ) for convex representation
-    JuMP.@constraint(m.model_mip, _index_to_variable_ref(m.model_mip, monomial_idx) == dot(λ[monomial_idx][:vars], discretization[monomial_idx]))
+    JuMP.@constraint(
+        m.model_mip,
+        _index_to_variable_ref(m.model_mip, monomial_idx) ==
+        dot(λ[monomial_idx][:vars], discretization[monomial_idx])
+    )
 
     return
 end
@@ -360,23 +533,60 @@ end
 """
     Method for regular multilinear terms (terms that only has continuous variables)
 """
-function amp_post_inequalities_cont(m::Optimizer, discretization::Dict, λ::Dict, α::Dict, ml_indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
-
+function amp_post_inequalities_cont(
+    m::Optimizer,
+    discretization::Dict,
+    λ::Dict,
+    α::Dict,
+    ml_indices::Any,
+    dim::Tuple,
+    var_ind::Int,
+    cnt::Int,
+)
     lambda_cnt = length(discretization[var_ind])
     partition_cnt = lambda_cnt - 1
 
     # Embedding formulation
-    if Alp.get_option(m, :convhull_formulation) == "sos2" && Alp.get_option(m, :convhull_ebd) && partition_cnt > 2
-        ebd_map = embedding_map(lambda_cnt, Alp.get_option(m, :convhull_ebd_encode), Alp.get_option(m, :convhull_ebd_ibs))
+    if Alp.get_option(m, :convhull_formulation) == "sos2" &&
+       Alp.get_option(m, :convhull_ebd) &&
+       partition_cnt > 2
+        ebd_map = embedding_map(
+            lambda_cnt,
+            Alp.get_option(m, :convhull_ebd_encode),
+            Alp.get_option(m, :convhull_ebd_ibs),
+        )
         YCnt = Int(ebd_map[:L])
         @assert YCnt == length(α[var_ind])
         for i in 1:YCnt
-            p_sliced_indices = Alp.collect_indices(λ[ml_indices][:indices], cnt, collect(ebd_map[i]), dim)
-            n_sliced_indices = Alp.collect_indices(λ[ml_indices][:indices], cnt, collect(ebd_map[i+YCnt]), dim)
-            JuMP.@constraint(m.model_mip, sum(λ[ml_indices][:vars][p_sliced_indices]) <= α[var_ind][i])
-            JuMP.@constraint(m.model_mip, sum(λ[ml_indices][:vars][n_sliced_indices]) <= 1-α[var_ind][i])
+            p_sliced_indices = Alp.collect_indices(
+                λ[ml_indices][:indices],
+                cnt,
+                collect(ebd_map[i]),
+                dim,
+            )
+            n_sliced_indices = Alp.collect_indices(
+                λ[ml_indices][:indices],
+                cnt,
+                collect(ebd_map[i+YCnt]),
+                dim,
+            )
+            JuMP.@constraint(
+                m.model_mip,
+                sum(λ[ml_indices][:vars][p_sliced_indices]) <= α[var_ind][i]
+            )
+            JuMP.@constraint(
+                m.model_mip,
+                sum(λ[ml_indices][:vars][n_sliced_indices]) <= 1 - α[var_ind][i]
+            )
         end
-        Alp.get_option(m, :convhull_ebd_link) && Alp.ebd_link_xα(m, α[var_ind], lambda_cnt, discretization[var_ind], ebd_map[:H_orig], var_ind)
+        Alp.get_option(m, :convhull_ebd_link) && Alp.ebd_link_xα(
+            m,
+            α[var_ind],
+            lambda_cnt,
+            discretization[var_ind],
+            ebd_map[:H_orig],
+            var_ind,
+        )
         return
     end
 
@@ -385,22 +595,39 @@ function amp_post_inequalities_cont(m::Optimizer, discretization::Dict, λ::Dict
         for j in 1:lambda_cnt
             sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
             if (j == 1)
-                JuMP.@constraint(m.model_mip, sum(λ[ml_indices][:vars][sliced_indices]) <= α[var_ind][j])
+                JuMP.@constraint(
+                    m.model_mip,
+                    sum(λ[ml_indices][:vars][sliced_indices]) <= α[var_ind][j]
+                )
             elseif (j == lambda_cnt)
-                JuMP.@constraint(m.model_mip, sum(λ[ml_indices][:vars][sliced_indices]) <= α[var_ind][partition_cnt])
+                JuMP.@constraint(
+                    m.model_mip,
+                    sum(λ[ml_indices][:vars][sliced_indices]) <=
+                    α[var_ind][partition_cnt]
+                )
             else
-                JuMP.@constraint(m.model_mip, sum(λ[ml_indices][:vars][sliced_indices]) <= sum(α[var_ind][(j-1):j]))
+                JuMP.@constraint(
+                    m.model_mip,
+                    sum(λ[ml_indices][:vars][sliced_indices]) <= sum(α[var_ind][(j-1):j])
+                )
             end
         end
         return
     elseif Alp.get_option(m, :convhull_formulation) == "facet"
         for j in 1:(partition_cnt-1) # Constraint cluster of α >= f(λ)
             sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
-            JuMP.@constraint(m.model_mip, sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices]))
+            JuMP.@constraint(
+                m.model_mip,
+                sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices])
+            )
         end
         for j in 1:(partition_cnt-1) # Constraint cluster of α <= f(λ)
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
-            JuMP.@constraint(m.model_mip, sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices]))
+            sliced_indices =
+                collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
+            JuMP.@constraint(
+                m.model_mip,
+                sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices])
+            )
         end
         return
     else
@@ -410,23 +637,35 @@ function amp_post_inequalities_cont(m::Optimizer, discretization::Dict, λ::Dict
     return
 end
 
-function amp_post_λ_upperbound(m::Optimizer, λ::Dict, indices::Any, dim::Tuple, d::Dict, tregions::Vector, reg=[], level=0)
-
+function amp_post_λ_upperbound(
+    m::Optimizer,
+    λ::Dict,
+    indices::Any,
+    dim::Tuple,
+    d::Dict,
+    tregions::Vector,
+    reg = [],
+    level = 0,
+)
     if level == length(indices)
         isempty(tregions[level]) && return
-        sliced_indices = Set(collect_indices(λ[indices][:indices], 1, [reg[1]; reg[1]+1], dim))
+        sliced_indices =
+            Set(collect_indices(λ[indices][:indices], 1, [reg[1]; reg[1] + 1], dim))
         for i in 2:length(reg)
-            sliced_indices = intersect(sliced_indices, Set(collect_indices(λ[indices][:indices], i, [reg[i],reg[i]+1], dim)))
+            sliced_indices = intersect(
+                sliced_indices,
+                Set(collect_indices(λ[indices][:indices], i, [reg[i], reg[i] + 1], dim)),
+            )
         end
         for i in sliced_indices
-            JuMP.set_upper_bound(λ[indices][:vars][i], (1/2)^level)
+            JuMP.set_upper_bound(λ[indices][:vars][i], (1 / 2)^level)
         end
         return
     end
 
     for i in 1:length(tregions[level+1])
         push!(reg, tregions[level+1][i])
-        Alp.amp_post_λ_upperbound(m, λ, indices, dim, d, tregions, reg, level+1)
+        Alp.amp_post_λ_upperbound(m, λ, indices, dim, d, tregions, reg, level + 1)
         length(reg) < level && error("Something is wrong")
         length(reg) > level && pop!(reg)
     end
@@ -435,25 +674,26 @@ function amp_post_λ_upperbound(m::Optimizer, λ::Dict, indices::Any, dim::Tuple
 end
 
 function amp_post_λ_upperbound(m::Optimizer, λ::Dict, indices::Any, ub::Float64)
-
-    for i in λ[indices][:vars] JuMP.set_upper_bound(i, ub) end
+    for i in λ[indices][:vars]
+        JuMP.set_upper_bound(i, ub)
+    end
 
     return
 end
 
 function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::Tuple)
+    k = 0
+    indices =
+        Vector{Int}(undef, Int(prod(dim) / dim[fixed_dim] * length(fixed_partition)))
+    for i in 1:prod(dim)
+        ind = Tuple(CartesianIndices(l)[i])
+        if ind[fixed_dim] in fixed_partition
+            k += 1
+            indices[k] = i
+        end
+    end
 
-	k = 0
-	indices = Vector{Int}(undef, Int(prod(dim)/dim[fixed_dim]*length(fixed_partition)))
-	for i in 1:prod(dim)
-		ind = Tuple(CartesianIndices(l)[i])
-		if ind[fixed_dim] in fixed_partition
-			k += 1
-			indices[k] = i
-		end
-	end
-
-	return indices
+    return indices
 end
 
 #=

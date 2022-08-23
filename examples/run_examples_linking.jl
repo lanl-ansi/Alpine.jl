@@ -9,11 +9,11 @@ using Logging
 # Install library package. To install, at your Julia command prompt,
 #    Pkg.add(path="https://github.com/lanl-ansi/MINLPLib.jl.git")
 # Reference: https://github.com/lanl-ansi/MINLPLib.jl
-import MINLPLib 
+import MINLPLib
 
 # Choose underlying solvers for Alpine
-ipopt   = get_ipopt()
-gurobi  = get_gurobi()
+ipopt = get_ipopt()
+gurobi = get_gurobi()
 juniper = get_juniper(gurobi, ipopt)
 
 #= Global solver
@@ -26,23 +26,25 @@ juniper = get_juniper(gurobi, ipopt)
 =#
 
 function run(use_linking_constraints, time_limit, instance_name)
-   alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
-                                          "minlp_solver" => juniper,
-                                          "nlp_solver"   => ipopt,  
-                                          "mip_solver"   => gurobi,
-                                          "presolve_bt"  => true,
-                                          "disc_ratio"   => 10,
-                                          "time_limit"   => time_limit,
-                                          "linking_constraints" => use_linking_constraints)
-   m = MINLPLib.fetch_model(instance_name)
-   JuMP.set_optimizer(m, alpine)
+    alpine = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "minlp_solver" => juniper,
+        "nlp_solver" => ipopt,
+        "mip_solver" => gurobi,
+        "presolve_bt" => true,
+        "disc_ratio" => 10,
+        "time_limit" => time_limit,
+        "linking_constraints" => use_linking_constraints,
+    )
+    m = MINLPLib.fetch_model(instance_name)
+    JuMP.set_optimizer(m, alpine)
 
-   t_begin = time()
-   JuMP.optimize!(m)
-   objval = JuMP.objective_value(m)
-   soltime = time() - t_begin
+    t_begin = time()
+    JuMP.optimize!(m)
+    objval = JuMP.objective_value(m)
+    soltime = time() - t_begin
 
-   return objval, soltime
+    return objval, soltime
 end
 
 # Linking constraints are only added when there are multilinear terms whose degree is at least 3.
