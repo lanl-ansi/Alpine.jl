@@ -19,8 +19,9 @@ const JUNIPER = MOI.OptimizerWithAttributes(Juniper.Optimizer, MOI.Silent() => t
 const PAVITO  = MOI.OptimizerWithAttributes(Pavito.Optimizer, MOI.Silent() => true, "mip_solver" => CBC, "cont_solver" => IPOPT, "mip_solver_drives" => false)
 
 function _build(model::JuMP.Model)
-    MOI.set(model, MOI.NLPBlock(), JuMP._create_nlp_block_data(model))
-    MOI.Utilities.attach_optimizer(model)
+    JuMP.set_optimize_hook(model, MOI.Utilities.attach_optimizer)
+    JuMP.optimize!(model)
+    JuMP.JuMP.set_optimize_hook(model, nothing)
     alpine = JuMP.backend(model).optimizer.model
     Alpine.load!(alpine)
     return alpine
