@@ -26,7 +26,13 @@ function _term_to_expr(t::MOI.ScalarQuadraticTerm)
     if t.variable_1 == t.variable_2
         coef /= 2
     end
-    return Expr(:call, :*, coef, _variable_index_to_expr(t.variable_1), _variable_index_to_expr(t.variable_2))
+    return Expr(
+        :call,
+        :*,
+        coef,
+        _variable_index_to_expr(t.variable_1),
+        _variable_index_to_expr(t.variable_2),
+    )
 end
 
 function _add_terms(expr::Expr, terms::Vector)
@@ -45,10 +51,11 @@ end
 
 function _moi_function_to_expr(t::MOI.ScalarQuadraticTerm)
     return Expr(
-        :call, :*,
+        :call,
+        :*,
         MOI.coefficient(t),
         _variable_index_to_expr(t.variable_1),
-        _variable_index_to_expr(t.variable_2)
+        _variable_index_to_expr(t.variable_2),
     )
 end
 

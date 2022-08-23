@@ -1,5 +1,5 @@
 # - Necessary - #
-using Alpine 
+using Alpine
 using JuMP
 using Gurobi
 using Ipopt
@@ -15,8 +15,8 @@ include("JuMP_models.jl")
 include("optimizers.jl")
 
 # Choose underlying solvers for Alpine
-ipopt   = get_ipopt()
-gurobi  = get_gurobi()
+ipopt = get_ipopt()
+gurobi = get_gurobi()
 juniper = get_juniper(gurobi, ipopt)
 
 #= Global solver
@@ -27,12 +27,14 @@ juniper = get_juniper(gurobi, ipopt)
  => If you prefer to use Alpine for only OBBT presolve, without any paritioning applied to the 
     nonlinear terms, include option "apply_partitioning" below and set it to false. 
 =#
-const alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
-                                              "minlp_solver" => juniper,
-                                              "nlp_solver"   => ipopt,  
-                                              "mip_solver"   => gurobi,
-                                              "presolve_bt"  => true,
-                                              "disc_ratio"   => 10)
+const alpine = JuMP.optimizer_with_attributes(
+    Alpine.Optimizer,
+    "minlp_solver" => juniper,
+    "nlp_solver" => ipopt,
+    "mip_solver" => gurobi,
+    "presolve_bt" => true,
+    "disc_ratio" => 10,
+)
 
 m = nlp3(solver = alpine)
 
