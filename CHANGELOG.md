@@ -1,8 +1,9 @@
 # Alpine.jl Change Log
 
-## Staged
+## v0.5.0
 - New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (speed up in run times for multilinear termed problems)
 - Added dependency on Combinatorics package for linking constraints 
+- Added JuliaFormatter.toml and formatting workfow
 
 ## v0.4.2
 - Fix support for JuMP v1.2 (@odow)
