@@ -1228,7 +1228,7 @@ end
 end
 
 @testset "Expression Prasing || Linear Lifting" begin
-    
+
     @testset "Expression Parsing || Linear Lifting || nlp2" begin
         test_solver = optimizer_with_attributes(Alpine.Optimizer,
                                                 "nlp_solver" =>  IPOPT,
@@ -1359,7 +1359,7 @@ end
         @test alpine.nonconvex_terms[nlk8][:var_idxs] == [16, 15]
         @test alpine.nonconvex_terms[nlk9][:var_idxs] == [14]
     end
-    
+
     @testset "Expression Parsing || Linear Lifting || brainpc3" begin
 
         test_solver = optimizer_with_attributes(Alpine.Optimizer,
@@ -2012,9 +2012,9 @@ end
                                           "log_level" =>  100)
 
     m = operator_basic(solver = test_solver)
-    MOI.Utilities.attach_optimizer(m)
-    MOI.set(m, MOI.NLPBlock(), JuMP._create_nlp_block_data(m))
-
+    JuMP.set_optimize_hook(m, MOI.Utilities.attach_optimizer)
+    JuMP.optimize!(m)
+    JuMP.set_optimize_hook(m, nothing)
     alpine = JuMP.backend(m).optimizer.model
     Alpine.load!(alpine)
 

@@ -35,7 +35,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     constraint_bounds_orig    :: Vector{MOI.NLPBoundsPair}          # Constraint lower bounds
     nl_constraint_bounds_orig :: Vector{MOI.NLPBoundsPair}          # Constraint lower bounds
     sense_orig                :: MOI.OptimizationSense              # Problem type (:Min, :Max)
-    d_orig                    :: Union{Nothing, JuMP.NLPEvaluator}  # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
+    d_orig                    :: Union{Nothing, MOI.AbstractNLPEvaluator}  # Instance of AbstractNLPEvaluator for evaluating gradient, Hessian-vector products, and Hessians of the Lagrangian
     disable_hessian           :: Bool                               # Check if there are any user-defined operators, and disable hessians if necessary.
     has_nl_objective          :: Bool
     objective_function        :: Union{Nothing, MOI.ScalarAffineFunction{Float64}, MOI.ScalarQuadraticFunction{Float64}}
@@ -134,7 +134,7 @@ function MOI.get(m::Optimizer, attr::MOI.PrimalStatus)
     if attr.result_index != 1
         return MOI.NO_SOLUTION
     end
-    
+
     status = m.alpine_status
     if status == MOI.OPTIMAL
         return MOI.FEASIBLE_POINT
@@ -382,7 +382,7 @@ function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableInd
 
     MOI.check_result_index_bounds(model, attr)
     MOI.throw_if_not_valid(model, vi)
-    
+
     return model.best_sol[vi.value]
 end
 
