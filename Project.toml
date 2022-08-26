@@ -2,7 +2,7 @@ name = "Alpine"
 uuid = "07493b3f-dabb-5b16-a503-4139292d7dd4"
 authors = ["Harsha Nagarajan, Site Wang, Kaarthik Sundar and contributors"]
 repo = "https://github.com/lanl-ansi/Alpine.jl.git"
-version = "0.4.2"
+version = "0.4.3"
 
 [deps]
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"

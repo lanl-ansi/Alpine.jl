@@ -462,101 +462,46 @@ function round_sol(m::Optimizer, relaxed_sol)
 end
 
 function fetch_mip_solver_identifier(m::Optimizer;override="")
+    mip_solver = Alp.get_option(m, :mip_solver).optimizer_constructor
+    if typeof(mip_solver) !== DataType
+        mip_solver = typeof(mip_solver)
+    end
 
-    isempty(override) ? solverstring = string(Alp.get_option(m, :mip_solver)) : solverstring = override
+    isempty(override) ? solverstring = string(mip_solver) : solverstring = override
+    if occursin("Gurobi", solverstring)
+        m.mip_solver_id = "Gurobi"
+    elseif occursin("CPLEX", solverstring)
+        m.mip_solver_id = "CPLEX"
+    else 
+        m.mip_solver_id = string(mip_solver)
+    end
 
-   # Higher-level solvers: that can use sub-solvers
-   if occursin("Pajarito", solverstring)
-       m.mip_solver_id = "Pajarito"
-      return
-   elseif occursin("Pavito", solverstring)
-       m.mip_solver_id = "Pavito"
-      return
-   elseif occursin("Juniper", solverstring)
-       m.mip_solver_id = "Juniper"
-      return
-   end
-
-   # Lower level solvers
-   if occursin("Gurobi", solverstring)
-       m.mip_solver_id = "Gurobi"
-   elseif occursin("CPLEX", solverstring)
-       m.mip_solver_id = "Cplex"
-   elseif occursin("Cbc", solverstring) # /!\ the `SolverName()` is "COIN Branch-and-Cut (Cbc)"
-       m.mip_solver_id = "Cbc"
-   elseif occursin("GLPK", solverstring)
-       m.mip_solver_id = "GLPK"
-   elseif occursin("HiGHS", solverstring)
-       m.mip_solver_id = "HiGHS"
-   elseif occursin("Xpress", solverstring)
-        m.mip_solver_id = "Xpress" 
-   else
-      error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
-   end
-
-   return
+    return
 end
 
 function fetch_nlp_solver_identifier(m::Optimizer;override="")
+    nlp_solver = Alp.get_option(m, :nlp_solver).optimizer_constructor
+    isempty(override) ? solverstring = string(nlp_solver) : solverstring = override
+    if occursin("Ipopt", solverstring)
+        m.nlp_solver_id = "Ipopt"
+    else 
+        m.nlp_solver_id = string(nlp_solver)
+    end
 
-    isempty(override) ? solverstring = string(Alp.get_option(m, :nlp_solver)) : solverstring = override
-    
-   # Higher-level solver
-   if occursin("Pajarito", solverstring)
-       m.nlp_solver_id =  "Pajarito"
-      return
-   elseif occursin("Pavito", solverstring)
-       m.nlp_solver_id = "Pavito"
-      return
-   end
-
-   # Lower-level solver
-   if occursin("Ipopt", solverstring)
-       m.nlp_solver_id = "Ipopt"
-   elseif occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-       m.nlp_solver_id = "Bonmin"
-   elseif occursin("KNITRO", solverstring) # /!\ the `SolverName()` is "Knitro"
-       m.nlp_solver_id = "Knitro"
-   elseif occursin("NLopt", solverstring)
-       m.nlp_solver_id = "NLopt"
-   else
-      error("Unsupported NLP local solver $solverstring; use a Alpine-supported NLP local solver")
-   end
-
-   return
+    return
 end
 
 function fetch_minlp_solver_identifier(m::Optimizer;override="")
+    (Alp.get_option(m, :minlp_solver) === nothing) && return
+    minlp_solver = Alp.get_option(m, :minlp_solver).optimizer_constructor
+    isempty(override) ? solverstring = string(minlp_solver) : solverstring = override
+    if occursin("Juniper", solverstring)
+        m.minlp_solver_id = "Juniper"
+    else
+        m.minlp_solver_id = string(minlp_solver)
+    end
 
-   (Alp.get_option(m, :minlp_solver) === nothing) && return
-
-   isempty(override) ? solverstring = string(Alp.get_option(m, :minlp_solver)) : solverstring = override
-
-   # Higher-level solver
-   if occursin("Pajarito", solverstring)
-       m.minlp_solver_id = "Pajarito"
-      return
-   elseif occursin("Pavito", solverstring)
-       m.minlp_solver_id = "Pavito"
-      return
-   end
-
-   # Lower-level Solver
-   if occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-       m.minlp_solver_id = "Bonmin"
-   elseif occursin("KNITRO", solverstring)
-       m.minlp_solver_id = "Knitro"
-   elseif occursin("NLopt", solverstring)
-       m.minlp_solver_id = "NLopt"
-   elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
-       m.minlp_solver_id = "Bonmin"
-   elseif occursin("Juniper", solverstring)
-       m.minlp_solver_id = "Juniper"
-   else
-      error("Unsupported MINLP local solver $solverstring; use an Alpine-supported MINLP local solver (Juniper.jl for example)")
-   end
-
-   return
+    return
 end
 
 """
@@ -621,7 +566,7 @@ function collect_lb_pool(m::Optimizer)
          Gurobi.set_int_param!(m.model_mip.internalModel.inner, "SolutionNumber", i-1)
          s[:sol][i] = Gurobi.get_dblattrarray(m.model_mip.internalModel.inner, "Xn", 1, s[:len])
          s[:obj][i] = Gurobi.get_dblattr(m.model_mip.internalModel.inner, "PoolObjVal")
-      elseif m.mip_solver_id == "Cplex"
+      elseif m.mip_solver_id == "CPLEX"
          error("No implementation for Cplex")
       end
       s[:disc][i] = Dict(j=>get_active_partition_idx(m.discretization, s[:sol][i][j],j) for j in s[:vars])
@@ -913,7 +858,7 @@ function adjust_branch_priority(m::Optimizer)
          push!(prior, i)
       end
       Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
-   elseif m.mip_solver_id == "Cplex"
+   elseif m.mip_solver_id == "CPLEX"
       !m.model_mip.internalModelLoaded && return
       n = length(m.model_mip.colVal)
       idxlist = Cint[1:n;] # variable indices
