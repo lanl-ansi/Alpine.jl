@@ -23,7 +23,7 @@ function features_available(m::Optimizer)
 end
 
 function load!(m::Optimizer)
-    
+
     # Initialize NLP interface
     requested_features = Alp.features_available(m)
     if m.d_orig !== nothing
@@ -502,8 +502,7 @@ function bounding_solve(m::Optimizer)
             (status == MOI.OPTIMAL) ? JuMP.objective_value(m.model_mip) :
             JuMP.objective_bound(m.model_mip)
         candidate_bound_sol = [
-            round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits = 7)
-            for
+            round.(JuMP.value(_index_to_variable_ref(m.model_mip, i)); digits = 7) for
             i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         ]
 

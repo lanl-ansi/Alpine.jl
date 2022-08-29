@@ -26,10 +26,8 @@ function embedding_map(λCnt::Int, encoding::Any = ebd_gray, ibs::Bool = false)
             L_constr = Set()
             R_constr = Set()
             for j in 0:2^L
-                prod([(l in ebd_σ(H[i])) for i in ebd_I(j, 2^L + 1)]) &&
-                    push!(L_constr, j + 1)
-                prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, 2^L + 1)]) &&
-                    push!(R_constr, j + 1)
+                prod([(l in ebd_σ(H[i])) for i in ebd_I(j, 2^L + 1)]) && push!(L_constr, j + 1)
+                prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, 2^L + 1)]) && push!(R_constr, j + 1)
             end
             L_branch = intersect(J_s, setdiff(J, L_constr))
             R_branch = intersect(J_s, setdiff(J, R_constr))
@@ -38,8 +36,7 @@ function embedding_map(λCnt::Int, encoding::Any = ebd_gray, ibs::Bool = false)
         else
             for j in 0:(λCnt-1)
                 prod([(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) && push!(map[l], j + 1)
-                prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) &&
-                    push!(map[l+L], j + 1)
+                prod([!(l in ebd_σ(H[i])) for i in ebd_I(j, λCnt)]) && push!(map[l+L], j + 1)
             end
         end
     end

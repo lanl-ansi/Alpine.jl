@@ -481,19 +481,19 @@ function round_sol(m::Optimizer, relaxed_sol)
     return rounded_sol
 end
 
-function _fetch_mip_solver_identifier(m::Optimizer; override="")
+function _fetch_mip_solver_identifier(m::Optimizer; override = "")
     (Alp.get_option(m, :mip_solver) === nothing) && return
     m.mip_solver_id = _get_solver_name(m, :mip_solver, override)
     return
 end
 
-function _fetch_nlp_solver_identifier(m::Optimizer; override="")
+function _fetch_nlp_solver_identifier(m::Optimizer; override = "")
     (Alp.get_option(m, :nlp_solver) === nothing) && return
     m.nlp_solver_id = _get_solver_name(m, :nlp_solver, override)
     return
 end
 
-function _fetch_minlp_solver_identifier(m::Optimizer; override="")
+function _fetch_minlp_solver_identifier(m::Optimizer; override = "")
     (Alp.get_option(m, :minlp_solver) === nothing) && return
     m.minlp_solver_id = _get_solver_name(m, :minlp_solver, override)
     return

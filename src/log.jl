@@ -40,8 +40,7 @@ function logging_summary(m::Optimizer)
         )
         println(
             "  # Bin-Int Variables = ",
-            length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) +
-            length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]),
+            length([i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]) + length([i for i in 1:m.num_var_orig if m.var_type[i] == :Int]),
         )
         println("  # Constraints = ", m.num_constr_orig)
         println("  # NL Constraints = ", m.num_nlconstr_orig)

@@ -30,7 +30,7 @@ juniper = get_juniper(gurobi, ipopt)
 
 const alpine = JuMP.optimizer_with_attributes(
     Alpine.Optimizer,
-    "minlp_solver" => juniper,
+    # "minlp_solver" => juniper,
     "nlp_solver" => ipopt,
     "mip_solver" => gurobi,
     "presolve_bt" => true,
