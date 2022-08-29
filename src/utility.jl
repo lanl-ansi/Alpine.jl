@@ -491,9 +491,9 @@ end
 function _get_solver_name(m::Optimizer, key::Symbol)
     solver = MOI.instantiate(Alp.get_option(m, key))
     solver_string = try
-        return MOI.get(solver, MOI.SolverName())
+        MOI.get(solver, MOI.SolverName())
     catch
-        return typeof(solver)
+        "$(typeof(solver))"
     end
     for name in ("Ipopt", "Gurobi", "CPLEX", "Juniper")
         if occursin(name, solver_string)
