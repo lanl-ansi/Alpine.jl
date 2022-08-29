@@ -28,7 +28,7 @@ juniper = get_juniper(gurobi, ipopt)
     nonlinear terms, include option "apply_partitioning" below and set it to false. 
 =#
 const alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer, 
-                                              "minlp_solver" => juniper,
+                                             #  "minlp_solver" => juniper,
                                               "nlp_solver"   => ipopt,  
                                               "mip_solver"   => gurobi,
                                               "presolve_bt"  => true,
