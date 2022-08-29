@@ -82,3 +82,16 @@ If you find Alpine useful in your work, we kindly request that you cite the foll
   doi = {10.1007/978-3-319-44953-1_24},
 }
 ```
+If you find the underlying piecewise polyhedral formulations implemented in Alpine useful in your work, we kindly request that you cite the following paper: 
+```bibtex
+@article{alpine_ORL2021,
+  title = {Piecewise polyhedral formulations for a multilinear term},
+  author = {Sundar, Kaarthik and Nagarajan, Harsha and Linderoth, Jeff and Wang, Site and Bent, Russell},
+  journal = {Operations Research Letters},
+  volume = {49},
+  number = {1},
+  pages = {144--149},
+  year = {2021},
+  publisher = {Elsevier}
+}
+```
