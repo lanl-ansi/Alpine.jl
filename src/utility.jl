@@ -463,37 +463,31 @@ end
 
 function _fetch_mip_solver_identifier(m::Optimizer; override="")
     (Alp.get_option(m, :mip_solver) === nothing) && return
-    m.mip_solver_id = override
-    if isempty(override)
-        m.mip_solver_id = _get_solver_name(m, :mip_solver)
-    end
+    m.mip_solver_id = _get_solver_name(m, :mip_solver, override)
     return
 end
 
 function _fetch_nlp_solver_identifier(m::Optimizer; override="")
     (Alp.get_option(m, :nlp_solver) === nothing) && return
-    m.nlp_solver_id = override
-    if isempty(override)
-        m.nlp_solver_id = _get_solver_name(m, :nlp_solver)
-    end
+    m.nlp_solver_id = _get_solver_name(m, :nlp_solver, override)
     return
 end
 
 function _fetch_minlp_solver_identifier(m::Optimizer; override="")
     (Alp.get_option(m, :minlp_solver) === nothing) && return
-    m.minlp_solver_id = override
-    if isempty(override)
-        m.minlp_solver_id = _get_solver_name(m, :minlp_solver)
-    end
+    m.minlp_solver_id = _get_solver_name(m, :minlp_solver, override)
     return
 end
 
-function _get_solver_name(m::Optimizer, key::Symbol)
-    solver = MOI.instantiate(Alp.get_option(m, key))
-    solver_string = try
-        MOI.get(solver, MOI.SolverName())
-    catch
-        "$(typeof(solver))"
+function _get_solver_name(m::Optimizer, key::Symbol, override::String)
+    solver_string = override
+    if isempty(override)
+        solver = MOI.instantiate(Alp.get_option(m, key))
+        solver_string = try
+            MOI.get(solver, MOI.SolverName())
+        catch
+            "$(typeof(solver))"
+        end
     end
     for name in ("Ipopt", "Gurobi", "CPLEX", "Juniper")
         if occursin(name, solver_string)
