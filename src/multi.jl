@@ -30,7 +30,7 @@ function amp_post_convhull(m::Optimizer; kwargs...)
         end
     end
 
-    # Experimental code for Warm starting
+    # Code for warm starting bounding MIP iterations
     Alp.get_option(m, :convhull_warmstart) && !isempty(m.best_bound_sol) && Alp.amp_warmstart_α(m, α)
 
     return

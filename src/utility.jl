@@ -29,7 +29,7 @@ function update_opt_gap(m::Optimizer)
          m.best_rel_gap = 0.0
          return
       end
-      
+
       if Alp.is_min_sense(m)
          m.best_rel_gap = Alp.eval_opt_gap(m, m.best_bound, m.best_obj)
       elseif Alp.is_max_sense(m)
@@ -55,7 +55,7 @@ function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
 
    elseif isinf(lower_bound) || isinf(upper_bound)
       error("Infinite bounds detected in optimality gap evalutation")
-   
+
    else
       if isapprox(upper_bound, 0.0; atol = tol) # zero upper bound case
          eps = 1 # shift factor
@@ -64,7 +64,7 @@ function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
          m.best_rel_gap = abs(upper_bound - lower_bound)/(tol + abs(upper_bound))
       end
    end
-   
+
    return m.best_rel_gap
 end
 
@@ -116,7 +116,7 @@ end
 """
    variable_values(m::JuMP.Model)
 
-Prints values of all the variables after optimizing the original JuMP model. 
+Prints values of all the variables after optimizing the original JuMP model.
 """
 function variable_values(m::JuMP.Model)
    for var in all_variables(m)
@@ -179,7 +179,7 @@ function check_solution_history(m::Optimizer, ind::Int)
    end
 
    Alp.get_option(m, :log_level) > 99 && println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
-   
+
    return true
 end
 
@@ -264,7 +264,7 @@ end
 """
    get_candidate_disc_vars(m:Optimizer)
 
-   A built-in method for selecting variables for discretization. This function selects all candidate variables in the nonlinear terms for discretization, 
+   A built-in method for selecting variables for discretization. This function selects all candidate variables in the nonlinear terms for discretization,
    if under a threshold value of the number of nonlinear terms.
 """
 function get_candidate_disc_vars(m::Optimizer;getoutput=false)
@@ -384,9 +384,9 @@ end
 """
    min_vertex_cover(m::Optimizer)
 
-`min_vertex_cover` chooses the variables based on the minimum vertex cover algorithm for the interaction graph of 
-nonlinear terms which are adaptively partitioned for global optimization. This option can be activated by 
-setting `disc_var_pick = 1`. 
+`min_vertex_cover` chooses the variables based on the minimum vertex cover algorithm for the interaction graph of
+nonlinear terms which are adaptively partitioned for global optimization. This option can be activated by
+setting `disc_var_pick = 1`.
 """
 function min_vertex_cover(m::Optimizer)
 
@@ -402,7 +402,7 @@ function min_vertex_cover(m::Optimizer)
    JuMP.optimize!(minvertex)
    # status = MOI.get(minvertex, MOI.TerminationStatus())
    xVal = JuMP.value.(x)
-   
+
 
    # Collecting required information
    m.num_var_disc_mip = Int(sum(xVal))
@@ -461,102 +461,40 @@ function round_sol(m::Optimizer, relaxed_sol)
    return rounded_sol
 end
 
-function fetch_mip_solver_identifier(m::Optimizer;override="")
-
-    isempty(override) ? solverstring = string(Alp.get_option(m, :mip_solver)) : solverstring = override
-
-   # Higher-level solvers: that can use sub-solvers
-   if occursin("Pajarito", solverstring)
-       m.mip_solver_id = "Pajarito"
-      return
-   elseif occursin("Pavito", solverstring)
-       m.mip_solver_id = "Pavito"
-      return
-   elseif occursin("Juniper", solverstring)
-       m.mip_solver_id = "Juniper"
-      return
-   end
-
-   # Lower level solvers
-   if occursin("Gurobi", solverstring)
-       m.mip_solver_id = "Gurobi"
-   elseif occursin("CPLEX", solverstring)
-       m.mip_solver_id = "Cplex"
-   elseif occursin("Cbc", solverstring) # /!\ the `SolverName()` is "COIN Branch-and-Cut (Cbc)"
-       m.mip_solver_id = "Cbc"
-   elseif occursin("GLPK", solverstring)
-       m.mip_solver_id = "GLPK"
-   elseif occursin("HiGHS", solverstring)
-       m.mip_solver_id = "HiGHS"
-   elseif occursin("Xpress", solverstring)
-        m.mip_solver_id = "Xpress" 
-   else
-      error("Unsupported MIP solver $solverstring; use a Alpine-supported MIP solver")
-   end
-
-   return
+function _fetch_mip_solver_identifier(m::Optimizer; override="")
+    (Alp.get_option(m, :mip_solver) === nothing) && return
+    m.mip_solver_id = _get_solver_name(m, :mip_solver, override)
+    return
 end
 
-function fetch_nlp_solver_identifier(m::Optimizer;override="")
-
-    isempty(override) ? solverstring = string(Alp.get_option(m, :nlp_solver)) : solverstring = override
-    
-   # Higher-level solver
-   if occursin("Pajarito", solverstring)
-       m.nlp_solver_id =  "Pajarito"
-      return
-   elseif occursin("Pavito", solverstring)
-       m.nlp_solver_id = "Pavito"
-      return
-   end
-
-   # Lower-level solver
-   if occursin("Ipopt", solverstring)
-       m.nlp_solver_id = "Ipopt"
-   elseif occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-       m.nlp_solver_id = "Bonmin"
-   elseif occursin("KNITRO", solverstring) # /!\ the `SolverName()` is "Knitro"
-       m.nlp_solver_id = "Knitro"
-   elseif occursin("NLopt", solverstring)
-       m.nlp_solver_id = "NLopt"
-   else
-      error("Unsupported NLP local solver $solverstring; use a Alpine-supported NLP local solver")
-   end
-
-   return
+function _fetch_nlp_solver_identifier(m::Optimizer; override="")
+    (Alp.get_option(m, :nlp_solver) === nothing) && return
+    m.nlp_solver_id = _get_solver_name(m, :nlp_solver, override)
+    return
 end
 
-function fetch_minlp_solver_identifier(m::Optimizer;override="")
+function _fetch_minlp_solver_identifier(m::Optimizer; override="")
+    (Alp.get_option(m, :minlp_solver) === nothing) && return
+    m.minlp_solver_id = _get_solver_name(m, :minlp_solver, override)
+    return
+end
 
-   (Alp.get_option(m, :minlp_solver) === nothing) && return
-
-   isempty(override) ? solverstring = string(Alp.get_option(m, :minlp_solver)) : solverstring = override
-
-   # Higher-level solver
-   if occursin("Pajarito", solverstring)
-       m.minlp_solver_id = "Pajarito"
-      return
-   elseif occursin("Pavito", solverstring)
-       m.minlp_solver_id = "Pavito"
-      return
-   end
-
-   # Lower-level Solver
-   if occursin("AmplNL", solverstring) && occursin("bonmin", solverstring)
-       m.minlp_solver_id = "Bonmin"
-   elseif occursin("KNITRO", solverstring)
-       m.minlp_solver_id = "Knitro"
-   elseif occursin("NLopt", solverstring)
-       m.minlp_solver_id = "NLopt"
-   elseif occursin("CoinOptServices.OsilSolver(\"bonmin\"", solverstring)
-       m.minlp_solver_id = "Bonmin"
-   elseif occursin("Juniper", solverstring)
-       m.minlp_solver_id = "Juniper"
-   else
-      error("Unsupported MINLP local solver $solverstring; use an Alpine-supported MINLP local solver (Juniper.jl for example)")
-   end
-
-   return
+function _get_solver_name(m::Optimizer, key::Symbol, override::String)
+    solver_string = override
+    if isempty(override)
+        solver = MOI.instantiate(Alp.get_option(m, key))
+        solver_string = try
+            MOI.get(solver, MOI.SolverName())
+        catch
+            "$(typeof(solver))"
+        end
+    end
+    for name in ("Ipopt", "Gurobi", "CPLEX", "Juniper")
+        if occursin(name, solver_string)
+            return name
+        end
+    end
+    return solver_string
 end
 
 """
@@ -592,340 +530,3 @@ function resolve_lifted_var_value(m::Optimizer, sol_vec::Array)
 
    return sol_vec
 end
-
-#-----------------------------------------------------------------#
-#                    UNSUPPORTED FUNCTIONS                        #
-#-----------------------------------------------------------------#
-#=
-"""
-Collect LB solutions
-"""
-function collect_lb_pool(m::Optimizer)
-
-   # Always stick to the structural .discretization for algorithm consideration info
-   # If in need, the scheme needs to be refreshed with customized discretization info
-
-   if m.mip_solver_id != "Gurobi" || m.obj_structure == :convex || isempty([i for i in m.model_mip.colCat if i in [:Int, :Bin]])
-      @warn "  Warning: Skipping collecting solution pool procedure",
-      return
-   end
-
-   return
-
-   # Construct a new solution pool for just this new iteration
-   s = initialize_solution_pool(m, Gurobi.get_intattr(m.model_mip.internalModel.inner, "SolCount"))
-
-   # Collect Solution and corresponding objective values
-   for i in 1:s[:cnt]
-      if m.mip_solver_id == "Gurobi"
-         Gurobi.set_int_param!(m.model_mip.internalModel.inner, "SolutionNumber", i-1)
-         s[:sol][i] = Gurobi.get_dblattrarray(m.model_mip.internalModel.inner, "Xn", 1, s[:len])
-         s[:obj][i] = Gurobi.get_dblattr(m.model_mip.internalModel.inner, "PoolObjVal")
-      elseif m.mip_solver_id == "Cplex"
-         error("No implementation for Cplex")
-      end
-      s[:disc][i] = Dict(j=>get_active_partition_idx(m.discretization, s[:sol][i][j],j) for j in s[:vars])
-   end
-
-   merge_solution_pool(m, s)
-
-   return
-end
-
-"""
-   merge_solution_pool(m::Optimizer, s::Dict)
-
-Merge collected solution pools
-"""
-function merge_solution_pool(m::Optimizer, s::Dict)
-
-   # Always stick to the structural discretization for algorithm consideration info
-   # If in need, the scheme needs to be refreshed with customized discretization info
-
-   # Update a few dimensional parameters
-   var_idxs = s[:vars]
-
-   lbv2p = Dict()  # Book-keeping the partition idx between iterations
-   for v in var_idxs
-      vpcnt = length(m.discretization[v]) - 1
-      chosen_p = track_new_partition_idx(m.discretization, v, m.best_bound_sol[v])
-      lbv2p[v] = [i for i in 1:vpcnt if !(i in chosen_p)]
-   end
-
-   for i in 1:m.bound_sol_pool[:cnt] # First update the existing solution pool
-      # First update the discretization idx with the existing
-      m.bound_sol_pool[:disc][i] = Dict(j => get_active_partition_idx(m.discretization, m.bound_sol_pool[:sol][i][j],j) for j in var_idxs)
-      act = true # Then check if the update pool solution active partition idex is within the deactivated region
-      for v in var_idxs
-         (m.bound_sol_pool[:disc][i][v] in lbv2p[v]) || (act = false)
-         act || (m.bound_sol_pool[:stat][i] = :Dead)  # No re-activation
-         act || break
-      end
-   end
-
-   for i in 1:s[:cnt] # Now perform the merge
-      act = true # Then check if the update pool solution active partition index is within the deactivated region
-      for v in var_idxs
-         (s[:disc][i][v] in lbv2p[v]) || (act = false)
-         act || (s[:stat][i] = :Dead)
-         act || break
-      end
-      # Reject solutions that is around best bound to avoid traps
-      if isapprox(s[:obj][i], m.best_bound;atol=Alp.get_option(m, :tol))
-         s[:stat][i] = :Dead
-      end
-      push!(m.bound_sol_pool[:sol], s[:sol][i])
-      push!(m.bound_sol_pool[:obj], s[:obj][i])
-      push!(m.bound_sol_pool[:disc], s[:disc][i])
-      push!(m.bound_sol_pool[:stat], s[:stat][i])
-      push!(m.bound_sol_pool[:iter], s[:iter][i])
-      push!(m.bound_sol_pool[:ubstart], s[:ubstart][i])
-   end
-
-   # Update dimensional parameters
-   m.bound_sol_pool[:cnt] = length(m.bound_sol_pool[:sol])
-   m.bound_sol_pool[:vars] = var_idxs
-
-   # Show the summary
-   Alp.get_option(m, :log_level) > 99 && println("POOL size = $(length([i for i in 1:m.bound_sol_pool[:cnt] if m.bound_sol_pool[:stat][i] != :Dead])) / $(m.bound_sol_pool[:cnt]) ")
-   for i in 1:m.bound_sol_pool[:cnt]
-      Alp.get_option(m, :log_level) > 99 && m.bound_sol_pool[:stat][i] != :Dead && println("ITER $(m.bound_sol_pool[:iter][i]) | SOL $(i) | POOL solution obj = $(m.bound_sol_pool[:obj][i])")
-   end
-
-   return
-end
-
-"""
-Need to be careful with the diverted point.
-"""
-function track_new_partition_idx(d::Dict, idx::Int, val::Float64, acp::Int=-1)
-
-   acp > 0 ? acp = acp : acp = get_active_partition_idx(d,val,idx)
-
-   pcnt = length(d[idx]) - 1
-   newpidx = []                # Tracks the newly constructed partition indices
-   pcnt == 1 && return [1;]    # Still keep non-discretizing variables
-   if acp == 1
-      return newpidx = [1; 2]
-   elseif acp == pcnt
-      return newpidx = [pcnt-1; pcnt]
-   else
-      tlb = d[idx][acp-1]
-      tub = d[idx][acp+1]
-      if abs(val-tlb) == abs(val-tub)
-         return [acp-1; acp; acp+1]
-      elseif abs(val-tlb) > abs(val-tub)
-         return [acp-1; acp]
-      elseif abs(val-tlb) < abs(val-tub)
-         return [acp; acp+1]
-      end
-   end
-
-   return
-end
-
-"""
-   update_boundstop_options(m::Optimizer)
-
-An utility function used to recognize different sub-solvers and return the bound stop option key words. Currently, this
-function supports only Gurobi solver. 
-"""
-function update_boundstop_options(m::Optimizer)
-
-   if m.mip_solver_id == "Gurobi"
-      # Calculation of the bound
-      if is_min_sense(m)
-         Alp.get_option(m, :gap_ref) == :ub ? stopbound=(1-Alp.get_option(m, :rel_gap)+Alp.get_option(m, :tol))*abs(m.best_obj) : stopbound=(1-Alp.get_option(m, :rel_gap)+Alp.get_option(m, :tol))*abs(m.best_bound)
-      elseif is_max_sense(m)
-         Alp.get_option(m, :gap_ref) == :ub ? stopbound=(1+Alp.get_option(m, :rel_gap)-Alp.get_option(m, :tol))*abs(m.best_obj) : stopbound=(1+Alp.get_option(m, :rel_gap)-Alp.get_option(m, :tol))*abs(m.best_bound)
-      end
-
-      for i in 1:length(Alp.get_option(m, :mip_solver).options)
-         if Alp.get_option(m, :mip_solver).options[i][1] == :BestBdStop
-            deleteat!(Alp.get_option(m, :mip_solver).options, i)
-            if m.mip_solver_id == "Gurobi"
-               push!(Alp.get_option(m, :mip_solver).options, (:BestBdStop, stopbound))
-            else
-               return
-            end
-         end
-      end
-   end
-
-   return
-end
-
-"""
-@docstring
-"""
-function update_timeleft_symbol(options, keyword::Symbol, val::Float64; options_string_type=1)
-
-   for i in 1:length(options)
-      if options_string_type == 1
-         if keyword in collect(options[i])
-            deleteat!(options, i)
-            break
-         end
-      elseif options_string_type == 2
-         if keyword == split(options[i],"=")[1]
-            deleteat!(options, i)
-            break
-         end
-      end
-   end
-
-   if options_string_type == 1
-      (val != Inf) && (push!(options, keyword => val))
-   elseif options_string_type == 2
-      (val != Inf) && (push!(options, "$(keyword)=$(val)"))
-   end
-
-   return options
-end
-
-function eval_objective(m::Optimizer; svec::Vector=[])
-
-   isempty(svec) ? svec = m.best_bound_sol : svec = svec
-   is_min_sense(m) ? obj = Inf : obj = -Inf
-
-   if m.obj_structure == :affine
-      obj = m.bounding_obj_mip[:rhs]
-      for i in 1:m.bounding_obj_mip[:cnt]
-         obj += m.bounding_obj_mip[:coefs][i]*svec[m.bounding_obj_mip[:vars][i].args[2]]
-      end
-   elseif m.structural_obj == :convex
-      error("need implementation for local objective function evaluation for convex form")
-   else
-      error("Unknown structural obj type $(m.structural_obj)")
-   end
-
-   return obj
-end
-
-
-"""
-Special function for debugging bounding models
-"""
-function print_iis_gurobi(m::JuMP.Model)
-
-   grb = interface_get_rawsolver(m)
-   Gurobi.computeIIS(grb)
-   numconstr = Gurobi.num_constrs(grb)
-   numvar = Gurobi.num_vars(grb)
-
-   iisconstr = Gurobi.get_intattrarray(grb, "IISConstr", 1, numconstr)
-   iislb = Gurobi.get_intattrarray(grb, "IISLB", 1, numvar)
-   iisub = Gurobi.get_intattrarray(grb, "IISUB", 1, numvar)
-
-   info("Irreducible Inconsistent Subsystem (IIS)")
-   info("Variable bounds:")
-   for i in 1:numvar
-      v = _index_to_variable_ref(m, i)
-      if iislb[i] != 0 && iisub[i] != 0
-         println(JuMP.lower_bound(v), " <= ", JuMP.name(v), " <= ", JuMP.upper_bound(v))
-      elseif iislb[i] != 0
-         println(JuMP.name(v), " >= ", JuMP.lower_bound(v))
-      elseif iisub[i] != 0
-         println(JuMP.name(v), " <= ", JuMP.upper_bound(v))
-      end
-   end
-
-   info("Constraints:")
-   for i in 1:numconstr
-      if iisconstr[i] != 0
-         println(m.linconstr[i])
-      end
-   end
-
-   return
-end
-
-
-"""
-   eval_feasibility(m::Optimizer, sol::Vector)
-
-Evaluate a solution feasibility: Optimization problem must be feasible and the evaluated rhs must be feasible
-"""
-function eval_feasibility(m::Optimizer, sol::Vector)
-
-   if !(length(sol) == m.num_var_orig)
-      error("Candidate solution length mismatch.")
-   end
-
-   for i in 1:m.num_var_orig
-      # Check solution category and bounds
-      if m.var_type[i] == :Bin
-         isapprox(sol[i], 1.0;atol=Alp.get_option(m, :tol)) || isapprox(sol[i], 0.0;atol=Alp.get_option(m, :tol)) || return false
-      elseif m.var_type[i] == :Int
-         isapprox(mod(sol[i], 1.0), 0.0;atol=Alp.get_option(m, :tol)) || return false
-      end
-      # Check solution bounds (with tight bounds)
-      sol[i] <= m.l_var_tight[i] - Alp.get_option(m, :tol) || return false
-      sol[i] >= m.u_var_tight[i] + Alp.get_option(m, :tol) || return false
-   end
-
-   # Check constraint violation
-   eval_rhs = zeros(m.num_constr_orig)
-   for i in eachindex(m.lin_quad_constraints)
-       func = m.lin_quad_constraints[i][1]
-       eval_rhs[i] = MOI.Utilities.eval_variables(vi -> rounded_sol[vi.value], func)
-   end
-   
-   start = m.num_constr_orig - length(m.nl_constraint_bounds_orig) + 1
-   @assert start == length(m.lin_quad_constraints) + 1
-   interface_eval_g(m.d_orig, view(eval_rhs, start:m.num_constr_orig), rounded_sol)
-   feasible = true
-
-   for i in 1:m.num_constr_orig
-      if m.constr_type_orig[i] == :(==)
-         if !isapprox(eval_rhs[i], m.constraint_bounds_orig[i].lower; atol=Alp.get_option(m, :tol))
-            feasible = false
-            Alp.get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) != RHS $(m.constraint_bounds_orig[i].lower)")
-            Alp.get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
-            return false
-         end
-      elseif m.constr_type_orig[i] == :(>=)
-         if !(eval_rhs[i] >= m.constraint_bounds_orig[i].lower - Alp.get_option(m, :tol))
-            Alp.get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !>= RHS $(m.constraint_bounds_orig[i].lower)")
-            Alp.get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
-            return false
-         end
-      elseif m.constr_type_orig[i] == :(<=)
-         if !(eval_rhs[i] <= m.constraint_bounds_orig[i].upper + Alp.get_option(m, :tol))
-            Alp.get_option(m, :log_level) >= 100 && println("[BETA] Violation on CONSTR $(i) :: EVAL $(eval_rhs[i]) !<= RHS $(m.constraint_bounds_orig[i].upper)")
-            Alp.get_option(m, :log_level) >= 100 && println("[BETA] CONSTR $(i) :: $(m.bounding_constr_expr_mip[i])")
-            return false
-         end
-      end
-   end
-
-   return feasible
-end
-
-
-function adjust_branch_priority(m::Optimizer)
-
-   if m.mip_solver_id == "Gurobi"
-      !m.model_mip.internalModelLoaded && return
-      len = length(m.model_mip.colVal)
-      prior = Cint[] # priorities
-      for i=1:len
-         push!(prior, i)
-      end
-      Gurobi.set_intattrarray!(m.model_mip.internalModel.inner, "BranchPriority", 1, len, prior)
-   elseif m.mip_solver_id == "Cplex"
-      !m.model_mip.internalModelLoaded && return
-      n = length(m.model_mip.colVal)
-      idxlist = Cint[1:n;] # variable indices
-      prior = Cint[] # priorities
-      for i=1:n
-         push!(prior, i)
-      end
-      CPLEX.set_branching_priority(MathProgBase.getrawsolver(internalmodel(m.model_mip)), idxlist, prior)
-   else
-      return
-   end
-
-end
-
-=#

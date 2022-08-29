@@ -109,8 +109,8 @@ function get_default_options()
         convhull_ebd_ibs              = false
         convhull_ebd_link             = false
         convhull_warmstart            = true
-        convhull_no_good_cuts         = true
-
+        convhull_no_good_cuts         = false
+    
         presolve_track_time           = true
         presolve_bt                   = true
         presolve_bt_time_limit        = 900
