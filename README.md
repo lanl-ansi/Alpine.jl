@@ -60,7 +60,6 @@ Please report any issues via the Github **[issue tracker]**. All types of issues
 We are seeking out hard benchmark instances for MINLPs. Please get in touch either by opening an issue or [privately](https://harshangrjn.github.io/#contact) if you would like to share any hard instances.
 
 ## Citing Alpine
-
 If you find Alpine useful in your work, we kindly request that you cite the following papers ([pdf](http://harshangrjn.github.io/pdf/JOGO_2018.pdf), [pdf](http://harshangrjn.github.io/pdf/CP_2016.pdf))
 ```bibtex
 @article{alpine_JOGO2019,
