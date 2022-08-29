@@ -88,14 +88,8 @@ function load!(m::Optimizer)
 
    # Solver-dependent detection
    Alp._fetch_mip_solver_identifier(m)
-   (Alp.get_option(m, :nlp_solver) !== nothing)   && (Alp._fetch_nlp_solver_identifier(m))
-   (Alp.get_option(m, :minlp_solver) !== nothing) && (Alp._fetch_minlp_solver_identifier(m))
-
-   # Solver Dependent Options
-   # if m.mip_solver_id != :Gurobi
-      #  Alp.get_option(m, :convhull_warmstart) == false
-      #  Alp.get_option(m, :convhull_no_good_cuts) == false
-   # end
+   Alp._fetch_nlp_solver_identifier(m)
+   Alp._fetch_minlp_solver_identifier(m)
 
    # Main Algorithmic Initialization
    Alp.process_expr(m)                         # Compact process of every expression

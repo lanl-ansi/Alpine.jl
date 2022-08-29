@@ -11,9 +11,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     options           :: OptimizerOptions                           # Options set by user
 
     # Sub-solver identifier for customized solver option
-    nlp_solver_id     :: AbstractString                             # NLP Solver identifier string
-    minlp_solver_id   :: AbstractString                             # MINLP local solver identifier string
-    mip_solver_id     :: AbstractString                             # MIP solver identifier string
+    nlp_solver_id     :: String                             # NLP Solver identifier string
+    minlp_solver_id   :: String                             # MINLP local solver identifier string
+    mip_solver_id     :: String                             # MIP solver identifier string
 
     # User inputs
     num_var_orig           :: Int                                   # Initial number of variables
