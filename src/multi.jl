@@ -30,12 +30,12 @@ function amp_post_convhull(m::Optimizer; kwargs...)
         end
     end
 
-    # Add linking constraints
+    # Add lambda linking constraints
     if m.options.linking_constraints
         Alp.add_linking_constraints(m, λ)
     end
 
-    # Experimental code for Warm starting
+    # Code for warm starting bounding MIP iterations
     Alp.get_option(m, :convhull_warmstart) &&
         !isempty(m.best_bound_sol) &&
         Alp.amp_warmstart_α(m, α)

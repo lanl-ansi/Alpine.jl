@@ -1,10 +1,9 @@
 # MIP solver - commercial 
 function get_gurobi()
-    return optimizer_with_attributes(
-        Gurobi.Optimizer,
-        MOI.Silent() => true,
-        "Presolve" => 1,
-    )
+    GRB_ENV  = Gurobi.Env()
+    return optimizer_with_attributes(() -> Gurobi.Optimizer(GRB_ENV), # To avoid printing License info multiple times
+                                     MOI.Silent() => true, 
+                                     "Presolve" => 1)
 end
 
 function get_cplex()

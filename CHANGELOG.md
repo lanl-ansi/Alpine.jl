@@ -5,6 +5,12 @@
 - Added dependency on Combinatorics package for linking constraints 
 - Added JuliaFormatter.toml and formatting workfow
 
+## v0.4.3
+- Dropped support for checking solver availability. User can choose to use any MILP, MINLP and/or NLP solver with Alpine
+- `GRB_ENV` now works with Gurobi solver to avoid printing License info multiple times during iterations
+- Updates tests to reflect above changes
+- Default `convhull_warmstart` set to `true` for a MIP solver in bounding-MIP iterations
+
 ## v0.4.2
 - Fix support for JuMP v1.2 (@odow)
 

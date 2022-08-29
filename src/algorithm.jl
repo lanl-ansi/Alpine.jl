@@ -23,7 +23,7 @@ function features_available(m::Optimizer)
 end
 
 function load!(m::Optimizer)
-
+    
     # Initialize NLP interface
     requested_features = Alp.features_available(m)
     if m.d_orig !== nothing
@@ -91,7 +91,7 @@ function load!(m::Optimizer)
     (m.obj_structure = :generic_nonlinear)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
-    # populate data to create the bounding model
+    # Populate data to create the bounding MIP model
     Alp.recategorize_var(m)             # Initial round of variable re-categorization
 
     :Int in m.var_type_orig && error(
@@ -100,17 +100,10 @@ function load!(m::Optimizer)
     :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) :
     Alp.set_option(m, :int_enable, false) # Separator for safer runs
 
-    # Conduct solver-dependent detection
-    Alp.fetch_mip_solver_identifier(m)
-    (Alp.get_option(m, :nlp_solver) !== nothing) && (Alp.fetch_nlp_solver_identifier(m))
-    (Alp.get_option(m, :minlp_solver) !== nothing) &&
-        (Alp.fetch_minlp_solver_identifier(m))
-
-    # Solver Dependent Options
-    if m.mip_solver_id != :Gurobi
-        Alp.get_option(m, :convhull_warmstart) == false
-        Alp.get_option(m, :convhull_no_good_cuts) == false
-    end
+    # Solver-dependent detection
+    Alp._fetch_mip_solver_identifier(m)
+    Alp._fetch_nlp_solver_identifier(m)
+    Alp._fetch_minlp_solver_identifier(m)
 
     # Main Algorithmic Initialization
     Alp.process_expr(m)                         # Compact process of every expression

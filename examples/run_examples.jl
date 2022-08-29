@@ -27,6 +27,7 @@ juniper = get_juniper(gurobi, ipopt)
  => If you prefer to use Alpine for only OBBT presolve, without any paritioning applied to the 
     nonlinear terms, include option "apply_partitioning" below and set it to false. 
 =#
+
 const alpine = JuMP.optimizer_with_attributes(
     Alpine.Optimizer,
     "minlp_solver" => juniper,
