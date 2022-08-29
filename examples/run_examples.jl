@@ -32,7 +32,7 @@ const alpine = JuMP.optimizer_with_attributes(Alpine.Optimizer,
                                               "nlp_solver"   => ipopt,  
                                               "mip_solver"   => gurobi,
                                               "presolve_bt"  => true,
-                                              "disc_ratio"   => 10)
+                                              "disc_ratio"   => 10)  
 
 m = nlp3(solver = alpine)
 

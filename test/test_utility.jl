@@ -12,11 +12,11 @@
     m = blend029_gl(solver = test_solver)
     alpine = JuMP.backend(m).optimizer.model
 
-    Alpine.fetch_mip_solver_identifier(alpine;override="Gurobi.GurobiSolver(nothing, Any[])")
+    Alpine._fetch_mip_solver_identifier(alpine;override="Gurobi.GurobiSolver(nothing, Any[])")
     @test alpine.mip_solver_id == "Gurobi"
-    Alpine.fetch_mip_solver_identifier(alpine;override="CPLEX.CplexSolver(Any[])")
+    Alpine._fetch_mip_solver_identifier(alpine;override="CPLEX.CplexSolver(Any[])")
     @test alpine.mip_solver_id == "CPLEX"
-    Alpine.fetch_nlp_solver_identifier(alpine;override="Ipopt.IpoptSolver(Any[])")
+    Alpine._fetch_nlp_solver_identifier(alpine;override="Ipopt.IpoptSolver(Any[])")
     @test alpine.nlp_solver_id == "Ipopt"
 end
 

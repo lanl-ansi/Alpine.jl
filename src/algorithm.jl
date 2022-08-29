@@ -80,22 +80,22 @@ function load!(m::Optimizer)
    m.is_obj_linear_orig ? (m.obj_structure = :generic_linear) : (m.obj_structure = :generic_nonlinear)
    isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
-   # populate data to create the bounding model
+   # Populate data to create the bounding MIP model
    Alp.recategorize_var(m)             # Initial round of variable re-categorization
 
    :Int in m.var_type_orig && error("Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution")
    :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) : Alp.set_option(m, :int_enable, false) # Separator for safer runs
 
-   # Conduct solver-dependent detection
-   Alp.fetch_mip_solver_identifier(m)
-   (Alp.get_option(m, :nlp_solver) !== nothing)   && (Alp.fetch_nlp_solver_identifier(m))
-   (Alp.get_option(m, :minlp_solver) !== nothing) && (Alp.fetch_minlp_solver_identifier(m))
+   # Solver-dependent detection
+   Alp._fetch_mip_solver_identifier(m)
+   (Alp.get_option(m, :nlp_solver) !== nothing)   && (Alp._fetch_nlp_solver_identifier(m))
+   (Alp.get_option(m, :minlp_solver) !== nothing) && (Alp._fetch_minlp_solver_identifier(m))
 
    # Solver Dependent Options
-   if m.mip_solver_id != :Gurobi
-       Alp.get_option(m, :convhull_warmstart) == false
-       Alp.get_option(m, :convhull_no_good_cuts) == false
-   end
+   # if m.mip_solver_id != :Gurobi
+      #  Alp.get_option(m, :convhull_warmstart) == false
+      #  Alp.get_option(m, :convhull_no_good_cuts) == false
+   # end
 
    # Main Algorithmic Initialization
    Alp.process_expr(m)                         # Compact process of every expression
@@ -211,13 +211,9 @@ function presolve(m::Optimizer)
       Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)
 
    elseif m.status[:local_solve] == MOI.INVALID_MODEL
-
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n This may come from Ipopt's `:Not_Enough_Degrees_Of_Freedom`. \n Consider more replace equality constraints with >= and <= to resolve this."
-
    else
-
       @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve])."
-
    end
 
    cputime_presolve = time() - start_presolve

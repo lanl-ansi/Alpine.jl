@@ -461,7 +461,7 @@ function round_sol(m::Optimizer, relaxed_sol)
    return rounded_sol
 end
 
-function fetch_mip_solver_identifier(m::Optimizer;override="")
+function _fetch_mip_solver_identifier(m::Optimizer;override="")
     mip_solver = Alp.get_option(m, :mip_solver).optimizer_constructor
     if typeof(mip_solver) !== DataType
         mip_solver = typeof(mip_solver)
@@ -479,7 +479,7 @@ function fetch_mip_solver_identifier(m::Optimizer;override="")
     return
 end
 
-function fetch_nlp_solver_identifier(m::Optimizer;override="")
+function _fetch_nlp_solver_identifier(m::Optimizer;override="")
     nlp_solver = Alp.get_option(m, :nlp_solver).optimizer_constructor
     isempty(override) ? solverstring = string(nlp_solver) : solverstring = override
     if occursin("Ipopt", solverstring)
@@ -491,7 +491,7 @@ function fetch_nlp_solver_identifier(m::Optimizer;override="")
     return
 end
 
-function fetch_minlp_solver_identifier(m::Optimizer;override="")
+function _fetch_minlp_solver_identifier(m::Optimizer;override="")
     (Alp.get_option(m, :minlp_solver) === nothing) && return
     minlp_solver = Alp.get_option(m, :minlp_solver).optimizer_constructor
     isempty(override) ? solverstring = string(minlp_solver) : solverstring = override
