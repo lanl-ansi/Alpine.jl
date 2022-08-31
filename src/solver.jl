@@ -6,7 +6,7 @@ mutable struct OptimizerOptions
     # Basic solver parameters
     log_level::Int                                              # Verbosity flag: 0 for quiet, 1 for basic solve info, 2 for iteration info
     time_limit::Float64                                         # Time limit for algorithm (in seconds)
-    max_iter::Int                                               # Maximum bound on number of iterations for partitioning algorithm
+    max_iter::Int                                               # Maximum bound on number of iterations for the partitioning algorithm
     rel_gap::Float64                                            # Relative optimality gap for termination condition
     abs_gap::Float64                                            # Absolute optimality gap for termination condition
     tol::Float64                                                # Numerical tol used in algorithms
@@ -29,7 +29,7 @@ mutable struct OptimizerOptions
     # Parameters used in Alpine's MIP-based partitioning algorithm
     apply_partitioning::Bool                                    # Apply the partitioning algorithm only if thhis true, else terminate after presolve
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
-    disc_ratio::Any                                             # Discretization ratio parameter, which is critical for convergence (using a fixed value for now, later switch to a function)
+    disc_ratio::Int                                             # Discretization ratio parameter, which is critical for convergence (using a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
     disc_add_partition_method::Any                              # Additional methods to add discretization
     disc_divert_chunks::Int                                     # How many uniform partitions to construct

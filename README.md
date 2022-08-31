@@ -63,8 +63,8 @@ We are seeking out hard benchmark instances for MINLPs. Please get in touch eith
 If you find Alpine useful in your work, we kindly request that you cite the following papers ([pdf](http://harshangrjn.github.io/pdf/JOGO_2018.pdf), [pdf](http://harshangrjn.github.io/pdf/CP_2016.pdf))
 ```bibtex
 @article{alpine_JOGO2019,
-  author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
   title = {An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs},
+  author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
   journal = {Journal of Global Optimization},
   year = {2019},
   issn = {1573-2916},

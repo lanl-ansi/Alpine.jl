@@ -1,8 +1,10 @@
 # Alpine.jl Change Log
 
 ## v0.5.0
-- New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (speed up in run times for multilinear termed problems)
+- New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (speed up in run times for multilinear problems) (@jongeunkim)
 - Added dependency on Combinatorics package for linking constraints 
+- Changed Cbc test dependency to HiGHS solver
+- Dropped a few redundant unit tests
 - Added JuliaFormatter.toml and formatting workfow
 
 ## v0.4.3

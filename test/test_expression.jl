@@ -2,7 +2,7 @@
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
 
@@ -120,7 +120,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
     m = nlp1(solver = test_solver)
@@ -143,7 +143,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
 
@@ -222,7 +222,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
 
@@ -244,7 +244,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "minlp_solver" => JUNIPER,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
 
@@ -368,7 +368,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
 
@@ -728,7 +728,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
 
@@ -829,7 +829,7 @@ end
         optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         ),
     )
@@ -873,7 +873,7 @@ end
         optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         ),
     )
@@ -934,7 +934,7 @@ end
         optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         ),
     )
@@ -1002,7 +1002,7 @@ end
         optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         ),
     )
@@ -1056,7 +1056,7 @@ end
         optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         ),
     )
@@ -1111,7 +1111,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         )
         m = convex_test(solver = test_solver)
@@ -1322,7 +1322,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "disc_ratio" => 8,
             "log_level" => 100,
         )
@@ -1381,7 +1381,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         )
 
@@ -1485,7 +1485,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "disc_ratio" => 8,
             "log_level" => 100,
         )
@@ -2679,7 +2679,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "minlp_solver" => JUNIPER,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
 
@@ -3340,7 +3340,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "minlp_solver" => JUNIPER,
             "log_level" => 100,
         )
@@ -3362,7 +3362,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         )
 
@@ -3389,7 +3389,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         )
 
@@ -3419,7 +3419,7 @@ end
             Alpine.Optimizer,
             "minlp_solver" => JUNIPER,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         )
 
@@ -3501,7 +3501,7 @@ end
             Alpine.Optimizer,
             "minlp_solver" => JUNIPER,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "log_level" => 100,
         )
 
@@ -3645,7 +3645,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => JUNIPER,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "presolve_bt" => true,
     )
 

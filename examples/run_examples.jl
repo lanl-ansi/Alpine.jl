@@ -7,17 +7,16 @@ using Juniper
 
 # - Additional - #
 # using CPLEX
-# using Cbc
+# using HiGHS
 # using Pavito
-# using Random 
 
 include("JuMP_models.jl")
 include("optimizers.jl")
 
 # Choose underlying solvers for Alpine
-ipopt = get_ipopt()
-gurobi = get_gurobi()
-juniper = get_juniper(gurobi, ipopt)
+nlp_solver = get_ipopt() #local solver
+mip_solver = get_gurobi()
+minlp_solver = get_juniper(mip_solver, nlp_solver) #local solver
 
 #= Global solver
  Hints: 
@@ -30,9 +29,9 @@ juniper = get_juniper(gurobi, ipopt)
 
 const alpine = JuMP.optimizer_with_attributes(
     Alpine.Optimizer,
-    # "minlp_solver" => juniper,
-    "nlp_solver" => ipopt,
-    "mip_solver" => gurobi,
+    # "minlp_solver" => minlp_solver,
+    "nlp_solver" => nlp_solver,
+    "mip_solver" => mip_solver,
     "presolve_bt" => true,
     "disc_ratio" => 10,
 )

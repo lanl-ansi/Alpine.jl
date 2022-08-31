@@ -3,7 +3,7 @@
         Alpine.Optimizer,
         "minlp_solver" => PAVITO,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "presolve_bp" => true,
         "disc_var_pick" => 1,
         "log_level" => 100,

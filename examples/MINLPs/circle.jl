@@ -15,9 +15,8 @@ function circle_MINLPLib(; solver = nothing)
 
     m = Model(solver)
 
-    @variable(m, objvar >= 0)
-    x_Idx = Any[1, 2]
-    @variable(m, -10 <= x[x_Idx] <= 10)
+    @variable(m, 0 <= objvar <= 5)
+    @variable(m, -10 <= x[1:2] <= 10)
 
     @NLconstraint(
         m,

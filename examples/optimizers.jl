@@ -1,4 +1,7 @@
-# MIP solver - commercial 
+#---------------------------;
+# MIP solvers - commercial  ;
+#---------------------------;
+# https://github.com/jump-dev/Gurobi.jl
 function get_gurobi()
     GRB_ENV = Gurobi.Env()
     return optimizer_with_attributes(
@@ -8,6 +11,7 @@ function get_gurobi()
     )
 end
 
+# https://github.com/jump-dev/CPLEX.jl
 function get_cplex()
     return optimizer_with_attributes(
         CPLEX.Optimizer,
@@ -16,12 +20,27 @@ function get_cplex()
     )
 end
 
-# MIP solver - open-source
+#---------------------------;
+# MIP solvers - open-source
+#---------------------------;
+# https://github.com/jump-dev/HiGHS.jl
+function get_highs()
+    return JuMP.optimizer_with_attributes(
+        HiGHS.Optimizer,
+        "presolve" => "on",
+        "log_to_console" => false,
+    )
+end
+
+# https://github.com/jump-dev/Cbc.jl
 function get_cbc()
     return optimizer_with_attributes(Cbc.Optimizer, MOI.Silent() => true)
 end
 
-# Local solver
+#---------------------------;
+# Continuous local solver   ; 
+#---------------------------;
+# https://github.com/jump-dev/Ipopt.jl
 function get_ipopt()
     return optimizer_with_attributes(
         Ipopt.Optimizer,
@@ -31,7 +50,10 @@ function get_ipopt()
     )
 end
 
-# Convex MINLP solver
+#----------------------;
+# Convex MINLP solver  ;
+#----------------------;
+# https://github.com/jump-dev/Pavito.jl
 function get_pavito(mip_solver, cont_solver)
     return optimizer_with_attributes(
         Pavito.Optimizer,
@@ -42,7 +64,10 @@ function get_pavito(mip_solver, cont_solver)
     )
 end
 
-# Non-convex Local MINLP solver
+#-------------------------------;
+# Non-convex Local MINLP solver ;
+#-------------------------------;
+# https://github.com/lanl-ansi/Juniper.jl
 function get_juniper(mip_solver, nl_solver)
     return optimizer_with_attributes(
         Juniper.Optimizer,

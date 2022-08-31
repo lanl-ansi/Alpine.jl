@@ -2,7 +2,7 @@ using JuMP
 using Test
 
 import Alpine
-import Cbc
+import HiGHS
 import Ipopt
 import Juniper
 import Pavito
@@ -19,17 +19,23 @@ const IPOPT = MOI.OptimizerWithAttributes(
     "sb" => "yes",
     "max_iter" => 9999,
 )
-const CBC = MOI.OptimizerWithAttributes(Cbc.Optimizer, MOI.Silent() => true)
+
+const HIGHS = MOI.OptimizerWithAttributes(
+    HiGHS.Optimizer,
+    "presolve" => "on",
+    "log_to_console" => false,
+)
+
 const JUNIPER = MOI.OptimizerWithAttributes(
     Juniper.Optimizer,
     MOI.Silent() => true,
-    "mip_solver" => CBC,
+    "mip_solver" => HIGHS,
     "nl_solver" => IPOPT,
 )
 const PAVITO = MOI.OptimizerWithAttributes(
     Pavito.Optimizer,
     MOI.Silent() => true,
-    "mip_solver" => CBC,
+    "mip_solver" => HIGHS,
     "cont_solver" => IPOPT,
     "mip_solver_drives" => false,
 )

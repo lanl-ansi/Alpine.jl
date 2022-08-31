@@ -23,7 +23,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => false,
         "monomial_convexhull" => false,
         "presolve_bp" => true,
@@ -47,7 +47,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => false,
         "monomial_convexhull" => false,
         "presolve_bp" => true,
@@ -70,7 +70,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => false,
         "log_level" => 100,
         "max_iter" => 2,
@@ -93,10 +93,10 @@ end
     @test MOI.get(m, Alpine.NumberOfPresolveIterations()) == 2
 
     vars = all_variables(m)
-    @test MOI.get.(m, Alpine.TightenedLowerBound(), vars) ≈
-          [100, 999.9, 999.9, 10, 150.2, 10, 35.4, 168] rtol = 1e-6
-    @test MOI.get.(m, Alpine.TightenedUpperBound(), vars) ≈
-          [4573.8, 5547.9, 5913.4, 332.4, 551, 390, 571.1, 638.7] rtol = 1e-6
+    LB = [100, 1000, 1000, 10, 150.2, 10, 35.4, 168]
+    UB = [4573.6, 5547.8, 5913.3, 332.4, 551, 390, 571.1, 638.7]
+    @test isapprox(MOI.get.(m, Alpine.TightenedLowerBound(), vars), LB, atol = 1E-6)
+    @test isapprox(MOI.get.(m, Alpine.TightenedUpperBound(), vars), UB, atol = 1E-6)
 end
 
 # FIXME Pavito terminates with `NUMERICAL_ERROR` on Julia v1.0:
@@ -104,7 +104,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => false,
         "log_level" => 100,
         "max_iter" => 2,
@@ -133,22 +133,21 @@ end
         "monomial_convexhull" => true,
         "presolve_bt" => false,
         "presolve_bp" => true,
-        "disc_ratio" => 10,
-        "log_level" => 100,
+        "disc_ratio" => 12,
     )
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
+    @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-5)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
 @testset " Validation Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => true,
         "monomial_convexhull" => true,
         "presolve_bt" => false,
@@ -189,18 +188,15 @@ end
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
         "mip_solver" => PAVITO,
-        "disc_abs_width_tol" => 1e-2,
-        "disc_ratio" => 5,
-        "presolve_bt" => true,
-        "presolve_bt_max_iter" => 1,
-        "presolve_bt_algo" => 1,
-        "presolve_bt_bound_tol" => 1e-2,
-        "log_level" => 100,
+        "presolve_bt" => false,
+        "disc_ratio" => 15,
+        "max_iter" => 2,
     )
 
     m = circle_MINLPLib(solver = test_solver)
 
     JuMP.optimize!(m)
+    @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 4.45670663096; atol = 1E-6)
 end
 
@@ -208,7 +204,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => true,
         "monomial_convexhull" => true,
         "presolve_bt" => false,
@@ -226,14 +222,14 @@ end
 end
 
 @testset " Validation Test || AMP || multi4N || N = 2 || exprmode=1:11" begin
-    n_instances = 11
+    n_instances = 5
     objValVec = 2.0 * ones(n_instances)
 
     for i in 1:n_instances
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "disc_abs_width_tol" => 1e-2,
             "max_iter" => 4,
             "disc_ratio" => 4,
@@ -254,7 +250,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "max_iter" => 5,
         "presolve_bt" => false,
@@ -277,7 +273,7 @@ end
         test_solver = optimizer_with_attributes(
             Alpine.Optimizer,
             "nlp_solver" => IPOPT,
-            "mip_solver" => CBC,
+            "mip_solver" => HIGHS,
             "disc_abs_width_tol" => 1e-2,
             "max_iter" => 4,
             "disc_ratio" => 4,
@@ -299,7 +295,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "max_iter" => 3,
         "disc_ratio" => 4,
@@ -320,7 +316,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => true,
         "monomial_convexhull" => true,
         "presolve_bt" => false,
@@ -343,7 +339,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => false,
         "disc_ratio" => 18,
@@ -364,7 +360,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => true,
         "max_iter" => 1,
@@ -384,7 +380,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => true,
         "max_iter" => 1,
@@ -404,7 +400,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => true,
         "max_iter" => 1,
@@ -424,7 +420,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => true,
         "max_iter" => 1,
@@ -444,7 +440,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => true,
         "max_iter" => 1,
@@ -464,7 +460,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => true,
         "max_iter" => 1,
@@ -484,7 +480,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_abs_width_tol" => 1e-2,
         "disc_ratio_branch" => true,
         "max_iter" => 1,
@@ -505,7 +501,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => PAVITO,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "presolve_bt" => false,
         "log_level" => 100,
     )
@@ -532,7 +528,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => JUNIPER,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "presolve_bt" => false,
         "disc_ratio" => 4,
         "log_level" => 100,
@@ -592,26 +588,6 @@ end
     @test MOI.get(m, Alpine.NumberOfIterations()) == 4
 end
 
-# FIXME Pavito terminates with `NUMERICAL_ERROR` on Julia v1.0 in Mac OS (travis)
-# However, this runs fine in CPLEX.
-# @testset "Embedding Test || AMP || special problem || ... " begin
-#     test_solver=optimizer_with_attributes(Alpine.Optimizer, "nlp_solver" => IPOPT,
-#                            "mip_solver" => PAVITO,
-#                            "disc_abs_width_tol" => 1e-2,
-#                            "disc_ratio" => 8,
-#                            "max_iter" => 6,
-#                            "presolve_bt" => false,
-#                            "presolve_bp" => true,
-#                            "presolve_bt_algo" => 1,
-#                            "presolve_bt_bound_tol" => 1e-1,
-#                            "convhull_ebd" => true,
-#                            "log_level" => 100)
-
-#     m = circle(solver = test_solver)
-#     JuMP.optimize!(m)
-#     @test isapprox(objective_value(m), 1.4142135534556992; atol=1e-3)
-# end
-
 @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp1.jl" begin
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
@@ -623,35 +599,38 @@ end
         "presolve_bp" => true,
         "convhull_ebd" => true,
         "convhull_ebd_ibs" => true,
+        "disc_ratio" => 12,
         "log_level" => 100,
     )
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 4
+    @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-5)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
 @testset "Embedding IBS Test || AMP-CONV || basic solve || examples/nlp3.jl" begin
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => true,
         "monomial_convexhull" => true,
         "presolve_bt" => false,
         "presolve_bp" => false,
         "convhull_ebd" => true,
         "convhull_ebd_ibs" => true,
-        "log_level" => 100,
+        "max_iter" => 3,
     )
     m = nlp3(solver = test_solver)
     JuMP.optimize!(m)
+    alp = JuMP.backend(m).optimizer.model
 
-    @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(objective_value(m), 7049.247897696188; atol = 1e-4)
-    @test MOI.get(m, Alpine.NumberOfIterations()) == 9
+    @test termination_status(m) == MOI.OTHER_LIMIT
+    @test isapprox(objective_value(m), 7049.247897696188; atol = 1e-5)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 3
+    @test isapprox(alp.best_bound, 6893.2067, atol = 1E-4)
 end
 
 @testset "Embedding IBS Test || AMP || special problem || ... " begin
@@ -688,14 +667,13 @@ end
         "presolve_bp" => true,
         "convhull_ebd" => true,
         "convhull_ebd_link" => true,
-        "disc_ratio" => 12,
-        "log_level" => 100,
+        "disc_ratio" => 20,
     )
     m = nlp1(solver = test_solver)
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-4)
+    @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-5)
     @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
@@ -703,7 +681,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => true,
         "monomial_convexhull" => true,
         "presolve_bt" => false,
@@ -726,7 +704,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "max_iter" => 1,
         "presolve_bt" => false,
         "disc_ratio" => 10,
@@ -743,7 +721,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => PAVITO,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "presolve_bp" => true,
         "disc_var_pick" => 1,
         "log_level" => 100,
@@ -778,7 +756,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_add_partition_method" => "uniform",
         "disc_uniform_rate" => 10,
         "max_iter" => 1,
@@ -796,7 +774,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => PAVITO,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "bilinear_convexhull" => true,
         "monomial_convexhull" => true,
         "presolve_bp" => true,

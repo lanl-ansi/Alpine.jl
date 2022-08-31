@@ -531,7 +531,7 @@ function amp_post_convhull_constrs(
 end
 
 """
-    Method for regular multilinear terms (terms that only has continuous variables)
+    Method for multilinear terms with only continuous variables
 """
 function amp_post_inequalities_cont(
     m::Optimizer,
@@ -631,7 +631,7 @@ function amp_post_inequalities_cont(
         end
         return
     else
-        error("Must indicate a choice of convex hull formulation. ?(sos2, facet)")
+        error("Must indicate a choice of convex hull formulation: sos2, facet")
     end
 
     return

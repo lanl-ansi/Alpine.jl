@@ -1,49 +1,17 @@
-function nlp1(; verbose = false, solver = nothing, convhull = false, presolve = 0)
-    if solver === nothing
-        m = Model(
-            Alpine.Optimizer(
-                nlp_solver = IpoptSolver(print_level = 0),
-                mip_solver = GurobiSolver(OutputFlag = 0),
-                bilinear_convexhull = convhull,
-                monomial_convexhull = convhull,
-                presolve_bt = (presolve > 0),
-                presolve_bt_algo = presolve,
-                presolve_bt_bound_tol = 1e-1,
-                log_level = 10000,
-            ),
-        )
-    else
-        m = Model(solver)
-    end
+function nlp1(; solver = nothing)
+    m = Model(solver)
 
     @variable(m, 1 <= x[1:2] <= 10)
-
     @NLconstraint(m, x[1] * x[2] >= 8)
     @NLobjective(m, Min, 6 * x[1]^2 + 4 * x[2]^2 - 2.5 * x[1] * x[2])
 
     return m
 end
 
-function nlp2(; verbose = false, solver = nothing, convhull = false, presolve = 0)
-    if solver === nothing
-        m = Model(
-            Alpine.Optimizer(
-                nlp_solver = IpoptSolver(print_level = 0),
-                mip_solver = GurobiSolver(OutputFlag = 0),
-                bilinear_convexhull = convhull,
-                monomial_convexhull = convhull,
-                presolve_bt = (presolve > 0),
-                presolve_bt_algo = presolve,
-                presolve_bt_bound_tol = 1e-1,
-                log_level = 10000,
-            ),
-        )
-    else
-        m = Model(solver)
-    end
+function nlp2(; solver = nothing)
+    m = Model(solver)
 
     @variable(m, -500 <= x[1:2] <= 500)
-
     @NLobjective(m, Min, sum((x[i]^2 - i)^2 for i in 1:2))
 
     return m

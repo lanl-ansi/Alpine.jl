@@ -3,7 +3,7 @@
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
     m = operator_c(solver = test_solver)
@@ -22,7 +22,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 0,
         "disc_uniform_rate" => 10,
         "presolve_bp" => false,
@@ -45,7 +45,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 2,
         "disc_uniform_rate" => 10,
         "presolve_bp" => false,
@@ -67,7 +67,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 1,
         "disc_uniform_rate" => 10,
         "presolve_bp" => false,
@@ -89,7 +89,7 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 3,
         "presolve_bp" => false,
         "presolve_bt" => false,
@@ -113,13 +113,12 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 0,
         "disc_uniform_rate" => 10,
-        "presolve_bp" => false,
-        "presolve_bt" => false,
+        "presolve_bt" => true,
+        "presolve_bt_max_iter" => 2,
         "max_iter" => 1,
-        "log_level" => 100,
     )
 
     m = castro2m2(solver = test_solver)
@@ -137,13 +136,12 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 1,
         "disc_uniform_rate" => 10,
-        "presolve_bp" => false,
-        "presolve_bt" => false,
+        "presolve_bt" => true,
+        "presolve_bt_max_iter" => 2,
         "max_iter" => 1,
-        "log_level" => 100,
     )
 
     m = castro2m2(solver = test_solver)
@@ -160,11 +158,11 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 2,
         "disc_uniform_rate" => 15,
-        "presolve_bp" => false,
-        "presolve_bt" => false,
+        "presolve_bt" => true,
+        "presolve_bt_max_iter" => 2,
         "max_iter" => 1,
         "log_level" => 100,
     )
@@ -188,7 +186,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => PAVITO,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 0,
         "disc_uniform_rate" => 10,
         "presolve_bt" => false,
@@ -236,7 +234,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => PAVITO,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 1,
         "disc_uniform_rate" => 10,
         "presolve_bp" => false,
@@ -285,7 +283,7 @@ end
         Alpine.Optimizer,
         "minlp_solver" => PAVITO,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 2,
         "disc_uniform_rate" => 10,
         "presolve_bp" => false,
@@ -306,11 +304,11 @@ end
 
 @testset "Partitioning variable selection tests :: castro6m2" begin
 
-    # Dynamic Scheme step 2
+    # Dynamic Scheme step 1
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "disc_var_pick" => 3,
         "presolve_bp" => true,
         "presolve_bt" => false,
@@ -330,56 +328,13 @@ end
     @test length(alpine.disc_vars) == 12
     @test length(Set(alpine.disc_vars)) == 12
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 3
-
-    # Dynamic Scheme step 2
-    test_solver = optimizer_with_attributes(
-        Alpine.Optimizer,
-        "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
-        "disc_var_pick" => 3,
-        "presolve_bp" => true,
-        "presolve_bt" => false,
-        "max_iter" => 2,
-        "log_level" => 100,
-    )
-
-    m = castro6m2(solver = test_solver)
-    JuMP.optimize!(m)
-    alpine = JuMP.backend(m).optimizer.model
-
-    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
-    @test JuMP.objective_value(m) <= 228.7810
-
-    @test length(alpine.candidate_disc_vars) == 24
-    @test length(Set(alpine.candidate_disc_vars)) == 24
-    @test length(alpine.disc_vars) == 12
-    @test length(Set(alpine.disc_vars)) == 12
-    @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 3
-end
-
-@testset "Test getsolvetime for time tracking" begin
-    test_solver = optimizer_with_attributes(
-        Alpine.Optimizer,
-        "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
-        "disc_var_pick" => 0,
-        "disc_uniform_rate" => 10,
-        "presolve_bp" => false,
-        "presolve_bt" => false,
-        "max_iter" => 1,
-        "log_level" => 100,
-    )
-
-    m = castro2m2(solver = test_solver)
-    JuMP.optimize!(m)
-    @test solve_time(m) > 0.0
 end
 
 @testset "Hessians disabled with user-defined multivariate functions" begin
     test_solver = JuMP.optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => CBC,
+        "mip_solver" => HIGHS,
         "log_level" => 100,
     )
     m = Model(test_solver)
