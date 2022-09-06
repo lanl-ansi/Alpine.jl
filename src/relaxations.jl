@@ -25,9 +25,8 @@ function relaxation_bilinear(
     lb_x::Number,
     ub_x::Number,
     lb_y::Number,
-    ub_y::Number
+    ub_y::Number,
 )
-
     JuMP.@constraint(m, z >= lb_x * y + lb_y * x - lb_x * lb_y)
     JuMP.@constraint(m, z >= ub_x * y + ub_y * x - ub_x * ub_y)
     JuMP.@constraint(m, z <= lb_x * y + ub_y * x - lb_x * ub_y)
@@ -45,7 +44,11 @@ end
 Applies Fortet linearization (see https://doi.org/10.1007/s10288-006-0015-3) for z = prod(x), 
 where x is a vector of binary variables.
 """
-function relaxation_multilinear_binary(m::JuMP.Model, z::JuMP.VariableRef, x::Vector{VariableRef})
+function relaxation_multilinear_binary(
+    m::JuMP.Model,
+    z::JuMP.VariableRef,
+    x::Vector{VariableRef},
+)
     for i in x
         JuMP.@constraint(m, z <= i)
     end

@@ -707,21 +707,25 @@ Reference: J. Kim, J.P. Richard, M. Tawarmalani, Piecewise Polyhedral Relaxation
 http://www.optimization-online.org/DB_HTML/2022/07/8974.html
 """
 function _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
-
     if isnothing(m.linking_constraints_info)
-        m.linking_constraints_info = Alp._get_shared_multilinear_terms_info(λ, m.options.linking_constraints_degree_limit)
+        m.linking_constraints_info = Alp._get_shared_multilinear_terms_info(
+            λ,
+            m.options.linking_constraints_degree_limit,
+        )
     end
 
-    if isnothing(m.linking_constraints_info) 
+    if isnothing(m.linking_constraints_info)
         return
-    end 
+    end
 
     # Additional linking variables (μ) to the MIP model to keep the constraints sparse
-    linking_variables = JuMP.@variable(m.model_mip, [i in keys(m.linking_constraints_info)])
-    
+    linking_variables =
+        JuMP.@variable(m.model_mip, [i in keys(m.linking_constraints_info)])
+
     # Add linking constraints to the MIP model
     for (shared_multilinear_idx, multilinear_terms_idx) in m.linking_constraints_info,
         (i, multilinear_idx) in enumerate(multilinear_terms_idx)
+
         var_location = [findfirst(multilinear_idx .== i) for i in shared_multilinear_idx]
 
         lambda_expr = 0
@@ -734,7 +738,10 @@ function _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
             lambda_expr += partitions_info * var
         end
 
-        JuMP.@constraint(m.model_mip, linking_variables[shared_multilinear_idx] == lambda_expr)
+        JuMP.@constraint(
+            m.model_mip,
+            linking_variables[shared_multilinear_idx] == lambda_expr
+        )
     end
 end
 
@@ -746,19 +753,20 @@ necessary for a given vector of each multilinear terms and returns the approapri
 linking constraints information.
 """
 function _get_shared_multilinear_terms_info(
-    λ::Dict, 
-    linking_constraints_degree_limit::Union{Nothing,T} where {T<:Int64} = nothing
+    λ::Dict,
+    linking_constraints_degree_limit::Union{Nothing,T} where {T<:Int64} = nothing,
 )
-    
+
     # Compute maximum degree of multilinear terms and return if bilinear
-    max_degree = maximum([length(k) for k in keys(λ)]) 
+    max_degree = maximum([length(k) for k in keys(λ)])
 
     if max_degree <= 2
         return (linking_constraints_info = nothing)
     end
 
     # Limit the linking constraints to a prescribed multilinear degree 
-    if !isnothing(linking_constraints_degree_limit) && (linking_constraints_degree_limit < max_degree)
+    if !isnothing(linking_constraints_degree_limit) &&
+       (linking_constraints_degree_limit < max_degree)
         max_degree = linking_constraints_degree_limit
     end
 
@@ -766,7 +774,8 @@ function _get_shared_multilinear_terms_info(
     all_variables_idx = collect(union((keys(λ) |> collect)...)) |> sort
 
     linking_constraints_info = Dict(
-        shared_multilinear_idx => filter(r -> issubset(shared_multilinear_idx, r), keys(λ)) for
+        shared_multilinear_idx =>
+            filter(r -> issubset(shared_multilinear_idx, r), keys(λ)) for
         deg in 2:(max_degree-1) for
         shared_multilinear_idx in Combinatorics.combinations(all_variables_idx, deg)
     )

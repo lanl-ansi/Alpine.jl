@@ -96,7 +96,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     bound_sol_pool::Dict{Any,Any}                        # A pool of solutions from solving model_mip
 
     # Linking constraints info for Multilinear terms
-    linking_constraints_info::Union{Nothing, Dict{Any, Any}}     # Stored multilinear linking constraints info 
+    linking_constraints_info::Union{Nothing,Dict{Any,Any}}     # Stored multilinear linking constraints info 
 
     # Logging information and status
     logs::Dict{Symbol,Any}                          # Logging information

@@ -99,7 +99,10 @@ function logging_summary(m::Optimizer)
         if Alp.get_option(m, :partition_scaling_factor_branch)
             println("  Partition scaling factor branch activated")
         else
-            println("  Partition scaling factor = ", Alp.get_option(m, :partition_scaling_factor))
+            println(
+                "  Partition scaling factor = ",
+                Alp.get_option(m, :partition_scaling_factor),
+            )
         end
         (Alp.get_option(m, :convhull_ebd)) && println("  Using convhull_ebd formulation")
         (Alp.get_option(m, :convhull_ebd)) &&

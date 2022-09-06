@@ -145,7 +145,11 @@ function ebd_link_xα(
         base_name = "αA$(var_idx)"
     )
     for i in keys(lifters) # Build first-level evaluation
-        Alp.relaxation_multilinear_binary(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
+        Alp.relaxation_multilinear_binary(
+            m.model_mip,
+            α_A[lifters[i]-L],
+            [α[j] for j in i],
+        )
     end
 
     α_R = [α; α_A] # Initialize/re-arrgange the variable sequence

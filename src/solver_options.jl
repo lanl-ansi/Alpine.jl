@@ -61,7 +61,6 @@ mutable struct OptimizerOptions
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
-
 end
 
 function get_default_options()
@@ -155,6 +154,6 @@ function get_default_options()
         presolve_bt_algo,
         presolve_bt_relax_integrality,
         presolve_bt_mip_time_limit,
-        presolve_bp
+        presolve_bp,
     )
 end

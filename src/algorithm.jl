@@ -213,16 +213,22 @@ function presolve(m::Optimizer)
         )
         Alp.bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
         Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
-        Alp.get_option(m, :partition_scaling_factor_branch) &&
-            (Alp.set_option(m, :partition_scaling_factor, Alp.update_partition_scaling_factor(m, true)))
+        Alp.get_option(m, :partition_scaling_factor_branch) && (Alp.set_option(
+            m,
+            :partition_scaling_factor,
+            Alp.update_partition_scaling_factor(m, true),
+        ))
         Alp.add_partition(m, use_solution = m.best_sol)  # Setting up the initial discretization
 
     elseif m.status[:local_solve] in STATUS_INF
         (Alp.get_option(m, :log_level) > 0) &&
             println("  Bound tightening without objective bounds (OBBT)")
         Alp.bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-        (Alp.get_option(m, :partition_scaling_factor_branch)) &&
-            (Alp.set_option(m, :partition_scaling_factor, Alp.update_partition_scaling_factor(m, true)))
+        (Alp.get_option(m, :partition_scaling_factor_branch)) && (Alp.set_option(
+            m,
+            :partition_scaling_factor,
+            Alp.update_partition_scaling_factor(m, true),
+        ))
         Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)
 
     elseif m.status[:local_solve] == MOI.INVALID_MODEL
@@ -255,7 +261,11 @@ function algorithm_automation(m::Optimizer)
     Alp.get_option(m, :disc_var_pick) == 3 && Alp.update_disc_cont_var(m)
 
     if Alp.get_option(m, :partition_scaling_factor_branch)
-        Alp.set_option(m, :partition_scaling_factor, Alp.update_partition_scaling_factor(m, true))    # Only perform for a maximum three times
+        Alp.set_option(
+            m,
+            :partition_scaling_factor,
+            Alp.update_partition_scaling_factor(m, true),
+        )    # Only perform for a maximum three times
     end
 
     return

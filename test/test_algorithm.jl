@@ -590,7 +590,7 @@
 #     @test termination_status(m) == MOI.OTHER_LIMIT
 #     @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-5)
 #     @test isapprox(alp.best_bound, 57.012, atol = 1E-4)
-    
+
 #     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
 # end
 
@@ -937,7 +937,7 @@
         "mip_solver" => HIGHS,
         "presolve_bt" => false,
         "apply_partitioning" => true,
-        "linking_constraints" => false
+        "linking_constraints" => false,
     )
     m = linking_constraints_testing(solver = test_solver)
     JuMP.optimize!(m)
@@ -953,21 +953,20 @@
         "mip_solver" => HIGHS,
         "presolve_bt" => false,
         "apply_partitioning" => true,
-        "linking_constraints" => true
+        "linking_constraints" => true,
     )
     m = linking_constraints_testing(solver = test_solver)
     JuMP.optimize!(m)
     alp = JuMP.backend(m).optimizer.model
     @test isapprox(JuMP.objective_value(m), -0.5294000135, atol = 1E-5)
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
-    @test in(Set{Any}([1,2]), alp.linking_constraints_info[[1,2]])
-    @test in(Set{Any}([1,2,3]), alp.linking_constraints_info[[1,2]])
-    @test in(Set{Any}([1,2,4]), alp.linking_constraints_info[[1,2]])
-    @test in(Set{Any}([1,3]), alp.linking_constraints_info[[1,3]])
-    @test in(Set{Any}([1,2,3]), alp.linking_constraints_info[[1,3]])
-    @test in(Set{Any}([1,3,4]), alp.linking_constraints_info[[1,3]])
-    @test in(Set{Any}([1,4]), alp.linking_constraints_info[[1,4]])
-    @test in(Set{Any}([1,2,4]), alp.linking_constraints_info[[1,4]])
-    @test in(Set{Any}([1,3,4]), alp.linking_constraints_info[[1,4]])
-
+    @test in(Set{Any}([1, 2]), alp.linking_constraints_info[[1, 2]])
+    @test in(Set{Any}([1, 2, 3]), alp.linking_constraints_info[[1, 2]])
+    @test in(Set{Any}([1, 2, 4]), alp.linking_constraints_info[[1, 2]])
+    @test in(Set{Any}([1, 3]), alp.linking_constraints_info[[1, 3]])
+    @test in(Set{Any}([1, 2, 3]), alp.linking_constraints_info[[1, 3]])
+    @test in(Set{Any}([1, 3, 4]), alp.linking_constraints_info[[1, 3]])
+    @test in(Set{Any}([1, 4]), alp.linking_constraints_info[[1, 4]])
+    @test in(Set{Any}([1, 2, 4]), alp.linking_constraints_info[[1, 4]])
+    @test in(Set{Any}([1, 3, 4]), alp.linking_constraints_info[[1, 4]])
 end

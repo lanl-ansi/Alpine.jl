@@ -3647,7 +3647,7 @@
         "nlp_solver" => IPOPT,
         "mip_solver" => HIGHS,
         "presolve_bt" => true,
-        "linking_constraints" => false
+        "linking_constraints" => false,
     )
 
     m = Model(test_solver)
