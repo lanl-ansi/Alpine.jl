@@ -3,16 +3,15 @@
 
 Recognize and process nonlinear terms in an expression
 """
-function expr_term_parsing(expr::Any, constr_id::Int, m::Optimizer, level=0; options...)
-   
-   isa(expr, Number) && return expr
+function expr_term_parsing(expr::Any, constr_id::Int, m::Optimizer, level = 0; options...)
+    isa(expr, Number) && return expr
     cnt = 0
     for node in expr.args
         cnt += 1
         if isa(node, Float64) || isa(node, Int64) || isa(node, Symbol)
             continue
         elseif node.head == :call
-            expr.args[cnt] = Alp.expr_term_parsing(node, constr_id, m, level+1)
+            expr.args[cnt] = Alp.expr_term_parsing(node, constr_id, m, level + 1)
         elseif node.head == :ref
             continue
         else
@@ -66,39 +65,50 @@ function detect_nonconvex_terms(expr::Any, constr_id::Int, m::Optimizer; kwargs.
     return expr # if no structure is detected, simply return the original tree
 end
 
-function store_nonconvex_term(m::Optimizer, nl_key::Any, var_idxs::Any, term_type::Symbol, operator::Symbol, evaluator::Function, bd_resolver::Function, discvar_collector::Function)
-
+function store_nonconvex_term(
+    m::Optimizer,
+    nl_key::Any,
+    var_idxs::Any,
+    term_type::Symbol,
+    operator::Symbol,
+    evaluator::Function,
+    bd_resolver::Function,
+    discvar_collector::Function,
+)
     l_cnt = length(keys(m.linear_terms))
     nl_cnt = length(keys(m.nonconvex_terms))
 
-    y_idx = m.num_var_orig + nl_cnt + l_cnt  + 1   # y is always lifted var
+    y_idx = m.num_var_orig + nl_cnt + l_cnt + 1   # y is always lifted var
     lifted_var_ref = Expr(:ref, :x, y_idx)
     lifted_constr_ref = Alp.build_constr_block(y_idx, var_idxs, operator)
 
-    m.nonconvex_terms[nl_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                    :id => nl_cnt + 1,
-                                    :y_idx => y_idx,
-                                    :y_type => Alp.resolve_lifted_var_type([m.var_type[k] for k in var_idxs], operator),
-                                    :var_idxs => var_idxs,
-                                    :ref => nl_key,
-                                    :evaluator => evaluator,
-                                    :lifted_constr_ref => lifted_constr_ref,
-                                    :constr_id => Set(),
-                                    :nonlinear_type => term_type,
-                                    :convexified => false,
-                                    :bound_resolver => bd_resolver,
-                                    :discvar_collector => discvar_collector)
+    m.nonconvex_terms[nl_key] = Dict(
+        :lifted_var_ref => lifted_var_ref,
+        :id => nl_cnt + 1,
+        :y_idx => y_idx,
+        :y_type =>
+            Alp.resolve_lifted_var_type([m.var_type[k] for k in var_idxs], operator),
+        :var_idxs => var_idxs,
+        :ref => nl_key,
+        :evaluator => evaluator,
+        :lifted_constr_ref => lifted_constr_ref,
+        :constr_id => Set(),
+        :nonlinear_type => term_type,
+        :convexified => false,
+        :bound_resolver => bd_resolver,
+        :discvar_collector => discvar_collector,
+    )
 
     m.term_seq[nl_cnt+l_cnt+1] = nl_key                              # Assistive information
 
     # push!(m.var_type, :Cont)  # TODO check if this replacement is good since additional constraints should be able to sufficiently constraint the type
     push!(m.var_type, m.nonconvex_terms[nl_key][:y_type])            # Keep track of the lifted var type
-    Alp.get_option(m, :log_level) > 199 && println("found lifted $(term_type) term $(lifted_constr_ref)")
+    Alp.get_option(m, :log_level) > 199 &&
+        println("found lifted $(term_type) term $(lifted_constr_ref)")
     return y_idx
 end
 
 function store_linear_term(m::Optimizer, term_key::Any, expr::Any)#, bound_resolver::Function)
-
     l_cnt = length(keys(m.linear_terms))
     nl_cnt = length(keys(m.nonconvex_terms))
 
@@ -107,19 +117,25 @@ function store_linear_term(m::Optimizer, term_key::Any, expr::Any)#, bound_resol
     lifted_var_ref = Expr(:ref, :x, y_idx)
     lifted_constr_ref = Expr(:call, :(==), lifted_var_ref, expr)
 
-    m.linear_terms[term_key] = Dict(:lifted_var_ref => lifted_var_ref,
-                                    :id => length(keys(m.linear_terms)) + 1,
-                                    :ref => term_key,
-                                    :y_idx => y_idx,
-                                    :y_type => Alp.resolve_lifted_var_type([m.var_type[k[2]] for k in term_key[:coef_var]], :+),
-                                    :evaluator => linear,
-                                    :lifted_constr_ref => lifted_constr_ref,
-                                    :constr_id => Set(),
-                                    :bound_resolver => nothing)
+    m.linear_terms[term_key] = Dict(
+        :lifted_var_ref => lifted_var_ref,
+        :id => length(keys(m.linear_terms)) + 1,
+        :ref => term_key,
+        :y_idx => y_idx,
+        :y_type => Alp.resolve_lifted_var_type(
+            [m.var_type[k[2]] for k in term_key[:coef_var]],
+            :+,
+        ),
+        :evaluator => linear,
+        :lifted_constr_ref => lifted_constr_ref,
+        :constr_id => Set(),
+        :bound_resolver => nothing,
+    )
 
-    m.term_seq[l_cnt+nl_cnt + 1] = term_key
+    m.term_seq[l_cnt+nl_cnt+1] = term_key
     push!(m.var_type, m.linear_terms[term_key][:y_type]) # Keep track of the lifted var type
-    Alp.get_option(m, :log_level) > 199 && println("found lifted linear term $(lifted_var_ref) = $expr")
+    Alp.get_option(m, :log_level) > 199 &&
+        println("found lifted linear term $(lifted_var_ref) = $expr")
 
     return y_idx
 end
@@ -135,7 +151,6 @@ function lift_nonconvex_term(m::Optimizer, nl_key, constr_id::Int, scalar = 1.0)
 end
 
 function lift_linear_term(m::Optimizer, term_key, constr_id::Int)
-
     push!(m.linear_terms[term_key][:constr_id], constr_id)
     return m.linear_terms[term_key][:lifted_var_ref]
 
@@ -143,7 +158,6 @@ function lift_linear_term(m::Optimizer, term_key, constr_id::Int)
 end
 
 function detect_linear_term(expr::Any, constr_id::Int, m::Optimizer)
-
     @assert (expr.head == :call || expr.head == :ref)
     coef_fetch = Dict(:+ => 1.0, :- => -1.0)
 
@@ -156,42 +170,57 @@ function detect_linear_term(expr::Any, constr_id::Int, m::Optimizer)
         scalar = 0.0
         coef_var = Set()
         for i in 2:length(expr.args)  # TODO: Consider recursive operation
-
             if isa(expr.args[i], Float64) || isa(expr.args[i], Int)
-                (i == 2) ? scalar=expr.args[i] : scalar+=coef_fetch[expr.args[1]]*expr.args[i]
+                (i == 2) ? scalar = expr.args[i] :
+                scalar += coef_fetch[expr.args[1]] * expr.args[i]
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue #should never happen
-            if (expr.args[i].head==:ref) && isa(expr.args[i].args[2], Int)
-                (i == 2) ? push!(coef_var, (1.0, expr.args[i].args[2])) : push!(coef_var, (coef_fetch[expr.args[1]],expr.args[i].args[2]))
+            if (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int)
+                (i == 2) ? push!(coef_var, (1.0, expr.args[i].args[2])) :
+                push!(coef_var, (coef_fetch[expr.args[1]], expr.args[i].args[2]))
                 continue
             end
 
             # Specical Check
-            if expr.args[i].head == :call && expr.args[i].args[1] == :* && length(expr.args[i].args) == 3
-                sub_coef = [j for j in expr.args[i].args if (isa(j, Int) || isa(j, Float64))]
-                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(typeof(j))) && j.head == :ref)]
+            if expr.args[i].head == :call &&
+               expr.args[i].args[1] == :* &&
+               length(expr.args[i].args) == 3
+                sub_coef =
+                    [j for j in expr.args[i].args if (isa(j, Int) || isa(j, Float64))]
+                sub_vars = [
+                    j.args[2] for j in expr.args[i].args if
+                    ((:head in fieldnames(typeof(j))) && j.head == :ref)
+                ]
                 (isempty(sub_coef) || isempty(sub_vars)) && return false, expr
                 (length(sub_coef) != 1 || length(sub_vars) != 1) && return false, expr
-                (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
+                (i == 2) ? push!(coef_var, (1.0 * sub_coef[1], sub_vars[1])) :
+                push!(coef_var, (coef_fetch[expr.args[1]] * sub_coef[1], sub_vars[1]))
                 continue
             end
 
             # General Check
-            if expr.args[i].head == :call && expr.args[i].args[1] in [:-,:+] && length(expr.args[i].args) == 2 # resolve -(2) or -(x) terms
+            if expr.args[i].head == :call &&
+               expr.args[i].args[1] in [:-, :+] &&
+               length(expr.args[i].args) == 2 # resolve -(2) or -(x) terms
                 expr.args[i].args[1] == :+ ? sub_coef = [1.0] : sub_coef = [-1.0]
-                sub_vars = [j.args[2] for j in expr.args[i].args if ((:head in fieldnames(typeof(j))) && j.head == :ref)]
+                sub_vars = [
+                    j.args[2] for j in expr.args[i].args if
+                    ((:head in fieldnames(typeof(j))) && j.head == :ref)
+                ]
                 isempty(sub_vars) && return false, expr
                 length(sub_vars) != 1 && return false, expr
-                (i == 2) ? push!(coef_var, (1.0*sub_coef[1], sub_vars[1])) : push!(coef_var, (coef_fetch[expr.args[1]]*sub_coef[1], sub_vars[1]))
+                (i == 2) ? push!(coef_var, (1.0 * sub_coef[1], sub_vars[1])) :
+                push!(coef_var, (coef_fetch[expr.args[1]] * sub_coef[1], sub_vars[1]))
             else
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)  # Recursive detection
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)  # Recursive detection
                 down_check ? expr.args[i] = linear_lift_var : return false, expr
                 push!(coef_var, (1.0, expr.args[i].args[2]))
             end
         end
         # By reaching here, it is already certain that we have found the term, always treat with :+
-        term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
+        term_key = Dict(:scalar => scalar, :coef_var => coef_var, :sign => :+)
         term_key in keys(m.linear_terms) || Alp.store_linear_term(m, term_key, expr)
         return true, Alp.lift_linear_term(m, term_key, constr_id)
     elseif expr.args[1] in [:*] && length(expr.args) == 3
@@ -200,13 +229,16 @@ function detect_linear_term(expr::Any, constr_id::Int, m::Optimizer)
         coef_var = Set()
 
         sub_coef = [i for i in expr.args if (isa(i, Int) || isa(i, Float64))]
-        sub_vars = [i.args[2] for i in expr.args if ((:head in fieldnames(typeof(i))) && i.head == :ref)]
+        sub_vars = [
+            i.args[2] for
+            i in expr.args if ((:head in fieldnames(typeof(i))) && i.head == :ref)
+        ]
         (isempty(sub_coef) || isempty(sub_vars)) && return false, expr
         (length(sub_coef) != 1 || length(sub_vars) != 1) && return false, expr
-        push!(coef_var, (1.0*sub_coef[1], sub_vars[1]))
+        push!(coef_var, (1.0 * sub_coef[1], sub_vars[1]))
 
         # By reaching here, it is already certain that we have found the term, always treat with :+
-        term_key = Dict(:scalar=>scalar, :coef_var=>coef_var, :sign=>:+)
+        term_key = Dict(:scalar => scalar, :coef_var => coef_var, :sign => :+)
         term_key in keys(m.linear_terms) || Alp.store_linear_term(m, term_key, expr)
         return true, Alp.lift_linear_term(m, term_key, constr_id)
     end
@@ -215,15 +247,16 @@ function detect_linear_term(expr::Any, constr_id::Int, m::Optimizer)
 end
 
 function basic_linear_bounds(m::Optimizer, k::Any, linear_terms = nothing)
-
     linear_terms === nothing ? linear_terms = m.linear_terms : linear_term = linear_terms
 
     lifted_idx = linear_terms[k][:y_idx]
     ub = 0.0
     lb = 0.0
     for j in linear_terms[k][:ref][:coef_var]
-        (j[1] > 0.0) ? ub += abs(j[1])*m.u_var_tight[j[2]] : ub -= abs(j[1])*m.l_var_tight[j[2]]
-        (j[1] > 0.0) ? lb += abs(j[1])*m.l_var_tight[j[2]] : lb -= abs(j[1])*m.u_var_tight[j[2]]
+        (j[1] > 0.0) ? ub += abs(j[1]) * m.u_var_tight[j[2]] :
+        ub -= abs(j[1]) * m.l_var_tight[j[2]]
+        (j[1] > 0.0) ? lb += abs(j[1]) * m.l_var_tight[j[2]] :
+        lb -= abs(j[1]) * m.u_var_tight[j[2]]
     end
     lb += linear_terms[k][:ref][:scalar]
     ub += linear_terms[k][:ref][:scalar]
@@ -238,13 +271,12 @@ function basic_linear_bounds(m::Optimizer, k::Any, linear_terms = nothing)
 end
 
 function basic_linear_bounds(m::Optimizer, k::Any, d::Dict)
-
     lifted_idx = m.linear_terms[k][:y_idx]
     ub = 0.0
     lb = 0.0
     for j in m.linear_terms[k][:ref][:coef_var]
-        (j[1] > 0.0) ? ub += abs(j[1])*d[j[2]][end] : ub -= abs(j[1])*d[j[2]][1]
-        (j[1] > 0.0) ? lb += abs(j[1])*d[j[2]][1] : lb -= abs(j[1])*d[j[2]][end]
+        (j[1] > 0.0) ? ub += abs(j[1]) * d[j[2]][end] : ub -= abs(j[1]) * d[j[2]][1]
+        (j[1] > 0.0) ? lb += abs(j[1]) * d[j[2]][1] : lb -= abs(j[1]) * d[j[2]][end]
     end
     lb += m.linear_terms[k][:ref][:scalar]
     ub += m.linear_terms[k][:ref][:scalar]
@@ -259,16 +291,17 @@ function basic_linear_bounds(m::Optimizer, k::Any, d::Dict)
     return d
 end
 
-
 ## Evaluators ##
-bpml(k,vec) = prod([vec[i] for i in k[:var_idxs]])
+bpml(k, vec) = prod([vec[i] for i in k[:var_idxs]])
 discretemulti(k, vec) = prod([vec[i] for i in k[:var_idxs]])
 binprod(k, vec) = prod([vec[i] for i in k[:var_idxs]])
-binlin(k,vec) = prod([vec[i] for i in k[:var_idxs]])
-bilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
-multilinear(k,vec) = prod([vec[i] for i in k[:var_idxs]])
+binlin(k, vec) = prod([vec[i] for i in k[:var_idxs]])
+bilinear(k, vec) = prod([vec[i] for i in k[:var_idxs]])
+multilinear(k, vec) = prod([vec[i] for i in k[:var_idxs]])
 monomial(k, vec) = vec[k[:var_idxs][1]]^2
-linear(k, vec) = k[:ref][:scalar] .+ sum([i[1]*vec[i[2]] for i in k[:ref][:coef_var]])
+function linear(k, vec)
+    return k[:ref][:scalar] .+ sum([i[1] * vec[i[2]] for i in k[:ref][:coef_var]])
+end
 
 """
     Recognize prodcuts of binary variables and multilinear products
@@ -294,10 +327,15 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_types, m.var_type[expr.args[i].args[2]])
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_types, m.var_type[expr.args[i].args[2]])
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
                 push!(var_types, m.var_type[linear_lift_var.args[2]])
@@ -357,7 +395,16 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
         if ip_idx < 0 # binlin term if no integer variable
             binlin_key = [Expr(:ref, :x, bp_idx), Expr(:ref, :x, ml_idx)]
             binlin_idxs = [bp_idx; ml_idx]
-            binlin_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, binlin_key, binlin_idxs, :BINLIN, :*, binlin, basic_binlin_bounds, collect_binlin_discvar)
+            binlin_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+                m,
+                binlin_key,
+                binlin_idxs,
+                :BINLIN,
+                :*,
+                binlin,
+                basic_binlin_bounds,
+                collect_binlin_discvar,
+            )
             return true, Alp.lift_nonconvex_term(m, binlin_key, constr_id, scalar)
         end
 
@@ -365,7 +412,16 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
         binlin_key = [Expr(:ref, :x, bp_idx)]
         # binlin_idxs = [bp_idx; intlin_idx]
         binlin_idxs = [bp_idx]
-        binlin_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, binlin_key, binlin_idxs, :BINLIN, :*, binlin, basic_binlin_bounds, collect_binlin_discvar)
+        binlin_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+            m,
+            binlin_key,
+            binlin_idxs,
+            :BINLIN,
+            :*,
+            binlin,
+            basic_binlin_bounds,
+            collect_binlin_discvar,
+        )
         return true, Alp.lift_nonconvex_term(m, binlin_key, constr_id, scalar)
     end
 
@@ -373,7 +429,6 @@ function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
 end
 
 function basic_binlin_bounds(m::Optimizer, k::Any)
-
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
     prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
@@ -395,7 +450,6 @@ function basic_binlin_bounds(m::Optimizer, k::Any)
 end
 
 function basic_binlin_bounds(m::Optimizer, k::Any, d::Dict)
-
     lifted_idx = m.nonconvex_terms[k][:y_idx]
 
     prod_idxs = [i for i in m.nonconvex_terms[k][:var_idxs] if m.var_type[i] == :Cont]
@@ -416,7 +470,7 @@ function basic_binlin_bounds(m::Optimizer, k::Any, d::Dict)
     return d
 end
 
-function collect_binlin_discvar(m::Optimizer, k::Any; var_bowl=nothing)
+function collect_binlin_discvar(m::Optimizer, k::Any; var_bowl = nothing)
     # Exact linearization exists
     return
 end
@@ -425,7 +479,6 @@ end
     Recognize products of binary variables : x1 * x2 * .. * xN
 """
 function detect_binprod_term(expr::Any, constr_id::Int, m::Optimizer)
-
     @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
@@ -437,10 +490,13 @@ function detect_binprod_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
             !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Bin && return false, expr
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 m.var_type[linear_lift_var.args[2]] != :Bin && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
@@ -449,7 +505,16 @@ function detect_binprod_term(expr::Any, constr_id::Int, m::Optimizer)
         end
         if length(var_idxs) >= 2
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
-            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, term_key, var_idxs, :BINPROD, :*, binprod, basic_binprod_bounds, collect_binprod_discvar)
+            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+                m,
+                term_key,
+                var_idxs,
+                :BINPROD,
+                :*,
+                binprod,
+                basic_binprod_bounds,
+                collect_binprod_discvar,
+            )
             return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
         end
     elseif (expr.args[1] == :^) && length(expr.args) == 3
@@ -463,10 +528,13 @@ function detect_binprod_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
             !isempty(var_idxs) && m.var_type[var_idxs[end]] != :Bin && return false, expr
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 m.var_type[linear_lift_var.args[2]] != :Bin && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
@@ -475,7 +543,16 @@ function detect_binprod_term(expr::Any, constr_id::Int, m::Optimizer)
         end
         if length(var_idxs) == 1 && power_scalar > 2.0 && mod(power_scalar, 1.0) == 0.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
-            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, term_key, var_idxs, :BINPROD, :*, binprod, basic_binprod_bounds, collect_binprod_discvar)
+            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+                m,
+                term_key,
+                var_idxs,
+                :BINPROD,
+                :*,
+                binprod,
+                basic_binprod_bounds,
+                collect_binprod_discvar,
+            )
             return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
         end
     end
@@ -484,7 +561,6 @@ function detect_binprod_term(expr::Any, constr_id::Int, m::Optimizer)
 end
 
 function basic_binprod_bounds(m::Optimizer, k::Any)
-
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     m.l_var_tight[lifted_idx] = 0
     m.u_var_tight[lifted_idx] = 1
@@ -493,7 +569,6 @@ function basic_binprod_bounds(m::Optimizer, k::Any)
 end
 
 function basic_binprod_bounds(m::Optimizer, k::Any, d::Dict)
-
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     d[lifted_idx][1] = 0
     d[lifted_idx][end] = 1
@@ -501,11 +576,10 @@ function basic_binprod_bounds(m::Optimizer, k::Any, d::Dict)
     return d
 end
 
-function collect_binprod_discvar(m::Optimizer, k::Any; var_bowl=nothing)
+function collect_binprod_discvar(m::Optimizer, k::Any; var_bowl = nothing)
     # Exact linearization exists
     return
 end
-
 
 """
     Future MONOMIAL Cluster
@@ -514,7 +588,6 @@ end
     Recognize monomial terms: x^2 or x * x, where x is continuous
 """
 function detect_bilinear_term(expr::Any, constr_id::Int, m::Optimizer)
-
     @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*)  # confirm head (:*)
         # ----- Pattern : coefficient * x * y  ------ #
@@ -527,13 +600,18 @@ function detect_bilinear_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr    # Don't consider the discrete variable
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
+            !isempty(var_idxs) &&
+                m.var_type[var_idxs[end]] in [:Bin, :Int] &&
+                return false, expr    # Don't consider the discrete variable
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr  # Don't consider the discrete variable
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false, expr  # Don't consider the discrete variable
                 continue
             end
         end
@@ -541,11 +619,22 @@ function detect_bilinear_term(expr::Any, constr_id::Int, m::Optimizer)
         # Cofirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && length(Set(var_idxs)) == 2
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
-            if term_key in keys(m.nonconvex_terms) || reverse(term_key) in keys(m.nonconvex_terms)
-                term_key in keys(m.nonconvex_terms) ? term_key = term_key : term_key = reverse(term_key)
+            if term_key in keys(m.nonconvex_terms) ||
+               reverse(term_key) in keys(m.nonconvex_terms)
+                term_key in keys(m.nonconvex_terms) ? term_key = term_key :
+                term_key = reverse(term_key)
                 return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
             else
-                Alp.store_nonconvex_term(m, term_key, var_idxs, :BILINEAR, :*, bilinear, Alp.basic_monomial_bounds, collect_monomial_discvar)
+                Alp.store_nonconvex_term(
+                    m,
+                    term_key,
+                    var_idxs,
+                    :BILINEAR,
+                    :*,
+                    bilinear,
+                    Alp.basic_monomial_bounds,
+                    collect_monomial_discvar,
+                )
                 return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
             end
         end
@@ -555,7 +644,6 @@ function detect_bilinear_term(expr::Any, constr_id::Int, m::Optimizer)
 end
 
 function detect_multilinear_term(expr::Any, constr_id::Int, m::Optimizer)
-
     @assert (expr.head == :call || expr.head == :ref)
     if (expr.args[1] == :*) # Pattern: coefficients * x * y * z ...
         var_idxs = []
@@ -566,19 +654,33 @@ function detect_multilinear_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
+            !isempty(var_idxs) &&
+                m.var_type[var_idxs[end]] in [:Bin, :Int] &&
+                return false, expr
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false, expr
                 continue
             end
         end
         if length(var_idxs) > 2
             term_key = [Expr(:ref, :x, idx) for idx in var_idxs]
-            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear, Alp.basic_monomial_bounds, collect_monomial_discvar)
+            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+                m,
+                term_key,
+                var_idxs,
+                :MULTILINEAR,
+                :*,
+                multilinear,
+                Alp.basic_monomial_bounds,
+                collect_monomial_discvar,
+            )
             return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
         end
     elseif (expr.args[1] == :^) && length(expr.args) == 3 # Pattern: (x)^(>2)
@@ -591,19 +693,33 @@ function detect_multilinear_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
+            !isempty(var_idxs) &&
+                m.var_type[var_idxs[end]] in [:Bin, :Int] &&
+                return false, expr # Avoid fetching terms with discrete variables
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false, expr
                 continue
             end
         end
         if length(var_idxs) == 1 && power_scalar > 2.0 && mod(power_scalar, 1.0) == 0.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:power_scalar]
-            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, term_key, var_idxs, :MULTILINEAR, :*, multilinear, Alp.basic_monomial_bounds, collect_monomial_discvar)
+            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+                m,
+                term_key,
+                var_idxs,
+                :MULTILINEAR,
+                :*,
+                multilinear,
+                Alp.basic_monomial_bounds,
+                collect_monomial_discvar,
+            )
             return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
         end
     end
@@ -612,7 +728,6 @@ function detect_multilinear_term(expr::Any, constr_id::Int, m::Optimizer)
 end
 
 function detect_monomial_term(expr::Any, constr_id::Int, m::Optimizer)
-
     if (expr.args[1] == :^) && length(expr.args) == 3
         # Pattern: (x)^(2)
         var_idxs = []
@@ -624,25 +739,39 @@ function detect_monomial_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
+            !isempty(var_idxs) &&
+                m.var_type[var_idxs[end]] in [:Bin, :Int] &&
+                return false, expr # Avoid fetching terms with discrete variables
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false, expr # Avoid fetching terms with discrete variables
                 continue
             end
         end
 
         # Detect 1.0 in the exponent and return only the variable
-        if length(var_idxs) == 1 && power_scalar == 1.0 
+        if length(var_idxs) == 1 && power_scalar == 1.0
             return false, Expr(:call, expr.args[2])
-        end 
-        
+        end
+
         if length(var_idxs) == 1 && power_scalar == 2.0
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:2]
-            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial, Alp.basic_monomial_bounds, collect_monomial_discvar)
+            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+                m,
+                term_key,
+                var_idxs,
+                :MONOMIAL,
+                :*,
+                monomial,
+                Alp.basic_monomial_bounds,
+                collect_monomial_discvar,
+            )
             return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
         end
     end
@@ -658,20 +787,34 @@ function detect_monomial_term(expr::Any, constr_id::Int, m::Optimizer)
                 continue
             end
             (isa(expr.args[i], Symbol)) && continue
-            (expr.args[i].head == :ref) && isa(expr.args[i].args[2], Int) && push!(var_idxs, expr.args[i].args[2])
-            !isempty(var_idxs) && m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+            (expr.args[i].head == :ref) &&
+                isa(expr.args[i].args[2], Int) &&
+                push!(var_idxs, expr.args[i].args[2])
+            !isempty(var_idxs) &&
+                m.var_type[var_idxs[end]] in [:Bin, :Int] &&
+                return false, expr # Avoid fetching terms with discrete variables
             if (expr.args[i].head == :call)
-                down_check, linear_lift_var = Alp.detect_linear_term(expr.args[i], constr_id, m)
+                down_check, linear_lift_var =
+                    Alp.detect_linear_term(expr.args[i], constr_id, m)
                 !down_check && return false, expr
                 push!(var_idxs, linear_lift_var.args[2])
-                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false ,expr # Avoid fetching terms with discrete variables
+                m.var_type[var_idxs[end]] in [:Bin, :Int] && return false, expr # Avoid fetching terms with discrete variables
                 continue
             end
         end
         # Confirm detection of pattern A and perform store & lifting procedures
         if (length(var_idxs) == 2) && (length(Set(var_idxs)) == 1)
             term_key = [Expr(:ref, :x, var_idxs[1]) for i in 1:2]
-            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(m, term_key, var_idxs, :MONOMIAL, :*, monomial, Alp.basic_monomial_bounds, collect_monomial_discvar)
+            term_key in keys(m.nonconvex_terms) || Alp.store_nonconvex_term(
+                m,
+                term_key,
+                var_idxs,
+                :MONOMIAL,
+                :*,
+                monomial,
+                Alp.basic_monomial_bounds,
+                collect_monomial_discvar,
+            )
             return true, Alp.lift_nonconvex_term(m, term_key, constr_id, scalar)
         end
     end
@@ -680,7 +823,6 @@ function detect_monomial_term(expr::Any, constr_id::Int, m::Optimizer)
 end
 
 function basic_monomial_bounds(m::Optimizer, k::Any)
-
     lifted_idx = m.nonconvex_terms[k][:lifted_var_ref].args[2]
     cnt = 0
     bound = []
@@ -710,7 +852,6 @@ function basic_monomial_bounds(m::Optimizer, k::Any)
 end
 
 function basic_monomial_bounds(m::Optimizer, nlk::Any, d::Dict)
-
     lifted_idx = m.nonconvex_terms[nlk][:lifted_var_ref].args[2]
     cnt = 0
     bound = []
@@ -738,11 +879,12 @@ function basic_monomial_bounds(m::Optimizer, nlk::Any, d::Dict)
     return d
 end
 
-function collect_monomial_discvar(m::Optimizer, k::Any; var_bowl=nothing)
+function collect_monomial_discvar(m::Optimizer, k::Any; var_bowl = nothing)
     for var in k
         @assert isa(var.args[2], Int)
         if var_bowl === nothing
-            var.args[2] in m.candidate_disc_vars || push!(m.candidate_disc_vars, var.args[2])
+            var.args[2] in m.candidate_disc_vars ||
+                push!(m.candidate_disc_vars, var.args[2])
         else
             var.args[2] in var_bowl || push!(var_bowl, var.args[2])
         end
@@ -754,8 +896,15 @@ end
     Recognize convex constraints
     A catch for type-A convex constraint expression
 """
-function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scalar_bin=[], idxs_bin=[], power_bin=[], rhs=0.0)
-   
+function resolve_convex_constr(
+    expr::Any,
+    m::Optimizer = nothing,
+    idx::Int = 0,
+    scalar_bin = [],
+    idxs_bin = [],
+    power_bin = [],
+    rhs = 0.0,
+)
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
         sense = expr.args[1]
@@ -771,13 +920,14 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
 
     for sub in subs
         (isa(sub, Float64) || isa(sub, Int) || isa(sub, Symbol)) && return false
-        !(sub.args[1] in [:+,:-,:*]) && return false
+        !(sub.args[1] in [:+, :-, :*]) && return false
         (sub.head == :ref) && return false
         (sub.head == :call) && (length(sub.args) < 3) && return false
         if sub.args[1] in [:-, :+]
             for i in 2:length(sub.args)
                 if isa(sub.args[i], Float64) || isa(sub.args[i], Int)
-                    (sub.args[1] == [:-]) && ((i == 1) ? rhs += sub.args[i] : rhs -= sub.args[i])
+                    (sub.args[1] == [:-]) &&
+                        ((i == 1) ? rhs += sub.args[i] : rhs -= sub.args[i])
                     (sub.args[1] == [:+]) && (rhs += sub.args[i])
                 elseif (sub.args[i].head == :ref)
                     return false
@@ -790,7 +940,9 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
                     else
                         return false
                     end
-                    (sub.args[1] == :-) && ((i == 2) ? push!(scalar_bin, scalar) : push!(scalar_bin, -scalar))
+                    (sub.args[1] == :-) && (
+                        (i == 2) ? push!(scalar_bin, scalar) : push!(scalar_bin, -scalar)
+                    )
                     (sub.args[1] == :+) && (push!(scalar_bin, scalar))
                 end
             end
@@ -840,30 +992,41 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
         # sum_i (c_i*x_i^p) <= K (K > 0, p >= 1 and x_i >= 0)                           => Convex
         lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
         power_check = [i > 1.0 for i in power_bin]
-        (convex_type == :Unknown) && prod(lb_check) && prod(power_check) && (convex_type = :convexB)
+        (convex_type == :Unknown) &&
+            prod(lb_check) &&
+            prod(power_check) &&
+            (convex_type = :convexB)
 
         # Convex constraint Type-C
         # sum_i (c_i*x_i^p) >= K (K > 0, 0 < p < 1 and x_i >= 0)                        => Convex
         power_check = [i < 1 && i > 0.0 for i in power_bin]
         lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
-        (convex_type == :Unknown) && prod(power_check) && prod(power_check) && (convex_type = :convexC)
+        (convex_type == :Unknown) &&
+            prod(power_check) &&
+            prod(power_check) &&
+            (convex_type = :convexC)
 
         # Convex constraint Type-D
         # sum_i (c_i*x_i^p) <= K (K > 0, p <= 0 and x_i > 0)                            => Convex
         power_check = [i <= 0.0 for i in power_bin]
-        lb_check =  [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
-        (convex_type == :Unknown) && prod(power_check) && prod(power_check) && (convex_type = :convexD)
+        lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
+        (convex_type == :Unknown) &&
+            prod(power_check) &&
+            prod(power_check) &&
+            (convex_type = :convexD)
 
         # If we really cannot figure out what is going on...
         (convex_type == :Unknown) && return false
 
         # Recording the nonlinear info
-        m.nonlinear_constrs[idx] = Dict(:expr_idx => idx,
-                                        :convex_type => convex_type,
-                                        :nonlinear_type => :convex,
-                                        :expr_orig => :constraints,
-                                        :expr_ref => deepcopy(expr),
-                                        :convexified => false)
+        m.nonlinear_constrs[idx] = Dict(
+            :expr_idx => idx,
+            :convex_type => convex_type,
+            :nonlinear_type => :convex,
+            :expr_orig => :constraints,
+            :expr_ref => deepcopy(expr),
+            :convexified => false,
+        )
 
         # Recording the un-changed expression
         m.bounding_constr_expr_mip[idx] = expr
@@ -872,20 +1035,22 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
         m.constr_structure[idx] = :convex
 
         # Recording the function for adding constraints
-        m.bounding_constr_mip[idx] = Dict(:idx => idx,
-                                          :expr => expr,
-                                          :sense => sense,
-                                          :coefs => scalar_bin,
-                                          :vars => idxs_bin,
-                                          :rhs => rhs,
-                                          :cnt => length(idxs_bin),
-                                          :powers => power_bin)
+        m.bounding_constr_mip[idx] = Dict(
+            :idx => idx,
+            :expr => expr,
+            :sense => sense,
+            :coefs => scalar_bin,
+            :vars => idxs_bin,
+            :rhs => rhs,
+            :cnt => length(idxs_bin),
+            :powers => power_bin,
+        )
 
         Alp.get_option(m, :log_level) > 99 && println("CONVEX Constraint $(idx): $(expr)")
 
         return true
     elseif expr_orig == :obj
-        minimum 
+        minimum
         convex_type = :Unknown
         (expr_isconst(m.obj_expr_orig)) && return true
         # Follows the same mapping to convex constraints
@@ -903,23 +1068,31 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
         # sum_i (c_i*x_i^p) (p >= 1 and x_i >= 0)                           => Convex
         lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
         power_check = [i > 1.0 for i in power_bin]
-        (convex_type == :Unknown) && prod(lb_check) && prod(power_check) && (convex_type = :convexB)
+        (convex_type == :Unknown) &&
+            prod(lb_check) &&
+            prod(power_check) &&
+            (convex_type = :convexB)
 
         # Type-D: Convex objective function
         # sum_i (c_i*x_i^p) (p <= 0 and x_i > 0) => Convex
         power_check = [i <= 0.0 for i in power_bin]
-        lb_check =  [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
-        (convex_type == :Unknown) && prod(power_check) && prod(power_check) && (convex_type = :convexD)
+        lb_check = [m.l_var_orig[i.args[2]] >= 0.0 for i in idxs_bin]
+        (convex_type == :Unknown) &&
+            prod(power_check) &&
+            prod(power_check) &&
+            (convex_type = :convexD)
 
         convex_type == :Unknown && return false
 
         # Recording the nonlinear info
-        m.nonlinear_constrs[idx] = Dict(:expr_orig => :objective,
-                                        :expr_idx => idx,
-                                        :convex_type => convex_type,
-                                        :nonlinear_type => :convex,
-                                        :expr_ref => deepcopy(expr),
-                                        :convexified => false)
+        m.nonlinear_constrs[idx] = Dict(
+            :expr_orig => :objective,
+            :expr_idx => idx,
+            :convex_type => convex_type,
+            :nonlinear_type => :convex,
+            :expr_ref => deepcopy(expr),
+            :convexified => false,
+        )
 
         # Recording the un-changed expression
         m.bounding_obj_expr_mip = expr
@@ -928,12 +1101,14 @@ function resolve_convex_constr(expr::Any, m::Optimizer=nothing, idx::Int=0, scal
         m.obj_structure = :convex
 
         # Record a function that can be used to add objective function
-        m.bounding_obj_mip = Dict(:sense => nothing,
-                                  :coefs => scalar_bin,
-                                  :vars => idxs_bin,
-                                  :rhs => -rhs,
-                                  :cnt => length(idxs_bin),
-                                  :powers => power_bin)
+        m.bounding_obj_mip = Dict(
+            :sense => nothing,
+            :coefs => scalar_bin,
+            :vars => idxs_bin,
+            :rhs => -rhs,
+            :cnt => length(idxs_bin),
+            :powers => power_bin,
+        )
 
         Alp.get_option(m, :log_level) > 99 && println("CONVEX Objective: $(expr)")
         return true

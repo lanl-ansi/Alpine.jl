@@ -21,7 +21,7 @@ Here are a few general solver options which control the performance of Alpine:
 ## Adaptive Partitioning Options
 * `apply_partitioning (default = true)`: applies Alpine's built-in MIP-based partitioning algorithm only when activated; else terminates with the presolve solution.
 
-* `disc_ratio (default = 4)`: used during [`add_adaptive_partition`](@ref) for measuring the width of new partitions relative to the active partition chosen in the sequentially solved lower-bounding MIPs. This value can substantially affect the run time for global convergence; this value can be set to different integer values (>= 4) for various classes of problems. 
+* `partition_scaling_factor (default = 10)`: used during [`add_adaptive_partition`](@ref) for scaling the width of new partitions relative to the active partition chosen in the sequentially-solved lower-bounding MIP models. This value can substantially affect the run time for global convergence; this value can be set to different integer values (>= 4) for various classes of problems. 
 
 * `disc_var_pick (default = 0)`: controls Alpine's algorithm used for selecting variables for partitioning; `0` is for max-cover, `1` is for minimum-vertex-cover. This parameter allows functional inputs.
 

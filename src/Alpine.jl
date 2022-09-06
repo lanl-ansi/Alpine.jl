@@ -6,8 +6,9 @@ using JuMP
 
 import LinearAlgebra: dot, Diagonal
 import Statistics
+import Combinatorics
 
-const _ALPINE_VERSION = "v0.4.3"
+const _ALPINE_VERSION = "v0.5.0"
 const ALPINE_DEBUG = false
 const Alp = Alpine
 
@@ -15,7 +16,7 @@ include("const.jl")
 
 # Engine for high-level algorithmic control and user-interface
 
-include("solver.jl")
+include("solver_options.jl")
 include("MOI_wrapper/MOI_wrapper.jl")
 include("MOI_wrapper/MOI_function2expr.jl")
 
@@ -26,16 +27,16 @@ include("operators.jl")
 # Main algorithm
 include("algorithm.jl")
 include("presolve.jl")
-include("amp.jl")
+include("bounding_model.jl")
 include("embedding.jl")
 include("heuristics.jl")
 
 # Convexification
-include("multi.jl")
-include("tmc.jl")
+include("relaxations.jl")
+include("multilinear.jl")
 
 # Model manipulation and utilities
-include("bounds.jl")
+include("variable_bounds.jl")
 include("utility.jl")
 
 # Logging

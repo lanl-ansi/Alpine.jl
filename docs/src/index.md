@@ -20,7 +20,7 @@ import Pkg
 Pkg.add("Alpine")
 ```
 
-At least one local nonlinear-programming (NLP) solver and a convex mixed-integer programming (MIP) solver are required for running Alpine. If your problem is an NLP, we recommend [Ipopt](https://github.com/jump-dev/Ipopt.jl), and else if your problem is a mixed-integer NLP (MINLP), we recommend [Juniper](https://github.com/lanl-ansi/Juniper.jl). For the underlying MIP solver, [Gurobi](https://github.com/jump-dev/Gurobi.jl) is highly recommended, as it is fast, scaleable and can be used to solve on fairly large-scale non-convex programs. However, the open-source [CBC](https://github.com/jump-dev/Cbc.jl) or [GLPK](https://github.com/jump-dev/GLPK.jl) solver is also compatible with Alpine. For example, Ipopt and GLPK can be installed via the package manager with
+At least one local nonlinear-programming (NLP) solver and a convex mixed-integer programming (MIP) solver are required for running Alpine. If your problem is an NLP, we recommend [Ipopt](https://github.com/jump-dev/Ipopt.jl), and else if your problem is a mixed-integer NLP (MINLP), we recommend [Juniper](https://github.com/lanl-ansi/Juniper.jl). For the underlying MIP solver, [Gurobi](https://github.com/jump-dev/Gurobi.jl) is highly recommended, as it is fast, scaleable and can be used to solve on fairly large-scale non-convex programs. However, the open-source [HiGHS](https://github.com/jump-dev/HiGHS.jl) or [GLPK](https://github.com/jump-dev/GLPK.jl) solver is also compatible with Alpine. For example, Ipopt and Gurobi can be installed via the package manager with
 
 ```julia
 import Pkg
@@ -38,14 +38,44 @@ Pkg.test("Alpine")
 ```
 
 ## Citing Alpine
-If you find Alpine useful in your work, we request you to cite the following paper [\[link\]](https://harshangrjn.github.io/pdf/JOGO_2018.pdf): 
+If you find Alpine useful in your work, we request you to cite the following paper [\[pdf\]](https://harshangrjn.github.io/pdf/JOGO_2018.pdf) [\[pdf\]](http://harshangrjn.github.io/pdf/CP_2016.pdf): 
 ```bibtex
 @article{alpine_JOGO2019,
-  author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
   title = {An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs},
+  author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
   journal = {Journal of Global Optimization},
   year = {2019},
   issn = {1573-2916},
   doi = {10.1007/s10898-018-00734-1},
+}
+
+@inproceedings{alpine_CP2016,
+  title = {Tightening {McCormick} relaxations for nonlinear programs via dynamic multivariate partitioning},
+  author = {Nagarajan, Harsha and Lu, Mowen and Yamangil, Emre and Bent, Russell},
+  booktitle = {International Conference on Principles and Practice of Constraint Programming},
+  pages = {369--387},
+  year = {2016},
+  organization = {Springer},
+  doi = {10.1007/978-3-319-44953-1_24},
+}
+```
+If you find the underlying piecewise polyhedral formulations implemented in Alpine useful in your work, we kindly request that you cite the following papers ([link-1](https://doi.org/10.1016/j.orl.2020.12.002), [link-2](http://www.optimization-online.org/DB_HTML/2022/07/8974.html)): 
+```bibtex
+@article{alpine_ORL2021,
+  title = {Piecewise polyhedral formulations for a multilinear term},
+  author = {Sundar, Kaarthik and Nagarajan, Harsha and Linderoth, Jeff and Wang, Site and Bent, Russell},
+  journal = {Operations Research Letters},
+  volume = {49},
+  number = {1},
+  pages = {144--149},
+  year = {2021},
+  publisher = {Elsevier}
+}
+
+@article{alpine_OptOnline2022,
+    title={Piecewise Polyhedral Relaxations of Multilinear Optimization},
+    author={Kim, Jongeun and Richard, Jean-Philippe P. and Tawarmalani, Mohit},
+    eprinttype={Optimization Online},
+    date={2022}
 }
 ```

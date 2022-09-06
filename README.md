@@ -63,8 +63,8 @@ We are seeking out hard benchmark instances for MINLPs. Please get in touch eith
 If you find Alpine useful in your work, we kindly request that you cite the following papers ([pdf](http://harshangrjn.github.io/pdf/JOGO_2018.pdf), [pdf](http://harshangrjn.github.io/pdf/CP_2016.pdf))
 ```bibtex
 @article{alpine_JOGO2019,
-  author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
   title = {An adaptive, multivariate partitioning algorithm for global optimization of nonconvex programs},
+  author = {Nagarajan, Harsha and Lu, Mowen and Wang, Site and Bent, Russell and Sundar, Kaarthik},
   journal = {Journal of Global Optimization},
   year = {2019},
   issn = {1573-2916},
@@ -81,7 +81,7 @@ If you find Alpine useful in your work, we kindly request that you cite the foll
   doi = {10.1007/978-3-319-44953-1_24},
 }
 ```
-If you find the underlying piecewise polyhedral formulations implemented in Alpine useful in your work, we kindly request that you cite the following paper ([link](https://doi.org/10.1016/j.orl.2020.12.002)): 
+If you find the underlying piecewise polyhedral formulations implemented in Alpine useful in your work, we kindly request that you cite the following papers ([link-1](https://doi.org/10.1016/j.orl.2020.12.002), [link-2](http://www.optimization-online.org/DB_HTML/2022/07/8974.html)): 
 ```bibtex
 @article{alpine_ORL2021,
   title = {Piecewise polyhedral formulations for a multilinear term},
@@ -92,5 +92,12 @@ If you find the underlying piecewise polyhedral formulations implemented in Alpi
   pages = {144--149},
   year = {2021},
   publisher = {Elsevier}
+}
+
+@article{alpine_OptOnline2022,
+    title={Piecewise Polyhedral Relaxations of Multilinear Optimization},
+    author={Kim, Jongeun and Richard, Jean-Philippe P. and Tawarmalani, Mohit},
+    eprinttype={Optimization Online},
+    date={2022}
 }
 ```
