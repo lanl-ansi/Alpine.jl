@@ -525,3 +525,71 @@ function resolve_lifted_var_value(m::Optimizer, sol_vec::Array)
 
     return sol_vec
 end
+
+# Unused functions 
+# function amp_post_λ_upperbound(
+#     m::Optimizer,
+#     λ::Dict,
+#     indices::Any,
+#     dim::Tuple,
+#     d::Dict,
+#     tregions::Vector,
+#     reg = [],
+#     level = 0,
+# )
+#     if level == length(indices)
+#         isempty(tregions[level]) && return
+#         sliced_indices =
+#             Set(collect_indices(λ[indices][:indices], 1, [reg[1]; reg[1] + 1], dim))
+#         for i in 2:length(reg)
+#             sliced_indices = intersect(
+#                 sliced_indices,
+#                 Set(collect_indices(λ[indices][:indices], i, [reg[i], reg[i] + 1], dim)),
+#             )
+#         end
+#         for i in sliced_indices
+#             JuMP.set_upper_bound(λ[indices][:vars][i], (1 / 2)^level)
+#         end
+#         return
+#     end
+
+#     for i in 1:length(tregions[level+1])
+#         push!(reg, tregions[level+1][i])
+#         Alp.amp_post_λ_upperbound(m, λ, indices, dim, d, tregions, reg, level + 1)
+#         length(reg) < level && error("Something is wrong")
+#         length(reg) > level && pop!(reg)
+#     end
+
+#     return
+# end
+
+# function amp_post_λ_upperbound(m::Optimizer, λ::Dict, indices::Any, ub::Float64)
+#     for i in λ[indices][:vars]
+#         JuMP.set_upper_bound(i, ub)
+#     end
+
+#     return
+# end
+
+# function amp_no_good_cut_α(m::Optimizer, α::Dict)
+#     println("Global Incumbent solution objective = $(m.best_obj)")
+
+#     for i in 1:m.bound_sol_pool[:cnt]
+#         (m.bound_sol_pool[:stat][i] == :Cutoff) && (m.bound_sol_pool[:stat][i] = :Alive)
+#         if m.best_obj < m.bound_sol_pool[:obj][i] && m.bound_sol_pool[:stat][i] == :Alive
+#             no_good_idxs = keys(m.bound_sol_pool[:disc][i])
+#             no_good_size = length(no_good_idxs) - 1
+#             JuMP.@constraint(
+#                 m.model_mip,
+#                 sum(α[v][m.bound_sol_pool[:disc][i][v]] for v in no_good_idxs) <=
+#                 no_good_size
+#             )
+#             Alp.get_option(m, :log_level) > 0 && println(
+#                 "!! GLOBAL cuts off POOL_SOL-$(i) POOL_OBJ=$(m.bound_sol_pool[:obj][i])!",
+#             )
+#             m.bound_sol_pool[:stat][i] = :Cutoff
+#         end
+#     end
+
+#     return
+# end
