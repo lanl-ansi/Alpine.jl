@@ -8,11 +8,13 @@ function amp_post_convhull(m::Optimizer; kwargs...)
     β = Dict()  # Lifted variables for exact formulation
 
     # Convexification for non-convex terms
+    contains_multilinear = false
     for k in keys(m.nonconvex_terms)
         nl_type = m.nonconvex_terms[k][:nonlinear_type]
         if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) &&
            (m.nonconvex_terms[k][:convexified] == false)
             λ, α = Alp.amp_convexify_multilinear(m, k, λ, α, d)
+            contains_multilinear = true
         elseif nl_type == :MONOMIAL && !m.nonconvex_terms[k][:convexified]
             λ, α = Alp.amp_convexify_quadratic_univariate(m, k, λ, α, d)
         elseif nl_type == :BINLIN && !m.nonconvex_terms[k][:convexified]
@@ -23,7 +25,7 @@ function amp_post_convhull(m::Optimizer; kwargs...)
     end
 
     # Add lambda linking constraints
-    if m.options.linking_constraints
+    if m.options.linking_constraints && contains_multilinear
         Alp._add_multilinear_linking_constraints(m, λ)
     end
 
