@@ -456,21 +456,6 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
     return
 end
 
-function round_sol(m::Optimizer, relaxed_sol)
-    rounded_sol = copy(relaxed_sol)
-    for i in 1:m.num_var_orig
-        if m.var_type_orig[i] == :Bin
-            relaxed_sol[i] >= 0.5 ? rounded_sol[i] = 1 : rounded_sol[i] = 0
-        elseif m.var_type_orig[i] == :Int
-            rounded_sol[i] = round(relaxed_sol[i])
-        else
-            rounded_sol[i] = relaxed_sol[i]
-        end
-    end
-
-    return rounded_sol
-end
-
 function _fetch_mip_solver_identifier(m::Optimizer; override = "")
     (Alp.get_option(m, :mip_solver) === nothing) && return
     m.mip_solver_id = _get_solver_name(m, :mip_solver, override)

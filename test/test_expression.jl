@@ -3646,7 +3646,7 @@ end
         "minlp_solver" => JUNIPER,
         "nlp_solver" => IPOPT,
         "mip_solver" => HIGHS,
-        "presolve_bt" => true
+        "presolve_bt" => true,
     )
 
     m = Model(test_solver)

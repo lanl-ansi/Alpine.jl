@@ -161,22 +161,22 @@ end
     @test isapprox(objective_value(m), 1.4142135534556992; atol = 1e-3)
 end
 
-@testset " Validation Test || AMP || basic solve || examples/circle_MINLPLib.jl" begin
-    test_solver = optimizer_with_attributes(
-        Alpine.Optimizer,
-        "nlp_solver" => IPOPT,
-        "mip_solver" => PAVITO,
-        "presolve_bt" => false,
-        "partition_scaling_factor" => 15,
-        "max_iter" => 2,
-    )
+# @testset " Validation Test || AMP || basic solve || examples/circle_MINLPLib.jl" begin
+#     test_solver = optimizer_with_attributes(
+#         Alpine.Optimizer,
+#         "nlp_solver" => IPOPT,
+#         "mip_solver" => PAVITO,
+#         "presolve_bt" => false,
+#         "partition_scaling_factor" => 15,
+#         "max_iter" => 2,
+#     )
 
-    m = circle_MINLPLib(solver = test_solver)
+#     m = circle_MINLPLib(solver = test_solver)
 
-    JuMP.optimize!(m)
-    @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(objective_value(m), 4.45670663096; atol = 1E-6)
-end
+#     JuMP.optimize!(m)
+#     @test termination_status(m) == MOI.OPTIMAL
+#     @test isapprox(objective_value(m), 4.45670663096; atol = 1E-6)
+# end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
     test_solver = optimizer_with_attributes(

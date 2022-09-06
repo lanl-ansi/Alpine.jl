@@ -255,7 +255,7 @@ function presolve(m::Optimizer)
 end
 
 """
-   A wrapper function that collects some automated solver adjustments within the main while loop.
+   A wrapper function that collects automated solver adjustments within the main while loop.
 """
 function algorithm_automation(m::Optimizer)
     Alp.get_option(m, :disc_var_pick) == 3 && Alp.update_disc_cont_var(m)
@@ -355,7 +355,6 @@ Otherwise, the function is invoked from [`bounding_solve`](@ref).
 
 """
 function local_solve(m::Optimizer; presolve = false)
-    convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
     local_nlp_status = :Unknown
 
     var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
@@ -452,11 +451,11 @@ function local_solve(m::Optimizer; presolve = false)
         m.status[:local_solve] = local_nlp_status
         return
 
-    elseif local_nlp_status in STATUS_INF
-        Alp.heu_pool_multistart(m) == MOI.LOCALLY_SOLVED && return
-        push!(m.logs[:obj], "INF")
-        m.status[:local_solve] = MOI.LOCALLY_INFEASIBLE
-        return
+        # elseif local_nlp_status in STATUS_INF
+        #     Alp.heu_pool_multistart(m) == MOI.LOCALLY_SOLVED && return
+        #     push!(m.logs[:obj], "INF")
+        #     m.status[:local_solve] = MOI.LOCALLY_INFEASIBLE
+        #     return
 
     elseif local_nlp_status == MOI.DUAL_INFEASIBLE
         push!(m.logs[:obj], "U")
