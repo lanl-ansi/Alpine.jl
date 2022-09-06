@@ -312,7 +312,7 @@ end
         "disc_var_pick" => 3,
         "presolve_bp" => true,
         "presolve_bt" => false,
-        "max_iter" => 1,
+        "max_iter" => 2,
         "log_level" => 100,
     )
 
