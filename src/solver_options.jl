@@ -42,7 +42,6 @@ mutable struct OptimizerOptions
     convhull_ebd_ibs::Bool                                      # Enable independent branching scheme
     convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 uses hierarchical and type 2 uses big-m
     convhull_warmstart::Bool                                    # Warm start the bounding MIP
-    convhull_no_good_cuts::Bool                                 # Add no-good cuts to MIP based on the pool solutions
     linking_constraints::Bool                                   # Multilinear linking constraint feature
     linking_constraints_degree_limit::Int64                     # Degree of shared multilinear terms up to which the linking constraints are built and added
 
@@ -95,7 +94,6 @@ function get_default_options()
     convhull_ebd_ibs = false
     convhull_ebd_link = false
     convhull_warmstart = true
-    convhull_no_good_cuts = false
     linking_constraints = true
     linking_constraints_degree_limit = 4 # check up to quadrilinear sharing across terms
 
@@ -140,7 +138,6 @@ function get_default_options()
         convhull_ebd_ibs,
         convhull_ebd_link,
         convhull_warmstart,
-        convhull_no_good_cuts,
         linking_constraints,
         linking_constraints_degree_limit,
         presolve_track_time,

@@ -73,9 +73,9 @@ If you find the underlying piecewise polyhedral formulations implemented in Alpi
 }
 
 @article{alpine_OptOnline2022,
-    title={Piecewise Polyhedral Relaxations of Multilinear Optimization},
-    author={Kim, Jongeun and Richard, Jean-Philippe P. and Tawarmalani, Mohit},
-    eprinttype={Optimization Online},
-    date={2022}
+  title={Piecewise Polyhedral Relaxations of Multilinear Optimization},
+  author={Kim, Jongeun and Richard, Jean-Philippe P. and Tawarmalani, Mohit},
+  eprinttype={Optimization Online},
+  date={2022}
 }
 ```
