@@ -239,9 +239,9 @@ function fix_domains(m::Optimizer; discrete_sol = nothing, use_orig = false)
 end
 
 """
-   is_fully_convexified(m::Optimizer)
+   _is_fully_convexified(m::Optimizer)
 """
-function is_fully_convexified(m::Optimizer)
+function _is_fully_convexified(m::Optimizer)
 
     # Other more advanced convexification check goes here
     for term in keys(m.nonconvex_terms)
@@ -345,16 +345,6 @@ function ncvar_collect_arcs(m::Optimizer, nodes::Vector)
                 push!(arcs, sort([varidxs[1]; varidxs[1]]))
             end
 
-            # elseif m.nonconvex_terms[k][:nonlinear_type] == :INTLIN
-            #    var_idxs = copy(m.nonconvex_terms[k][:var_idxs])
-            #    push!(arcs, sort(var_idxs))
-            # elseif m.nonconvex_terms[k][:nonlinear_type] == :INTPROD
-            #    var_idxs = m.nonconvex_terms[k][:var_idxs]
-            #    for i in 1:length(var_idxs)
-            #       for j in 1:length(var_idxs)
-            #          i != j && push!(arcs, sort([var_idxs[i]; var_idxs[j]]))
-            #       end
-            #    end
             # elseif m.nonconvex_terms[k][:nonlinear_type] in [:cos, :sin]
             #    @assert length(m.nonconvex_terms[k][:var_idxs]) == 1
             #    var_idx = m.nonconvex_terms[k][:var_idxs][1]

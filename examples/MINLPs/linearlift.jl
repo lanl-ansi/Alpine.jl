@@ -1,5 +1,5 @@
 function basic_linear_lift(; verbose = false, solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, x[i = 1:3] >= 1) # At some point if an initial value is given, keep them
     @constraint(m, (x[1] - x[2]) * (3 * x[2] - x[3]) >= 111)

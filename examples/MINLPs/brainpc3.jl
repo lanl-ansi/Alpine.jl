@@ -1,5 +1,5 @@
 function brainpc3(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, x[1:6907])

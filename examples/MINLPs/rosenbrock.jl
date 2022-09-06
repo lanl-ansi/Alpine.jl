@@ -2,7 +2,7 @@
 # Global optimum = 0.0, arg min = (1,1)
 
 function rosenbrock(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, -10 <= x <= 10)
     @variable(m, -10 <= y <= 10)

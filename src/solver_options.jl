@@ -1,4 +1,4 @@
-# Optimizer struct and options to tune Alpine, a global solver for MINLPs
+# Optimizer struct and user-defined options (with default settings) to tune Alpine solver
 
 mutable struct OptimizerOptions
     # Parameters for tuning Alpine
@@ -19,9 +19,6 @@ mutable struct OptimizerOptions
 
     # Convexification methods
     recognize_convex::Bool                                      # Recognize convex expressions in parsing objective functions and constraints
-    bilinear_mccormick::Bool                                    # Convexify bilinear terms using piecwise McCormick representation
-    bilinear_convexhull::Bool                                   # Convexify bilinear terms using lambda representation
-    monomial_convexhull::Bool                                   # Convexify monomial terms using convex-hull representation
 
     # Expression-based user-inputs
     # method_convexification :: Array{Function}                 # Array of functions that user can choose to convexify specific non-linear terms : no over-ride privilege
@@ -29,14 +26,14 @@ mutable struct OptimizerOptions
     # Parameters used in Alpine's MIP-based partitioning algorithm
     apply_partitioning::Bool                                    # Apply the partitioning algorithm only if thhis true, else terminate after presolve
     disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
-    disc_ratio::Int                                             # Discretization ratio parameter, which is critical for convergence (using a fixed value for now, later switch to a function)
+    partition_scaling_factor::Int                               # Partition scaling parameter, which is critical for convergence (using a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
     disc_add_partition_method::Any                              # Additional methods to add discretization
     disc_divert_chunks::Int                                     # How many uniform partitions to construct
     disc_abs_width_tol::Float64                                 # Absolute tolerance used when setting up a partition
     disc_rel_width_tol::Float64                                 # Relative width tolerance when setting up a partition
     disc_consecutive_forbid::Int                                # Prevent bounding model to add partitions consecutively in the same region when bounds do not improve
-    disc_ratio_branch::Bool                                     # Branching tests for picking fixed discretization ratio
+    partition_scaling_factor_branch::Bool                       # Branching tests for picking fixed discretization ratio
 
     # MIP formulation parameters
     convhull_formulation::String                                # MIP Formulation for the relaxation
@@ -46,6 +43,8 @@ mutable struct OptimizerOptions
     convhull_ebd_link::Bool                                     # Linking constraints between x and α, type 1 uses hierarchical and type 2 uses big-m
     convhull_warmstart::Bool                                    # Warm start the bounding MIP
     convhull_no_good_cuts::Bool                                 # Add no-good cuts to MIP based on the pool solutions
+    linking_constraints::Bool                                   # Multilinear linking constraint feature
+    linking_constraints_degree_limit::Int64                     # Degree of shared multilinear terms up to which the linking constraints are built and added
 
     # Bound-tightening parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
@@ -61,14 +60,8 @@ mutable struct OptimizerOptions
     presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
 
     # Domain Reduction
-    presolve_bp::Bool                          # Conduct basic bound propagation
+    presolve_bp::Bool                                           # Conduct basic bound propagation
 
-    # Features for integer variable problems
-    int_enable::Bool                          # Convert integer problem into binary problem
-    int_cumulative_disc::Bool                          # Cumulatively involve integer variables for discretization
-
-    # Linking constraint feature
-    linking_constraints::Bool
 end
 
 function get_default_options()
@@ -85,25 +78,17 @@ function get_default_options()
     mip_solver = nothing
 
     recognize_convex = true
-    bilinear_mccormick = false
-    bilinear_convexhull = true
-    monomial_convexhull = true
-
-    # method_convexification = Array{Function}(undef, 0)
-    # method_partition_injection = Array{Function}(undef, 0)
-    # term_patterns = Array{Function}(undef, 0)
-    # constr_patterns = Array{Function}(undef, 0)
 
     apply_partitioning = true
     disc_var_pick = 2                # By default, uses the 15-variable selective rule
-    disc_ratio = 10
+    partition_scaling_factor = 10
     disc_uniform_rate = 2
     disc_add_partition_method = "adaptive"
     disc_divert_chunks = 5
     disc_abs_width_tol = 1e-4
     disc_rel_width_tol = 1e-6
     disc_consecutive_forbid = false
-    disc_ratio_branch = false
+    partition_scaling_factor_branch = false
 
     convhull_formulation = "sos2"
     convhull_ebd = false
@@ -112,6 +97,8 @@ function get_default_options()
     convhull_ebd_link = false
     convhull_warmstart = true
     convhull_no_good_cuts = false
+    linking_constraints = true
+    linking_constraints_degree_limit = 4 # check up to quadrilinear sharing across terms
 
     presolve_track_time = true
     presolve_bt = true
@@ -126,11 +113,6 @@ function get_default_options()
     presolve_bt_mip_time_limit = Inf
     presolve_bp = false
 
-    int_enable = false
-    int_cumulative_disc = true
-
-    linking_constraints = false
-
     return OptimizerOptions(
         log_level,
         time_limit,
@@ -143,19 +125,16 @@ function get_default_options()
         minlp_solver,
         mip_solver,
         recognize_convex,
-        bilinear_mccormick,
-        bilinear_convexhull,
-        monomial_convexhull,
         apply_partitioning,
         disc_var_pick,
-        disc_ratio,
+        partition_scaling_factor,
         disc_uniform_rate,
         disc_add_partition_method,
         disc_divert_chunks,
         disc_abs_width_tol,
         disc_rel_width_tol,
         disc_consecutive_forbid,
-        disc_ratio_branch,
+        partition_scaling_factor_branch,
         convhull_formulation,
         convhull_ebd,
         convhull_ebd_encode,
@@ -163,6 +142,8 @@ function get_default_options()
         convhull_ebd_link,
         convhull_warmstart,
         convhull_no_good_cuts,
+        linking_constraints,
+        linking_constraints_degree_limit,
         presolve_track_time,
         presolve_bt,
         presolve_bt_time_limit,
@@ -174,9 +155,6 @@ function get_default_options()
         presolve_bt_algo,
         presolve_bt_relax_integrality,
         presolve_bt_mip_time_limit,
-        presolve_bp,
-        int_enable,
-        int_cumulative_disc,
-        linking_constraints,
+        presolve_bp
     )
 end

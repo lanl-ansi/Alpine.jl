@@ -95,6 +95,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     bound_sol_history::Vector{Vector{Float64}}           # History of bounding solutions limited by "parameter disc_consecutive_forbid"
     bound_sol_pool::Dict{Any,Any}                        # A pool of solutions from solving model_mip
 
+    # Linking constraints info for Multilinear terms
+    linking_constraints_info::Union{Nothing, Dict{Any, Any}}     # Stored multilinear linking constraints info 
+
     # Logging information and status
     logs::Dict{Symbol,Any}                          # Logging information
     detected_feasible_solution::Bool
@@ -230,6 +233,8 @@ function MOI.empty!(m::Optimizer)
     m.best_rel_gap = Inf
     m.best_abs_gap = Inf
     m.alpine_status = MOI.OPTIMIZE_NOT_CALLED
+
+    m.linking_constraints_info = nothing
 
     create_status!(m)
     return create_logs!(m)

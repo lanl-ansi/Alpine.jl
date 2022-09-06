@@ -38,12 +38,6 @@ function init_disc(m::Optimizer)
             lb = m.l_var_tight[var]
             ub = m.u_var_tight[var]
             m.discretization[var] = [lb, ub]
-        elseif m.var_type[var] in [:Int]
-            Alp.get_option(m, :int_enable) ? lb = floor(m.l_var_tight[var]) - 0.5 :
-            lb = floor(m.l_var_tight[var])
-            Alp.get_option(m, :int_enable) ? ub = ceil(m.u_var_tight[var]) + 0.5 :
-            ub = floor(m.u_var_tight[var])
-            m.discretization[var] = [lb, ub]
         else
             error(
                 "[EXCEPTION] Unexpected variable type when initializing discretization dictionary.",
@@ -111,7 +105,6 @@ end
 
 Detect bounds from parse affine constraint. This function examines the one variable constraints such as
 x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_tight.
-This function can potential grow to be smarter.
 """
 function bound_propagation(m::Optimizer)
     exhausted = false
@@ -417,14 +410,8 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
                 d = Alp.basic_binint_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
                 d = Alp.basic_binprod_bounds(m, nlk, d)
-                # elseif m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_TRIGONOMETRIC
-                #     d = basic_sincos_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
                 d = Alp.basic_binlin_bounds(m, nlk, d)
-                # elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTLIN]
-                #     d = basic_intlin_bounds(m, nlk, d)
-                # elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:INTPROD]
-                #     d = basic_intprod_bounds(m, nlk, d)
             else
                 error("EXPECTED ERROR : NEED IMPLEMENTATION")
             end

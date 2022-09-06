@@ -1,5 +1,5 @@
 function convex_test(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:5] <= 2)
 
@@ -54,7 +54,7 @@ function convex_test(; solver = nothing)
 end
 
 function convex_solve(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:5] <= 100)
 

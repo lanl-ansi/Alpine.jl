@@ -1,7 +1,7 @@
 function nlp1(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
-    @variable(m, 1 <= x[1:2] <= 10)
+    @variable(m, 1 <= x[1:2] <= 4)
     @NLconstraint(m, x[1] * x[2] >= 8)
     @NLobjective(m, Min, 6 * x[1]^2 + 4 * x[2]^2 - 2.5 * x[1] * x[2])
 
@@ -9,7 +9,7 @@ function nlp1(; solver = nothing)
 end
 
 function nlp2(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, -500 <= x[1:2] <= 500)
     @NLobjective(m, Min, sum((x[i]^2 - i)^2 for i in 1:2))
@@ -32,7 +32,7 @@ function max_cover_var_picker(m::Alpine.Optimizer)
 end
 
 function nlp3(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     LB = [100, 1000, 1000, 10, 10, 10, 10, 10]
     UB = [10000, 10000, 10000, 1000, 1000, 1000, 1000, 1000]

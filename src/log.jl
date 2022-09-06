@@ -3,8 +3,8 @@ function create_logs!(m)
     logs = Dict{Symbol,Any}()
 
     # Timers
-    logs[:presolve_time] = 0.0                        # Total presolve-time of the algorithm
-    logs[:total_time] = 0.0                           # Total run-time of the algorithm
+    logs[:presolve_time] = 0.0                           # Total presolve-time of the algorithm
+    logs[:total_time] = 0.0                              # Total run-time of the algorithm
     logs[:time_left] = Alp.get_option(m, :time_limit)    # Total remaining time of the algorithm if time-out is specified
 
     # Values
@@ -64,14 +64,15 @@ function logging_summary(m::Optimizer)
         println("  MIP solver = ", m.mip_solver_id)
 
         printstyled("ALPINE CONFIGURATION\n", color = :cyan)
+        println("  Alpine version = ", _ALPINE_VERSION)
         if Alp.is_min_sense(m)
             println(
-                "  Maximum iterations (lower-bounding MIPs) =  ",
+                "  Maximum iterations (lower-bounding MIPs) = ",
                 Alp.get_option(m, :max_iter),
             )
         elseif Alp.is_max_sense(m)
             println(
-                "  Maximum iterations (upper-bounding MIPs) =  ",
+                "  Maximum iterations (upper-bounding MIPs) = ",
                 Alp.get_option(m, :max_iter),
             )
         else
@@ -95,10 +96,10 @@ function logging_summary(m::Optimizer)
             )
         end
 
-        if Alp.get_option(m, :disc_ratio_branch)
-            println("  Discretization ratio branch activated")
+        if Alp.get_option(m, :partition_scaling_factor_branch)
+            println("  Partition scaling factor branch activated")
         else
-            println("  Discretization ratio = ", Alp.get_option(m, :disc_ratio))
+            println("  Partition scaling factor = ", Alp.get_option(m, :partition_scaling_factor))
         end
         (Alp.get_option(m, :convhull_ebd)) && println("  Using convhull_ebd formulation")
         (Alp.get_option(m, :convhull_ebd)) &&

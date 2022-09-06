@@ -2,7 +2,7 @@ function ex1225a(; solver = nothing)
     # GOpt: 131670.377903
     # This problem may be numerically sensitive 
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -123,7 +123,7 @@ function ex1264a(; solver = nothing)
     # Source: http://minlplib.org/ex1264a.html
     # GOpt: 8.6
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, objvar)
     b_Idx = Any[17, 18, 19, 20]
@@ -231,7 +231,7 @@ function prob03(; solver = nothing)
     # Source: http://minlplib.org/prob03.html
     # GOpt: 10.0000
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, objvar)
     i_Idx = Any[1, 2]
@@ -249,7 +249,7 @@ function prob10(; solver = nothing)
     # Source: http://minlplib.org/prob10.html
     # GOpt: 3.44550379
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, objvar)
     x_Idx = Any[2]
@@ -275,7 +275,7 @@ function st_miqp1(; solver = nothing)
     # source: http://minlplib.org/st_miqp1.html
     # GOpt: 281.0000
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -312,7 +312,7 @@ function st_miqp2(; solver = nothing)
     # Source: http://minlplib.org/st_miqp2.html
     # GOpt: 2.0000
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -344,7 +344,7 @@ function st_miqp3(; solver = nothing)
     # Source: http://minlplib.org/st_miqp3.html
     # GOpt: -6.0000
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -367,7 +367,7 @@ function st_miqp4(; solver = nothing)
     # Source: http://minlplib.org/st_miqp4.html
     # GOpt: -4574.0000
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)
@@ -398,7 +398,7 @@ function st_miqp5(; solver = nothing)
     # Source: http://minlplib.org/st_miqp5.html
     # GOpt: -333.88888890
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, objvar)

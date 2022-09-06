@@ -1,5 +1,5 @@
 function exprstest(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, px[i = 1:6] >= 1) # At some point if an initial value is given, keep them
 
@@ -30,7 +30,7 @@ function exprstest(; solver = nothing)
 end
 
 function operator_b(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, x[1:4] >= 0)
     @variable(m, y[1:3] <= 0)
@@ -74,7 +74,7 @@ function operator_b(; solver = nothing)
 end
 
 function operator_basic(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, x[1:4] >= 0)
 
@@ -176,7 +176,7 @@ function operator_basic(; solver = nothing)
 end
 
 function operator_c(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, px[i = 1:6] >= 1) # At some point if an initial value is given, keep them
 

@@ -1,5 +1,5 @@
 """
-    create_bounding_mip(m::Optimizer; use_disc::Dict)
+    create_bounding_mip(m::Optimizer; use_disc = nothing)
 
 Set up a MILP bounding model base on variable domain partitioning information stored in `use_disc`.
 By default, if `use_disc` is not provided, it will use `m.discretizations` store in the Alpine model.
@@ -7,13 +7,6 @@ The basic idea of this MILP bounding model is to use Tighten McCormick to convex
 Among all presented partitions, the bounding model will choose one specific partition as the lower bound solution.
 The more partitions there are, the better or finer bounding model relax the original MINLP while the more
 efforts required to solve this MILP is required.
-
-This function is implemented in the following manner:
-
-    * [`amp_post_vars`](@ref): post original and lifted variables
-    * [`amp_post_lifted_constraints`](@ref): post original and lifted constraints
-    * [`amp_post_lifted_obj`](@ref): post original or lifted objective function
-    * [`amp_post_tmc_mccormick`](@ref): post Tighten McCormick variables and constraints base on `discretization` information
 """
 function create_bounding_mip(m::Optimizer; use_disc = nothing)
     use_disc === nothing ? discretization = m.discretization : discretization = use_disc
@@ -22,9 +15,9 @@ function create_bounding_mip(m::Optimizer; use_disc = nothing)
     start_build = time()
     # ------- Model Construction ------ #
     Alp.amp_post_vars(m)                                                # Post original and lifted variables
-    Alp.amp_post_lifted_constraints(m)                                  # Post lifted constraints
-    Alp.amp_post_lifted_objective(m)                                    # Post objective
-    Alp.amp_post_convexification(m, use_disc = discretization)            # Convexify problem
+    Alp.amp_post_lifted_constraints(m)                                  # Post original and lifted constraints
+    Alp.amp_post_lifted_objective(m)                                    # Post original and/or objective
+    Alp.amp_post_convexification(m, use_disc = discretization)          # Post convexification constraints
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
@@ -34,23 +27,16 @@ function create_bounding_mip(m::Optimizer; use_disc = nothing)
 end
 
 """
-    amp_post_convexification(m::Optimizer; kwargs...)
+    amp_post_convexification(m::Optimizer; use_disc = nothing)
 
-wrapper function to convexify the problem for a bounding model. This function talks to nonconvex_terms and convexification methods
+Wrapper function to apply piecewise convexification of the problem for the bounding MIP model. This function talks to nonconvex_terms and convexification methods
 to finish the last step required during the construction of bounding model.
 """
 function amp_post_convexification(m::Optimizer; use_disc = nothing)
     use_disc === nothing ? discretization = m.discretization : discretization = use_disc
 
-    # for i in 1:length(Alp.get_option(m, :method_convexification))             # Additional user-defined convexification method
-    #    eval(Alp.get_option(m, :method_convexification)[i])(m)
-    #    Alp.get_option(m, :method_convexification)[i](m)
-    # end
-
-    Alp.amp_post_mccormick(m, use_disc = discretization)          # handles all bi-linear and monomial convexificaitons
-    Alp.amp_post_convhull(m, use_disc = discretization)           # convex hull representation
-
-    Alp.is_fully_convexified(m) # Ensure if  all the non-linear terms are convexified
+    Alp.amp_post_convhull(m, use_disc = discretization)  # convex hull representation
+    Alp._is_fully_convexified(m) # Ensure if all the non-linear terms are convexified
 
     return
 end
@@ -266,7 +252,7 @@ A built-in method used to add a new partition on feasible domains of variables c
 
 This can be illustrated by the following example. Let the previous iteration's partition vector on 
 variable "x" be given by [0, 3, 7, 9]. And say, the lower bounding solution has a value of 4 for variable "x".
-In the case when `disc_ratio=4`, this function creates the new partition vector as follows: [0, 3, 3.5, 4, 4.5, 7, 9]
+In the case when `partition_scaling_factor=4`, this function creates the new partition vector as follows: [0, 3, 3.5, 4, 4.5, 7, 9]
 
 There are two options for this function,
 
@@ -284,7 +270,7 @@ function add_adaptive_partition(m::Optimizer; kwargs...)
     haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) :
     point_vec = copy(m.best_bound_sol)
     haskey(options, :use_ratio) ? ratio = options[:use_ratio] :
-    ratio = Alp.get_option(m, :disc_ratio)
+    ratio = Alp.get_option(m, :partition_scaling_factor)
     haskey(options, :branching) ? branching = options[:branching] : branching = false
 
     if length(point_vec) < m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
@@ -443,8 +429,8 @@ function add_uniform_partition(m::Optimizer; kwargs...)
     return discretization
 end
 
-function update_disc_ratio(m::Optimizer, presolve = false)
-    m.logs[:n_iter] > 2 && return Alp.get_option(m, :disc_ratio) # Stop branching after the second iterations
+function update_partition_scaling_factor(m::Optimizer, presolve = false)
+    m.logs[:n_iter] > 2 && return Alp.get_option(m, :partition_scaling_factor) # Stop branching after the second iterations
 
     ratio_pool = [8:2:20;]  # Built-in try range
     convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
@@ -491,7 +477,7 @@ function update_disc_ratio(m::Optimizer, presolve = false)
     if Statistics.std(res_collector) >= 1e-2    # Detect if all solutions are similar to each other
         Alp.get_option(m, :log_level) > 0 &&
             println("RATIO BRANCHING OFF due to solution variance test passed.")
-        Alp.set_option(m, :disc_ratio_branch, false) # If an incumbent ratio is selected, then stop the branching scheme
+        Alp.set_option(m, :partition_scaling_factor_branch, false) # If an incumbent ratio is selected, then stop the branching scheme
     end
 
     if !isempty(m.best_sol)

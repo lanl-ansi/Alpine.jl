@@ -20,7 +20,7 @@
 # println("--------------------------------------------------------------------------")
 
 function multi4(; verbose = false, solver = nothing, exprmode = 1)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(1)
     @variable(m, 0.1 <= x[1:4] <= rand() * 100)
@@ -59,7 +59,7 @@ function multi4(; verbose = false, solver = nothing, exprmode = 1)
 end
 
 function multi3(; verbose = false, solver = nothing, exprmode = 1)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(1)
     ub = rand()
@@ -86,7 +86,7 @@ end
 function multi2(; verbose = false, solver = nothing)
     # Global solution: 0.92906489 (arg min: [0.7336635, 1.266336])
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(1)
     @variable(m, 0.1 <= x[1:2] <= rand() * 10)
@@ -107,7 +107,7 @@ function multi4N(;
     N = 1,
     randomub = true,
 )
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     M = 1 + 3 * N
     Random.seed!(100)
@@ -161,7 +161,7 @@ function multi3N(;
     N = 1,
     delta = 4,
 )
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     M = 1 + 2 * N
     Random.seed!(100)
@@ -195,7 +195,7 @@ function multiKND(;
     K = 2,
     D = 1,
 )
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     M = K + (K - D) * (N - 1)
     Random.seed!(100)

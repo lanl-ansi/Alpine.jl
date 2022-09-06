@@ -1,5 +1,5 @@
 function blend029(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, x[1:102])
     for i in 67:102
@@ -324,7 +324,7 @@ function blend029(; solver = nothing)
 end
 
 function blend029_gl(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, x[1:102])
     for i in 67:102

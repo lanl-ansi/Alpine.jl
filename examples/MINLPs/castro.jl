@@ -1,5 +1,5 @@
 function castro2m2(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:41] <= 1E5)
     @variable(m, obj)
@@ -64,7 +64,7 @@ function castro2m2(; solver = nothing)
 end
 
 function castro6m2(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:133] <= 1E6)
     @variable(m, obj)
@@ -332,7 +332,7 @@ function castro6m2(; solver = nothing)
 end
 
 function castro4m2(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     # ----- Variables ----- #
     @variable(m, 0 <= x[1:55] <= 1E6)

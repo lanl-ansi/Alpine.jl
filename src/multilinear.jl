@@ -7,32 +7,24 @@ function amp_post_convhull(m::Optimizer; kwargs...)
     α = Dict()  # Partitioning Variables
     β = Dict()  # Lifted variables for exact formulation
 
-    # Convexification Treatment for Complex Non-Convex Terms
+    # Convexification for non-convex terms
     for k in keys(m.nonconvex_terms)
         nl_type = m.nonconvex_terms[k][:nonlinear_type]
         if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) &&
            (m.nonconvex_terms[k][:convexified] == false)
             λ, α = Alp.amp_convexify_multilinear(m, k, λ, α, d)
         elseif nl_type == :MONOMIAL && !m.nonconvex_terms[k][:convexified]
-            λ, α = Alp.amp_convexify_monomial(m, k, λ, α, d)
+            λ, α = Alp.amp_convexify_quadratic_univariate(m, k, λ, α, d)
         elseif nl_type == :BINLIN && !m.nonconvex_terms[k][:convexified]
             β = Alp.amp_convexify_binlin(m, k, β)
         elseif nl_type == :BINPROD && !m.nonconvex_terms[k][:convexified]
-            β = Alp.amp_convexify_binprod(m, k, β)
-        elseif nl_type == :BININT && !m.nonconvex_terms[k][:convexified]
-            β = Alp.amp_convexify_binint(m, k, β)
-        elseif nl_type == :INTPROD && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTPROD at this moment.")
-        elseif nl_type == :INTLIN && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTLIN at this moment.")
-        elseif nl_type in [:sin, :cos] && !m.nonconvex_terms[k][:convexified]
-            error("Integer features are OFF. No support for INTLIN at this moment.")
+            β = Alp.amp_convexify_multilinear_binary(m, k, β)
         end
     end
 
     # Add lambda linking constraints
     if m.options.linking_constraints
-        Alp.add_linking_constraints(m, λ)
+        Alp._add_multilinear_linking_constraints(m, λ)
     end
 
     # Code for warm starting bounding MIP iterations
@@ -76,7 +68,7 @@ function amp_convexify_multilinear(
     return λ, α
 end
 
-function amp_convexify_monomial(
+function amp_convexify_quadratic_univariate(
     m::Optimizer,
     k::Any,
     λ::Dict,
@@ -90,7 +82,7 @@ function amp_convexify_monomial(
     λ = Alp.amp_convhull_λ(m, k, monomial_index, λ, extreme_point_cnt, dim)
     λ = Alp.populate_convhull_extreme_values(m, discretization, monomial_index, λ, 2)
     α = Alp.amp_convhull_α(m, [monomial_index], α, dim, discretization)
-    Alp.amp_post_convhull_constrs(m, λ, α, monomial_index, dim, discretization)
+    Alp.amp_post_convhull_constrs(m, λ, α, monomial_index, discretization)
 
     return λ, α
 end
@@ -116,11 +108,13 @@ function amp_convexify_binlin(m::Optimizer, k::Any, β::Dict)
     bin_idx = bin_idx[1]
     cont_idx = cont_idx[1]
 
-    Alp.mccormick_binlin(
+    Alp.relaxation_bilinear(
         m.model_mip,
         _index_to_variable_ref(m.model_mip, lift_idx),
         _index_to_variable_ref(m.model_mip, bin_idx),
         _index_to_variable_ref(m.model_mip, cont_idx),
+        0,
+        1,
         m.l_var_tight[cont_idx],
         m.u_var_tight[cont_idx],
     )
@@ -128,11 +122,7 @@ function amp_convexify_binlin(m::Optimizer, k::Any, β::Dict)
     return β
 end
 
-function amp_convexify_binint(m::Optimizer, k::Any, β::Dict)
-    return amp_convexify_binlin(m, k, β)
-end
-
-function amp_convexify_binprod(m::Optimizer, k::Any, β::Dict)
+function amp_convexify_multilinear_binary(m::Optimizer, k::Any, β::Dict)
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     lift_idx = m.nonconvex_terms[k][:y_idx]
@@ -144,10 +134,10 @@ function amp_convexify_binprod(m::Optimizer, k::Any, β::Dict)
 
     z = _index_to_variable_ref(m.model_mip, m.nonconvex_terms[k][:y_idx])
     x = [_index_to_variable_ref(m.model_mip, i) for i in m.nonconvex_terms[k][:var_idxs]]
-    for i in x
-        JuMP.@constraint(m.model_mip, z <= i)
+
+    if length(x) >= 1
+        Alp.relaxation_multilinear_binary(m.model_mip, z, x)
     end
-    JuMP.@constraint(m.model_mip, z >= sum(x) - (length(x) - 1))
 
     return β
 end
@@ -238,7 +228,7 @@ function populate_convhull_extreme_values(
 end
 
 """
-    Method for regular muiltilinear terms
+    Method for regular multilinear terms
 """
 function populate_convhull_extreme_values(
     m::Optimizer,
@@ -392,7 +382,7 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
 end
 
 """
-    Method for general multilinear terms with/without integer variables
+    Method for general multilinear terms
 """
 function amp_post_convhull_constrs(
     m::Optimizer,
@@ -437,14 +427,13 @@ function amp_post_convhull_constrs(
 end
 
 """
-    Method for power-2 term
+    Constraints for univariate quadratic terms
 """
 function amp_post_convhull_constrs(
     m::Optimizer,
     λ::Dict,
     α::Dict,
     monomial_idx::Int,
-    dim::Tuple,
     discretization::Dict,
 )
     partition_cnt = length(discretization[monomial_idx]) - 1
@@ -696,102 +685,96 @@ function collect_indices(l::Array, fixed_dim::Int, fixed_partition::Array, dim::
     return indices
 end
 
-#=
-function collect_indices(l::Array, locator::Tuple, dim::Tuple)
+"""
+    _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
 
-    k = 0
-    indices = Vector{Int}(2^length(dim))
-    for i in 1:prod(dim)
-        ind = Tuple(CartesianIndices(l)[i])
-        diff = [((ind[i] - locator[i] == 0) || (ind[i] - locator[i] == 1)) for i in 1:length(dim)]
-        if prod(diff)
-            k +=1
-            indices[k] = i
-        end
+This internal function adds linking constraints between λ multipliers corresponding to multilinear terms
+that share more than two variables and are partitioned. For example, suppose we have λ[i], λ[j], and 
+λ[k] where i=(1,2,3), j=(1,2,4), and k=(1,2,5). λ[i] contains all multipliers for the extreme points 
+in the space of (x1,x2,x3). λ[j] contains all multipliers for the extreme points in the space of (x1,x2,x4).
+λ[k] contains all multipliers for the extreme points in the space of (x1,x2,x5).
+
+Using λ[i], λ[j], or λ[k], we can express multilinear function x1*x2.
+We define a linking variable μ(1,2) that represents the value of x1*x2.
+Linking constraints are
+    μ(1,2) == convex combination expr for x1*x2 using λ[i],    
+    μ(1,2) == convex combination expr for x1*x2 using λ[j], and   
+    μ(1,2) == convex combination expr for x1*x2 using λ[k].    
+
+Thus, these constraints link between λ[i], λ[j], and λ[k] variables.
+
+Reference: J. Kim, J.P. Richard, M. Tawarmalani, Piecewise Polyhedral Relaxations of Multilinear Optimization, 
+http://www.optimization-online.org/DB_HTML/2022/07/8974.html
+"""
+function _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
+
+    if isnothing(m.linking_constraints_info)
+        m.linking_constraints_info = Alp._get_shared_multilinear_terms_info(λ, m.options.linking_constraints_degree_limit)
     end
 
-    return indices
+    if isnothing(m.linking_constraints_info) 
+        return
+    end 
+
+    # Additional linking variables (μ) to the MIP model to keep the constraints sparse
+    linking_variables = JuMP.@variable(m.model_mip, [i in keys(m.linking_constraints_info)])
+    
+    # Add linking constraints to the MIP model
+    for (shared_multilinear_idx, multilinear_terms_idx) in m.linking_constraints_info,
+        (i, multilinear_idx) in enumerate(multilinear_terms_idx)
+        var_location = [findfirst(multilinear_idx .== i) for i in shared_multilinear_idx]
+
+        lambda_expr = 0
+        for idx in Iterators.product([1:d for d in λ[multilinear_idx][:dim]]...)
+            var = λ[multilinear_idx][:vars][λ[multilinear_idx][:indices][idx...]]
+            partitions_info = prod(
+                m.discretization[i][idx[j]] for
+                (i, j) in zip(shared_multilinear_idx, var_location)
+            )
+            lambda_expr += partitions_info * var
+        end
+
+        JuMP.@constraint(m.model_mip, linking_variables[shared_multilinear_idx] == lambda_expr)
+    end
 end
 
 """
-    [Experimental Function]
-    Method for multilinear terms with discrete variables
+    _get_shared_multilinear_terms_info(λ, linking_constraints_degree_limit)
+
+This function checks to see if linking constraints are 
+necessary for a given vector of each multilinear terms and returns the approapriate 
+linking constraints information.
 """
-function amp_post_inequalities_int(m::Optimizer, d::Dict, λ::Dict, α::Dict, indices::Any, dim::Tuple, var_ind::Int, cnt::Int)
+function _get_shared_multilinear_terms_info(
+    λ::Dict, 
+    linking_constraints_degree_limit::Union{Nothing,T} where {T<:Int64} = nothing
+)
+    
+    # Compute maximum degree of multilinear terms and return if bilinear
+    max_degree = maximum([length(k) for k in keys(λ)]) 
 
-    l_cnt = length(d[var_ind])
-    p_cnt = l_cnt - 1
-
-    # Embedding formulation
-    Alp.get_option(m, :convhull_ebd) && @warn "Embedding is currently not supported for multilinear terms with discrete variables"
-
-    # SOS-2 Formulation
-    if Alp.get_option(m, :convhull_formulation) == "sos2"
-        for j in 1:l_cnt
-            sliced_indices = collect_indices(λ[indices][:indices], cnt, [j], dim)
-            if (j == 1)
-                rate_r = amp_pick_ratevec(d[var_ind], j)
-                JuMP.@constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][j] * rate_r)
-            elseif (j == l_cnt)
-                rate_l = amp_pick_ratevec(d[var_ind], j)
-                JuMP.@constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][p_cnt] * rate_l)
-            else
-                rate_l, rate_r = amp_pick_ratevec(d[var_ind], j)
-                JuMP.@constraint(m.model_mip, sum(λ[indices][:vars][sliced_indices]) <= α[var_ind][j-1] * rate_l + α[var_ind][j] * rate_r)
-            end
-        end
-    else
-        error("Only SOS-2 formulation supports convexification of terms with integer variables.")
+    if max_degree <= 2
+        return (linking_constraints_info = nothing)
     end
 
-    return
-end
-
-"""
-    [Experimental Function]
-    This is a utility function that can be used to measure the coefficients for formulations that convexify terms with integer variables.
-"""
-function amp_pick_ratevec(partvec::Vector, i::Int)
-
-    λCnt = length(partvec)
-
-    if i == 1
-        mod(partvec[i], 0.5) == 0.0 && partvec[i+1] - partvec[i] == 1.0 && return 0.5
-    elseif i == λCnt
-        mod(partvec[i], 0.5) == 0.0 && partvec[i] - partvec[i-1] == 1.0 && return 0.5
-    else
-        if mod(partvec[i], 0.5) == 0.0 && partvec[i] - partvec[i-1] == 1.0
-            l = 0.5
-        else
-            l = 1.0
-        end
-        if mod(partvec[i], 0.5) == 0.0 && partvec[i+1] - partvec[i] == 1.0
-            r = 0.5
-        else
-            r = 1.0
-        end
-        return l, r
+    # Limit the linking constraints to a prescribed multilinear degree 
+    if !isnothing(linking_constraints_degree_limit) && (linking_constraints_degree_limit < max_degree)
+        max_degree = linking_constraints_degree_limit
     end
 
-    return 1.0
-end
+    # Collect all variable indices appearing in multilinear terms
+    all_variables_idx = collect(union((keys(λ) |> collect)...)) |> sort
 
-function amp_collect_tight_regions(partvec::Vector)
+    linking_constraints_info = Dict(
+        shared_multilinear_idx => filter(r -> issubset(shared_multilinear_idx, r), keys(λ)) for
+        deg in 2:(max_degree-1) for
+        shared_multilinear_idx in Combinatorics.combinations(all_variables_idx, deg)
+    )
 
-    PCnt = length(partvec) - 1
-    PCnt == 1 && return []
-
-    tight_regions = []
-    for i in 1:PCnt
-        if i == 1
-            (partvec[i]+1.0==partvec[i+1]) && (partvec[i+1]+1.0==partvec[i+2]) && push!(tight_regions,i)
-        elseif i == PCnt
-            (partvec[i]+1.0==partvec[i+1]) && (partvec[i]-1.0==partvec[i-1]) && push!(tight_regions, i)
-        else
-            (partvec[i]+1.0==partvec[i+1]) && (partvec[i+1]+1.0==partvec[i+2]) && (partvec[i]-1.0==partvec[i-1]) && push!(tight_regions, i)
-        end
+    filter!(r -> length(r.second) >= 2, linking_constraints_info)
+    if isempty(linking_constraints_info)
+        return (linking_constraints_info = nothing)
     end
 
-    return tight_regions
+    return (linking_constraints_info = linking_constraints_info)
 end
-=#

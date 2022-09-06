@@ -107,7 +107,7 @@ end
         "nlp_solver" => IPOPT,
         "mip_solver" => PAVITO,
         "presolve_bt" => false,
-        "disc_ratio" => 5,
+        "partition_scaling_factor" => 5,
         "disc_consecutive_forbid" => false,
     )
 
@@ -122,7 +122,7 @@ end
         "nlp_solver" => IPOPT,
         "mip_solver" => PAVITO,
         "presolve_bt" => false,
-        "disc_ratio" => 5,
+        "partition_scaling_factor" => 5,
         "disc_consecutive_forbid" => true,
     )
 

@@ -1,10 +1,13 @@
 # Alpine.jl Change Log
 
 ## v0.5.0
-- New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (speed up in run times for multilinear problems) (@jongeunkim)
+- New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (significant speed up in run times for multilinear problems: http://www.optimization-online.org/DB_HTML/2022/07/8974.html) (@jongeunkim)
 - Added dependency on Combinatorics package for linking constraints 
+- Added unit tests for linking constraints feature
 - Changed Cbc test dependency to HiGHS solver
 - Dropped a few redundant unit tests
+- Dropped support for (slower) piecewise McCormick formulations
+- Changed `disc_ratio` to `partition_scaling_factor`
 - Added JuliaFormatter.toml and formatting workfow
 
 ## v0.4.3
@@ -192,7 +195,7 @@ Closed issues:
 - Alpine.jl first release
 
 ## Merged Features
-- `disc_ratio` selection algorithm
+- `partition_scaling_factor` selection algorithm
 - logarithm embedding formulation
 - bounding model warm starting and no-good-cuts using solution pool
 - `disc_vars` selection algorithm based on weighted minimum vertex cover
@@ -236,6 +239,6 @@ Closed issues:
 - Fixed many other things
 
 ## Tests & Coverage
-- Most new features are covered (embedding, `disc_ratio` algorithm, etc.)
+- Most new features are covered (embedding, `partition_scaling_factor` algorithm, etc.)
 - Stronger expression parsing tests with new operators covered
 - Coverage should be more than `~90%`

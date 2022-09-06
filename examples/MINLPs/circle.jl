@@ -1,5 +1,5 @@
 function circle(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:2] <= 2)
     @NLconstraint(m, x[1]^2 + x[2]^2 >= 2)
@@ -13,10 +13,10 @@ function circle_MINLPLib(; solver = nothing)
     # Above instance has been mofified to convert the problem into a non-convex NLP
     # Global solution: 4.45670663096, arg min =  [4.2536125, 3.4367961]
 
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= objvar <= 5)
-    @variable(m, -10 <= x[1:2] <= 10)
+    @variable(m, 1 <= x[1:2] <= 5)
 
     @NLconstraint(
         m,

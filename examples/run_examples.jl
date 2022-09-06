@@ -20,7 +20,7 @@ minlp_solver = get_juniper(mip_solver, nlp_solver) #local solver
 
 #= Global solver
  Hints: 
- => Try different integer values (>=4) for `disc_ratio` to potentially observe 
+ => Try different integer values (>=4) for `partition_scaling_factor` to potentially observe 
     better Alpine run times (can be instance specific).
  => Choose `presolve_bt` to `false` if you prefer the bound tightening (OBBT) presolve to be turned off. 
  => If you prefer to use Alpine for only OBBT presolve, without any paritioning applied to the 
@@ -33,7 +33,8 @@ const alpine = JuMP.optimizer_with_attributes(
     "nlp_solver" => nlp_solver,
     "mip_solver" => mip_solver,
     "presolve_bt" => true,
-    "disc_ratio" => 10,
+    "apply_partitioning" => true,
+    "partition_scaling_factor" => 10,
 )
 
 m = nlp3(solver = alpine)

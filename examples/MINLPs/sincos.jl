@@ -1,7 +1,7 @@
 # Functions in this file are not tested until support for trigonometric functions is added. 
 
 function sincos_p1(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0.1 <= x[1:10] <= 10)
     @NLconstraint(m, [i in 1:9], x[i] * x[i+1] * sin(x[i]) >= 0.32)
@@ -12,7 +12,7 @@ function sincos_p1(; solver = nothing)
 end
 
 function trig(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, objvar)
     x_Idx = Any[1]
@@ -34,7 +34,7 @@ function trig(; solver = nothing)
 end
 
 function specialopts(; verbose = false, solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, x[i = 1:6])
 

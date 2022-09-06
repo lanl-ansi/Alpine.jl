@@ -1,5 +1,5 @@
 function binprod_nlp3(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     LB = [100, 1000, 1000, 10, 10, 10, 10, 10]
     UB = [10000, 10000, 10000, 1000, 1000, 1000, 1000, 1000]
@@ -31,7 +31,7 @@ function binprod_nlp3(; solver = nothing)
 end
 
 function circlebin(; verbose = false, solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:5] <= 1, Bin)
     @NLconstraint(m, x[1]^2 + x[2]^2 >= 2)
@@ -41,7 +41,7 @@ function circlebin(; verbose = false, solver = nothing)
 end
 
 function bpml(; verbose = false, solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:5] <= 1, Bin)
     @variable(m, y[1:5] >= 0)
@@ -61,7 +61,7 @@ function bpml(; verbose = false, solver = nothing)
 end
 
 function bmpl_linearlifting(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:5] <= 1, Bin)
     @variable(m, y[1:5] >= 0)
@@ -76,7 +76,7 @@ function bmpl_linearlifting(; solver = nothing)
 end
 
 function bpml_lnl(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(10)
     @variable(m, 0 <= X[1:5] <= 1, Bin)
@@ -88,7 +88,7 @@ function bpml_lnl(; solver = nothing)
 end
 
 function bpml_binl(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(10)
     @variable(m, 0 <= X[1:5] <= 1, Bin)
@@ -100,7 +100,7 @@ function bpml_binl(; solver = nothing)
 end
 
 function bpml_monl(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(10)
     @variable(m, 0 <= X[1:5] <= 1, Bin)
@@ -112,7 +112,7 @@ function bpml_monl(; solver = nothing)
 end
 
 function bpml_negative(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(10)
     @variable(m, 0 <= X[1:5] <= 1, Bin)
@@ -129,7 +129,7 @@ function bpml_negative(; solver = nothing)
 end
 
 function intprod_basic(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     @variable(m, 1 <= Z[1:10] <= 10, Int)
     @NLconstraint(m, (Z[1] + Z[2]) * (Z[3] + Z[4]) >= 25)
@@ -142,7 +142,7 @@ function intprod_basic(; solver = nothing)
 end
 
 function discretemulti_basic(; solver = nothing)
-    m = Model(solver)
+    m = JuMP.Model(solver)
 
     Random.seed!(10)
     @variable(m, 0 <= X[1:5] <= 1, Bin)

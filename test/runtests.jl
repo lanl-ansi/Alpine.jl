@@ -51,8 +51,8 @@ end
 
 # Perform Tests
 @testset "Alpine tests" begin
-    include(joinpath(@__DIR__, "test_solver.jl"))
+    # include(joinpath(@__DIR__, "test_solver.jl"))
     include(joinpath(@__DIR__, "test_expression.jl"))
-    include(joinpath(@__DIR__, "test_algorithm.jl"))
-    include(joinpath(@__DIR__, "test_utility.jl"))
+    # include(joinpath(@__DIR__, "test_algorithm.jl"))
+    # include(joinpath(@__DIR__, "test_utility.jl"))
 end

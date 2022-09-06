@@ -95,10 +95,8 @@ function load!(m::Optimizer)
     Alp.recategorize_var(m)             # Initial round of variable re-categorization
 
     :Int in m.var_type_orig && error(
-        "Alpine does not support MINLPs with generic integer (non-binary) variables yet! Try Juniper.jl for finding a local feasible solution",
+        "Alpine does not support MINLPs with generic integer (non-binary) variables yet!",
     )
-    :Int in m.var_type_orig ? Alp.set_option(m, :int_enable, true) :
-    Alp.set_option(m, :int_enable, false) # Separator for safer runs
 
     # Solver-dependent detection
     Alp._fetch_mip_solver_identifier(m)
@@ -126,9 +124,9 @@ function load!(m::Optimizer)
 
     if length(m.bin_vars) > 200 || m.num_var_orig > 2000
         println(
-            "Automatically turning OFF 'disc_ratio_branch' due to the size of the problem",
+            "Automatically turning OFF 'partition_scaling_factor_branch' due to the size of the problem",
         )
-        Alp.set_option(m, :disc_ratio_branch, false)
+        Alp.set_option(m, :partition_scaling_factor_branch, false)
     end
 
     # Initialize the solution pool
@@ -215,16 +213,16 @@ function presolve(m::Optimizer)
         )
         Alp.bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
         Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
-        Alp.get_option(m, :disc_ratio_branch) &&
-            (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
+        Alp.get_option(m, :partition_scaling_factor_branch) &&
+            (Alp.set_option(m, :partition_scaling_factor, Alp.update_partition_scaling_factor(m, true)))
         Alp.add_partition(m, use_solution = m.best_sol)  # Setting up the initial discretization
 
     elseif m.status[:local_solve] in STATUS_INF
         (Alp.get_option(m, :log_level) > 0) &&
             println("  Bound tightening without objective bounds (OBBT)")
         Alp.bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
-        (Alp.get_option(m, :disc_ratio_branch)) &&
-            (Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true)))
+        (Alp.get_option(m, :partition_scaling_factor_branch)) &&
+            (Alp.set_option(m, :partition_scaling_factor, Alp.update_partition_scaling_factor(m, true)))
         Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)
 
     elseif m.status[:local_solve] == MOI.INVALID_MODEL
@@ -255,10 +253,9 @@ end
 """
 function algorithm_automation(m::Optimizer)
     Alp.get_option(m, :disc_var_pick) == 3 && Alp.update_disc_cont_var(m)
-    Alp.get_option(m, :int_cumulative_disc) && Alp.update_disc_int_var(m)
 
-    if Alp.get_option(m, :disc_ratio_branch)
-        Alp.set_option(m, :disc_ratio, Alp.update_disc_ratio(m, true))    # Only perform for a maximum three times
+    if Alp.get_option(m, :partition_scaling_factor_branch)
+        Alp.set_option(m, :partition_scaling_factor, Alp.update_partition_scaling_factor(m, true))    # Only perform for a maximum three times
     end
 
     return

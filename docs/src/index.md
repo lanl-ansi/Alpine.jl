@@ -59,7 +59,7 @@ If you find Alpine useful in your work, we request you to cite the following pap
   doi = {10.1007/978-3-319-44953-1_24},
 }
 ```
-If you find the underlying piecewise polyhedral formulations implemented in Alpine useful in your work, we kindly request that you cite the following paper [\[link\]](https://doi.org/10.1016/j.orl.2020.12.002): 
+If you find the underlying piecewise polyhedral formulations implemented in Alpine useful in your work, we kindly request that you cite the following papers ([link-1](https://doi.org/10.1016/j.orl.2020.12.002), [link-2](http://www.optimization-online.org/DB_HTML/2022/07/8974.html)): 
 ```bibtex
 @article{alpine_ORL2021,
   title = {Piecewise polyhedral formulations for a multilinear term},
@@ -70,5 +70,12 @@ If you find the underlying piecewise polyhedral formulations implemented in Alpi
   pages = {144--149},
   year = {2021},
   publisher = {Elsevier}
+}
+
+@article{alpine_OptOnline2022,
+    title={Piecewise Polyhedral Relaxations of Multilinear Optimization},
+    author={Kim, Jongeun and Richard, Jean-Philippe P. and Tawarmalani, Mohit},
+    eprinttype={Optimization Online},
+    date={2022}
 }
 ```
