@@ -8,7 +8,7 @@ import LinearAlgebra: dot, Diagonal
 import Statistics
 import Combinatorics
 
-const _ALPINE_VERSION = "v0.5.0"
+const _ALPINE_VERSION = "v0.5.1"
 const ALPINE_DEBUG = false
 const Alp = Alpine
 

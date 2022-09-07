@@ -616,7 +616,7 @@ function detect_bilinear_term(expr::Any, constr_id::Int, m::Optimizer)
             end
         end
 
-        # Cofirm detection of patter A and perform store & lifting procedures
+        # Confirm detection of patter A and perform store & lifting procedures
         if (length(var_idxs) == 2) && length(Set(var_idxs)) == 2
             term_key = [Expr(:ref, :x, var_idxs[1]), Expr(:ref, :x, var_idxs[2])]
             if term_key in keys(m.nonconvex_terms) ||

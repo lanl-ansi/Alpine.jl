@@ -108,7 +108,7 @@ function optimization_based_bound_tightening(
         max_reduction = 0.0
         total_reduction = 0.0
         max_width = 0.0
-        current_rel_gap = 0.0
+        current_rel_gap = Inf
 
         # Sequential optimization-based bound tightening (OBBT)
         for var_idx in m.candidate_disc_vars
@@ -233,7 +233,7 @@ function optimization_based_bound_tightening(
             (bound_max_width) &&
             (current_rel_gap > Alp.get_option(m, :rel_gap))
 
-        if !keep_tightening && !isinf(current_rel_gap)
+        if !isinf(current_rel_gap)
             m.presolve_best_rel_gap = current_rel_gap * 100
         end
 
