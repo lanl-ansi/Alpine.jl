@@ -1,5 +1,9 @@
 # Alpine.jl Change Log
 
+## Staged
+- Re-org and clean-up of partition additions within bounding MIP model 
+- Updated to cheaper `AffExpr` evaluation within linking constraints
+
 ## v0.5.0
 - New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (significant speed up in run times for multilinear problems: http://www.optimization-online.org/DB_HTML/2022/07/8974.html) (@jongeunkim)
 - Added dependency on Combinatorics package for linking constraints 

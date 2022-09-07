@@ -390,7 +390,7 @@ function amp_post_convhull_constrs(
             error("EXCEPTION: unexpected variable type during integer related realxation")
         end
         sliced_indices =
-            [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
+            [Alp.collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
         JuMP.@constraint(
             m.model_mip,
             _index_to_variable_ref(m.model_mip, i) == sum(
@@ -433,7 +433,7 @@ function amp_post_convhull_constrs(
 
     # Add SOS-2 Constraints with basic encoding
     if Alp.get_option(m, :convhull_ebd) && partition_cnt > 2
-        ebd_map = embedding_map(
+        ebd_map = Alp.embedding_map(
             lambda_cnt,
             Alp.get_option(m, :convhull_ebd_encode),
             Alp.get_option(m, :convhull_ebd_ibs),
@@ -518,7 +518,7 @@ function amp_post_inequalities_cont(
     if Alp.get_option(m, :convhull_formulation) == "sos2" &&
        Alp.get_option(m, :convhull_ebd) &&
        partition_cnt > 2
-        ebd_map = embedding_map(
+        ebd_map = Alp.embedding_map(
             lambda_cnt,
             Alp.get_option(m, :convhull_ebd_encode),
             Alp.get_option(m, :convhull_ebd_ibs),
@@ -561,7 +561,7 @@ function amp_post_inequalities_cont(
     # SOS-2 Formulation
     if Alp.get_option(m, :convhull_formulation) == "sos2"
         for j in 1:lambda_cnt
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
+            sliced_indices = Alp.collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
             if (j == 1)
                 JuMP.@constraint(
                     m.model_mip,
@@ -583,7 +583,7 @@ function amp_post_inequalities_cont(
         return
     elseif Alp.get_option(m, :convhull_formulation) == "facet"
         for j in 1:(partition_cnt-1) # Constraint cluster of α >= f(λ)
-            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+            sliced_indices = Alp.collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
             JuMP.@constraint(
                 m.model_mip,
                 sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices])
@@ -591,7 +591,7 @@ function amp_post_inequalities_cont(
         end
         for j in 1:(partition_cnt-1) # Constraint cluster of α <= f(λ)
             sliced_indices =
-                collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
+                Alp.collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
             JuMP.@constraint(
                 m.model_mip,
                 sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices])
@@ -663,14 +663,14 @@ function _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
 
         var_location = [findfirst(multilinear_idx .== i) for i in shared_multilinear_idx]
 
-        lambda_expr = 0
+        lambda_expr = JuMP.AffExpr()
         for idx in Iterators.product([1:d for d in λ[multilinear_idx][:dim]]...)
             var = λ[multilinear_idx][:vars][λ[multilinear_idx][:indices][idx...]]
             partitions_info = prod(
                 m.discretization[i][idx[j]] for
                 (i, j) in zip(shared_multilinear_idx, var_location)
             )
-            lambda_expr += partitions_info * var
+            JuMP.add_to_expression!(lambda_expr, partitions_info, var)
         end
 
         JuMP.@constraint(

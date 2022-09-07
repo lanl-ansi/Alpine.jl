@@ -24,7 +24,7 @@ min_vertex_cover
 ## Presolve Methods
 ```@docs
 bound_tightening
-minmax_bound_tightening
+optimization_based_bound_tightening
 create_bound_tightening_model
 solve_bound_tightening_model
 resolve_var_bounds

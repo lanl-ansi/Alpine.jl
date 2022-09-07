@@ -25,7 +25,7 @@ include("nlexpr.jl")
 include("operators.jl")
 
 # Main algorithm
-include("algorithm.jl")
+include("main_algorithm.jl")
 include("presolve.jl")
 include("bounding_model.jl")
 include("embedding.jl")

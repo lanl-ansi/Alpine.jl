@@ -191,7 +191,6 @@ function global_solve(m::Optimizer)
         Alp.update_opt_gap(m)                       # Update optimality gap
         Alp.check_exit(m) && break                  # Detect optimality termination
         Alp.algorithm_automation(m)                 # Automated adjustments
-        Alp.add_partition(m)                        # Add extra discretizations
     end
 
     return
@@ -212,13 +211,12 @@ function presolve(m::Optimizer)
             "  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))",
         )
         Alp.bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-        Alp.get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
+        Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)            # Re-initialize discretization dictionary on tight bounds
         Alp.get_option(m, :partition_scaling_factor_branch) && (Alp.set_option(
             m,
             :partition_scaling_factor,
             Alp.update_partition_scaling_factor(m, true),
         ))
-        Alp.add_partition(m, use_solution = m.best_sol)  # Setting up the initial discretization
 
     elseif m.status[:local_solve] in STATUS_INF
         (Alp.get_option(m, :log_level) > 0) &&

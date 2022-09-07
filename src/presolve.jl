@@ -4,7 +4,7 @@
 Entry point to the optimization-based bound-tightening (OBBT) algorithm. The aim of the OBBT algorithm
 is to sequentially tighten the variable bounds until a fixed point is reached.
 
-Currently, two OBBT methods are implemented in [`minmax_bound_tightening`](@ref).
+Currently, two OBBT methods are implemented in [`optimization_based_bound_tightening`](@ref).
 
     * Bound-tightening with polyhedral relaxations (McCormick, Lambda for convex-hull)
     * Bound-tightening with piecewise polyhedral relaxations: (with three partitions around the local feasible solution)
@@ -14,9 +14,9 @@ function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
     Alp.get_option(m, :presolve_bt) || return
 
     if Alp.get_option(m, :presolve_bt_algo) == 1
-        Alp.minmax_bound_tightening(m, use_bound = use_bound)
+        Alp.optimization_based_bound_tightening(m, use_bound = use_bound)
     elseif Alp.get_option(m, :presolve_bt_algo) == 2
-        Alp.minmax_bound_tightening(m, use_bound = use_bound, use_tmc = true)
+        Alp.optimization_based_bound_tightening(m, use_bound = use_bound, use_tmc = true)
     elseif isa(Alp.get_option(m, :presolve_bt_algo), Function)
         # eval(Alp.get_option(m, :presolve_bt_algo))(m)
         Alp.get_option(m, :presolve_bt_algo)(m)
@@ -28,7 +28,7 @@ function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
 end
 
 """
-    minmax_bound_tightening(m:Optimizer; use_bound::Bool=true, use_tmc::Bool)
+    optimization_based_bound_tightening(m:Optimizer; use_bound::Bool=true, use_tmc::Bool)
 
 This function implements the OBBT algorithm to tighten the variable bounds.
 It utilizes either the basic polyhedral relaxations or the piecewise polyhedral relaxations (TMC)
@@ -48,7 +48,7 @@ Several other user-input options can be used to tune the OBBT algorithm.
 For more details, see [Presolve Options](https://lanl-ansi.github.io/Alpine.jl/latest/parameters/#Presolve-Options).
 
 """
-function minmax_bound_tightening(
+function optimization_based_bound_tightening(
     m::Optimizer;
     use_bound = true,
     time_limit = Inf,
@@ -110,7 +110,7 @@ function minmax_bound_tightening(
         max_width = 0.0
         current_rel_gap = 0.0
 
-        # Perform sequential bound tightening
+        # Sequential optimization-based bound tightening (OBBT)
         for var_idx in m.candidate_disc_vars
             temp_bounds[var_idx] =
                 [discretization[var_idx][1], discretization[var_idx][end]]
@@ -238,15 +238,12 @@ function minmax_bound_tightening(
         end
 
         discretization = Alp.resolve_var_bounds(m, discretization)
-
         if haskey(options, :use_tmc)
             discretization = Alp.add_adaptive_partition(
                 m,
                 use_solution = m.best_sol,
                 use_disc = Alp.flatten_discretization(discretization),
             )
-        else
-            discretization = discretization
         end
 
         time() - st > time_limit && break
@@ -258,7 +255,10 @@ function minmax_bound_tightening(
         println("  Actual iterations (OBBT): ", (m.logs[:bt_iter]))
 
     m.l_var_tight, m.u_var_tight = Alp.update_var_bounds(discretization)
-    m.discretization = Alp.add_adaptive_partition(m, use_solution = m.best_sol)
+    
+    if haskey(options, :use_tmc)
+        m.discretization = Alp.add_adaptive_partition(m, use_solution = m.best_sol)
+    end
 
     for i in m.disc_vars
         contract_ratio =
@@ -274,7 +274,6 @@ function minmax_bound_tightening(
             ))
         end
     end
-    # (Alp.get_option(m, :log_level) > 0) && print("\n")
     return
 end
 
@@ -282,7 +281,7 @@ end
     create_bound_tightening_model(m::Optimizer, discretization::Dict, bound::Float64)
 
 This function takes in the initial discretization information and builds the OBBT model.
-It is an algorithm specific function called by [`minmax_bound_tightening`](@ref).
+It is an algorithm specific function called by [`optimization_based_bound_tightening`](@ref).
 """
 function create_bound_tightening_model(
     m::Optimizer,
@@ -332,11 +331,9 @@ function relaxation_model_obbt(m::Optimizer, discretization, bound::Number)
 end
 
 """
-
     solve_bound_tightening_model(m::Optimizer)
 
 A function that solves the min and max OBBT model.
-
 """
 function solve_bound_tightening_model(m::Optimizer; kwargs...)
     stats = Dict()

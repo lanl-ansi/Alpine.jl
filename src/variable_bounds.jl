@@ -450,13 +450,13 @@ end
 """
     update_var_bounds(m::Optimizer, discretization::Dict; len::Float64=length(keys(discretization)))
 
-This function take in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
+This function takes in a dictionary-based discretization information and convert them into two bounds vectors (l_var, u_var) by picking the smallest and largest numbers. User can specify a certain length that may contains variables that is out of the scope of discretization.
 
 Output::
 
     l_var::Vector{Float64}, u_var::Vector{Float64}
 """
-function update_var_bounds(discretization; kwargs...)
+function update_var_bounds(discretization::Dict{Any, Any}; kwargs...)
     options = Dict(kwargs)
 
     haskey(options, :len) ? len = options[:len] : len = length(keys(discretization))

@@ -3,15 +3,27 @@
 
 Set up a MILP bounding model base on variable domain partitioning information stored in `use_disc`.
 By default, if `use_disc` is not provided, it will use `m.discretizations` store in the Alpine model.
-The basic idea of this MILP bounding model is to use Tighten McCormick to convexify the original Non-convex region.
-Among all presented partitions, the bounding model will choose one specific partition as the lower bound solution.
-The more partitions there are, the better or finer bounding model relax the original MINLP while the more
-efforts required to solve this MILP is required.
+The basic idea of this MILP bounding model is to use piecewise polyhedral/convex relaxations to tighten the 
+basic relaxations of the original non-convex region. Among all presented partitions, the bounding model 
+will choose one specific partition as the lower bound solution. The more partitions there are, the 
+better or finer bounding model relax the original MINLP while the more efforts required to solve 
+this MILP is required.
 """
-function create_bounding_mip(m::Optimizer; use_disc = nothing)
-    use_disc === nothing ? discretization = m.discretization : discretization = use_disc
+function create_bounding_mip(m::Optimizer; use_disc = nothing)  
+    if (use_disc === nothing)
+        if (m.logs[:n_iter] == 1) && (m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT)
+            # Setting up an initial partition
+            Alp.add_partition(m, use_solution = m.best_sol)  
+        elseif m.logs[:n_iter] >= 2
+            # Add subsequent iteration partitions
+            Alp.add_partition(m)
+        end
+        discretization = m.discretization
+    else 
+        discretization = use_disc
+    end
 
-    m.model_mip = Model(Alp.get_option(m, :mip_solver)) # Construct JuMP Model
+    m.model_mip = JuMP.Model(Alp.get_option(m, :mip_solver)) # Construct JuMP Model
     start_build = time()
     # ------- Model Construction ------ #
     Alp.amp_post_vars(m)                                                # Post original and lifted variables
@@ -47,11 +59,11 @@ function amp_post_vars(m::Optimizer; kwargs...)
     if haskey(options, :use_disc)
         l_var = [
             options[:use_disc][i][1] for
-            i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+            i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
         ]
         u_var = [
             options[:use_disc][i][end] for
-            i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+            i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
         ]
     else
         l_var = m.l_var_tight
@@ -60,10 +72,10 @@ function amp_post_vars(m::Optimizer; kwargs...)
 
     JuMP.@variable(
         m.model_mip,
-        x[i = 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
+        x[i = 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)]
     )
 
-    for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
+    for i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
         # Interestingly, not enforcing category of lifted variables is able to improve performance
         if i <= m.num_var_orig
             if m.var_type_orig[i] == :Bin
@@ -235,7 +247,7 @@ function add_partition(m::Optimizer; kwargs...)
             use_solution = point_vec,
         )
     elseif Alp.get_option(m, :disc_add_partition_method) == "uniform"
-        m.discretization = add_uniform_partition(m, use_disc = discretization)
+        m.discretization = Alp.add_uniform_partition(m, use_disc = discretization)
     else
         error("Unknown input on how to add partitions.")
     end
@@ -252,7 +264,7 @@ A built-in method used to add a new partition on feasible domains of variables c
 
 This can be illustrated by the following example. Let the previous iteration's partition vector on 
 variable "x" be given by [0, 3, 7, 9]. And say, the lower bounding solution has a value of 4 for variable "x".
-In the case when `partition_scaling_factor=4`, this function creates the new partition vector as follows: [0, 3, 3.5, 4, 4.5, 7, 9]
+In the case when `partition_scaling_factor = 4`, this function creates the new partition vector as follows: [0, 3, 3.5, 4, 4.5, 7, 9]
 
 There are two options for this function,
 
@@ -295,7 +307,7 @@ function add_adaptive_partition(m::Optimizer; kwargs...)
             for j in 1:λCnt
                 if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
                     radius = Alp.calculate_radius(discretization[i], j, ratio)
-                    Alp.insert_partition(m, i, j, point, radius, discretization[i])
+                    Alp.insert_partition_helper(m, i, j, point, radius, discretization[i])
                     push!(processed, i)
                     break
                 end
@@ -342,13 +354,13 @@ function calculate_radius(partvec::Vector, part::Int, ratio::Any)
     elseif isa(ratio, Function)
         radius = distance / ratio(m)
     else
-        error("Undetermined discretization ratio")
+        error("Undetermined partition scaling factor")
     end
 
     return radius
 end
 
-function insert_partition(
+function insert_partition_helper(
     m::Optimizer,
     var::Int,
     partidx::Int,
@@ -415,15 +427,13 @@ function add_uniform_partition(m::Optimizer; kwargs...)
         lb_local = discretization[i][1]
         ub_local = discretization[i][end]
         distance = ub_local - lb_local
-        chunk = distance / ((m.logs[:n_iter] + 1) * Alp.get_option(m, :disc_uniform_rate))
+        # chunk = distance / ((m.logs[:n_iter] + 1) * Alp.get_option(m, :disc_uniform_rate))
+        chunk = distance / (m.logs[:n_iter] * Alp.get_option(m, :disc_uniform_rate))
         discretization[i] = [
             lb_local + chunk * (j - 1) for
-            j in 1:(m.logs[:n_iter]+1)*Alp.get_option(m, :disc_uniform_rate)
+            j in 1:(m.logs[:n_iter])*Alp.get_option(m, :disc_uniform_rate)
         ]
         push!(discretization[i], ub_local)   # Safety Scheme
-        (Alp.get_option(m, :log_level) > 199) && println(
-            "[DEBUG] VAR$(i): RATE=$(Alp.get_option(m, :disc_uniform_rate)), PARTITIONS=$(length(discretization[i]))  |$(round(lb_local; digits=4)) | $(Alp.get_option(m, :disc_uniform_rate)*(1+m.logs[:n_iter])) SEGMENTS | $(round(ub_local; digits=4))|",
-        )
     end
 
     return discretization
