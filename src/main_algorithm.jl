@@ -468,11 +468,11 @@ function local_solve(m::Optimizer; presolve = false)
     else
         push!(m.logs[:obj], "E")
         m.status[:local_solve] = MOI.OTHER_ERROR
-        if presolve
-            @warn " Warning: NLP solve failure $(local_nlp_status)."
-        else
-            @warn " Warning: NLP local solve failure."
-        end
+        # if presolve
+        #     @warn " Warning: NLP solve failure $(local_nlp_status)."
+        # else
+        #     @warn " Warning: NLP local solve failure."
+        # end
         return
     end
 
