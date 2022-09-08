@@ -60,6 +60,8 @@ mutable struct OptimizerOptions
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
+
+    use_start_as_local                                          # Use starting value as local solution for presolve
 end
 
 function get_default_options()
@@ -109,6 +111,7 @@ function get_default_options()
     presolve_bt_relax_integrality = false
     presolve_bt_mip_time_limit = Inf
     presolve_bp = false
+    use_start_as_local = false
 
     return OptimizerOptions(
         log_level,
@@ -152,5 +155,6 @@ function get_default_options()
         presolve_bt_relax_integrality,
         presolve_bt_mip_time_limit,
         presolve_bp,
+        use_start_as_local,
     )
 end

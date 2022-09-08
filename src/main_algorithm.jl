@@ -203,7 +203,16 @@ function presolve(m::Optimizer)
     start_presolve = time()
     Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color = :cyan)
     Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
-    Alp.local_solve(m, presolve = true)
+    if Alp.get_option(m, :use_start_as_local)
+        obj_warmval = if m.has_nl_objective
+            MOI.eval_variables(vi -> m.initial_warmval[vi.value], m.objective_function)
+        else
+            MOI.eval_objective(m.d_orig, m.initial_warmval)
+        end
+        update_incumb_objective(m, obj_warmval, m.initial_warmval)
+    else
+        Alp.local_solve(m, presolve = true)
+    end
 
     # Solver status
     if m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT
