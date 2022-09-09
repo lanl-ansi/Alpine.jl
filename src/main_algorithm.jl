@@ -203,13 +203,13 @@ function presolve(m::Optimizer)
     start_presolve = time()
     Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color = :cyan)
     Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
-    if Alp.get_option(m, :use_start_as_local)
+    if Alp.get_option(m, :use_start_as_local_solution)
         obj_warmval = if m.has_nl_objective
-            MOI.eval_variables(vi -> m.initial_warmval[vi.value], m.objective_function)
+            MOI.eval_variables(vi -> m.warm_start_value[vi.value], m.objective_function)
         else
-            MOI.eval_objective(m.d_orig, m.initial_warmval)
+            MOI.eval_objective(m.d_orig, m.warm_start_value)
         end
-        update_incumb_objective(m, obj_warmval, m.initial_warmval)
+        Alp.update_incumbent(m, obj_warmval, m.warm_start_value)
     else
         Alp.local_solve(m, presolve = true)
     end
@@ -402,7 +402,7 @@ function local_solve(m::Optimizer; presolve = false)
     if !presolve
         warmval = m.best_sol[1:m.num_var_orig]
     else
-        warmval = m.initial_warmval[1:m.num_var_orig]
+        warmval = m.warm_start_value[1:m.num_var_orig]
     end
     MOI.set(local_solve_model, MOI.VariablePrimalStart(), x, warmval)
 
@@ -454,7 +454,7 @@ function local_solve(m::Optimizer; presolve = false)
         end
 
         @assert length(candidate_sol) == length(sol_temp)
-        Alp.update_incumb_objective(m, candidate_obj, candidate_sol)
+        Alp.update_incumbent(m, candidate_obj, candidate_sol)
         m.status[:local_solve] = local_nlp_status
         return
 

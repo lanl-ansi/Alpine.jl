@@ -4,6 +4,7 @@
 - Re-org and clean-up in partition additions within bounding MIP model
 - Updated to cheaper `AffExpr` evaluation within linking constraints
 - Minor update in gap evaluataion after OBBT termination with fixed iterations
+- Added option to use warm start value as also the intial local solution in presolve without invoking a local solver (#218)
 
 ## v0.5.0
 - New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (significant speed up in run times for multilinear problems: http://www.optimization-online.org/DB_HTML/2022/07/8974.html) (@jongeunkim)

@@ -218,7 +218,7 @@ function create_status!(m)
 
     status[:local_solve] = MOI.OPTIMIZE_NOT_CALLED # Status of local solve
     status[:bounding_solve] = MOI.OPTIMIZE_NOT_CALLED # Status of bounding solve
-    m.detected_feasible_solution = false
+    m.detected_incumbent = false
     m.detected_bound = false
 
     return m.status = status
@@ -240,14 +240,14 @@ function summary_status(m::Optimizer)
     #               happens when lower bound problem is extremely hard to solve
     # :Unknown : termination with no exception recorded
 
-    if m.detected_bound && m.detected_feasible_solution
+    if m.detected_bound && m.detected_incumbent
         m.alpine_status =
             m.best_rel_gap > Alp.get_option(m, :rel_gap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
     elseif m.status[:bounding_solve] == MOI.INFEASIBLE
         m.alpine_status = MOI.INFEASIBLE
-    elseif m.detected_bound && !m.detected_feasible_solution
+    elseif m.detected_bound && !m.detected_incumbent
         m.alpine_status = MOI.OTHER_LIMIT
-    elseif !m.detected_bound && m.detected_feasible_solution
+    elseif !m.detected_bound && m.detected_incumbent
         m.alpine_status = MOI.LOCALLY_SOLVED
     else
         @warn "  [EXCEPTION] Indefinite Alpine status. Please report your instance (& solver configuration) as an issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."

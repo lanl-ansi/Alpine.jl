@@ -45,7 +45,7 @@ mutable struct OptimizerOptions
     linking_constraints::Bool                                   # Multilinear linking constraint feature
     linking_constraints_degree_limit::Int64                     # Degree of shared multilinear terms up to which the linking constraints are built and added
 
-    # Bound-tightening parameters
+    # Presolve and bound-tightening parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
     presolve_bt_time_limit::Float64                             # Time limit for presolving (seconds)
@@ -57,11 +57,10 @@ mutable struct OptimizerOptions
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
     presolve_bt_relax_integrality::Bool                         # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
+    use_start_as_local_solution::Bool                           # Use starting value as local solution for presolve without invoking a local solver
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
-
-    use_start_as_local                                          # Use starting value as local solution for presolve
 end
 
 function get_default_options()
@@ -110,8 +109,8 @@ function get_default_options()
     presolve_bt_algo = 1
     presolve_bt_relax_integrality = false
     presolve_bt_mip_time_limit = Inf
+    use_start_as_local_solution = false
     presolve_bp = false
-    use_start_as_local = false
 
     return OptimizerOptions(
         log_level,
@@ -154,7 +153,7 @@ function get_default_options()
         presolve_bt_algo,
         presolve_bt_relax_integrality,
         presolve_bt_mip_time_limit,
+        use_start_as_local_solution,
         presolve_bp,
-        use_start_as_local,
     )
 end

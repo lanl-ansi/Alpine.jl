@@ -1,7 +1,8 @@
 function nlp1(; solver = nothing)
     m = JuMP.Model(solver)
 
-    @variable(m, 1 <= x[1:2] <= 4)
+    sol = [2.55577, 3.13017]
+    @variable(m, 1 <= x[i = 1:2] <= 4, start = sol[i])
     @NLconstraint(m, x[1] * x[2] >= 8)
     @NLobjective(m, Min, 6 * x[1]^2 + 4 * x[2]^2 - 2.5 * x[1] * x[2])
 
@@ -37,7 +38,8 @@ function nlp3(; solver = nothing)
     LB = [100, 1000, 1000, 10, 10, 10, 10, 10]
     UB = [10000, 10000, 10000, 1000, 1000, 1000, 1000, 1000]
 
-    @variable(m, LB[i] <= x[i = 1:8] <= UB[i])
+    sol = [579.30669, 1359.97066, 5109.97054, 182.0177, 295.60118, 217.9823, 286.41653, 395.60118]
+    @variable(m, LB[i] <= x[i = 1:8] <= UB[i], start = sol[i])
 
     @constraint(m, 0.0025 * (x[4] + x[6]) <= 1)
     @constraint(m, 0.0025 * (x[5] - x[4] + x[7]) <= 1)

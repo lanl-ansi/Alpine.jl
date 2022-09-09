@@ -86,7 +86,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     presolve_infeasible::Bool                            # Presolve infeasibility detection flag
     best_bound::Float64                                  # Best bound from MIP
     best_obj::Float64                                    # Best feasible objective value
-    initial_warmval::Vector{Float64}                     # Warmstart values set to Alpine
+    warm_start_value::Vector{Float64}                    # Warmstart values set to Alpine
     best_sol::Vector{Float64}                            # Best feasible solution
     best_bound_sol::Vector{Float64}                      # Best bound solution (arg-min)
     presolve_best_rel_gap::Float64                       # Post-OBBT relative optimality gap = |best_obj - best_bound|/|best_obj|*100
@@ -100,7 +100,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # Logging information and status
     logs::Dict{Symbol,Any}                          # Logging information
-    detected_feasible_solution::Bool
+    detected_incumbent::Bool
     detected_bound::Bool
     status::Dict{Symbol,MOI.TerminationStatusCode}   # Detailed status of every iteration in the algorithm
     alpine_status::MOI.TerminationStatusCode         # Current Alpine's status
@@ -226,7 +226,7 @@ function MOI.empty!(m::Optimizer)
         Vector{Vector{Float64}}(undef, m.options.disc_consecutive_forbid)
 
     m.best_obj = Inf
-    m.initial_warmval = Float64[]
+    m.warm_start_value = Float64[]
     m.best_sol = Float64[]
     m.best_bound = -Inf
     m.presolve_best_rel_gap = Inf
@@ -264,7 +264,7 @@ function MOI.add_variable(model::Optimizer)
     push!(model.l_var_orig, -Inf)
     push!(model.u_var_orig, Inf)
     push!(model.var_type_orig, :Cont)
-    push!(model.initial_warmval, 0.0)
+    push!(model.warm_start_value, 0.0)
     push!(model.best_sol, 0.0)
     return MOI.VariableIndex(model.num_var_orig)
 end
@@ -278,7 +278,7 @@ function MOI.set(
     vi::MOI.VariableIndex,
     value::Union{Real,Nothing},
 )
-    model.best_sol[vi.value] = model.initial_warmval[vi.value] = something(value, 0.0)
+    model.best_sol[vi.value] = model.warm_start_value[vi.value] = something(value, 0.0)
     return
 end
 

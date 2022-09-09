@@ -616,7 +616,7 @@ function blend029_gl(; solver = nothing)
         0.0,
     ]
     for i in 1:102
-        set_start_value(x[i], warmstarter[i])
+        JuMP.set_start_value(x[i], warmstarter[i])
     end
 
     @constraint(m, x[1] + x[4] + x[7] + x[10] + x[49] == 1)  #= e2: =#
