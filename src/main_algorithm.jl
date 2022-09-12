@@ -205,9 +205,9 @@ function presolve(m::Optimizer)
     Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
     if Alp.get_option(m, :use_start_as_local_solution)
         obj_warmval = if m.has_nl_objective
-            MOI.eval_variables(vi -> m.warm_start_value[vi.value], m.objective_function)
-        else
             MOI.eval_objective(m.d_orig, m.warm_start_value)
+        else
+            MOI.eval_variables(vi -> m.warm_start_value[vi.value], m.objective_function)
         end
         Alp.update_incumbent(m, obj_warmval, m.warm_start_value)
     else
