@@ -45,7 +45,7 @@ mutable struct OptimizerOptions
     linking_constraints::Bool                                   # Multilinear linking constraint feature
     linking_constraints_degree_limit::Int64                     # Degree of shared multilinear terms up to which the linking constraints are built and added
 
-    # Bound-tightening parameters
+    # Presolve and bound-tightening parameters
     presolve_track_time::Bool                                   # Account presolve time for total time usage
     presolve_bt::Bool                                           # Perform bound tightening procedure before the main algorithm (default: true)
     presolve_bt_time_limit::Float64                             # Time limit for presolving (seconds)
@@ -57,6 +57,7 @@ mutable struct OptimizerOptions
     presolve_bt_algo::Any                                       # Method used for bound tightening procedures, can either be an index of default methods or functional inputs
     presolve_bt_relax_integrality::Bool                         # Relax the MIP solved in built-in relaxation scheme for time performance
     presolve_bt_mip_time_limit::Float64                         # Time limit for a single MIP solved in the built-in bound tightening algorithm (with partitions)
+    use_start_as_incumbent::Bool                           # Use starting value as a local incumbent solution for presolve without invoking a local solver
 
     # Domain Reduction
     presolve_bp::Bool                                           # Conduct basic bound propagation
@@ -108,6 +109,7 @@ function get_default_options()
     presolve_bt_algo = 1
     presolve_bt_relax_integrality = false
     presolve_bt_mip_time_limit = Inf
+    use_start_as_incumbent = false
     presolve_bp = false
 
     return OptimizerOptions(
@@ -151,6 +153,7 @@ function get_default_options()
         presolve_bt_algo,
         presolve_bt_relax_integrality,
         presolve_bt_mip_time_limit,
+        use_start_as_incumbent,
         presolve_bp,
     )
 end

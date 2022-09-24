@@ -104,13 +104,13 @@ discretization_to_bounds(d::Dict, l::Int) = Alp.update_var_bounds(d, len = l)
 """
 Update the data structure with feasible solution and its associated objective (if better)
 """
-function update_incumb_objective(m::Optimizer, objval::Float64, sol::Vector)
+function update_incumbent(m::Optimizer, objval::Float64, sol::Vector)
     convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
     push!(m.logs[:obj], objval)
     if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
         m.best_obj = objval
         m.best_sol = sol
-        m.detected_feasible_solution = true
+        m.detected_incumbent = true
     end
 
     return
@@ -170,7 +170,7 @@ Check if the solution is always the same within the last disc_consecutive_forbid
 """
 function check_solution_history(m::Optimizer, ind::Int)
     Alp.get_option(m, :disc_consecutive_forbid) == 0 && return false
-    ((m.logs[:n_iter]-1) < Alp.get_option(m, :disc_consecutive_forbid)) && return false
+    ((m.logs[:n_iter] - 1) < Alp.get_option(m, :disc_consecutive_forbid)) && return false
 
     sol_val = m.bound_sol_history[mod(
         m.logs[:n_iter] - 2,

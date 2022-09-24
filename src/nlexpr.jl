@@ -353,7 +353,7 @@ function traverse_expr_linear_to_affine(
         return lhscoeffs, lhsvars, rhs, bufferVal, bufferVar
     end
 
-    # HOT-PATCH : Special Structure Recognition
+    # PATCH : Special Structure Recognition
     start_pos = 1
     if (expr.args[1] == :*) && (length(expr.args) == 3)
         if (isa(expr.args[2], Float64) || isa(expr.args[2], Int)) &&
@@ -361,7 +361,7 @@ function traverse_expr_linear_to_affine(
             (coef != 0.0) ? coef = expr.args[2] * coef : coef = expr.args[2]# Patch
             # coef = expr.args[2]
             start_pos = 3
-            @warn "Special expression structure detected [*, coef, :call, ...]. Currently using a beta fix..."
+            # @warn "Special expression structure detected [*, coef, :call, ...]. Currently using a beta fix..."
         end
     end
 

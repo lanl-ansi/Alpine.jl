@@ -9,17 +9,18 @@ will choose one specific partition as the lower bound solution. The more partiti
 better or finer bounding model relax the original MINLP while the more efforts required to solve 
 this MILP is required.
 """
-function create_bounding_mip(m::Optimizer; use_disc = nothing)  
+function create_bounding_mip(m::Optimizer; use_disc = nothing)
     if (use_disc === nothing)
-        if (m.logs[:n_iter] == 1) && (m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT)
+        if (m.logs[:n_iter] == 1) &&
+           (m.status[:local_solve] in union(STATUS_OPT, STATUS_LIMIT, STATUS_WARM_START))
             # Setting up an initial partition
-            Alp.add_partition(m, use_solution = m.best_sol)  
+            Alp.add_partition(m, use_solution = m.best_sol)
         elseif m.logs[:n_iter] >= 2
             # Add subsequent iteration partitions
             Alp.add_partition(m)
         end
         discretization = m.discretization
-    else 
+    else
         discretization = use_disc
     end
 
@@ -59,11 +60,11 @@ function amp_post_vars(m::Optimizer; kwargs...)
     if haskey(options, :use_disc)
         l_var = [
             options[:use_disc][i][1] for
-            i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
+            i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         ]
         u_var = [
             options[:use_disc][i][end] for
-            i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
+            i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         ]
     else
         l_var = m.l_var_tight
@@ -72,10 +73,10 @@ function amp_post_vars(m::Optimizer; kwargs...)
 
     JuMP.@variable(
         m.model_mip,
-        x[i = 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)]
+        x[i = 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)]
     )
 
-    for i in 1:(m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip)
+    for i in 1:(m.num_var_orig+m.num_var_linear_mip+m.num_var_nonlinear_mip)
         # Interestingly, not enforcing category of lifted variables is able to improve performance
         if i <= m.num_var_orig
             if m.var_type_orig[i] == :Bin

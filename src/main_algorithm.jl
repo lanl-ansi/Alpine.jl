@@ -10,6 +10,9 @@ const STATUS_LIMIT = [
 ]
 const STATUS_OPT =
     [MOI.OPTIMAL, MOI.LOCALLY_SOLVED, MOI.ALMOST_OPTIMAL, MOI.ALMOST_LOCALLY_SOLVED]
+
+const STATUS_WARM_START = [MOI.OPTIMIZE_NOT_CALLED]
+
 const STATUS_INF = [MOI.INFEASIBLE, MOI.LOCALLY_INFEASIBLE]
 
 function features_available(m::Optimizer)
@@ -42,7 +45,7 @@ function load!(m::Optimizer)
     elseif m.objective_function isa Nothing
         m.obj_expr_orig = Expr(:call, :+)
     else
-        m.obj_expr_orig = _moi_function_to_expr(m.objective_function)
+        m.obj_expr_orig = Alp._moi_function_to_expr(m.objective_function)
     end
 
     # Collect original variable type and build dynamic variable type space
@@ -159,8 +162,6 @@ function MOI.optimize!(m::Optimizer)
         println(
             "====================================================================================================",
         )
-    else
-        println("  Presolve terminated with a global optimal solution")
     end
 
     Alp.summary_status(m)
@@ -203,14 +204,40 @@ function presolve(m::Optimizer)
     start_presolve = time()
     Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color = :cyan)
     Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
-    Alp.local_solve(m, presolve = true)
+
+    if Alp.get_option(m, :use_start_as_incumbent)
+        # Check for bound feasibility of the warm start value
+        if !(m.l_var_orig <= m.warm_start_value <= m.u_var_orig)
+            error(
+                "Provide a valid, feasible, warm starting point. Else, set use_start_as_incumbent to false",
+            )
+        end
+
+        obj_warmval = if m.has_nl_objective
+            MOI.eval_objective(m.d_orig, m.warm_start_value)
+        else
+            MOI.Utilities.eval_variables(
+                vi -> m.warm_start_value[vi.value],
+                m.objective_function,
+            )
+        end
+        Alp.update_incumbent(m, obj_warmval, m.warm_start_value)
+        m.status[:local_solve] = MOI.OPTIMIZE_NOT_CALLED
+        Alp.get_option(m, :log_level) > 0 && println(
+            "  Using warm starting point as a local incumbent solution with value $(round(m.best_obj, digits=4))",
+        )
+    else
+        Alp.local_solve(m, presolve = true)
+    end
 
     # Solver status
-    if m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT
-        Alp.get_option(m, :log_level) > 0 && println(
-            "  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))",
-        )
-        Alp.bound_tightening(m, use_bound = true)    # performs bound-tightening with the local solve objective value
+    if m.status[:local_solve] in union(STATUS_OPT, STATUS_LIMIT, STATUS_WARM_START)
+        if !Alp.get_option(m, :use_start_as_incumbent)
+            Alp.get_option(m, :log_level) > 0 && println(
+                "  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))",
+            )
+        end
+        Alp.bound_tightening_wrapper(m, use_bound = true)    # performs bound-tightening with the local solve objective value
         Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)            # Re-initialize discretization dictionary on tight bounds
         Alp.get_option(m, :partition_scaling_factor_branch) && (Alp.set_option(
             m,
@@ -221,7 +248,7 @@ function presolve(m::Optimizer)
     elseif m.status[:local_solve] in STATUS_INF
         (Alp.get_option(m, :log_level) > 0) &&
             println("  Bound tightening without objective bounds (OBBT)")
-        Alp.bound_tightening(m, use_bound = false)                      # do bound tightening without objective value
+        Alp.bound_tightening_wrapper(m, use_bound = false)                      # do bound tightening without objective value
         (Alp.get_option(m, :partition_scaling_factor_branch)) && (Alp.set_option(
             m,
             :partition_scaling_factor,
@@ -230,9 +257,8 @@ function presolve(m::Optimizer)
         Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)
 
     elseif m.status[:local_solve] == MOI.INVALID_MODEL
-        @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n This may come from Ipopt's `:Not_Enough_Degrees_Of_Freedom`. \n Consider more replace equality constraints with >= and <= to resolve this."
-
-    else
+        @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n This may come from Ipopt's `:Not_Enough_Degrees_Of_Freedom`."
+    elseif !Alp.get_option(m, :use_start_as_incumbent)
         @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve])."
     end
 
@@ -326,8 +352,12 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
             m.objective_function,
         )
     end
-    block = MOI.NLPBlockData(m.nl_constraint_bounds_orig, m.d_orig, m.has_nl_objective)
-    MOI.set(model, MOI.NLPBlock(), block)
+
+    if m.d_orig !== nothing
+        block =
+            MOI.NLPBlockData(m.nl_constraint_bounds_orig, m.d_orig, m.has_nl_objective)
+        MOI.set(model, MOI.NLPBlock(), block)
+    end
 
     return x
 end
@@ -393,7 +423,7 @@ function local_solve(m::Optimizer; presolve = false)
     if !presolve
         warmval = m.best_sol[1:m.num_var_orig]
     else
-        warmval = m.initial_warmval[1:m.num_var_orig]
+        warmval = m.warm_start_value[1:m.num_var_orig]
     end
     MOI.set(local_solve_model, MOI.VariablePrimalStart(), x, warmval)
 
@@ -445,7 +475,7 @@ function local_solve(m::Optimizer; presolve = false)
         end
 
         @assert length(candidate_sol) == length(sol_temp)
-        Alp.update_incumb_objective(m, candidate_obj, candidate_sol)
+        Alp.update_incumbent(m, candidate_obj, candidate_sol)
         m.status[:local_solve] = local_nlp_status
         return
 

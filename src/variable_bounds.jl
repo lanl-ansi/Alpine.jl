@@ -456,7 +456,7 @@ Output::
 
     l_var::Vector{Float64}, u_var::Vector{Float64}
 """
-function update_var_bounds(discretization::Dict{Any, Any}; kwargs...)
+function update_var_bounds(discretization::Dict{Any,Any}; kwargs...)
     options = Dict(kwargs)
 
     haskey(options, :len) ? len = options[:len] : len = length(keys(discretization))

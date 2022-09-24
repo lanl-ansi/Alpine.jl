@@ -7,7 +7,7 @@ function update_disc_cont_var(m::Optimizer)
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
     # If no feasible solution is found, do NOT update
-    if !m.detected_feasible_solution
+    if !m.detected_incumbent
         println("no feasible solution detected. No update disc var selection.")
         return
     end

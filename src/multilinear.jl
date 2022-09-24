@@ -583,7 +583,8 @@ function amp_post_inequalities_cont(
         return
     elseif Alp.get_option(m, :convhull_formulation) == "facet"
         for j in 1:(partition_cnt-1) # Constraint cluster of α >= f(λ)
-            sliced_indices = Alp.collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+            sliced_indices =
+                Alp.collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
             JuMP.@constraint(
                 m.model_mip,
                 sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices])
