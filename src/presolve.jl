@@ -1,5 +1,5 @@
 """
-    bound_tightening(m::Optimizer)
+    bound_tightening_wrapper(m::Optimizer)
 
 Entry point to the optimization-based bound-tightening (OBBT) algorithm. The aim of the OBBT algorithm
 is to sequentially tighten the variable bounds until a fixed point is reached.
@@ -10,7 +10,7 @@ Currently, two OBBT methods are implemented in [`optimization_based_bound_tighte
     * Bound-tightening with piecewise polyhedral relaxations: (with three partitions around the local feasible solution)
 If no local feasible solution is obtained, the algorithm defaults to OBBT without partitions
 """
-function bound_tightening(m::Optimizer; use_bound = true, kwargs...)
+function bound_tightening_wrapper(m::Optimizer; use_bound = true, kwargs...)
     Alp.get_option(m, :presolve_bt) || return
 
     if Alp.get_option(m, :presolve_bt_algo) == 1
@@ -115,14 +115,14 @@ function optimization_based_bound_tightening(
             temp_bounds[var_idx] =
                 [discretization[var_idx][1], discretization[var_idx][end]]
             if (discretization[var_idx][end] - discretization[var_idx][1]) > width_tol
-                Alp.create_bound_tightening_model(m, discretization, bound)
+                Alp.create_obbt_model(m, discretization, bound)
                 for sense in both_senses
                     JuMP.@objective(
                         m.model_mip,
                         sense,
                         _index_to_variable_ref(m.model_mip, var_idx)
                     )
-                    stats = Alp.solve_bound_tightening_model(m)
+                    stats = Alp.solve_obbt_model(m)
                     if stats["status"] in STATUS_OPT
                         temp_bounds[var_idx][tell_side[sense]] =
                             tell_round[sense](
@@ -278,12 +278,12 @@ function optimization_based_bound_tightening(
 end
 
 """
-    create_bound_tightening_model(m::Optimizer, discretization::Dict, bound::Float64)
+    create_obbt_model(m::Optimizer, discretization::Dict, bound::Float64)
 
 This function takes in the initial discretization information and builds the OBBT model.
 It is an algorithm specific function called by [`optimization_based_bound_tightening`](@ref).
 """
-function create_bound_tightening_model(
+function create_obbt_model(
     m::Optimizer,
     discretization,
     bound::Number;
@@ -311,7 +311,7 @@ function create_bound_tightening_model(
 end
 
 function relaxation_model_obbt(m::Optimizer, discretization, bound::Number)
-    Alp.create_bound_tightening_model(m, discretization, bound)
+    Alp.create_obbt_model(m, discretization, bound)
 
     obj_expr = sum(
         m.bounding_obj_mip[:coefs][j] *
@@ -325,17 +325,15 @@ function relaxation_model_obbt(m::Optimizer, discretization, bound::Number)
         JuMP.@objective(m.model_mip, Max, obj_expr)
     end
 
-    stats = Alp.solve_bound_tightening_model(m)
-
-    return stats
+    return Alp.solve_obbt_model(m)
 end
 
 """
-    solve_bound_tightening_model(m::Optimizer)
+    solve_obbt_model(m::Optimizer)
 
 A function that solves the min and max OBBT model.
 """
-function solve_bound_tightening_model(m::Optimizer; kwargs...)
+function solve_obbt_model(m::Optimizer; kwargs...)
     stats = Dict()
 
     # ========= MILP Solve ========= #

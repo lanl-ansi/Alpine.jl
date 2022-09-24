@@ -35,7 +35,6 @@ const alpine = JuMP.optimizer_with_attributes(
     "presolve_bt" => true,
     "apply_partitioning" => true,
     "partition_scaling_factor" => 10,
-    "use_start_as_local_solution" => true
 )
 
 m = nlp3(solver = alpine)

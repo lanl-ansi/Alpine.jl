@@ -11,7 +11,7 @@ this MILP is required.
 """
 function create_bounding_mip(m::Optimizer; use_disc = nothing)  
     if (use_disc === nothing)
-        if (m.logs[:n_iter] == 1) && (m.status[:local_solve] in STATUS_OPT || m.status[:local_solve] in STATUS_LIMIT)
+        if (m.logs[:n_iter] == 1) && (m.status[:local_solve] in union(STATUS_OPT, STATUS_LIMIT, STATUS_WARM_START))
             # Setting up an initial partition
             Alp.add_partition(m, use_solution = m.best_sol)  
         elseif m.logs[:n_iter] >= 2

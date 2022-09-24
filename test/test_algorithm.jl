@@ -970,3 +970,52 @@ end
     @test in(Set{Any}([1, 2, 4]), alp.linking_constraints_info[[1, 4]])
     @test in(Set{Any}([1, 3, 4]), alp.linking_constraints_info[[1, 4]])
 end
+
+@testset "Warm start value used as the incumbent solution" begin
+
+    test_solver = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "presolve_bt" => false,
+        "max_iter" => 1,
+        "use_start_as_incumbent" => false
+    )
+    sol = [579.30669, 1359.97066, 5109.97054, 182.0177, 295.60118, 217.9823, 286.41653, 395.60118]
+
+    m = nlp3(solver = test_solver)
+    for i=1:length(m[:x])
+        JuMP.set_start_value(m[:x][i], sol[i])
+    end
+
+    JuMP.optimize!(m)
+    alp = JuMP.backend(m).optimizer.model
+
+    @test termination_status(m) == MOI.OTHER_LIMIT
+    @test isapprox(objective_value(m), 7049.247897696512, atol = 1e-6)
+    @test isapprox(alp.best_bound, 3834.978106740535, atol = 1E-6)
+    @test alp.options.use_start_as_incumbent == false
+
+    test_solver = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "presolve_bt" => true,
+        "max_iter" => 1,
+        "use_start_as_incumbent" => true
+    )
+
+    m = nlp3(solver = test_solver)
+    for i=1:length(m[:x])
+        JuMP.set_start_value(m[:x][i], sol[i])
+    end
+
+    JuMP.optimize!(m)
+    alp = JuMP.backend(m).optimizer.model
+
+    @test termination_status(m) == MOI.OTHER_LIMIT
+    @test isapprox(alp.best_bound, 4810.212866711817, atol = 1E-6)
+    @test alp.warm_start_value == sol
+    @test alp.options.use_start_as_incumbent == true
+
+end

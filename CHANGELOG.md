@@ -4,7 +4,8 @@
 - Re-org and clean-up in partition additions within bounding MIP model
 - Updated to cheaper `AffExpr` evaluation within linking constraints
 - Minor update in gap evaluataion after OBBT termination with fixed iterations
-- Added option to use warm start value as also the intial local solution in presolve without invoking a local solver (#218)
+- Added solver option `use_start_as_incumbent` to use warm start value as also an intial incumbent solution  in presolve without invoking a local solver. (#218)
+- Added unit tests for testing warm start point
 
 ## v0.5.0
 - New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (significant speed up in run times for multilinear problems: http://www.optimization-online.org/DB_HTML/2022/07/8974.html) (@jongeunkim)
@@ -50,7 +51,7 @@
 - Bug fix in `relax_integrality` under presolve
 - Added Rosenbrock function
 - Added user-definable `presolve_bt_improv_tol` for variable range reductions in OBBT
-- Minor update on finite values for obj-bound in `create_bound_tightening_model`
+- Minor update on finite values for obj-bound in `create_obbt_model`
 - NLP solution rounding issue resolved (now compatible with default tol, 1e-6), to avoid the variable solution outside discretization (#190)
 - `circleN` instance updated to `circle_MINLPLib` to eliminate Pavito's mixed-integer cycling in unit tests (#190)
 - Clean-up in printing variable solutions (`variable_values`)

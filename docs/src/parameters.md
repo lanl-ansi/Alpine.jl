@@ -43,6 +43,6 @@ Here are a few general solver options which control the performance of Alpine:
 
 * `presolve_bt_mip_time_limit (default = Inf)`: time limit for individual MILPs solved during the sequential OBBT procedure.
 
-* `use_start_as_local_solution (default = false)`: if `true`, Alpine does not perform any local optimization during the presolve and uses the starting value instead (*warning*: Alpine assumes the feasibility of the starting value and does not check it).
+* `use_start_as_incumbent (default = false)`: if `true`, Alpine does not perform any local optimization during the presolve and uses the starting value instead (*warning*: Alpine assumes the feasibility of the starting value and does not check it).
 
 Note that the above-mentioned list of solver options is not comprehensive, but can be found in [solver.jl](https://github.com/lanl-ansi/Alpine.jl/blob/master/src/solver.jl).

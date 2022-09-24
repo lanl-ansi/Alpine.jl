@@ -25,8 +25,8 @@ min_vertex_cover
 ```@docs
 bound_tightening
 optimization_based_bound_tightening
-create_bound_tightening_model
-solve_bound_tightening_model
+create_obbt_model
+solve_obbt_model
 resolve_var_bounds
 ```
 
