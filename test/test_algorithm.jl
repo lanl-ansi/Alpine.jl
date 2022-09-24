@@ -972,19 +972,27 @@ end
 end
 
 @testset "Warm start value used as the incumbent solution" begin
-
     test_solver = JuMP.optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
         "mip_solver" => HIGHS,
         "presolve_bt" => false,
         "max_iter" => 1,
-        "use_start_as_incumbent" => false
+        "use_start_as_incumbent" => false,
     )
-    sol = [579.30669, 1359.97066, 5109.97054, 182.0177, 295.60118, 217.9823, 286.41653, 395.60118]
+    sol = [
+        579.30669,
+        1359.97066,
+        5109.97054,
+        182.0177,
+        295.60118,
+        217.9823,
+        286.41653,
+        395.60118,
+    ]
 
     m = nlp3(solver = test_solver)
-    for i=1:length(m[:x])
+    for i in 1:length(m[:x])
         JuMP.set_start_value(m[:x][i], sol[i])
     end
 
@@ -1002,11 +1010,11 @@ end
         "mip_solver" => HIGHS,
         "presolve_bt" => true,
         "max_iter" => 1,
-        "use_start_as_incumbent" => true
+        "use_start_as_incumbent" => true,
     )
 
     m = nlp3(solver = test_solver)
-    for i=1:length(m[:x])
+    for i in 1:length(m[:x])
         JuMP.set_start_value(m[:x][i], sol[i])
     end
 
@@ -1017,5 +1025,4 @@ end
     @test isapprox(alp.best_bound, 4810.212866711817, atol = 1E-6)
     @test alp.warm_start_value == sol
     @test alp.options.use_start_as_incumbent == true
-
 end

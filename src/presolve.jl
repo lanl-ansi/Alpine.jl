@@ -255,7 +255,7 @@ function optimization_based_bound_tightening(
         println("  Actual iterations (OBBT): ", (m.logs[:bt_iter]))
 
     m.l_var_tight, m.u_var_tight = Alp.update_var_bounds(discretization)
-    
+
     if haskey(options, :use_tmc)
         m.discretization = Alp.add_adaptive_partition(m, use_solution = m.best_sol)
     end
@@ -283,12 +283,7 @@ end
 This function takes in the initial discretization information and builds the OBBT model.
 It is an algorithm specific function called by [`optimization_based_bound_tightening`](@ref).
 """
-function create_obbt_model(
-    m::Optimizer,
-    discretization,
-    bound::Number;
-    kwargs...,
-)
+function create_obbt_model(m::Optimizer, discretization, bound::Number; kwargs...)
 
     # options = Dict(kwargs)
     start_build = time()

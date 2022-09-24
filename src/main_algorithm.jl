@@ -208,21 +208,28 @@ function presolve(m::Optimizer)
     if Alp.get_option(m, :use_start_as_incumbent)
         # Check for bound feasibility of the warm start value
         if !(m.l_var_orig <= m.warm_start_value <= m.u_var_orig)
-            error("Provide a valid, feasible, warm starting point. Else, set use_start_as_incumbent to false")
+            error(
+                "Provide a valid, feasible, warm starting point. Else, set use_start_as_incumbent to false",
+            )
         end
 
         obj_warmval = if m.has_nl_objective
             MOI.eval_objective(m.d_orig, m.warm_start_value)
         else
-            MOI.Utilities.eval_variables(vi -> m.warm_start_value[vi.value], m.objective_function)
+            MOI.Utilities.eval_variables(
+                vi -> m.warm_start_value[vi.value],
+                m.objective_function,
+            )
         end
         Alp.update_incumbent(m, obj_warmval, m.warm_start_value)
         m.status[:local_solve] = MOI.OPTIMIZE_NOT_CALLED
-        Alp.get_option(m, :log_level) > 0 && println("  Using warm starting point as a local incumbent solution with value $(round(m.best_obj, digits=4))")
+        Alp.get_option(m, :log_level) > 0 && println(
+            "  Using warm starting point as a local incumbent solution with value $(round(m.best_obj, digits=4))",
+        )
     else
         Alp.local_solve(m, presolve = true)
     end
-    
+
     # Solver status
     if m.status[:local_solve] in union(STATUS_OPT, STATUS_LIMIT, STATUS_WARM_START)
         if !Alp.get_option(m, :use_start_as_incumbent)
@@ -345,9 +352,10 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
             m.objective_function,
         )
     end
-    
+
     if m.d_orig !== nothing
-        block = MOI.NLPBlockData(m.nl_constraint_bounds_orig, m.d_orig, m.has_nl_objective)
+        block =
+            MOI.NLPBlockData(m.nl_constraint_bounds_orig, m.d_orig, m.has_nl_objective)
         MOI.set(model, MOI.NLPBlock(), block)
     end
 

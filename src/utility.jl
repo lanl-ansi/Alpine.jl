@@ -170,7 +170,7 @@ Check if the solution is always the same within the last disc_consecutive_forbid
 """
 function check_solution_history(m::Optimizer, ind::Int)
     Alp.get_option(m, :disc_consecutive_forbid) == 0 && return false
-    ((m.logs[:n_iter]-1) < Alp.get_option(m, :disc_consecutive_forbid)) && return false
+    ((m.logs[:n_iter] - 1) < Alp.get_option(m, :disc_consecutive_forbid)) && return false
 
     sol_val = m.bound_sol_history[mod(
         m.logs[:n_iter] - 2,
