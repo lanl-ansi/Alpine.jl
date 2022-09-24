@@ -23,11 +23,12 @@ min_vertex_cover
 
 ## Presolve Methods
 ```@docs
-bound_tightening
+bound_tightening_wrapper
 optimization_based_bound_tightening
 create_obbt_model
 solve_obbt_model
 resolve_var_bounds
+post_objective_bound
 ```
 
 ## Utility Methods
