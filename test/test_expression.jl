@@ -3664,6 +3664,37 @@ end
 end
 
 @testset "@NLexpression from quadratic @expression (Issue #221)" begin
+    @testset "Unit tests for `expr_is_emptysum`" begin
+        # Empty sum
+        @test Alpine.expr_is_emptysum(:(+()))
+        # Not empty sum zero int
+        @test !Alpine.expr_is_emptysum(:(+(0, 0)))
+        # Not empty sum zero float
+        @test !Alpine.expr_is_emptysum(:(+(0.0, 0.0)))
+        # Not empty sum int with zero
+        @test !Alpine.expr_is_emptysum(:(+(1, 0)))
+        # Not empty sum int
+        @test !Alpine.expr_is_emptysum(:(+(1, 2)))
+        # Not empty sum float with zero
+        @test !Alpine.expr_is_emptysum(:(+(1.0, 0.0)))
+        # Not empty sum float
+        @test !Alpine.expr_is_emptysum(:(+(1.0, 3.0)))
+        # Not empty sum of variables
+        @test !Alpine.expr_is_emptysum(:(x + y))
+        # Not empty sum of variable with int
+        @test !Alpine.expr_is_emptysum(:(x + 1))
+        # Not empty sum of variable with float
+        @test !Alpine.expr_is_emptysum(:(x + 3.0))
+        # Not empty expression with non-linear function evaluation
+        @test !Alpine.expr_is_emptysum(:(sin(x)))
+        # Not empty expression with anonimus function
+        @test !Alpine.expr_is_emptysum(:(x -> log(x)))
+        # Not empty expression with anonimus function
+        @test !Alpine.expr_is_emptysum(:(x -> log(x)))
+        # Not empty expression with empty sum
+        @test !Alpine.expr_is_emptysum(:($(:(+())) + 1))
+    end
+
     test_solver = JuMP.optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
@@ -3671,15 +3702,17 @@ end
         "presolve_bt" => true,
         "apply_partitioning" => true,
     )
-    
+
     m = JuMP.Model(test_solver)
     @variable(m, 0 ≤ x ≤ 10)
     @expression(m, expr, x^2)
     @NLconstraint(m, expr ≥ 3)
     @NLobjective(m, Min, x^3)
 
-
+    x_target = sqrt(3)
+    f_obj_target = x_target^3
     JuMP.optimize!(m)
-    @test isapprox(JuMP.objective_value(m), 0.0; atol = 1E-6)
-    @test isapprox(JuMP.value(m[:x]), 0.0; atol = 1E-6)
+    @test JuMP.termination_status(m) == JuMP.MOI.OPTIMAL
+    @test isapprox(JuMP.objective_value(m), f_obj_target; atol = 1E-6)
+    @test isapprox(JuMP.value(m[:x]), x_target; atol = 1E-6)
 end
