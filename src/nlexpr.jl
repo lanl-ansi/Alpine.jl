@@ -573,6 +573,22 @@ function expr_arrangeargs(args::Array; kwargs...)
 end
 
 """
+Check if it is an sample of `+()` (https://github.com/lanl-ansi/Alpine.jl/issues/221)
+"""
+function expr_is_emptysum(expr)
+    try
+        _ = eval(expr)
+    catch e
+        if isa(e, MethodError) && (length(expr.args) == 1)
+            if isa(e.f, typeof(+)) && isa(e.args, typeof(()))
+                return true
+            end
+        end
+    end
+    return false
+end
+
+"""
 Check if a sub-tree is a constant or not
 """
 function expr_resolve_const(expr)
@@ -581,6 +597,9 @@ function expr_resolve_const(expr)
         if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
             continue
         elseif expr.args[i].head == :call
+            if expr_is_emptysum(expr.args[i])
+                expr.args[i] = :(0)
+            end
             (expr_isconst(expr.args[i])) && (expr.args[i] = eval(expr.args[i]))
             if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
                 continue
