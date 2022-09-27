@@ -3662,3 +3662,24 @@ end
     @test isapprox(JuMP.value(z), 1; atol = 1e-6)
     @test isapprox(JuMP.value(x), 1; atol = 1e-6)
 end
+
+@testset "@NLexpression from quadratic @expression (Issue #221)" begin
+    test_solver = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => PAVITO,
+        "presolve_bt" => true,
+        "apply_partitioning" => true,
+    )
+    
+    m = JuMP.Model(test_solver)
+    @variable(m, 0 ≤ x ≤ 10)
+    @expression(m, expr, x^2)
+    @NLconstraint(m, expr ≥ 3)
+    @NLobjective(m, Min, x^3)
+
+
+    JuMP.optimize!(m)
+    @test isapprox(JuMP.objective_value(m), 0.0; atol = 1E-6)
+    @test isapprox(JuMP.value(m[:x]), 0.0; atol = 1E-6)
+end
