@@ -575,18 +575,7 @@ end
 """
 Check if it is an sample of `+()` (https://github.com/lanl-ansi/Alpine.jl/issues/221)
 """
-function expr_is_emptysum(expr)
-    try
-        _ = eval(expr)
-    catch e
-        if isa(e, MethodError) && (length(expr.args) == 1)
-            if isa(e.f, typeof(+)) && isa(e.args, typeof(()))
-                return true
-            end
-        end
-    end
-    return false
-end
+expr_is_emptysum(expr) = expr == :(+())
 
 """
 Check if a sub-tree is a constant or not
