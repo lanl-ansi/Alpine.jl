@@ -3704,15 +3704,15 @@ end
     )
 
     m = JuMP.Model(test_solver)
-    @variable(m, 0 ≤ x ≤ 10)
+
+    @variable(m, -2 ≤ x ≤ 2, start = 1)
     @expression(m, expr, x^2)
-    @NLconstraint(m, expr ≥ 3)
+    @NLconstraint(m, expr >= 1)
+    @NLconstraint(m, expr <= 2)
     @NLobjective(m, Min, x^3)
 
-    x_target = sqrt(3)
-    f_obj_target = x_target^3
     JuMP.optimize!(m)
     @test JuMP.termination_status(m) == JuMP.MOI.OPTIMAL
-    @test isapprox(JuMP.objective_value(m), f_obj_target; atol = 1E-6)
-    @test isapprox(JuMP.value(m[:x]), x_target; atol = 1E-6)
+    @test isapprox(JuMP.objective_value(m), -(sqrt(2))^3; atol = 1E-6)
+    @test isapprox(JuMP.value(m[:x]), -sqrt(2); atol = 1E-6)
 end

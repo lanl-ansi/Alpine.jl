@@ -1,5 +1,8 @@
 # Alpine.jl Change Log
 
+## v0.5.2
+- Fixed issue with `@NLconstraint` created from a quadratic `@expression` (#221)
+
 ## v0.5.1
 - Re-org and clean-up in partition additions within bounding MIP model
 - Updated to cheaper `AffExpr` evaluation within linking constraints

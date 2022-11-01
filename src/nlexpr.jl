@@ -573,7 +573,7 @@ function expr_arrangeargs(args::Array; kwargs...)
 end
 
 """
-Check if it is an sample of `+()` (https://github.com/lanl-ansi/Alpine.jl/issues/221)
+Check if it is a sample of `+()`
 """
 expr_is_emptysum(expr) = expr == :(+())
 
@@ -586,14 +586,14 @@ function expr_resolve_const(expr)
         if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
             continue
         elseif expr.args[i].head == :call
-            if expr_is_emptysum(expr.args[i])
+            if Alp.expr_is_emptysum(expr.args[i])
                 expr.args[i] = :(0)
             end
             (expr_isconst(expr.args[i])) && (expr.args[i] = eval(expr.args[i]))
             if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
                 continue
             else
-                expr_resolve_const(expr.args[i])
+                Alp.expr_resolve_const(expr.args[i])
             end
         end
     end

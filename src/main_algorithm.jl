@@ -202,7 +202,7 @@ end
 """
 function presolve(m::Optimizer)
     start_presolve = time()
-    Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color = :cyan)
+    Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color = :cyan, bold = true)
     Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
 
     if Alp.get_option(m, :use_start_as_incumbent)
