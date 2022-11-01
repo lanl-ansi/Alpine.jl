@@ -51,21 +51,28 @@ STEP 3: parse expression for patterns on either the generic level or term level
 """
 function expr_parsing(m::Optimizer)
 
-    # Throw an error if obj. expression has non-integer exponents
-    Alp.expr_isfracexp(m.bounding_obj_expr_mip)
+    # Throw an error if the objective expression has fractional exponents
+    Alp.expr_is_fractional_exp(m.bounding_obj_expr_mip)
+    is_structural = Alp.expr_constr_parsing(m.bounding_obj_expr_mip, m)
 
-    is_strucural = Alp.expr_constr_parsing(m.bounding_obj_expr_mip, m)
-    if !is_strucural
+    if !is_structural
         m.bounding_obj_expr_mip = Alp.expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
         m.obj_structure = :generic_linear
     end
     (Alp.get_option(m, :log_level) > 199) && println("[OBJ] $(m.obj_expr_orig)")
 
     for i in 1:m.num_constr_orig
-        is_strucural = Alp.expr_constr_parsing(m.bounding_constr_expr_mip[i], m, i)
-        if !is_strucural
+        expr = m.bounding_constr_expr_mip[i]
+
+        # Throw an error if the constraint expression has fractional exponents
+        if expr.args[1] in [:(<=), :(>=), :(==)]
+            Alp.expr_is_fractional_exp(expr.args[2])
+        end
+
+        is_structural = Alp.expr_constr_parsing(expr, m, i)
+        if !is_structural
             m.bounding_constr_expr_mip[i] =
-                Alp.expr_term_parsing(m.bounding_constr_expr_mip[i], i, m)
+                Alp.expr_term_parsing(expr, i, m)
             m.constr_structure[i] = :generic_linear
         end
         (Alp.get_option(m, :log_level) > 199) &&
@@ -116,7 +123,7 @@ function expr_conversion(m::Optimizer)
 end
 
 """
-STEP 5: collect measurements and information as needed for handy operations in the algorithm section
+STEP 5: collect information as needed for handy operations in the algorithm section
 """
 function expr_finalized(m::Optimizer)
     Alp.collect_nonconvex_vars(m)
@@ -203,11 +210,13 @@ Alp.expr_constr_parsing(expr, m::Optimizer)
 
 Recognize structural constraints.
 """
-function expr_constr_parsing(expr, m::Optimizer, idx::Int = 0)
+function expr_constr_parsing(expr::Expr, 
+                             m::Optimizer,
+                             idx::Int = 0)
 
     # First process user-defined structures in-cases of over-ride
     # for i in 1:length(Alp.get_option(m, :constr_patterns))
-    #    is_strucural = eval(Alp.get_option(m, :constr_patterns)[i])(expr, m, idx)
+    #    is_structural = eval(Alp.get_option(m, :constr_patterns)[i])(expr, m, idx)
     #    return
     # end
 
@@ -218,8 +227,7 @@ function expr_constr_parsing(expr, m::Optimizer, idx::Int = 0)
         is_convex && return true
     end
 
-    # More patterns goes here
-
+    # More structural patterns go here
     return false
 end
 
@@ -647,18 +655,18 @@ end
 """
 Check if a sub-tree(:call) is contains any non-integer exponent values
 """
-function expr_isfracexp(expr)
+function expr_is_fractional_exp(expr)
     if expr.head == :call
         if length(expr.args) == 3 && expr.args[1] == :^
-            if trunc(expr.args[3]) != expr.args[3]
+            if !(isinteger(expr.args[3])) || !(expr.args[3] >= 0) 
                 error(
-                    "Alpine currently supports ^ operator with only positive integer exponents",
+                    "Alpine currently supports `^` operator in constraints and/or objective with only positive integer exponents",
                 )
             end
         end
         for i in 1:length(expr.args)
             if typeof(expr.args[i]) == Expr
-                expr_isfracexp(expr.args[i]) # Recursively search for fractional exponents
+                Alp.expr_is_fractional_exp(expr.args[i]) # Recursively search for fractional exponents
             end
         end
     end

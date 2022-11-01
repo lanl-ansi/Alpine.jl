@@ -37,13 +37,6 @@ const alpine = JuMP.optimizer_with_attributes(
     "partition_scaling_factor" => 10,
 )
 
-# m = JuMP.Model(alpine)
-# @variable(m, -2 ≤ x ≤ 2, start = 1)
-# @expression(m, expr, x^2)
-# @NLconstraint(m, expr >= 1)
-# @NLconstraint(m, expr <= 2)
-# @NLobjective(m, Min, x^3)
-
 m = nlp3(solver = alpine)
 
 JuMP.optimize!(m)
