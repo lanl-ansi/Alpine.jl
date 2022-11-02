@@ -7,8 +7,8 @@ using JuMP
 import LinearAlgebra: dot, Diagonal
 import Statistics
 import Combinatorics
+import Pkg
 
-const _ALPINE_VERSION = "v0.5.2"
 const ALPINE_DEBUG = false
 const Alp = Alpine
 

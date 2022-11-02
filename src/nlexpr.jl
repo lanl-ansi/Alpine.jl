@@ -52,7 +52,7 @@ STEP 3: parse expression for patterns on either the generic level or term level
 function expr_parsing(m::Optimizer)
 
     # Throw an error if the objective expression has fractional exponents
-    Alp.expr_is_fractional_exp(m.bounding_obj_expr_mip)
+    Alp.expr_is_fractional_exponent(m.bounding_obj_expr_mip)
     is_structural = Alp.expr_constr_parsing(m.bounding_obj_expr_mip, m)
 
     if !is_structural
@@ -66,7 +66,7 @@ function expr_parsing(m::Optimizer)
 
         # Throw an error if the constraint expression has fractional exponents
         if expr.args[1] in [:(<=), :(>=), :(==)]
-            Alp.expr_is_fractional_exp(expr.args[2])
+            Alp.expr_is_fractional_exponent(expr.args[2])
         end
 
         is_structural = Alp.expr_constr_parsing(expr, m, i)
@@ -655,7 +655,7 @@ end
 """
 Check if a sub-tree(:call) is contains any non-integer exponent values
 """
-function expr_is_fractional_exp(expr)
+function expr_is_fractional_exponent(expr)
     if expr.head == :call
         if length(expr.args) == 3 && expr.args[1] == :^
             if !(isinteger(expr.args[3])) || !(expr.args[3] >= 0) 
@@ -666,7 +666,7 @@ function expr_is_fractional_exp(expr)
         end
         for i in 1:length(expr.args)
             if typeof(expr.args[i]) == Expr
-                Alp.expr_is_fractional_exp(expr.args[i]) # Recursively search for fractional exponents
+                Alp.expr_is_fractional_exponent(expr.args[i]) # Recursively search for fractional exponents
             end
         end
     end

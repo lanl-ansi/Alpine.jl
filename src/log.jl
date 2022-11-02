@@ -64,7 +64,8 @@ function logging_summary(m::Optimizer)
         println("  MIP solver = ", m.mip_solver_id)
 
         printstyled("ALPINE CONFIGURATION\n", color = :cyan, bold = true)
-        println("  Alpine version = ", _ALPINE_VERSION)
+        println("  Alpine version = ", Pkg.TOML.parse(read(string(pkgdir(Alpine), "/Project.toml"), String))["version"])
+        
         if Alp.is_min_sense(m)
             println(
                 "  Maximum iterations (lower-bounding MIPs) = ",

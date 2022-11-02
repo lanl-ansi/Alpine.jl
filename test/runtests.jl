@@ -24,6 +24,8 @@ const HIGHS = MOI.OptimizerWithAttributes(
     HiGHS.Optimizer,
     "presolve" => "on",
     "log_to_console" => false,
+    # "small_matrix_value" => 1e-12,
+    # "allow_unbounded_or_infeasible" => true,
 )
 
 const JUNIPER = MOI.OptimizerWithAttributes(

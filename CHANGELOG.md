@@ -3,7 +3,8 @@
 ## v0.5.2
 - Fixed issue with `@NLconstraint` created from a quadratic `@expression` (#221)
 - Fixed error message in nlexpr parsing of constraints with non-integer exponents (#223)
-- Clean up in `expr_is_fractional_exp` (related to #223)
+- Clean up in `expr_is_fractional_exponent` (related to #223)
+- Added dependency on `Pkg` package
 
 ## v0.5.1
 - Re-org and clean-up in partition additions within bounding MIP model

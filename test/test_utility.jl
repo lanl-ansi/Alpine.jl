@@ -107,11 +107,11 @@ end
         "nlp_solver" => IPOPT,
         "mip_solver" => PAVITO,
         "presolve_bt" => false,
-        "partition_scaling_factor" => 5,
+        "partition_scaling_factor" => 10,
         "disc_consecutive_forbid" => false,
     )
 
-    m1 = circle(solver = test_solver)
+    m1 = mathopt(solver = test_solver)
     JuMP.optimize!(m1)
     alpine1 = JuMP.backend(m1).optimizer.model
 
@@ -122,16 +122,16 @@ end
         "nlp_solver" => IPOPT,
         "mip_solver" => PAVITO,
         "presolve_bt" => false,
-        "partition_scaling_factor" => 5,
+        "partition_scaling_factor" => 10,
         "disc_consecutive_forbid" => true,
     )
 
-    m2 = circle(solver = test_solver)
+    m2 = mathopt(solver = test_solver)
     JuMP.optimize!(m2)
     alpine2 = JuMP.backend(m2).optimizer.model
 
     @test termination_status(m1) == MOI.OPTIMAL
     @test termination_status(m2) == MOI.OPTIMAL
     @test alpine1.logs[:n_iter] > alpine2.logs[:n_iter]
-    @test isapprox(JuMP.objective_value(m1), JuMP.objective_value(m2), atol = 1E-6)
+    @test isapprox(JuMP.objective_value(m1), JuMP.objective_value(m2), atol = 1E-5)
 end

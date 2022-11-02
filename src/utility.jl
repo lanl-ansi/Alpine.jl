@@ -47,7 +47,7 @@ function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
     if isapprox(lower_bound, upper_bound, atol = tol)
         m.best_rel_gap = 0.0
 
-    elseif (lower_bound - upper_bound) > 1E-5
+    elseif (lower_bound - upper_bound) > 1E-4
         error("Lower bound cannot cross the upper bound in optimality gap evaluation")
 
     elseif isinf(lower_bound) || isinf(upper_bound)

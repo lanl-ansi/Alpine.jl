@@ -1118,7 +1118,7 @@ end
 
         alpine = _build(m)
 
-        @test alpine.num_constr_convex == 21
+        @test alpine.num_constr_convex == 19
 
         # 0 : OBJ
         @test alpine.obj_structure == :convex
@@ -1181,29 +1181,7 @@ end
         @test alpine.bounding_constr_mip[5][:powers] == [2, 2, 2]
         @test alpine.bounding_constr_mip[5][:cnt] == 3
 
-        # 6
-        @test alpine.constr_structure[6] == :convex
-        @test alpine.nonlinear_constrs[6][:expr_orig] == :constraints
-        @test alpine.nonlinear_constrs[6][:convex_type] == :convexC
-        @test alpine.nonlinear_constrs[6][:convexified] == :false
-        @test alpine.bounding_constr_mip[6][:sense] == :(<=)
-        @test alpine.bounding_constr_mip[6][:coefs] == [3.0, 4.0, 5.0]
-        @test alpine.bounding_constr_mip[6][:vars] == [:(x[1]), :(x[2]), :(x[5])]
-        @test alpine.bounding_constr_mip[6][:rhs] == 100.0
-        @test alpine.bounding_constr_mip[6][:powers] == [0.5, 0.5, 0.5]
-        @test alpine.bounding_constr_mip[6][:cnt] == 3
-
-        # 7
-        @test alpine.constr_structure[7] == :convex
-        @test alpine.nonlinear_constrs[7][:expr_orig] == :constraints
-        @test alpine.nonlinear_constrs[7][:convex_type] == :convexC
-        @test alpine.nonlinear_constrs[7][:convexified] == :false
-        @test alpine.bounding_constr_mip[7][:sense] == :(>=)
-        @test alpine.bounding_constr_mip[7][:coefs] == [-3.0, -4.0]
-        @test alpine.bounding_constr_mip[7][:vars] == [:(x[1]), :(x[2])]
-        @test alpine.bounding_constr_mip[7][:rhs] == -100.0
-        @test alpine.bounding_constr_mip[7][:powers] == [0.5, 0.5]
-        @test alpine.bounding_constr_mip[7][:cnt] == 2
+        #6,7 excluded 
 
         # 8
         @test alpine.constr_structure[8] == :convex

@@ -9,8 +9,11 @@ function convex_test(; solver = nothing)
     @constraint(m, 3(x[1]x[1]) + 4 * x[2]^2 <= 10)                                # 4: true
     @constraint(m, 3x[1]^2 + 4x[2]^2 + 6x[3]^2 <= 10)                           # 5: true
 
-    @NLconstraint(m, 3x[1]^0.5 + 4x[2]^0.5 + 5x[5]^0.5 <= 100)# 6: true | type-C
-    @NLconstraint(m, -3x[1]^0.5 - 4x[2]^0.5 >= -100)# 7: true | type-C
+    # @NLconstraint(m, 3x[1]^0.5 + 4x[2]^0.5 + 5x[5]^0.5 <= 100)# 6: true | type-C
+    # @NLconstraint(m, -3x[1]^0.5 - 4x[2]^0.5 >= -100)# 7: true | type-C
+    @NLconstraint(m, x[1]^2 <= 2) # convex - dummy
+    @NLconstraint(m, x[2]^2 <= 2) # convex - dummy
+    
     @NLconstraint(m, 3x[1]^3 + x[2]^3 + 5x[3]^3 <= 200)                         # 8: true | type-a
     @NLconstraint(
         m,
