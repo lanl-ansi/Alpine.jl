@@ -13,7 +13,7 @@ function convex_test(; solver = nothing)
     # @NLconstraint(m, -3x[1]^0.5 - 4x[2]^0.5 >= -100)# 7: true | type-C
     @NLconstraint(m, x[1]^2 <= 2) # convex - dummy
     @NLconstraint(m, x[2]^2 <= 2) # convex - dummy
-    
+
     @NLconstraint(m, 3x[1]^3 + x[2]^3 + 5x[3]^3 <= 200)                         # 8: true | type-a
     @NLconstraint(
         m,

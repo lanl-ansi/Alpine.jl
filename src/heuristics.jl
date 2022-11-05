@@ -17,7 +17,8 @@ function update_disc_cont_var(m::Optimizer)
     end
 
     !isempty(m.linear_terms) && (var_diffs = _eval_var_diffs!(m.linear_terms, var_diffs))
-    !isempty(m.nonconvex_terms) && (var_diffs = _eval_var_diffs!(m.nonconvex_terms, var_diffs))
+    !isempty(m.nonconvex_terms) &&
+        (var_diffs = _eval_var_diffs!(m.nonconvex_terms, var_diffs))
 
     distance = Dict(zip(var_idxs, var_diffs))
     Alp.weighted_min_vertex_cover(m, distance)
@@ -28,9 +29,9 @@ function update_disc_cont_var(m::Optimizer)
 end
 
 # Helper function for sequential evaluation to avoid dependency issue
-function _eval_var_diffs!(terms:: Dict{Any, Any}, var_diffs::Vector{Float64})
+function _eval_var_diffs!(terms::Dict{Any,Any}, var_diffs::Vector{Float64})
     for i in 1:length(keys(terms))
-        for j in keys(terms)   
+        for j in keys(terms)
             if terms[j][:id] == i
                 var_diffs[terms[j][:lifted_var_ref].args[2]] =
                     terms[j][:evaluator](terms[j], var_diffs)

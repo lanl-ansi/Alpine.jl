@@ -17,9 +17,9 @@ function init_tight_bound(m::Optimizer)
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
             m.u_var_tight[i] = 1.0
-        # elseif m.var_type_orig[i] == :Int
-        #     m.l_var_tight[i] = floor(m.l_var_tight[i])
-        #     m.u_var_tight[i] = ceil(m.u_var_tight[i])
+            # elseif m.var_type_orig[i] == :Int
+            #     m.l_var_tight[i] = floor(m.l_var_tight[i])
+            #     m.u_var_tight[i] = ceil(m.u_var_tight[i])
         end
     end
 
@@ -56,7 +56,11 @@ Utility functions to convert bounds vectors to Dictionary based structures that 
 partition operations.
 
 """
-function _get_discretization_dict(m::Optimizer, lbs::Vector{Float64}, ubs::Vector{Float64})
+function _get_discretization_dict(
+    m::Optimizer,
+    lbs::Vector{Float64},
+    ubs::Vector{Float64},
+)
     @assert length(lbs) == length(ubs)
 
     var_discretization = Dict()
@@ -440,7 +444,6 @@ function update_var_bounds(discretization::Dict{Any,Any}; kwargs...)
 
     return l_var, u_var
 end
-
 
 # ================================================================= unused, but needs testing
 # """

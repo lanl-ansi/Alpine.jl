@@ -71,8 +71,7 @@ function expr_parsing(m::Optimizer)
 
         is_structural = Alp.expr_constr_parsing(expr, m, i)
         if !is_structural
-            m.bounding_constr_expr_mip[i] =
-                Alp.expr_term_parsing(expr, i, m)
+            m.bounding_constr_expr_mip[i] = Alp.expr_term_parsing(expr, i, m)
             m.constr_structure[i] = :generic_linear
         end
         (Alp.get_option(m, :log_level) > 199) &&
@@ -210,9 +209,7 @@ Alp.expr_constr_parsing(expr, m::Optimizer)
 
 Recognize structural constraints.
 """
-function expr_constr_parsing(expr::Expr, 
-                             m::Optimizer,
-                             idx::Int = 0)
+function expr_constr_parsing(expr::Expr, m::Optimizer, idx::Int = 0)
 
     # First process user-defined structures in-cases of over-ride
     # for i in 1:length(Alp.get_option(m, :constr_patterns))
@@ -658,7 +655,7 @@ Check if a sub-tree(:call) is contains any non-integer exponent values
 function expr_is_fractional_exponent(expr)
     if expr.head == :call
         if length(expr.args) == 3 && expr.args[1] == :^
-            if !(isinteger(expr.args[3])) || !(expr.args[3] >= 0) 
+            if !(isinteger(expr.args[3])) || !(expr.args[3] >= 0)
                 error(
                     "Alpine currently supports `^` operator in constraints and/or objective with only positive integer exponents",
                 )
