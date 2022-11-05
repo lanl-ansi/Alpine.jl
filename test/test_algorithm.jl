@@ -1008,3 +1008,35 @@ end
     @test alp.warm_start_value == sol
     @test alp.options.use_start_as_incumbent == true
 end
+
+@testset "Test binary multilinear product linearization" begin
+    test_solver = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+        "presolve_bt" => false,
+    )
+
+    m = hmittelman(solver = test_solver)
+    JuMP.optimize!(m)
+
+    @test termination_status(m) == MOI.OPTIMAL
+    @test isapprox(objective_value(m), 13; atol = 1e-4)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 1
+
+    test_solver = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+        "presolve_bt" => true,
+    )
+
+    m = hmittelman(solver = test_solver)
+    JuMP.optimize!(m)
+
+    @test termination_status(m) == MOI.OPTIMAL
+    @test isapprox(objective_value(m), 13; atol = 1e-4)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 0
+end

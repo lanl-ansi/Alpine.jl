@@ -5,6 +5,7 @@
 - Fixed error message in nlexpr parsing of constraints with non-integer exponents (#223)
 - Clean up in `expr_is_fractional_exponent` (related to #223)
 - Added dependency on `Pkg` package
+- Added unit tests for testing multilinear binary products (`hmittelman`)
 
 ## v0.5.1
 - Re-org and clean-up in partition additions within bounding MIP model
