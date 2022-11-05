@@ -2,7 +2,7 @@ function castro2m2(; solver = nothing)
     m = JuMP.Model(solver)
 
     @variable(m, 0 <= x[1:41] <= 1E5)
-    @variable(m, obj)
+    @variable(m, 0 <= obj <= 1E3)
     @objective(m, Min, obj)
 
     @NLconstraint(m, e31, x[28] * x[30] - x[16] == 0.0)

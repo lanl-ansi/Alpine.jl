@@ -29,7 +29,7 @@ end
 
 function logging_summary(m::Optimizer)
     if Alp.get_option(m, :log_level) > 0
-        printstyled("\nPROBLEM STATISTICS\n", color = :cyan)
+        printstyled("\nPROBLEM STATISTICS\n", color = :cyan, bold = true)
         Alp.is_min_sense(m) && (println("  Objective sense = Min"))
         Alp.is_max_sense(m) && (println("  Objective sense = Max"))
         println(
@@ -55,7 +55,7 @@ function logging_summary(m::Optimizer)
         )
         println("  # Potential variables for partitioning = ", length(m.disc_vars))
 
-        printstyled("SUB-SOLVERS USED BY ALPINE\n", color = :cyan)
+        printstyled("SUB-SOLVERS USED BY ALPINE\n", color = :cyan, bold = true)
         if Alp.get_option(m, :minlp_solver) === nothing
             println("  NLP local solver = ", m.nlp_solver_id)
         else
@@ -63,8 +63,12 @@ function logging_summary(m::Optimizer)
         end
         println("  MIP solver = ", m.mip_solver_id)
 
-        printstyled("ALPINE CONFIGURATION\n", color = :cyan)
-        println("  Alpine version = ", _ALPINE_VERSION)
+        printstyled("ALPINE CONFIGURATION\n", color = :cyan, bold = true)
+        println(
+            "  Alpine version = ",
+            Pkg.TOML.parse(read(string(pkgdir(Alpine), "/Project.toml"), String))["version"],
+        )
+
         if Alp.is_min_sense(m)
             println(
                 "  Maximum iterations (lower-bounding MIPs) = ",
@@ -120,12 +124,12 @@ end
 
 function logging_head(m::Optimizer)
     if Alp.is_min_sense(m)
-        printstyled("LOWER-BOUNDING ITERATIONS", color = :cyan)
+        printstyled("LOWER-BOUNDING ITERATIONS", color = :cyan, bold = true)
         UB_iter = "Incumbent"
         UB = "Best Incumbent"
         LB = "Lower Bound"
     elseif Alp.is_max_sense(m)
-        printstyled("UPPER-BOUNDING ITERATIONS", color = :cyan)
+        printstyled("UPPER-BOUNDING ITERATIONS", color = :cyan, bold = true)
         UB_iter = "Incumbent"
         UB = "Best Incumbent"
         LB = "Upper Bound"

@@ -31,6 +31,22 @@ function max_cover_var_picker(m::Alpine.Optimizer)
     return
 end
 
+function mathopt(; solver = nothing)
+    # Modified based on `mathopt` instances from MINLPLib
+    # Global solution: -1004.73094034, arg min: [ -10.0, 15.2543377, -3.2034701]
+
+    m = JuMP.Model(solver)
+
+    LB = [-10, -15, -10]
+    UB = [20, 20, 20]
+    @variable(m, LB[i] <= x[i = 1:3] <= UB[i])
+    @NLobjective(m, Min, 10 * (x[1] * x[2] - x[2] * x[3]) + x[1] * x[3])
+    @NLconstraint(m, x[1] * x[2] + x[2] * x[3]^2 >= 4)
+    @constraint(m, 3 * x[1] + 4 * x[2] + 5 * x[3] <= 15)
+
+    return m
+end
+
 function nlp3(; solver = nothing)
     m = JuMP.Model(solver)
 

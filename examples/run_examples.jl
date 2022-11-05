@@ -14,9 +14,9 @@ include("JuMP_models.jl")
 include("optimizers.jl")
 
 # Choose underlying solvers for Alpine
-nlp_solver = get_ipopt() #local solver
-mip_solver = get_gurobi()
-minlp_solver = get_juniper(mip_solver, nlp_solver) #local solver
+nlp_solver = get_ipopt() # local continuous solver
+mip_solver = get_gurobi() # convex mip solver
+minlp_solver = get_juniper(mip_solver, nlp_solver) # local mixed-intger solver
 
 #= Global solver
  Hints: 

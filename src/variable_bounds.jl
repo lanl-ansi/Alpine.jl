@@ -17,9 +17,9 @@ function init_tight_bound(m::Optimizer)
         if m.var_type_orig[i] == :Bin
             m.l_var_tight[i] = 0.0
             m.u_var_tight[i] = 1.0
-        elseif m.var_type_orig[i] == :Int
-            m.l_var_tight[i] = floor(m.l_var_tight[i])
-            m.u_var_tight[i] = ceil(m.u_var_tight[i])
+            # elseif m.var_type_orig[i] == :Int
+            #     m.l_var_tight[i] = floor(m.l_var_tight[i])
+            #     m.u_var_tight[i] = ceil(m.u_var_tight[i])
         end
     end
 
@@ -50,36 +50,31 @@ end
 
 """
 
-    to_discretization(m::Optimizer, lbs::Vector{Float64}, ubs::Vector{Float64})
+    _get_discretization_dict(m::Optimizer, lbs::Vector{Float64}, ubs::Vector{Float64})
 
-Utility functions to convert bounds vectors to Dictionary based structures that is more suitable for
+Utility functions to convert bounds vectors to Dictionary based structures that are more suitable for
 partition operations.
 
 """
-function to_discretization(m::Optimizer, lbs::Vector{Float64}, ubs::Vector{Float64})
+function _get_discretization_dict(
+    m::Optimizer,
+    lbs::Vector{Float64},
+    ubs::Vector{Float64},
+)
     @assert length(lbs) == length(ubs)
+
     var_discretization = Dict()
-    for var in 1:m.num_var_orig
-        lb = lbs[var]
-        ub = ubs[var]
-        var_discretization[var] = [lb, ub]
-    end
-
     total_var_cnt = m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
-    orig_var_cnt = m.num_var_orig
 
-    if length(lbs) == total_var_cnt
-        for var in (1+orig_var_cnt):total_var_cnt
+    for var in 1:total_var_cnt
+        if length(lbs) == total_var_cnt
             lb = lbs[var]
             ub = ubs[var]
-            var_discretization[var] = [lb, ub]
-        end
-    else
-        for var in (1+orig_var_cnt):total_var_cnt
+        else
             lb = -Inf
             ub = Inf
-            var_discretization[var] = [lb, ub]
         end
+        var_discretization[var] = [lb, ub]
     end
 
     return var_discretization
@@ -406,8 +401,6 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
             nlk = k
             if m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_MONOMIAL
                 d = Alp.basic_monomial_bounds(m, nlk, d)
-            elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BININT]
-                d = Alp.basic_binint_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
                 d = Alp.basic_binprod_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
@@ -425,26 +418,6 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
     end
 
     return d
-end
-
-"""
-    resolve_closed_var_bounds(m::Optimizer)
-
-This function seeks variable with tight bounds (by presolve_bt_width_tol) by checking .l_var_tight and .u_var_tight.
-If a variable is found to be within a sufficiently small interval then no discretization will be performed on this variable
-and the .discretization will be cleared with the tight bounds for basic McCormick operation if necessary.
-
-"""
-function resolve_closed_var_bounds(m::Optimizer; kwargs...)
-    for var in m.candidate_disc_vars
-        if abs(m.l_var_tight[var] - m.u_var_tight[var]) <
-           Alp.get_option(m, :presolve_bt_width_tol)         # Closed Bound Criteria
-            deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonconvex_terms by deleting the info
-            m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
-        end
-    end
-
-    return
 end
 
 """
@@ -471,3 +444,24 @@ function update_var_bounds(discretization::Dict{Any,Any}; kwargs...)
 
     return l_var, u_var
 end
+
+# ================================================================= unused, but needs testing
+# """
+#     resolve_closed_var_bounds(m::Optimizer)
+
+# This function seeks variable with tight bounds (by presolve_bt_width_tol) by checking .l_var_tight and .u_var_tight.
+# If a variable is found to be within a sufficiently small interval then no discretization will be performed on this variable
+# and the .discretization will be cleared with the tight bounds for basic McCormick operation if necessary.
+
+# """
+# function resolve_closed_var_bounds(m::Optimizer; kwargs...)
+#     for var in m.candidate_disc_vars
+#         if abs(m.l_var_tight[var] - m.u_var_tight[var]) <
+#            Alp.get_option(m, :presolve_bt_width_tol)         # Closed Bound Criteria
+#             deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonconvex_terms by deleting the info
+#             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
+#         end
+#     end
+
+#     return
+# end

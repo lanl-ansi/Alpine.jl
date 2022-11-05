@@ -202,7 +202,8 @@ end
 """
 function presolve(m::Optimizer)
     start_presolve = time()
-    Alp.get_option(m, :log_level) > 0 && printstyled("PRESOLVE \n", color = :cyan)
+    Alp.get_option(m, :log_level) > 0 &&
+        printstyled("PRESOLVE \n", color = :cyan, bold = true)
     Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
 
     if Alp.get_option(m, :use_start_as_incumbent)
@@ -282,7 +283,11 @@ end
    A wrapper function that collects automated solver adjustments within the main while loop.
 """
 function algorithm_automation(m::Optimizer)
-    Alp.get_option(m, :disc_var_pick) == 3 && Alp.update_disc_cont_var(m)
+
+    # Only if a feasible solution is detected
+    if (Alp.get_option(m, :disc_var_pick) == 3) && m.detected_incumbent
+        Alp.update_disc_cont_var(m)
+    end
 
     if Alp.get_option(m, :partition_scaling_factor_branch)
         Alp.set_option(

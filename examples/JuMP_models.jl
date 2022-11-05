@@ -1,4 +1,5 @@
 include("MINLPs/nlp.jl")
+include("MINLPs/bnlp.jl")
 include("MINLPs/blend.jl")
 include("MINLPs/brainpc3.jl")
 include("MINLPs/castro.jl")

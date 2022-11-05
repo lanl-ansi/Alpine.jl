@@ -139,7 +139,6 @@ end
 
     @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 7049.24789; atol = 1e-4)
-    @test isapprox(objective_bound(m), 6839.487709940, atol = 1E-4)
     @test MOI.get(m, Alpine.NumberOfIterations()) == 4
 end
 
@@ -160,23 +159,6 @@ end
     JuMP.optimize!(m)
     @test isapprox(objective_value(m), 1.4142135534556992; atol = 1e-3)
 end
-
-# @testset " Validation Test || AMP || basic solve || examples/circle_MINLPLib.jl" begin
-#     test_solver = optimizer_with_attributes(
-#         Alpine.Optimizer,
-#         "nlp_solver" => IPOPT,
-#         "mip_solver" => PAVITO,
-#         "presolve_bt" => false,
-#         "partition_scaling_factor" => 15,
-#         "max_iter" => 2,
-#     )
-
-#     m = circle_MINLPLib(solver = test_solver)
-
-#     JuMP.optimize!(m)
-#     @test termination_status(m) == MOI.OPTIMAL
-#     @test isapprox(objective_value(m), 4.45670663096; atol = 1E-6)
-# end
 
 @testset " Validation Test || AMP-CONV-FACET || basic solve || examples/nlp3.jl" begin
     test_solver = optimizer_with_attributes(
@@ -1025,4 +1007,36 @@ end
     @test isapprox(alp.best_bound, 4810.212866711817, atol = 1E-6)
     @test alp.warm_start_value == sol
     @test alp.options.use_start_as_incumbent == true
+end
+
+@testset "Test binary multilinear product linearization" begin
+    test_solver = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+        "presolve_bt" => false,
+    )
+
+    m = hmittelman(solver = test_solver)
+    JuMP.optimize!(m)
+
+    @test termination_status(m) == MOI.OPTIMAL
+    @test isapprox(objective_value(m), 13; atol = 1e-4)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 1
+
+    test_solver = JuMP.optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+        "presolve_bt" => true,
+    )
+
+    m = hmittelman(solver = test_solver)
+    JuMP.optimize!(m)
+
+    @test termination_status(m) == MOI.OPTIMAL
+    @test isapprox(objective_value(m), 13; atol = 1e-4)
+    @test MOI.get(m, Alpine.NumberOfIterations()) == 0
 end

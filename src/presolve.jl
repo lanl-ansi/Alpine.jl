@@ -72,7 +72,7 @@ function optimization_based_bound_tightening(
     l_var_orig = copy(m.l_var_tight)
     u_var_orig = copy(m.u_var_tight)
 
-    discretization = Alp.to_discretization(m, m.l_var_tight, m.u_var_tight)
+    discretization = Alp._get_discretization_dict(m, m.l_var_tight, m.u_var_tight)
     if use_bound == false && haskey(options, :use_tmc)
         (Alp.get_option(m, :log_level) > 0) &&
             @warn " Local solve infeasible; defaulting to doing bound-tightening without partitions."

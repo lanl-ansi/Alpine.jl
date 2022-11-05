@@ -109,24 +109,22 @@ end
 
 @testset "Partitioning variable selection tests :: castro2m2" begin
 
-    # Select all NL variable
+    # Select all NL variables
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
         "mip_solver" => HIGHS,
         "disc_var_pick" => 0,
         "disc_uniform_rate" => 10,
-        "presolve_bt" => true,
-        "presolve_bt_max_iter" => 2,
-        "max_iter" => 1,
+        "presolve_bt" => false,
+        "max_iter" => 0,
     )
 
     m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
-    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
-    @test JuMP.objective_value(m) <= 470.3176
+    @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
 
     @test length(alpine.candidate_disc_vars) == 10
     @test length(alpine.disc_vars) == 10
@@ -139,17 +137,15 @@ end
         "mip_solver" => HIGHS,
         "disc_var_pick" => 1,
         "disc_uniform_rate" => 10,
-        "presolve_bt" => true,
-        "presolve_bt_max_iter" => 2,
-        "max_iter" => 1,
+        "presolve_bt" => false,
+        "max_iter" => 0,
     )
 
     m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
-    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
-    @test JuMP.objective_value(m) <= 470.3176
+    @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
     @test length(alpine.candidate_disc_vars) == 10
     @test length(alpine.disc_vars) == 4
     @test MOI.get(m, MOI.RawOptimizerAttribute("disc_var_pick")) == 1
@@ -161,18 +157,15 @@ end
         "mip_solver" => HIGHS,
         "disc_var_pick" => 2,
         "disc_uniform_rate" => 15,
-        "presolve_bt" => true,
-        "presolve_bt_max_iter" => 2,
-        "max_iter" => 1,
-        "log_level" => 100,
+        "presolve_bt" => false,
+        "max_iter" => 0,
     )
 
     m = castro2m2(solver = test_solver)
     JuMP.optimize!(m)
     alpine = JuMP.backend(m).optimizer.model
 
-    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
-    @test JuMP.objective_value(m) <= 470.3176
+    @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
 
     @test length(alpine.candidate_disc_vars) == 10
     @test length(alpine.disc_vars) == 10

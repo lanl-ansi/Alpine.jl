@@ -36,7 +36,7 @@ post_objective_bound
 update_var_bounds
 discretization_to_bounds
 init_disc
-to_discretization
+_get_discretization_dict
 flatten_discretization
 add_adaptive_partition
 ```

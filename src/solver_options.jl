@@ -25,7 +25,7 @@ mutable struct OptimizerOptions
 
     # Parameters used in Alpine's MIP-based partitioning algorithm
     apply_partitioning::Bool                                    # Apply the partitioning algorithm only if thhis true, else terminate after presolve
-    disc_var_pick::Any                                          # Algorithm for choosing the variables to discretize: 1 for minimum vertex cover, 0 for all variables
+    disc_var_pick::Any                                          # Algorithm for choosing the variables for partitioning: 0 for all variables, 1 for minimum vertex cover, 3 for weighted minimum vertex cover
     partition_scaling_factor::Int                               # Partition scaling parameter, which is critical for convergence (using a fixed value for now, later switch to a function)
     disc_uniform_rate::Int                                      # Discretization rate parameter when using uniform partitions
     disc_add_partition_method::Any                              # Additional methods to add discretization

@@ -909,13 +909,13 @@ function resolve_convex_constr(
         expr_orig = :constr
         sense = expr.args[1]
         rhs = expr.args[3]
-        subs, rhs_strip = Alp.expr_strip_const(expr.args[2])      # Focus on the regularized subtree (stripped with constants)
+        subs, rhs_strip = Alp.expr_strip_const(expr.args[2])  # Focus on the regularized subtree (stripped with constants)
         rhs += rhs_strip                                      # TODO: check if sign is flipped
     elseif expr.args[1] == :(==)
         return false
     elseif idx == 0
         expr_orig = :obj
-        subs, rhs = Alp.expr_strip_const(expr)              # Focus on the regularized subtree (stripped with constants)
+        subs, rhs = Alp.expr_strip_const(expr)               # Focus on the regularized subtree (stripped with constants)
     end
 
     for sub in subs
@@ -979,8 +979,7 @@ function resolve_convex_constr(
         # Now, we should use the differences to indicate different types of convex expression
         convex_type = :Unknown
 
-        # [BUG FIX | FORK]
-        power_check = [(i > 1.0) && mod(i, 2) == 0 for i in power_bin]    # Special case for linear constraints with @NLconstraint
+        power_check = [(i > 1.0) && mod(i, 2) == 0 for i in power_bin]    # Special case for linear constraints within @NLconstraint
         isempty(power_check) && return false
 
         # Convex constraint Type-A

@@ -6,12 +6,6 @@
 function update_disc_cont_var(m::Optimizer)
     length(m.candidate_disc_vars) <= 15 && return   # Algorithm Separation Point
 
-    # If no feasible solution is found, do NOT update
-    if !m.detected_incumbent
-        println("no feasible solution detected. No update disc var selection.")
-        return
-    end
-
     var_idxs = copy(m.candidate_disc_vars)
     var_diffs = Vector{Float64}(
         undef,
@@ -22,23 +16,9 @@ function update_disc_cont_var(m::Optimizer)
         var_diffs[i] = abs(m.best_sol[i] - m.best_bound_sol[i])
     end
 
-    for i in 1:length(keys(m.linear_terms))
-        for j in keys(m.linear_terms)   # sequential evaluation to avoid dependency issue
-            if m.linear_terms[j][:id] == i
-                var_diffs[m.linear_terms[j][:lifted_var_ref].args[2]] =
-                    m.linear_terms[j][:evaluator](m.linear_terms[j], var_diffs)
-            end
-        end
-    end
-
-    for i in 1:length(keys(m.nonconvex_terms))
-        for j in keys(m.nonconvex_terms)    # sequential evaluation to avoid dependency issue
-            if m.nonconvex_terms[j][:id] == i
-                var_diffs[m.nonconvex_terms[j][:lifted_var_ref].args[2]] =
-                    m.nonconvex_terms[j][:evaluator](m.nonconvex_terms[j], var_diffs)
-            end
-        end
-    end
+    !isempty(m.linear_terms) && (var_diffs = _eval_var_diffs!(m.linear_terms, var_diffs))
+    !isempty(m.nonconvex_terms) &&
+        (var_diffs = _eval_var_diffs!(m.nonconvex_terms, var_diffs))
 
     distance = Dict(zip(var_idxs, var_diffs))
     Alp.weighted_min_vertex_cover(m, distance)
@@ -46,4 +26,18 @@ function update_disc_cont_var(m::Optimizer)
     (Alp.get_option(m, :log_level) > 100) &&
         println("updated partition var selection => $(m.disc_vars)")
     return
+end
+
+# Helper function for sequential evaluation to avoid dependency issue
+function _eval_var_diffs!(terms::Dict{Any,Any}, var_diffs::Vector{Float64})
+    for i in 1:length(keys(terms))
+        for j in keys(terms)
+            if terms[j][:id] == i
+                var_diffs[terms[j][:lifted_var_ref].args[2]] =
+                    terms[j][:evaluator](terms[j], var_diffs)
+            end
+        end
+    end
+
+    return var_diffs
 end
