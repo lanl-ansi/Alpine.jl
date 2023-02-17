@@ -132,6 +132,6 @@ end
 
     @test termination_status(m1) == MOI.OPTIMAL
     @test termination_status(m2) == MOI.OPTIMAL
-    @test alpine1.logs[:n_iter] > alpine2.logs[:n_iter]
+    @test alpine1.logs[:n_iter] >= alpine2.logs[:n_iter]
     @test isapprox(JuMP.objective_value(m1), JuMP.objective_value(m2), atol = 1E-5)
 end

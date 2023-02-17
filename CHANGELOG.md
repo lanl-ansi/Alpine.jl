@@ -1,5 +1,9 @@
 # Alpine.jl Change Log
 
+## v0.5.3
+- Removed compatability on Pkg #225
+- Added raw NL expression interface example for a dense multilinear problem
+
 ## v0.5.2
 - Fixed issue with `@NLconstraint` created from a quadratic `@expression` (#221)
 - Fixed error message in nlexpr parsing of constraints with non-integer exponents (#223)

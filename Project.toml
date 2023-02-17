@@ -2,7 +2,7 @@ name = "Alpine"
 uuid = "07493b3f-dabb-5b16-a503-4139292d7dd4"
 authors = ["Harsha Nagarajan, Site Wang, Kaarthik Sundar and contributors"]
 repo = "https://github.com/lanl-ansi/Alpine.jl.git"
-version = "0.5.2"
+version = "0.5.3"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
