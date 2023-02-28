@@ -1,5 +1,9 @@
 # Alpine.jl Change Log
 
+## v0.5.4
+- Added `random_QCQPs` folder with python generator files for all the instances appearing in this paper: https://arxiv.org/pdf/2301.00306.pdf
+- Minor tweaks in docs and main README file
+
 ## v0.5.3
 - Removed compatability on Pkg #225
 - Added raw NL expression interface example for a dense multilinear problem

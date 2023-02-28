@@ -2,7 +2,8 @@
 
 STATUS: [![CI](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
-[![Documentation](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/documentation.yml/badge.svg)](https://lanl-ansi.github.io/Alpine.jl/latest/)
+[![Documentation](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/documentation.yml/badge.svg)](https://lanl-ansi.github.io/Alpine.jl/latest/) 
+[![version](https://juliahub.com/docs/Alpine/version.svg)](https://juliahub.com/ui/Packages/Alpine/TRSJF)
 
 "ALPINE: glob(AL) o(P)timization for mixed-(I)nteger programs with (N)onlinear (E)quations", is a novel global optimization solver that uses an adaptive, piecewise convexification scheme and constraint programming methods to solve non-convex Mixed-Integer Non-Linear Programs (MINLPs) efficiently. MINLPs are typically "hard" optimization problems which appear in numerous applications (see [MINLPLib.jl](https://github.com/lanl-ansi/MINLPLib.jl)). 
 
