@@ -1,7 +1,7 @@
 # Alpine, A global solver for non-convex MINLPs <span style="color:black"></span>
 
 STATUS: [![CI](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
+[![codecov](https://codecov.io/gh/lanl-ansi/Alpine.jl/branch/master/badge.svg)](https://codecov.io/gh/lanl-ansi/Alpine.jl)
 [![Documentation](https://github.com/lanl-ansi/Alpine.jl/actions/workflows/documentation.yml/badge.svg)](https://lanl-ansi.github.io/Alpine.jl/latest/) 
 [![version](https://juliahub.com/docs/Alpine/version.svg)](https://juliahub.com/ui/Packages/Alpine/TRSJF)
 
