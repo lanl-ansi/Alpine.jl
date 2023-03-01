@@ -79,3 +79,14 @@ If you find the underlying piecewise polyhedral formulations implemented in Alpi
   date={2022}
 }
 ```
+
+If you find the random families of non-convex QCQP instances (using generator files within this [folder](https://github.com/lanl-ansi/Alpine.jl/tree/master/examples/random_QCQPs)) useful for your research, we kindly request that you cite the following paper [arXiv link](https://arxiv.org/abs/2301.00306):
+```bibtex
+@article{alpine_learning_2022,
+  title={Learning to Accelerate the Global Optimization of Quadratically-Constrained Quadratic Programs},
+  author={Kannan, Rohit and Nagarajan, Harsha and Deka, Deepjyoti},
+  journal={arXiv preprint:2301.00306},
+  url={https://arxiv.org/abs/2301.00306},
+  year={2022}
+}
+```
