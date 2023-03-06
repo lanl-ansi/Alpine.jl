@@ -4,7 +4,7 @@
 // Reference: "Learning to Accelerate the Global Optimization of Quadratically-Constrained 
 			   Quadratic Programs" by R. Kannan, H. Nagarajan, and D. Deka 
 			   (Link: https://arxiv.org/abs/2301.00306)
-// @author Rohit Kannan <rohitk@alum.mit.edu>
+// Contributor: @rohitkannan 
 """
 
 import numpy as np

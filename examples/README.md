@@ -8,3 +8,6 @@ A few useful **hints** to explore within Alpine:
 * If you prefer to use Alpine for only OBBT presolve, without any paritioning applied to the 
     nonlinear terms, include option `"apply_partitioning"` and set it to `false` while initializing the 
     Alpine solver. 
+
+# Random families of non-convex QCQPs
+Scripts for generating homogeneous families of nonconvex QCQP instances, useful for benchmarking ML-based models for tuning certain algorithmic parameters of global optimization, can be found [here](https://github.com/lanl-ansi/Alpine.jl/tree/master/examples/random_QCQPs). 
