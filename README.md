@@ -47,7 +47,7 @@ For more details, see the [online documentation](https://lanl-ansi.github.io/Alp
 
 ## Support problem types
 
-Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadratically Constrained Quadratic Programs (MIQCQPs), Non-Linear Programs (NLPs), etc.
+Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. Alpine is also a good fit for subsets of the MINLP family, for example, Mixed-Integer Quadratically Constrained Quadratic Programs (MIQCQPs), Non-Linear Programs (NLPs), etc.
 
 For more details, check out this [video](https://www.youtube.com/watch?v=mwkhiEIS5JA) on Alpine.jl at [JuMP-dev 2018](http://www.juliaopt.org/meetings/bordeaux2018/).
 
