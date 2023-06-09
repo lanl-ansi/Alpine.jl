@@ -1,5 +1,10 @@
 # Alpine.jl Change Log
 
+## v0.5.5 
+- Removed use of e.g. for JuMP documentation in README (#230)
+- Dropped support for integer variable MINLPs in `examples` (#233)
+- Updated README in `examples` folder to clarify `minlp_solver` dependency (#232)
+
 ## v0.5.4
 - Added `random_QCQPs` folder with python generator files for all the instances appearing in this paper: https://arxiv.org/pdf/2301.00306.pdf
 - Minor tweaks in docs and main README file

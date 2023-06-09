@@ -17,14 +17,7 @@ Alpine globally solves a given MINLP by:
 
 **Allowable nonlinearities**: Alpine can currently handle MINLPs with polynomials in constraints and/or in the objective. Currently, there is no support for exponential cones and Positive Semi-Definite (PSD) cones in MINLPs. Alpine is also a good fit for subsets of the MINLP family, e.g., Mixed-Integer Quadratically Constrainted Quadradic Programs (MIQCQPs), Non-Linear Programs (NLPs), etc.
 
-<!-- 
- **Illustration of Alpine's dynamic partitioning and outer-approximation on simple functions** ([Source](https://arxiv.org/abs/1707.02514))
- 
-<p align="center"> <img src="https://github.com/lanl-ansi/Alpine.jl/blob/master/Dynamic_partitions_github.png" width="580" class="centerImage"> </p>
--->
 For more details, check out this [video](https://www.youtube.com/watch?v=mwkhiEIS5JA) on Alpine.jl at the [2nd Annual JuMP-dev Workshop](http://www.juliaopt.org/meetings/bordeaux2018/), held at the Institut de Mathématiques de Bordeaux, June 2018.
-
-<!-- [<img src="https://github.com/lanl-ansi/Alpine.jl/blob/master/alpine_slide.png" width="600" height="350">](https://www.youtube.com/watch?v=mwkhiEIS5JA) -->
 
 ## Installation and Usage
 
