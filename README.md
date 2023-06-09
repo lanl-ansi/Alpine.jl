@@ -24,9 +24,9 @@ import Pkg
 Pkg.add("Alpine")
 ```
 
-## Use with JuMP
+## Usage with JuMP
 
-Use Alpine with JuMP as follows:
+Use Alpine with [JuMP](https://github.com/jump-dev/JuMP.jl) as follows:
 
 ```julia
 using JuMP, Alpine, Ipopt, HiGHS
