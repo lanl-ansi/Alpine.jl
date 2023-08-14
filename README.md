@@ -53,7 +53,7 @@ For more details, check out this [video](https://www.youtube.com/watch?v=mwkhiEI
 
 ## Underlying solvers
 
-Though the MIP-based bounding algorithm implemented in Alpine is quite involved, most of the computational bottleneck arises in the underlying MIP solvers. Since every iteration of Alpine solves an MIP sub-problem, which is typically a convex MILP/MIQCQP, Alpine's run time heavily depends on the run-time of these solvers. For the best performance of Alpine, we recommend using the commercial solver [Gurobi](https://www.gurobi.com), which is available [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. However, due to the flexibility offered by [JuMP](https://github.com/jump-dev/JuMP.jl), the following MIP and NLP solvers are supported in Alpine: 
+Though an MIP-based bounding algorithm implemented in Alpine is quite involved, most of the computational bottleneck arises in the underlying MIP solvers. Since every iteration of Alpine solves an MIP sub-problem, which is typically a convex MILP/MIQCQP, Alpine's run time heavily depends on the run-time of these solvers. For the best performance of Alpine, we recommend using the commercial solver [Gurobi](https://www.gurobi.com), which is available [free](https://www.gurobi.com/academia/academic-program-and-licenses/) for academic purposes. However, due to the flexibility offered by [JuMP](https://github.com/jump-dev/JuMP.jl), the following MIP and NLP solvers are supported in Alpine: 
 
 
 | Solver                                                                         | Julia Package                                                |
