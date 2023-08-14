@@ -34,7 +34,7 @@ ipopt = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
 highs = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
 model = Model(
     optimizer_with_attributes(
-        Juniper.Optimizer,
+        Alpine.Optimizer,
         "nlp_solver" => ipopt,
         "mip_solver" => highs,
     ),
