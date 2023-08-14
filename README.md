@@ -58,14 +58,14 @@ Though an MIP-based bounding algorithm implemented in Alpine is quite involved, 
 
 | Solver                                                                         | Julia Package                                                |
 |--------------------------------------------------------------------------------|--------------------------------------------------------------|
-| [CPLEX](https://www.ibm.com/analytics/cplex-optimizer) | [CPLEX.jl](https://github.com/jump-dev/CPLEX.jl)             |
-| [Cbc](https://projects.coin-or.org/Cbc)                                        | [Cbc.jl](https://github.com/jump-dev/Cbc.jl)                 |
 | [Gurobi](http://gurobi.com/)                                                   | [Gurobi.jl](https://github.com/jump-dev/Gurobi.jl)           |
+| [CPLEX](https://www.ibm.com/analytics/cplex-optimizer) | [CPLEX.jl](https://github.com/jump-dev/CPLEX.jl)             |
+| [HiGHS](https://highs.dev/)            | [HiGHS.jl](https://github.com/jump-dev/HiGHS.jl)
+| [Cbc](https://projects.coin-or.org/Cbc)                                        | [Cbc.jl](https://github.com/jump-dev/Cbc.jl)                 |
 | [Ipopt](https://projects.coin-or.org/Ipopt)                                    | [Ipopt.jl](https://github.com/jump-dev/Ipopt.jl)             |
 | [Bonmin](https://projects.coin-or.org/Bonmin)                                  | [Bonmin.jl](https://github.com/jump-dev/AmplNLWriter.jl)   |
 | [Artelys KNITRO](http://artelys.com/en/optimization-tools/knitro)              | [KNITRO.jl](https://github.com/jump-dev/KNITRO.jl)           |
 | [Xpress](https://www.fico.com/en/products/fico-xpress-optimization)            | [Xpress.jl](https://github.com/jump-dev/Xpress.jl)
-| [HiGHS](https://highs.dev/)            | [HiGHS.jl](https://github.com/jump-dev/HiGHS.jl)
 
 ## Bug reports and support
 
