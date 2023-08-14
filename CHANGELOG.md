@@ -1,5 +1,8 @@
 # Alpine.jl Change Log
 
+## Staged
+- Minor Readme updates (#235)
+
 ## v0.5.5 
 - Removed use of e.g. for JuMP documentation in README (#230)
 - Dropped support for integer variable MINLPs in `examples` (#233)
