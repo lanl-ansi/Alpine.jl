@@ -155,7 +155,7 @@ function MOI.get(m::Optimizer, attr::MOI.PrimalStatus)
     return MOI.NO_SOLUTION
 end
 
-# MOI.get(::Optimizer, ::MOI.PrimalStatus) = MOI.NO_SOLUTION
+MOI.get(::Optimizer, ::MOI.DualStatus) = MOI.NO_SOLUTION
 
 MOI.get(m::Optimizer, ::MOI.ObjectiveValue) = m.best_obj
 MOI.get(m::Optimizer, ::MOI.ObjectiveBound) = m.best_bound
