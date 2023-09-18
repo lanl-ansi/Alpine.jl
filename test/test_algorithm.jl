@@ -220,6 +220,8 @@ end
     m = multi2(solver = test_solver)
     JuMP.optimize!(m)
     @test termination_status(m) == MOI.OPTIMAL
+    @test primal_status(m) == MOI.FEASIBLE_POINT
+    @test dual_status(m) == MOI.NO_SOLUTION
     @test isapprox(objective_value(m), 0.92906489; atol = 1e-3)
 end
 
