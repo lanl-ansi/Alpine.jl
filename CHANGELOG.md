@@ -1,7 +1,10 @@
 # Alpine.jl Change Log
 
-## Staged
+## v0.5.6
 - Minor Readme updates (#235)
+- Implemented RawStatusString for solution summary (#238)
+- Dependency update for docs
+- Bug fix in LB exceeding UB outside relative tolerance bounds
 
 ## v0.5.5 
 - Removed use of e.g. for JuMP documentation in README (#230)

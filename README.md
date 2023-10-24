@@ -15,6 +15,8 @@ Alpine globally solves a given MINLP by:
 
 * Performing sequential optimization-based bound tightening (OBBT) and an iterative MIP-based adaptive partitioning scheme via piecewise polyhedral relaxations with a guarantee of global convergence
 
+Upon Alpine's convergence, for a given relative gap tolerance `ε`, the user is guaranteed that the global optimal solution is in the `ε`-neighborhood of the solution found by the solver.
+
 ## Installation
 
 Install Alpine using the Julia package manager:

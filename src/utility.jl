@@ -44,27 +44,33 @@ end
 function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
     tol = Alp.get_option(m, :tol)
 
-    if isapprox(lower_bound, upper_bound, atol = tol)
-        m.best_rel_gap = 0.0
-
-    elseif (lower_bound - upper_bound) > 1E-4
-        error("Lower bound cannot cross the upper bound in optimality gap evaluation")
-
-    elseif isinf(lower_bound) || isinf(upper_bound)
+    if isinf(lower_bound) || isinf(upper_bound)
         error("Infinite bounds detected in optimality gap evalutation")
 
     else
-        if isapprox(upper_bound, 0.0; atol = tol) # zero upper bound case
-            eps = 1 # shift factor
-            m.best_rel_gap =
-                abs((upper_bound + eps) - (lower_bound + eps)) /
-                (tol + abs(upper_bound) + eps)
-        else
-            m.best_rel_gap = abs(upper_bound - lower_bound) / (tol + abs(upper_bound))
+        m.best_rel_gap = Alp._eval_best_rel_gap(lower_bound, upper_bound, tol)
+        
+        # If LB > UB
+        if (m.best_rel_gap > Alp.get_option(m, :rel_gap)) && ((lower_bound - upper_bound) > 1E-1)
+            error("Lower bound cannot exceed the upper bound in optimality gap evaluation")
         end
     end
 
     return m.best_rel_gap
+end
+
+function _eval_best_rel_gap(lower_bound::Number, upper_bound::Number, tol::Number)
+    if isapprox(lower_bound, upper_bound, atol = tol)
+        return 0.0
+    
+    elseif isapprox(upper_bound, 0.0; atol = tol) # zero upper bound case
+        eps = 1 # shift factor
+        return abs((upper_bound + eps) - (lower_bound + eps)) /
+            (tol + abs(upper_bound) + eps)
+            
+    else
+        return abs(upper_bound - lower_bound) / (tol + abs(upper_bound))
+    end
 end
 
 function measure_relaxed_deviation(m::Optimizer; sol = nothing)
