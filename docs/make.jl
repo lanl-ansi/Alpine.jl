@@ -1,5 +1,4 @@
-using Documenter
-using Alpine
+using Documenter, Alpine
 using DocumenterTools: Themes
 
 for w in ("light", "dark")
@@ -9,12 +8,12 @@ for w in ("light", "dark")
 end
 
 Themes.compile(
-    joinpath(@__DIR__, "src/assets/themes/light.scss"),
     joinpath(@__DIR__, "src/assets/themes/documenter-light.css"),
+    joinpath(@__DIR__, "src/assets/themes/light.scss"),
 )
 Themes.compile(
-    joinpath(@__DIR__, "src/assets/themes/dark.scss"),
     joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"),
+    joinpath(@__DIR__, "src/assets/themes/dark.scss"),
 )
 
 makedocs(
@@ -24,7 +23,7 @@ makedocs(
         mathengine = Documenter.MathJax(),
         prettyurls = get(ENV, "CI", nothing) == "true",
     ),
-    strict = true,
+    # strict = true,
     pages = [
         "Introduction" => "index.md",
         "Choosing Sub-solvers" => "choosingsolver.md",

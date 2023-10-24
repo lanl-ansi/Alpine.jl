@@ -49,10 +49,13 @@ function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
 
     else
         m.best_rel_gap = Alp._eval_best_rel_gap(lower_bound, upper_bound, tol)
-        
+
         # If LB > UB
-        if (m.best_rel_gap > Alp.get_option(m, :rel_gap)) && ((lower_bound - upper_bound) > 1E-1)
-            error("Lower bound cannot exceed the upper bound in optimality gap evaluation")
+        if (m.best_rel_gap > Alp.get_option(m, :rel_gap)) &&
+           ((lower_bound - upper_bound) > 1E-1)
+            error(
+                "Lower bound cannot exceed the upper bound in optimality gap evaluation",
+            )
         end
     end
 
@@ -62,12 +65,12 @@ end
 function _eval_best_rel_gap(lower_bound::Number, upper_bound::Number, tol::Number)
     if isapprox(lower_bound, upper_bound, atol = tol)
         return 0.0
-    
+
     elseif isapprox(upper_bound, 0.0; atol = tol) # zero upper bound case
         eps = 1 # shift factor
         return abs((upper_bound + eps) - (lower_bound + eps)) /
-            (tol + abs(upper_bound) + eps)
-            
+               (tol + abs(upper_bound) + eps)
+
     else
         return abs(upper_bound - lower_bound) / (tol + abs(upper_bound))
     end
