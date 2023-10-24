@@ -257,7 +257,8 @@ function summary_status(m::Optimizer)
         @warn "  [EXCEPTION] Indefinite Alpine status. Please report your instance (& solver configuration) as an issue (https://github.com/lanl-ansi/Alpine.jl/issues) to help us make Alpine better."
     end
 
-    printstyled("\n*** Alpine ended with status $(m.alpine_status) ***\n")
+    raw = MOI.get(m, MOI.RawStatusString())
+    printstyled("\n*** $raw ***\n")
 
     return
 end

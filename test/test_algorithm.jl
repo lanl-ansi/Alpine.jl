@@ -222,6 +222,7 @@ end
     @test termination_status(m) == MOI.OPTIMAL
     @test primal_status(m) == MOI.FEASIBLE_POINT
     @test dual_status(m) == MOI.NO_SOLUTION
+    @test raw_status(m) isa String
     @test isapprox(objective_value(m), 0.92906489; atol = 1e-3)
 end
 

@@ -134,6 +134,10 @@ function MOI.get(m::Optimizer, ::TightenedUpperBound, vi::MOI.VariableIndex)
     return m.u_var_tight[vi.value]
 end
 
+function MOI.get(m::Optimizer, ::MOI.RawStatusString)
+    return "Alpine ended with status $(m.alpine_status)"
+end
+
 MOI.get(m::Optimizer, ::MOI.TerminationStatus) = m.alpine_status
 
 function MOI.get(m::Optimizer, attr::MOI.PrimalStatus)
