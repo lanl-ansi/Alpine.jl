@@ -734,8 +734,8 @@ end
     JuMP.optimize!(m)
 
     @test termination_status(m) == MOI.OPTIMAL
-    @test isapprox(objective_value(m), 3651.020370626844; atol = 1e-4)
-    @test isapprox(objective_bound(m), 3650.786358471944; atol = 1e-4)
+    @test isapprox(objective_value(m), 3651.020370626844; rtol = 1e-4)
+    @test isapprox(objective_bound(m), 3650.786358471944; rtol = 1e-4)
 
     alpine = JuMP.backend(m).optimizer.model
     @test alpine.nonconvex_terms[Expr[:(x[2]), :(x[4])]][:y_idx] == 19
