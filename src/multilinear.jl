@@ -323,18 +323,17 @@ end
 
 function amp_warmstart_α(m::Optimizer, α::Dict)
     d = m.discretization
-
+    is_better = ifelse(m.sense_orig == MOI.MIN_SENSE, <, >)
     if m.bound_sol_pool[:cnt] >= 2 # can only warm-start the problem when pool is large enough
         ws_idx = -1
         Alp.is_min_sense(m) ? ws_obj = Inf : ws_obj = -Inf
-        comp_opr = Dict(MOI.MIN_SENSE => :<, MOI.MAX_SENSE => :>)
 
         # Search for the pool for incumbent warm starter
         for i in 1:m.bound_sol_pool[:cnt]
             m.bound_sol_pool[:stat][i] == :Warmstarter &&
                 (m.bound_sol_pool[:stat][i] = :Alive)   # reset the status if not dead
             if m.bound_sol_pool[:stat][i] != :Dead &&
-               eval(comp_opr[m.sense_orig])(m.bound_sol_pool[:obj][i], ws_obj)
+               is_better(m.bound_sol_pool[:obj][i], ws_obj)
                 ws_idx = i
                 ws_obj = m.bound_sol_pool[:obj][i]
             end
@@ -625,21 +624,21 @@ end
     _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
 
 This internal function adds linking constraints between λ multipliers corresponding to multilinear terms
-that share more than two variables and are partitioned. For example, suppose we have λ[i], λ[j], and 
-λ[k] where i=(1,2,3), j=(1,2,4), and k=(1,2,5). λ[i] contains all multipliers for the extreme points 
+that share more than two variables and are partitioned. For example, suppose we have λ[i], λ[j], and
+λ[k] where i=(1,2,3), j=(1,2,4), and k=(1,2,5). λ[i] contains all multipliers for the extreme points
 in the space of (x1,x2,x3). λ[j] contains all multipliers for the extreme points in the space of (x1,x2,x4).
 λ[k] contains all multipliers for the extreme points in the space of (x1,x2,x5).
 
 Using λ[i], λ[j], or λ[k], we can express multilinear function x1*x2.
 We define a linking variable μ(1,2) that represents the value of x1*x2.
 Linking constraints are
-    μ(1,2) == convex combination expr for x1*x2 using λ[i],    
-    μ(1,2) == convex combination expr for x1*x2 using λ[j], and   
-    μ(1,2) == convex combination expr for x1*x2 using λ[k].    
+    μ(1,2) == convex combination expr for x1*x2 using λ[i],
+    μ(1,2) == convex combination expr for x1*x2 using λ[j], and
+    μ(1,2) == convex combination expr for x1*x2 using λ[k].
 
 Thus, these constraints link between λ[i], λ[j], and λ[k] variables.
 
-Reference: J. Kim, J.P. Richard, M. Tawarmalani, Piecewise Polyhedral Relaxations of Multilinear Optimization, 
+Reference: J. Kim, J.P. Richard, M. Tawarmalani, Piecewise Polyhedral Relaxations of Multilinear Optimization,
 http://www.optimization-online.org/DB_HTML/2022/07/8974.html
 """
 function _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
@@ -684,8 +683,8 @@ end
 """
     _get_shared_multilinear_terms_info(λ, linking_constraints_degree_limit)
 
-This function checks to see if linking constraints are 
-necessary for a given vector of each multilinear terms and returns the approapriate 
+This function checks to see if linking constraints are
+necessary for a given vector of each multilinear terms and returns the approapriate
 linking constraints information.
 """
 function _get_shared_multilinear_terms_info(
@@ -700,7 +699,7 @@ function _get_shared_multilinear_terms_info(
         return (linking_constraints_info = nothing)
     end
 
-    # Limit the linking constraints to a prescribed multilinear degree 
+    # Limit the linking constraints to a prescribed multilinear degree
     if !isnothing(linking_constraints_degree_limit) &&
        (linking_constraints_degree_limit < max_degree)
         max_degree = linking_constraints_degree_limit

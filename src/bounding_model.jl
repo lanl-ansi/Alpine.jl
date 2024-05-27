@@ -3,10 +3,10 @@
 
 Set up a MILP bounding model base on variable domain partitioning information stored in `use_disc`.
 By default, if `use_disc` is not provided, it will use `m.discretizations` store in the Alpine model.
-The basic idea of this MILP bounding model is to use piecewise polyhedral/convex relaxations to tighten the 
-basic relaxations of the original non-convex region. Among all presented partitions, the bounding model 
-will choose one specific partition as the lower bound solution. The more partitions there are, the 
-better or finer bounding model relax the original MINLP while the more efforts required to solve 
+The basic idea of this MILP bounding model is to use piecewise polyhedral/convex relaxations to tighten the
+basic relaxations of the original non-convex region. Among all presented partitions, the bounding model
+will choose one specific partition as the lower bound solution. The more partitions there are, the
+better or finer bounding model relax the original MINLP while the more efforts required to solve
 this MILP is required.
 """
 function create_bounding_mip(m::Optimizer; use_disc = nothing)
@@ -235,7 +235,6 @@ function add_partition(m::Optimizer; kwargs...)
     point_vec = m.best_bound_sol
 
     if isa(Alp.get_option(m, :disc_add_partition_method), Function)
-        # m.discretization = eval(Alp.get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
         m.discretization = Alp.get_option(m, :disc_add_partition_method)(
             m,
             use_disc = discretization,
@@ -263,7 +262,7 @@ end
 
 A built-in method used to add a new partition on feasible domains of variables chosen for partitioning.
 
-This can be illustrated by the following example. Let the previous iteration's partition vector on 
+This can be illustrated by the following example. Let the previous iteration's partition vector on
 variable "x" be given by [0, 3, 7, 9]. And say, the lower bounding solution has a value of 4 for variable "x".
 In the case when `partition_scaling_factor = 4`, this function creates the new partition vector as follows: [0, 3, 3.5, 4, 4.5, 7, 9]
 
@@ -444,8 +443,7 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
     m.logs[:n_iter] > 2 && return Alp.get_option(m, :partition_scaling_factor) # Stop branching after the second iterations
 
     ratio_pool = [8:2:20;]  # Built-in try range
-    convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
-    # revconvertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
+    is_tighter = ifelse(m.orig_sense == MOI.MAX_SENSE, <, >)
 
     incumb_ratio = ratio_pool[1]
     Alp.is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
@@ -472,7 +470,7 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
         Alp.create_bounding_mip(m, use_disc = branch_disc)
         res = Alp.disc_branch_solve(m)
         push!(res_collector, res)
-        if eval(convertor[m.sense_orig])(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
+        if is_tighter(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
             incumb_res = res
             incumb_ratio = r
         end

@@ -308,7 +308,6 @@ function check_exit(m::Optimizer)
     # constant objective with feasible local solve check
     if Alp.expr_isconst(m.obj_expr_orig) &&
        (m.status[:local_solve] == MOI.OPTIMAL || m.status == MOI.LOCALLY_SOLVED)
-        # m.best_bound = eval(m.obj_expr_orig)
         m.best_bound = m.obj_expr_orig
         m.best_rel_gap = 0.0
         m.best_abs_gap = 0.0
@@ -522,7 +521,7 @@ It solves the problem built upon a piecewise convexification based on the discre
 See `create_bounding_mip` for more details of the problem solved here.
 """
 function bounding_solve(m::Optimizer)
-    convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
+    is_tighter = ifelse(m.orig_sense == MOI.MAX_SENSE, <, >)
 
     # Updates time metric and the termination bounds
     Alp.set_mip_time_limit(m)
@@ -554,7 +553,7 @@ function bounding_solve(m::Optimizer)
             )+1] = copy(candidate_bound_sol) # Requires proper offseting
         end
         push!(m.logs[:bound], candidate_bound)
-        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound)
+        if is_tighter(candidate_bound, m.best_bound)
             m.best_bound = candidate_bound
             m.best_bound_sol = copy(candidate_bound_sol)
             m.status[:bounding_solve] = status
@@ -600,7 +599,6 @@ function pick_disc_vars(m::Optimizer)
     disc_var_pick = Alp.get_option(m, :disc_var_pick)
 
     if isa(disc_var_pick, Function)
-        # eval(Alp.get_option(m, :disc_var_pick))(m)
         disc_var_pick(m)
         length(m.disc_vars) == 0 &&
             length(m.nonconvex_terms) > 0 &&

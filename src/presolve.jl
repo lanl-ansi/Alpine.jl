@@ -18,7 +18,6 @@ function bound_tightening_wrapper(m::Optimizer; use_bound = true, kwargs...)
     elseif Alp.get_option(m, :presolve_bt_algo) == 2
         Alp.optimization_based_bound_tightening(m, use_bound = use_bound, use_tmc = true)
     elseif isa(Alp.get_option(m, :presolve_bt_algo), Function)
-        # eval(Alp.get_option(m, :presolve_bt_algo))(m)
         Alp.get_option(m, :presolve_bt_algo)(m)
     else
         error("Unrecognized bound tightening algorithm")
@@ -219,7 +218,7 @@ function optimization_based_bound_tightening(
         bound_max_reduction = (max_reduction > improv_tol)
         bound_max_width = (max_width > width_tol)
 
-        # Deactivate this termination criterion if it slows down the OBBT convergence 
+        # Deactivate this termination criterion if it slows down the OBBT convergence
         stats = Alp.relaxation_model_obbt(m, discretization, bound)
         if Alp.is_min_sense(m)
             current_rel_gap = Alp.eval_opt_gap(m, stats["relaxed_obj"], bound)
@@ -367,8 +366,8 @@ end
 """
     post_objective_bound(m::Optimizer, bound::Float64; kwargs...)
 
-This function adds the upper/lower bounding constraint on the objective function 
-for the optimization models solved within the OBBT algorithm. 
+This function adds the upper/lower bounding constraint on the objective function
+for the optimization models solved within the OBBT algorithm.
 """
 function post_objective_bound(m::Optimizer, bound::Number; kwargs...)
     obj_expr = sum(
