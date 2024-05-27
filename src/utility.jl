@@ -114,9 +114,9 @@ discretization_to_bounds(d::Dict, l::Int) = Alp.update_var_bounds(d, len = l)
 Update the data structure with feasible solution and its associated objective (if better)
 """
 function update_incumbent(m::Optimizer, objval::Float64, sol::Vector)
-    convertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
     push!(m.logs[:obj], objval)
-    if eval(convertor[m.sense_orig])(objval, m.best_obj) #&& !eval(convertor[m.sense_orig])(objval, m.best_bound)
+    is_better = ifelse(m.sense_orig == MOI.MAX_SENSE, >, <)
+    if is_better(objval, m.best_obj)
         m.best_obj = objval
         m.best_sol = sol
         m.detected_incumbent = true
@@ -535,7 +535,7 @@ function resolve_lifted_var_value(m::Optimizer, sol_vec::Array)
     return sol_vec
 end
 
-# Unused functions 
+# Unused functions
 # function amp_post_λ_upperbound(
 #     m::Optimizer,
 #     λ::Dict,

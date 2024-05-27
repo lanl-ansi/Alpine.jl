@@ -342,3 +342,20 @@ end
     alpine = JuMP.backend(m).optimizer.model
     @test !(:Hess in Alpine.features_available(alpine))
 end
+
+@testset "FEASIBILITY_PROBLEM" begin
+    model = JuMP.Model(
+        JuMP.optimizer_with_attributes(
+            Alpine.Optimizer,
+            "nlp_solver" => IPOPT,
+            "mip_solver" => HIGHS,
+            "minlp_solver" => JUNIPER,
+        ),
+    )
+    JuMP.@variable(model, x[1:3], Bin)
+    JuMP.@NLconstraint(model, prod(1 + x[i] for i in 1:3) <= 2)
+    JuMP.@constraint(model, sum(x[i] for i in 1:3) >= 1)
+    JuMP.optimize!(model)
+    # TODO(odow): why is this infeasible?
+    @test JuMP.termination_status(model) isa JuMP.MOI.TerminationStatusCode
+end
