@@ -521,7 +521,7 @@ It solves the problem built upon a piecewise convexification based on the discre
 See `create_bounding_mip` for more details of the problem solved here.
 """
 function bounding_solve(m::Optimizer)
-    is_tighter = ifelse(m.orig_sense == MOI.MAX_SENSE, <, >)
+    is_tighter = ifelse(m.sense_orig == MOI.MAX_SENSE, <, >)
 
     # Updates time metric and the termination bounds
     Alp.set_mip_time_limit(m)

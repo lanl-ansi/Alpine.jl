@@ -443,7 +443,7 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
     m.logs[:n_iter] > 2 && return Alp.get_option(m, :partition_scaling_factor) # Stop branching after the second iterations
 
     ratio_pool = [8:2:20;]  # Built-in try range
-    is_tighter = ifelse(m.orig_sense == MOI.MAX_SENSE, <, >)
+    is_tighter = ifelse(m.sense_orig == MOI.MAX_SENSE, <, >)
 
     incumb_ratio = ratio_pool[1]
     Alp.is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
