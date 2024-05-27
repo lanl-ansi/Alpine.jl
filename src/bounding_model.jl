@@ -196,7 +196,11 @@ function amp_post_lifted_objective(m::Optimizer)
 
     #if isa(m.obj_expr_orig, Number)
     if expr_isconst(m.obj_expr_orig)
-        JuMP.@objective(m.model_mip, m.sense_orig, eval(m.obj_expr_orig))
+        if m.obj_expr_orig == :(+())
+            JuMP.@objective(m.model_mip, m.sense_orig, 0.0)
+        else
+            JuMP.@objective(m.model_mip, m.sense_orig, eval(m.obj_expr_orig))
+        end
     elseif m.obj_structure == :affine
         JuMP.@objective(
             m.model_mip,
