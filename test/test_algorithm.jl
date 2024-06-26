@@ -1043,3 +1043,14 @@ end
     @test isapprox(objective_value(m), 13; atol = 1e-4)
     @test MOI.get(m, Alpine.NumberOfIterations()) == 0
 end
+
+@testset "Test integer variables" begin
+    test_solver = optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+    )
+    m = milp(solver = test_solver)
+    @test_throws "Alpine does not support MINLPs with generic integer (non-binary) variables yet!" JuMP.optimize!(m)
+end
