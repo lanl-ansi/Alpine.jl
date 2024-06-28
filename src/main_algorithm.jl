@@ -97,10 +97,6 @@ function load!(m::Optimizer)
     # Populate data to create the bounding MIP model
     Alp.recategorize_var(m)             # Initial round of variable re-categorization
 
-    :Int in m.var_type_orig && error(
-        "Alpine does not support MINLPs with generic integer (non-binary) variables yet!",
-    )
-
     # Solver-dependent detection
     Alp._fetch_mip_solver_identifier(m)
     Alp._fetch_nlp_solver_identifier(m)
