@@ -10,7 +10,6 @@ import Combinatorics
 import Pkg
 
 const ALPINE_DEBUG = false
-const Alp = Alpine
 
 include("const.jl")
 

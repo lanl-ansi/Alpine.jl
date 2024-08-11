@@ -21,9 +21,9 @@ function update_disc_cont_var(m::Optimizer)
         (var_diffs = _eval_var_diffs!(m.nonconvex_terms, var_diffs))
 
     distance = Dict(zip(var_idxs, var_diffs))
-    Alp.weighted_min_vertex_cover(m, distance)
+    weighted_min_vertex_cover(m, distance)
 
-    (Alp.get_option(m, :log_level) > 100) &&
+    (get_option(m, :log_level) > 100) &&
         println("updated partition var selection => $(m.disc_vars)")
     return
 end

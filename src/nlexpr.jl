@@ -4,11 +4,11 @@ process_expr(expr; kwargs...)
 High-level wrapper for processing expression with sub-tree operators
 """
 function process_expr(m::Optimizer)
-    Alp.expr_initialization(m)      # S0 : initialize the space for parsing and analyzing
-    Alp.expr_preprocess(m)          # S1 : pre-process the negative sign in expressions
-    Alp.expr_parsing(m)             # S2 : parsing the expressions for nonlinear information
-    Alp.expr_conversion(m)          # S3 : convert lifted(linear) expressions into affine function
-    Alp.expr_finalized(m)           # S4 : finalize process by extracting some measurements
+    expr_initialization(m)      # S0 : initialize the space for parsing and analyzing
+    expr_preprocess(m)          # S1 : pre-process the negative sign in expressions
+    expr_parsing(m)             # S2 : parsing the expressions for nonlinear information
+    expr_conversion(m)          # S3 : convert lifted(linear) expressions into affine function
+    expr_finalized(m)           # S4 : finalize process by extracting some measurements
 
     return
 end
@@ -34,13 +34,13 @@ end
 STEP 2: preprocess expression for trivial sub-trees and nasty pieces for easier later process
 """
 function expr_preprocess(m::Optimizer)
-    Alp.expr_resolve_const(m.bounding_obj_expr_mip)
-    Alp.expr_resolve_sign(m.bounding_obj_expr_mip)
-    Alp.expr_flatten(m.bounding_obj_expr_mip)
+    expr_resolve_const(m.bounding_obj_expr_mip)
+    expr_resolve_sign(m.bounding_obj_expr_mip)
+    expr_flatten(m.bounding_obj_expr_mip)
     for i in 1:m.num_constr_orig
-        Alp.expr_resolve_const(m.bounding_constr_expr_mip[i])
-        Alp.expr_resolve_sign(m.bounding_constr_expr_mip[i])
-        Alp.expr_flatten(m.bounding_constr_expr_mip[i].args[2])
+        expr_resolve_const(m.bounding_constr_expr_mip[i])
+        expr_resolve_sign(m.bounding_constr_expr_mip[i])
+        expr_flatten(m.bounding_constr_expr_mip[i].args[2])
     end
 
     return
@@ -52,30 +52,29 @@ STEP 3: parse expression for patterns on either the generic level or term level
 function expr_parsing(m::Optimizer)
 
     # Throw an error if the objective expression has fractional exponents
-    Alp.expr_is_fractional_exponent(m.bounding_obj_expr_mip)
-    is_structural = Alp.expr_constr_parsing(m.bounding_obj_expr_mip, m)
+    expr_is_fractional_exponent(m.bounding_obj_expr_mip)
+    is_structural = expr_constr_parsing(m.bounding_obj_expr_mip, m)
 
     if !is_structural
-        m.bounding_obj_expr_mip = Alp.expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
+        m.bounding_obj_expr_mip = expr_term_parsing(m.bounding_obj_expr_mip, 0, m)
         m.obj_structure = :generic_linear
     end
-    (Alp.get_option(m, :log_level) > 199) && println("[OBJ] $(m.obj_expr_orig)")
+    (get_option(m, :log_level) > 199) && println("[OBJ] $(m.obj_expr_orig)")
 
     for i in 1:m.num_constr_orig
         expr = m.bounding_constr_expr_mip[i]
 
         # Throw an error if the constraint expression has fractional exponents
         if expr.args[1] in [:(<=), :(>=), :(==)]
-            Alp.expr_is_fractional_exponent(expr.args[2])
+            expr_is_fractional_exponent(expr.args[2])
         end
 
-        is_structural = Alp.expr_constr_parsing(expr, m, i)
+        is_structural = expr_constr_parsing(expr, m, i)
         if !is_structural
-            m.bounding_constr_expr_mip[i] = Alp.expr_term_parsing(expr, i, m)
+            m.bounding_constr_expr_mip[i] = expr_term_parsing(expr, i, m)
             m.constr_structure[i] = :generic_linear
         end
-        (Alp.get_option(m, :log_level) > 199) &&
-            println("[CONSTR] $(m.constr_expr_orig[i])")
+        (get_option(m, :log_level) > 199) && println("[CONSTR] $(m.constr_expr_orig[i])")
     end
 
     return
@@ -86,36 +85,35 @@ STEP 4: convert the parsed expressions into affine-based function that can be us
 """
 function expr_conversion(m::Optimizer)
     if m.obj_structure == :generic_linear
-        m.bounding_obj_mip = Alp.expr_linear_to_affine(m.bounding_obj_expr_mip)
+        m.bounding_obj_mip = expr_linear_to_affine(m.bounding_obj_expr_mip)
         m.obj_structure = :affine
     end
-    Alp.get_option(m, :log_level) > 199 && println("type :: ", m.obj_structure)
-    Alp.get_option(m, :log_level) > 199 && println("lifted ::", m.bounding_obj_expr_mip)
-    Alp.get_option(m, :log_level) > 199 &&
-        println("coeffs ::", m.bounding_obj_mip[:coefs])
-    Alp.get_option(m, :log_level) > 199 && println("vars ::", m.bounding_obj_mip[:vars])
-    Alp.get_option(m, :log_level) > 199 && println("sense ::", m.bounding_obj_mip[:sense])
-    Alp.get_option(m, :log_level) > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
-    Alp.get_option(m, :log_level) > 199 && println("----------------")
+    get_option(m, :log_level) > 199 && println("type :: ", m.obj_structure)
+    get_option(m, :log_level) > 199 && println("lifted ::", m.bounding_obj_expr_mip)
+    get_option(m, :log_level) > 199 && println("coeffs ::", m.bounding_obj_mip[:coefs])
+    get_option(m, :log_level) > 199 && println("vars ::", m.bounding_obj_mip[:vars])
+    get_option(m, :log_level) > 199 && println("sense ::", m.bounding_obj_mip[:sense])
+    get_option(m, :log_level) > 199 && println("rhs ::", m.bounding_obj_mip[:rhs])
+    get_option(m, :log_level) > 199 && println("----------------")
 
     for i in 1:m.num_constr_orig
         if m.constr_structure[i] == :generic_linear
             m.bounding_constr_mip[i] =
-                Alp.expr_linear_to_affine(m.bounding_constr_expr_mip[i])
+                expr_linear_to_affine(m.bounding_constr_expr_mip[i])
             m.constr_structure[i] = :affine
         end
-        Alp.get_option(m, :log_level) > 199 && println("type :: ", m.constr_structure[i])
-        Alp.get_option(m, :log_level) > 199 &&
+        get_option(m, :log_level) > 199 && println("type :: ", m.constr_structure[i])
+        get_option(m, :log_level) > 199 &&
             println("lifted ::", m.bounding_constr_expr_mip[i])
-        Alp.get_option(m, :log_level) > 199 &&
+        get_option(m, :log_level) > 199 &&
             println("coeffs ::", m.bounding_constr_mip[i][:coefs])
-        Alp.get_option(m, :log_level) > 199 &&
+        get_option(m, :log_level) > 199 &&
             println("vars ::", m.bounding_constr_mip[i][:vars])
-        Alp.get_option(m, :log_level) > 199 &&
+        get_option(m, :log_level) > 199 &&
             println("sense ::", m.bounding_constr_mip[i][:sense])
-        Alp.get_option(m, :log_level) > 199 &&
+        get_option(m, :log_level) > 199 &&
             println("rhs ::", m.bounding_constr_mip[i][:rhs])
-        Alp.get_option(m, :log_level) > 199 && println("----------------")
+        get_option(m, :log_level) > 199 && println("----------------")
     end
 
     return
@@ -125,7 +123,7 @@ end
 STEP 5: collect information as needed for handy operations in the algorithm section
 """
 function expr_finalized(m::Optimizer)
-    Alp.collect_nonconvex_vars(m)
+    collect_nonconvex_vars(m)
     m.candidate_disc_vars = sort(m.candidate_disc_vars)
     m.num_var_linear_mip = length(m.linear_terms)
     m.num_var_nonlinear_mip = length(m.nonconvex_terms)
@@ -179,7 +177,7 @@ function expr_strip_const(expr, subs = [], rhs = 0.0)
         elseif expr.args[i].head == :ref
             continue
         elseif expr.args[i].head == :call
-            subs, rhs = Alp.expr_strip_const(expr.args[i], subs, rhs)
+            subs, rhs = expr_strip_const(expr.args[i], subs, rhs)
         end
     end
 
@@ -205,22 +203,22 @@ function build_constr_block(y_idx::Int, var_idxs::Vector, operator::Symbol)
 end
 
 """
-Alp.expr_constr_parsing(expr, m::Optimizer)
+expr_constr_parsing(expr, m::Optimizer)
 
 Recognize structural constraints.
 """
 function expr_constr_parsing(expr::Expr, m::Optimizer, idx::Int = 0)
 
     # First process user-defined structures in-cases of over-ride
-    # for i in 1:length(Alp.get_option(m, :constr_patterns))
-    #    is_structural = eval(Alp.get_option(m, :constr_patterns)[i])(expr, m, idx)
+    # for i in 1:length(get_option(m, :constr_patterns))
+    #    is_structural = eval(get_option(m, :constr_patterns)[i])(expr, m, idx)
     #    return
     # end
 
     isa(expr, Number) && return false
     # Recognize built-in special structural pattern
-    if Alp.get_option(m, :recognize_convex)
-        is_convex = Alp.resolve_convex_constr(expr, m, idx)
+    if get_option(m, :recognize_convex)
+        is_convex = resolve_convex_constr(expr, m, idx)
         is_convex && return true
     end
 
@@ -241,7 +239,7 @@ function expr_is_axn(expr, scalar = 1.0, var_idxs = [], power = []; N = nothing)
                 push!(power, 1)
             elseif (expr.args[i].head == :call)
                 scalar, var_idxs, power =
-                    Alp.expr_is_axn(expr.args[i], scalar, var_idxs, power)
+                    expr_is_axn(expr.args[i], scalar, var_idxs, power)
                 scalar === nothing && return nothing, nothing, nothing
             end
         end
@@ -284,8 +282,7 @@ function expr_linear_to_affine(expr)
         @assert isa(expr.args[3], Float64) || isa(expr.args[3], Int)
         @assert isa(expr.args[2], Expr)
         # non are buffer spaces, not used anywhere
-        lhscoeff, lhsvars, rhs, non, non =
-            Alp.traverse_expr_linear_to_affine(expr.args[2])
+        lhscoeff, lhsvars, rhs, non, non = traverse_expr_linear_to_affine(expr.args[2])
         rhs = -rhs + expr.args[3]
         affdict[:sense] = expr.args[1]
 
@@ -296,7 +293,7 @@ function expr_linear_to_affine(expr)
         affdict[:sense] = nothing
 
     else # For an objective expression
-        lhscoeff, lhsvars, rhs, non, non = Alp.traverse_expr_linear_to_affine(expr)
+        lhscoeff, lhsvars, rhs, non, non = traverse_expr_linear_to_affine(expr)
         affdict[:sense] = nothing
     end
 
@@ -446,7 +443,7 @@ function expr_resolve_sign(expr, level = 0; kwargs...)
                     expr.args[i] = expr.args[i].args[2]
                 end
             elseif expr.args[i].head == :call
-                Alp.expr_resolve_sign(expr.args[i], level + 1)
+                expr_resolve_sign(expr.args[i], level + 1)
             end
         end
     end
@@ -462,7 +459,7 @@ Most issues can be caused by this function.
 function expr_flatten(expr, level = 0; kwargs...)
     isa(expr, Number) && return
     if level > 0  # No trivial constraint is allowed "3>5"
-        flat = Alp.expr_arrangeargs(expr.args)
+        flat = expr_arrangeargs(expr.args)
         if isa(flat, Number)
             return flat
         else
@@ -477,7 +474,7 @@ function expr_flatten(expr, level = 0; kwargs...)
     end
 
     if level > 0  #Root level process, no additional processes
-        expr.args = Alp.expr_arrangeargs(expr.args)
+        expr.args = expr_arrangeargs(expr.args)
     end
 
     return expr
@@ -591,14 +588,14 @@ function expr_resolve_const(expr)
         if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
             continue
         elseif expr.args[i].head == :call
-            if Alp.expr_is_emptysum(expr.args[i])
+            if expr_is_emptysum(expr.args[i])
                 expr.args[i] = :(0)
             end
             (expr_isconst(expr.args[i])) && (expr.args[i] = eval(expr.args[i]))
             if isa(expr.args[i], Number) || isa(expr.args[i], Symbol)
                 continue
             else
-                Alp.expr_resolve_const(expr.args[i])
+                expr_resolve_const(expr.args[i])
             end
         end
     end
@@ -615,7 +612,7 @@ function expr_resolve_const_denominator(args)
     resolvable = true
 
     for i in 3:length(args)
-        resolvable *= Alp.expr_isconst(args[i])
+        resolvable *= expr_isconst(args[i])
     end
 
     if resolvable
@@ -663,7 +660,7 @@ function expr_is_fractional_exponent(expr)
         end
         for i in 1:length(expr.args)
             if typeof(expr.args[i]) == Expr
-                Alp.expr_is_fractional_exponent(expr.args[i]) # Recursively search for fractional exponents
+                expr_is_fractional_exponent(expr.args[i]) # Recursively search for fractional exponents
             end
         end
     end
@@ -671,7 +668,7 @@ end
 
 # Returns true if the expression is a constant, linear or affine
 function expr_isaffine(expr)
-    Alp.expr_isconst(expr) && return true
+    expr_isconst(expr) && return true
     expr.head == :ref && return true
 
     is_affine = false
@@ -689,7 +686,7 @@ function expr_isaffine(expr)
             if expr.args[i].head == :ref
                 k += 1
             elseif expr.args[i].head == :call
-                status = Alp.expr_isaffine(expr.args[i])
+                status = expr_isaffine(expr.args[i])
                 status && (k += 1)
             end
         end
@@ -704,7 +701,7 @@ Signs in the summation can be +/-
 Note: This function does not support terms of type (a*(x[1] + x[2]))^2 yet.
 """
 function expr_isolate_const(expr)
-    Alp.expr_isaffine(expr) && return expr
+    expr_isaffine(expr) && return expr
 
     # Check nonlinear expressions
     if (expr.head == :call && expr.args[1] in [:+, :-])
@@ -770,7 +767,7 @@ function expr_isolate_const(expr)
 
                 # Handle negative sign in the remaining terms
             elseif (expr_i.args[1] in [:+, :-]) && (length(expr.args[i].args) > 2)
-                expr_rec = Alp.expr_isolate_const(expr_i) #recursion
+                expr_rec = expr_isolate_const(expr_i) #recursion
                 push!(expr_array, expr_rec)
 
                 # For any other terms

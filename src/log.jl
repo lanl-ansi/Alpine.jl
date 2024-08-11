@@ -5,7 +5,7 @@ function create_logs!(m)
     # Timers
     logs[:presolve_time] = 0.0                           # Total presolve-time of the algorithm
     logs[:total_time] = 0.0                              # Total run-time of the algorithm
-    logs[:time_left] = Alp.get_option(m, :time_limit)    # Total remaining time of the algorithm if time-out is specified
+    logs[:time_left] = get_option(m, :time_limit)    # Total remaining time of the algorithm if time-out is specified
 
     # Values
     logs[:obj] = []                 # Iteration-based objective
@@ -23,15 +23,15 @@ end
 
 function reset_timer(m::Optimizer)
     m.logs[:total_time] = 0.0
-    m.logs[:time_left] = Alp.get_option(m, :time_limit)
+    m.logs[:time_left] = get_option(m, :time_limit)
     return m
 end
 
 function logging_summary(m::Optimizer)
-    if Alp.get_option(m, :log_level) > 0
+    if get_option(m, :log_level) > 0
         printstyled("\nPROBLEM STATISTICS\n", color = :cyan, bold = true)
-        Alp.is_min_sense(m) && (println("  Objective sense = Min"))
-        Alp.is_max_sense(m) && (println("  Objective sense = Max"))
+        is_min_sense(m) && (println("  Objective sense = Min"))
+        is_max_sense(m) && (println("  Objective sense = Max"))
         println(
             "  # Variables = ",
             length([i for i in 1:m.num_var_orig if m.var_type[i] == :Cont]) +
@@ -45,7 +45,7 @@ function logging_summary(m::Optimizer)
         println("  # Constraints = ", m.num_constr_orig)
         println("  # NL Constraints = ", m.num_nlconstr_orig)
         println("  # Linear Constraints = ", m.num_lconstr_orig)
-        Alp.get_option(m, :recognize_convex) && println(
+        get_option(m, :recognize_convex) && println(
             "  # Detected convex constraints = $(length([i for i in m.constr_structure if i == :convex]))",
         )
         println("  # Detected nonlinear terms = ", length(m.nonconvex_terms))
@@ -56,7 +56,7 @@ function logging_summary(m::Optimizer)
         println("  # Potential variables for partitioning = ", length(m.disc_vars))
 
         printstyled("SUB-SOLVERS USED BY ALPINE\n", color = :cyan, bold = true)
-        if Alp.get_option(m, :minlp_solver) === nothing
+        if get_option(m, :minlp_solver) === nothing
             println("  NLP local solver = ", m.nlp_solver_id)
         else
             println("  MINLP local solver = ", m.minlp_solver_id)
@@ -69,66 +69,59 @@ function logging_summary(m::Optimizer)
             Pkg.TOML.parse(read(string(pkgdir(Alpine), "/Project.toml"), String))["version"],
         )
 
-        if Alp.is_min_sense(m)
+        if is_min_sense(m)
             println(
                 "  Maximum iterations (lower-bounding MIPs) = ",
-                Alp.get_option(m, :max_iter),
+                get_option(m, :max_iter),
             )
-        elseif Alp.is_max_sense(m)
+        elseif is_max_sense(m)
             println(
                 "  Maximum iterations (upper-bounding MIPs) = ",
-                Alp.get_option(m, :max_iter),
+                get_option(m, :max_iter),
             )
         else
-            println(
-                "  Maximum iterations (bounding MIPs) =  ",
-                Alp.get_option(m, :max_iter),
-            )
+            println("  Maximum iterations (bounding MIPs) =  ", get_option(m, :max_iter))
         end
 
-        println(
-            "  Relative global optimality gap = ",
-            Alp.get_option(m, :rel_gap) * 100,
-            "%",
-        )
+        println("  Relative global optimality gap = ", get_option(m, :rel_gap) * 100, "%")
 
-        if Alp.get_option(m, :disc_var_pick) == 0
+        if get_option(m, :disc_var_pick) == 0
             println("  Potential variables chosen for partitioning = All")
-        elseif Alp.get_option(m, :disc_var_pick) == 1
+        elseif get_option(m, :disc_var_pick) == 1
             println(
                 "  Potential variables chosen for partitioning = Minimum vertex cover",
             )
         end
 
-        if Alp.get_option(m, :partition_scaling_factor_branch)
+        if get_option(m, :partition_scaling_factor_branch)
             println("  Partition scaling factor branch activated")
         else
             println(
                 "  Partition scaling factor = ",
-                Alp.get_option(m, :partition_scaling_factor),
+                get_option(m, :partition_scaling_factor),
             )
         end
-        (Alp.get_option(m, :convhull_ebd)) && println("  Using convhull_ebd formulation")
-        (Alp.get_option(m, :convhull_ebd)) &&
-            println("  Encoding method = $(Alp.get_option(m, :convhull_ebd_encode))")
-        (Alp.get_option(m, :convhull_ebd)) && println(
-            "  Independent branching scheme = $(Alp.get_option(m, :convhull_ebd_ibs))",
+        (get_option(m, :convhull_ebd)) && println("  Using convhull_ebd formulation")
+        (get_option(m, :convhull_ebd)) &&
+            println("  Encoding method = $(get_option(m, :convhull_ebd_encode))")
+        (get_option(m, :convhull_ebd)) && println(
+            "  Independent branching scheme = $(get_option(m, :convhull_ebd_ibs))",
         )
-        println("  Bound-tightening presolve = ", Alp.get_option(m, :presolve_bt))
-        Alp.get_option(m, :presolve_bt) && println(
+        println("  Bound-tightening presolve = ", get_option(m, :presolve_bt))
+        get_option(m, :presolve_bt) && println(
             "  Maximum iterations (OBBT) = ",
-            Alp.get_option(m, :presolve_bt_max_iter),
+            get_option(m, :presolve_bt_max_iter),
         )
     end
 end
 
 function logging_head(m::Optimizer)
-    if Alp.is_min_sense(m)
+    if is_min_sense(m)
         printstyled("LOWER-BOUNDING ITERATIONS", color = :cyan, bold = true)
         UB_iter = "Incumbent"
         UB = "Best Incumbent"
         LB = "Lower Bound"
-    elseif Alp.is_max_sense(m)
+    elseif is_max_sense(m)
         printstyled("UPPER-BOUNDING ITERATIONS", color = :cyan, bold = true)
         UB_iter = "Incumbent"
         UB = "Best Incumbent"
@@ -246,7 +239,7 @@ function summary_status(m::Optimizer)
 
     if m.detected_bound && m.detected_incumbent
         m.alpine_status =
-            m.best_rel_gap > Alp.get_option(m, :rel_gap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
+            m.best_rel_gap > get_option(m, :rel_gap) ? MOI.OTHER_LIMIT : MOI.OPTIMAL
     elseif m.status[:bounding_solve] == MOI.INFEASIBLE
         m.alpine_status = MOI.INFEASIBLE
     elseif m.detected_bound && !m.detected_incumbent
@@ -269,11 +262,11 @@ end
 #     cnt = length([1 for j in keys(m.nonconvex_terms) if m.nonconvex_terms[j][:nonlinear_type] == i])
 #     cnt > 0 && println("\tTerm $(i) Count = $(cnt) ")
 # end
-# println("  Maximum solution time = ", Alp.get_option(m, :time_limit))
-# println("  Basic bound propagation = ", Alp.get_option(m, :presolve_bp))
-# println("  Conseuctive solution rejection = after ", Alp.get_option(m, :disc_consecutive_forbid), " times")
-# Alp.get_option(m, :presolve_bt) && println("bound tightening presolve algorithm = ", Alp.get_option(m, :presolve_bt)_algo)
-# Alp.get_option(m, :presolve_bt) && println("bound tightening presolve width tolerance = ", Alp.get_option(m, :presolve_bt)_width_tol)
-# Alp.get_option(m, :presolve_bt) && println("bound tightening presolve output tolerance = ", Alp.get_option(m, :presolve_bt)_output_tol)
-# Alp.get_option(m, :presolve_bt) && println("bound tightening presolve relaxation = ", Alp.get_option(m, :presolve_bt)_relax)
-# Alp.get_option(m, :presolve_bt) && println("bound tightening presolve mip regulation time = ", Alp.get_option(m, :presolve_bt)_mip_time_limit)
+# println("  Maximum solution time = ", get_option(m, :time_limit))
+# println("  Basic bound propagation = ", get_option(m, :presolve_bp))
+# println("  Conseuctive solution rejection = after ", get_option(m, :disc_consecutive_forbid), " times")
+# get_option(m, :presolve_bt) && println("bound tightening presolve algorithm = ", get_option(m, :presolve_bt)_algo)
+# get_option(m, :presolve_bt) && println("bound tightening presolve width tolerance = ", get_option(m, :presolve_bt)_width_tol)
+# get_option(m, :presolve_bt) && println("bound tightening presolve output tolerance = ", get_option(m, :presolve_bt)_output_tol)
+# get_option(m, :presolve_bt) && println("bound tightening presolve relaxation = ", get_option(m, :presolve_bt)_relax)
+# get_option(m, :presolve_bt) && println("bound tightening presolve mip regulation time = ", get_option(m, :presolve_bt)_mip_time_limit)

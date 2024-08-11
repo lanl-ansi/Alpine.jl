@@ -104,7 +104,7 @@ x >= 5, x <= 5 or x == 5 and fetch the information to m.l_var_tight and m.u_var_
 function bound_propagation(m::Optimizer)
     exhausted = false
     infeasible = false
-    tol = Alp.get_option(m, :tol)
+    tol = get_option(m, :tol)
 
     while !exhausted
         exhausted = true
@@ -146,11 +146,11 @@ function bound_propagation(m::Optimizer)
                     if eval_l_bound > m.l_var_tight[var_idx] + tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_l_bound
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraint",
                         )
                     elseif eval_l_bound > m.u_var_tight[var_idx] + tol
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] Infeasibility detection during bound propagation",
                         )
                         infeasible = true
@@ -160,11 +160,11 @@ function bound_propagation(m::Optimizer)
                     if eval_u_bound < m.u_var_tight[var_idx] - tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_u_bound
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints",
                         )
                     elseif eval_u_bound < m.l_var_tight[var_idx] - tol
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] Infeasibility detection during bound propagation",
                         )
                         infeasible = true
@@ -190,11 +190,11 @@ function bound_propagation(m::Optimizer)
                     if eval_bound > m.l_var_tight[var_idx] + tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints",
                         )
                     elseif eval_bound > m.u_var_tight[var_idx] + tol
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] Infeasibility detection during bound propagation",
                         )
                         infeasible = true
@@ -219,11 +219,11 @@ function bound_propagation(m::Optimizer)
                     if eval_bound < m.u_var_tight[var_idx] - tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints",
                         )
                     elseif eval_bound < m.l_var_tight[var_idx] - tol
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] Infeasibility detection during bound propagation",
                         )
                         infeasible = true
@@ -248,11 +248,11 @@ function bound_propagation(m::Optimizer)
                     if eval_bound < m.u_var_tight[var_idx] - tol
                         exhausted = false
                         m.u_var_tight[var_idx] = eval_bound
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] UB $(m.u_var_tight[var_idx]) evaluated from constraints",
                         )
                     elseif eval_bound < m.l_var_tight[var_idx] - tol
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] Infeasibility detection during bound propagation",
                         )
                         infeasible = true
@@ -276,11 +276,11 @@ function bound_propagation(m::Optimizer)
                     if eval_bound > m.l_var_tight[var_idx] + tol
                         exhausted = false
                         m.l_var_tight[var_idx] = eval_bound
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] LB $(m.l_var_tight[var_idx]) evaluated from constraints",
                         )
                     elseif eval_bound > m.u_var_tight[var_idx] + tol
-                        (Alp.get_option(m, :log_level) > 199) && println(
+                        (get_option(m, :log_level) > 199) && println(
                             "[VAR$(var_idx)] Infeasibility detection during bound propagation",
                         )
                         infeasible = true
@@ -289,7 +289,7 @@ function bound_propagation(m::Optimizer)
                 end
             end
         end
-        (exhausted == true && Alp.get_option(m, :log_level) > 99) &&
+        (exhausted == true && get_option(m, :log_level) > 99) &&
             println("Initial constraint-based bound evaluation exhausted...")
     end
 
@@ -324,12 +324,12 @@ in known or trivial bounds information to deduce lifted variable bounds and to p
 function resolve_var_bounds(m::Optimizer)
 
     # Basic Bound propagation
-    if Alp.get_option(m, :presolve_bp)
-        setproperty!(m, :presolve_infeasible, Alp.bound_propagation(m)) # Fetch bounds from constraints
+    if get_option(m, :presolve_bp)
+        setproperty!(m, :presolve_infeasible, bound_propagation(m)) # Fetch bounds from constraints
     end
 
-    # Resolve unbounded variables in the original formulation 
-    Alp.resolve_inf_bounds(m)
+    # Resolve unbounded variables in the original formulation
+    resolve_inf_bounds(m)
 
     # Added sequential bound resolving process base on DFS process, which ensures all bounds are secured.
     # Increased complexity from linear to square but a reasonable amount
@@ -339,7 +339,7 @@ function resolve_var_bounds(m::Optimizer)
         if haskey(m.nonconvex_terms, k)
             m.nonconvex_terms[k][:bound_resolver](m, k)
         elseif haskey(m.linear_terms, k)
-            Alp.basic_linear_bounds(m, k)
+            basic_linear_bounds(m, k)
         else
             error("Found homeless term key $(k) during bound resolution.")
         end
@@ -360,23 +360,23 @@ function resolve_inf_bounds(m::Optimizer)
     for i in 1:length(m.l_var_orig)
         if m.l_var_tight[i] == -Inf
             warnuser = true
-            m.l_var_tight[i] = -Alp.get_option(m, :large_bound)
+            m.l_var_tight[i] = -get_option(m, :large_bound)
             infcount_l += 1
         end
         if m.u_var_tight[i] == Inf
             warnuser = true
-            m.u_var_tight[i] = Alp.get_option(m, :large_bound)
+            m.u_var_tight[i] = get_option(m, :large_bound)
             infcount_u += 1
         end
     end
     infcount = min(infcount_l, infcount_u)
     if infcount == 1
         warnuser && println(
-            "Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(Alp.get_option(m, :large_bound)). This may affect global optimal values and run times.",
+            "Warning: -/+Inf bounds detected on at least $infcount variable. Initializing with values -/+$(get_option(m, :large_bound)). This may affect global optimal values and run times.",
         )
     elseif infcount > 1
         warnuser && println(
-            "Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(Alp.get_option(m, :large_bound)). This may affect global optimal values and run times.",
+            "Warning: -/+Inf bounds detected on at least $infcount variables. Initializing with values -/+$(get_option(m, :large_bound)). This may affect global optimal values and run times.",
         )
     end
 
@@ -400,16 +400,16 @@ function resolve_var_bounds(m::Optimizer, d::Dict; kwargs...)
         if haskey(m.nonconvex_terms, k)
             nlk = k
             if m.nonconvex_terms[nlk][:nonlinear_type] in ALPINE_C_MONOMIAL
-                d = Alp.basic_monomial_bounds(m, nlk, d)
+                d = basic_monomial_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINPROD]
-                d = Alp.basic_binprod_bounds(m, nlk, d)
+                d = basic_binprod_bounds(m, nlk, d)
             elseif m.nonconvex_terms[nlk][:nonlinear_type] in [:BINLIN]
-                d = Alp.basic_binlin_bounds(m, nlk, d)
+                d = basic_binlin_bounds(m, nlk, d)
             else
                 error("EXPECTED ERROR : NEED IMPLEMENTATION")
             end
         elseif haskey(m.linear_terms, k)
-            d = Alp.basic_linear_bounds(m, k, d)
+            d = basic_linear_bounds(m, k, d)
         else
             error(
                 "Found a homeless term key $(k) during bound resolution im resolve_var_bounds.",
@@ -457,7 +457,7 @@ end
 # function resolve_closed_var_bounds(m::Optimizer; kwargs...)
 #     for var in m.candidate_disc_vars
 #         if abs(m.l_var_tight[var] - m.u_var_tight[var]) <
-#            Alp.get_option(m, :presolve_bt_width_tol)         # Closed Bound Criteria
+#            get_option(m, :presolve_bt_width_tol)         # Closed Bound Criteria
 #             deleteat!(m.disc_vars, findfirst(m.disc_vars, var)) # Clean nonconvex_terms by deleting the info
 #             m.discretization[var] = [m.l_var_tight[var], m.u_var_tight[var]]              # Clean up the discretization for basic McCormick if necessary
 #         end

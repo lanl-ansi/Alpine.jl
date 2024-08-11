@@ -15,13 +15,13 @@ The absolute gap calculation is
 ```
 """
 function update_opt_gap(m::Optimizer)
-    tol = Alp.get_option(m, :tol)
+    tol = get_option(m, :tol)
 
     if m.best_obj in [Inf, -Inf]
         m.best_rel_gap = Inf
         return
     else
-        p = convert(Int, round(abs(log(10, Alp.get_option(m, :rel_gap)))))
+        p = convert(Int, round(abs(log(10, get_option(m, :rel_gap)))))
         n = round(abs(m.best_obj - m.best_bound); digits = p)
         # dn = round(abs(1e-12+abs(m.best_obj)); digits=p)
         if isapprox(n, 0.0; atol = tol) && isapprox(m.best_obj, 0.0; atol = tol)
@@ -29,10 +29,10 @@ function update_opt_gap(m::Optimizer)
             return
         end
 
-        if Alp.is_min_sense(m)
-            m.best_rel_gap = Alp.eval_opt_gap(m, m.best_bound, m.best_obj)
-        elseif Alp.is_max_sense(m)
-            m.best_rel_gap = Alp.eval_opt_gap(m, m.best_obj, m.best_bound)
+        if is_min_sense(m)
+            m.best_rel_gap = eval_opt_gap(m, m.best_bound, m.best_obj)
+        elseif is_max_sense(m)
+            m.best_rel_gap = eval_opt_gap(m, m.best_obj, m.best_bound)
         end
     end
 
@@ -42,16 +42,16 @@ function update_opt_gap(m::Optimizer)
 end
 
 function eval_opt_gap(m::Optimizer, lower_bound::Number, upper_bound::Number)
-    tol = Alp.get_option(m, :tol)
+    tol = get_option(m, :tol)
 
     if isinf(lower_bound) || isinf(upper_bound)
         error("Infinite bounds detected in optimality gap evalutation")
 
     else
-        m.best_rel_gap = Alp._eval_best_rel_gap(lower_bound, upper_bound, tol)
+        m.best_rel_gap = _eval_best_rel_gap(lower_bound, upper_bound, tol)
 
         # If LB > UB
-        if (m.best_rel_gap > Alp.get_option(m, :rel_gap)) &&
+        if (m.best_rel_gap > get_option(m, :rel_gap)) &&
            ((lower_bound - upper_bound) > 1E-1)
             error(
                 "Lower bound cannot exceed the upper bound in optimality gap evaluation",
@@ -95,7 +95,7 @@ function measure_relaxed_deviation(m::Optimizer; sol = nothing)
     sort!(dev, by = x -> x[1])
 
     for i in dev
-        Alp.get_option(m, :log_level) > 199 && println(
+        get_option(m, :log_level) > 199 && println(
             "Y-VAR$(i[1]): DIST=$(i[2]) || Y-hat = $(i[3]), Y-val = $(i[4]) || COMP $(i[5])",
         )
     end
@@ -108,7 +108,7 @@ end
 
 Same as [`update_var_bounds`](@ref)
 """
-discretization_to_bounds(d::Dict, l::Int) = Alp.update_var_bounds(d, len = l)
+discretization_to_bounds(d::Dict, l::Int) = update_var_bounds(d, len = l)
 
 """
 Update the data structure with feasible solution and its associated objective (if better)
@@ -178,24 +178,24 @@ end
 Check if the solution is always the same within the last disc_consecutive_forbid iterations. Return `true` if solution has stalled.
 """
 function check_solution_history(m::Optimizer, ind::Int)
-    Alp.get_option(m, :disc_consecutive_forbid) == 0 && return false
-    ((m.logs[:n_iter] - 1) < Alp.get_option(m, :disc_consecutive_forbid)) && return false
+    get_option(m, :disc_consecutive_forbid) == 0 && return false
+    ((m.logs[:n_iter] - 1) < get_option(m, :disc_consecutive_forbid)) && return false
 
     sol_val = m.bound_sol_history[mod(
         m.logs[:n_iter] - 2,
-        Alp.get_option(m, :disc_consecutive_forbid),
+        get_option(m, :disc_consecutive_forbid),
     )+1][ind]
-    for i in 1:(Alp.get_option(m, :disc_consecutive_forbid)-1)
+    for i in 1:(get_option(m, :disc_consecutive_forbid)-1)
         search_pos =
-            mod(m.logs[:n_iter] - 2 - i, Alp.get_option(m, :disc_consecutive_forbid)) + 1
+            mod(m.logs[:n_iter] - 2 - i, get_option(m, :disc_consecutive_forbid)) + 1
         !isapprox(
             sol_val,
             m.bound_sol_history[search_pos][ind];
-            atol = Alp.get_option(m, :disc_rel_width_tol),
+            atol = get_option(m, :disc_rel_width_tol),
         ) && return false
     end
 
-    Alp.get_option(m, :log_level) > 99 &&
+    get_option(m, :log_level) > 99 &&
         println("Consecutive bounding solution on VAR$(ind) obtained. Diverting...")
 
     return true
@@ -223,8 +223,8 @@ function fix_domains(m::Optimizer; discrete_sol = nothing, use_orig = false)
             end
             PCnt = length(m.discretization[i]) - 1
             for j in 1:PCnt
-                if point >= (m.discretization[i][j] - Alp.get_option(m, :tol)) &&
-                   (point <= m.discretization[i][j+1] + Alp.get_option(m, :tol))
+                if point >= (m.discretization[i][j] - get_option(m, :tol)) &&
+                   (point <= m.discretization[i][j+1] + get_option(m, :tol))
                     @assert j < length(m.discretization[i])
                     use_orig ? l_var[i] = m.discretization[i][1] :
                     l_var[i] = m.discretization[i][j]
@@ -376,8 +376,8 @@ end
 function build_discvar_graph(m::Optimizer)
 
     # Collect the information of nonlinear terms in terms of arcs and nodes
-    nodes = Alp.get_candidate_disc_vars(m, getoutput = true)
-    arcs = Alp.ncvar_collect_arcs(m, nodes)
+    nodes = get_candidate_disc_vars(m, getoutput = true)
+    arcs = ncvar_collect_arcs(m, nodes)
 
     # Collect integer variables
     for i in 1:m.num_var_orig
@@ -401,10 +401,10 @@ nonlinear terms which are adaptively partitioned for global optimization. This o
 setting `disc_var_pick = 1`.
 """
 function min_vertex_cover(m::Optimizer)
-    nodes, arcs = Alp.build_discvar_graph(m)
+    nodes, arcs = build_discvar_graph(m)
 
     # Set up minimum vertex cover problem
-    minvertex = Model(Alp.get_option(m, :mip_solver))
+    minvertex = Model(get_option(m, :mip_solver))
     MOI.set(minvertex, MOI.TimeLimitSec(), 60.0) # Time limit for min vertex cover formulation
     JuMP.@variable(minvertex, 0 <= x[nodes] <= 1, Bin)
     JuMP.@constraint(minvertex, [a in arcs], x[a[1]] + x[a[2]] >= 1)
@@ -417,8 +417,8 @@ function min_vertex_cover(m::Optimizer)
     # Collecting required information
     m.num_var_disc_mip = Int(sum(xVal))
     m.disc_vars = [
-        i for i in nodes if xVal[i] > Alp.get_option(m, :tol) &&
-        abs(m.u_var_tight[i] - m.l_var_tight[i]) >= Alp.get_option(m, :tol)
+        i for i in nodes if xVal[i] > get_option(m, :tol) &&
+        abs(m.u_var_tight[i] - m.l_var_tight[i]) >= get_option(m, :tol)
     ]
 
     return
@@ -427,7 +427,7 @@ end
 function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
 
     # Collect the graph information
-    nodes, arcs = Alp.build_discvar_graph(m)
+    nodes, arcs = build_discvar_graph(m)
 
     # A little bit redundancy before
     disvec = [distance[i] for i in keys(distance) if i in m.candidate_disc_vars]
@@ -437,12 +437,12 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
     for i in m.candidate_disc_vars
         isapprox(distance[i], 0.0; atol = 1e-6) ? weights[i] = heavy :
         (weights[i] = (1 / distance[i]))
-        (Alp.get_option(m, :log_level) > 100) &&
+        (get_option(m, :log_level) > 100) &&
             println("VAR$(i) WEIGHT -> $(weights[i]) ||| DISTANCE -> $(distance[i])")
     end
 
     # Set up minimum vertex cover problem
-    minvertex = Model(Alp.get_option(m, :mip_solver))
+    minvertex = Model(get_option(m, :mip_solver))
     MOI.set(minvertex, MOI.TimeLimitSec(), 60.0)  # Set a timer to avoid waste of time in proving optimality
     JuMP.@variable(minvertex, 0 <= x[nodes] <= 1, Bin)
     for arc in arcs
@@ -456,29 +456,29 @@ function weighted_min_vertex_cover(m::Optimizer, distance::Dict)
     xVal = JuMP.value.(x)
     m.num_var_disc_mip = Int(sum(xVal))
     m.disc_vars = [
-        i for i in nodes if xVal[i] > 0 &&
-        abs(m.u_var_tight[i] - m.l_var_tight[i]) >= Alp.get_option(m, :tol)
+        i for i in nodes if
+        xVal[i] > 0 && abs(m.u_var_tight[i] - m.l_var_tight[i]) >= get_option(m, :tol)
     ]
-    Alp.get_option(m, :log_level) >= 99 &&
+    get_option(m, :log_level) >= 99 &&
         println("UPDATED DISC-VAR COUNT = $(length(m.disc_vars)) : $(m.disc_vars)")
 
     return
 end
 
 function _fetch_mip_solver_identifier(m::Optimizer; override = "")
-    (Alp.get_option(m, :mip_solver) === nothing) && return
+    (get_option(m, :mip_solver) === nothing) && return
     m.mip_solver_id = _get_solver_name(m, :mip_solver, override)
     return
 end
 
 function _fetch_nlp_solver_identifier(m::Optimizer; override = "")
-    (Alp.get_option(m, :nlp_solver) === nothing) && return
+    (get_option(m, :nlp_solver) === nothing) && return
     m.nlp_solver_id = _get_solver_name(m, :nlp_solver, override)
     return
 end
 
 function _fetch_minlp_solver_identifier(m::Optimizer; override = "")
-    (Alp.get_option(m, :minlp_solver) === nothing) && return
+    (get_option(m, :minlp_solver) === nothing) && return
     m.minlp_solver_id = _get_solver_name(m, :minlp_solver, override)
     return
 end
@@ -486,7 +486,7 @@ end
 function _get_solver_name(m::Optimizer, key::Symbol, override::String)
     solver_string = override
     if isempty(override)
-        solver = MOI.instantiate(Alp.get_option(m, key))
+        solver = MOI.instantiate(get_option(m, key))
         solver_string = try
             MOI.get(solver, MOI.SolverName())
         catch
@@ -507,7 +507,7 @@ end
 An utility function used to dynamically regulate MILP solver time limits to fit Alpine solver's time limits.
 """
 function set_mip_time_limit(m::Optimizer)
-    time_limit = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])
+    time_limit = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
     return MOI.set(m.model_mip, MOI.TimeLimitSec(), time_limit)
 end
 
@@ -535,7 +535,7 @@ function resolve_lifted_var_value(m::Optimizer, sol_vec::Array)
     return sol_vec
 end
 
-# Unused functions 
+# Unused functions
 # function amp_post_λ_upperbound(
 #     m::Optimizer,
 #     λ::Dict,
@@ -564,7 +564,7 @@ end
 
 #     for i in 1:length(tregions[level+1])
 #         push!(reg, tregions[level+1][i])
-#         Alp.amp_post_λ_upperbound(m, λ, indices, dim, d, tregions, reg, level + 1)
+#         amp_post_λ_upperbound(m, λ, indices, dim, d, tregions, reg, level + 1)
 #         length(reg) < level && error("Something is wrong")
 #         length(reg) > level && pop!(reg)
 #     end
@@ -593,7 +593,7 @@ end
 #                 sum(α[v][m.bound_sol_pool[:disc][i][v]] for v in no_good_idxs) <=
 #                 no_good_size
 #             )
-#             Alp.get_option(m, :log_level) > 0 && println(
+#             get_option(m, :log_level) > 0 && println(
 #                 "!! GLOBAL cuts off POOL_SOL-$(i) POOL_OBJ=$(m.bound_sol_pool[:obj][i])!",
 #             )
 #             m.bound_sol_pool[:stat][i] = :Cutoff
