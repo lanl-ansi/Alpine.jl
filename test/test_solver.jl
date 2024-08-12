@@ -301,7 +301,14 @@ end
     test_solver = optimizer_with_attributes(
         Alpine.Optimizer,
         "nlp_solver" => IPOPT,
-        "mip_solver" => HIGHS,
+        # We don't use the default HiGHS because it struggles with the numerical
+        # scaling of this example.
+        # "mip_solver" => HIGHS,
+        "mip_solver" => optimizer_with_attributes(
+            HiGHS.Optimizer,
+            MOI.Silent() => true,
+            "presolve" => "off",
+        ),
         "disc_var_pick" => 3,
         "presolve_bp" => true,
         "presolve_bt" => false,
