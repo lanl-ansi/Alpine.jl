@@ -378,7 +378,7 @@ function amp_post_convhull_constrs(
     JuMP.@constraint(
         m.model_mip,
         _index_to_variable_ref(m.model_mip, λ[indices][:lifted_var_idx]) ==
-        dot(λ[indices][:vars], reshape(λ[indices][:vals], ext_cnt))
+        λ[indices][:vars]' * reshape(λ[indices][:vals], ext_cnt)
     )
 
     # Add links on each dimension
@@ -394,10 +394,8 @@ function amp_post_convhull_constrs(
         JuMP.@constraint(
             m.model_mip,
             _index_to_variable_ref(m.model_mip, i) == sum(
-                dot(
-                    repeat([d[i][k]], length(sliced_indices[k])),
-                    λ[indices][:vars][sliced_indices[k]],
-                ) for k in 1:l_cnt
+                (repeat([d[i][k]], length(k_indices))' * λ[indices][:vars][k_indices]) for
+                (k, k_indices) in enumerate(sliced_indices)
             )
         )
     end
@@ -423,7 +421,7 @@ function amp_post_convhull_constrs(
     JuMP.@constraint(
         m.model_mip,
         _index_to_variable_ref(m.model_mip, λ[monomial_idx][:lifted_var_idx]) <=
-        dot(λ[monomial_idx][:vars], λ[monomial_idx][:vals])
+        λ[monomial_idx][:vars]' * λ[monomial_idx][:vals]
     )
     JuMP.@constraint(
         m.model_mip,
@@ -492,7 +490,7 @@ function amp_post_convhull_constrs(
     JuMP.@constraint(
         m.model_mip,
         _index_to_variable_ref(m.model_mip, monomial_idx) ==
-        dot(λ[monomial_idx][:vars], discretization[monomial_idx])
+        λ[monomial_idx][:vars]' * discretization[monomial_idx]
     )
 
     return
@@ -625,21 +623,21 @@ end
     _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
 
 This internal function adds linking constraints between λ multipliers corresponding to multilinear terms
-that share more than two variables and are partitioned. For example, suppose we have λ[i], λ[j], and 
-λ[k] where i=(1,2,3), j=(1,2,4), and k=(1,2,5). λ[i] contains all multipliers for the extreme points 
+that share more than two variables and are partitioned. For example, suppose we have λ[i], λ[j], and
+λ[k] where i=(1,2,3), j=(1,2,4), and k=(1,2,5). λ[i] contains all multipliers for the extreme points
 in the space of (x1,x2,x3). λ[j] contains all multipliers for the extreme points in the space of (x1,x2,x4).
 λ[k] contains all multipliers for the extreme points in the space of (x1,x2,x5).
 
 Using λ[i], λ[j], or λ[k], we can express multilinear function x1*x2.
 We define a linking variable μ(1,2) that represents the value of x1*x2.
 Linking constraints are
-    μ(1,2) == convex combination expr for x1*x2 using λ[i],    
-    μ(1,2) == convex combination expr for x1*x2 using λ[j], and   
-    μ(1,2) == convex combination expr for x1*x2 using λ[k].    
+    μ(1,2) == convex combination expr for x1*x2 using λ[i],
+    μ(1,2) == convex combination expr for x1*x2 using λ[j], and
+    μ(1,2) == convex combination expr for x1*x2 using λ[k].
 
 Thus, these constraints link between λ[i], λ[j], and λ[k] variables.
 
-Reference: J. Kim, J.P. Richard, M. Tawarmalani, Piecewise Polyhedral Relaxations of Multilinear Optimization, 
+Reference: J. Kim, J.P. Richard, M. Tawarmalani, Piecewise Polyhedral Relaxations of Multilinear Optimization,
 http://www.optimization-online.org/DB_HTML/2022/07/8974.html
 """
 function _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
@@ -684,8 +682,8 @@ end
 """
     _get_shared_multilinear_terms_info(λ, linking_constraints_degree_limit)
 
-This function checks to see if linking constraints are 
-necessary for a given vector of each multilinear terms and returns the approapriate 
+This function checks to see if linking constraints are
+necessary for a given vector of each multilinear terms and returns the approapriate
 linking constraints information.
 """
 function _get_shared_multilinear_terms_info(
@@ -700,7 +698,7 @@ function _get_shared_multilinear_terms_info(
         return (linking_constraints_info = nothing)
     end
 
-    # Limit the linking constraints to a prescribed multilinear degree 
+    # Limit the linking constraints to a prescribed multilinear degree
     if !isnothing(linking_constraints_degree_limit) &&
        (linking_constraints_degree_limit < max_degree)
         max_degree = linking_constraints_degree_limit
