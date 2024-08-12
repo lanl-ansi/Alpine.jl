@@ -64,12 +64,10 @@ function logging_summary(m::Optimizer)
         println("  MIP solver = ", m.mip_solver_id)
 
         printstyled("ALPINE CONFIGURATION\n", color = :cyan, bold = true)
-        println(
-            "  Alpine version = ",
-            Pkg.TOML.parse(read(string(pkgdir(Alpine), "/Project.toml"), String))["version"],
-        )
-
-        if is_min_sense(m)
+        project = read(joinpath(dirname(@__DIR__), "Project.toml"), String)
+        m_version = match(r"version \= \"(.+?)\"", project)
+        println("  Alpine version = ", m_version[1])
+        if Alp.is_min_sense(m)
             println(
                 "  Maximum iterations (lower-bounding MIPs) = ",
                 get_option(m, :max_iter),

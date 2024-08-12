@@ -1,13 +1,10 @@
-__precompile__()
-
 module Alpine
 
 using JuMP
 
+import Combinatorics
 import LinearAlgebra: dot, Diagonal
 import Statistics
-import Combinatorics
-import Pkg
 
 const ALPINE_DEBUG = false
 
