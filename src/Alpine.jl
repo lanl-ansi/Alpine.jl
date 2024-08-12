@@ -3,7 +3,6 @@ module Alpine
 using JuMP
 
 import Combinatorics
-import LinearAlgebra: dot, Diagonal
 import Statistics
 
 const ALPINE_DEBUG = false
