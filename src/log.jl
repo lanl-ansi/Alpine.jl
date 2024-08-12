@@ -67,7 +67,7 @@ function logging_summary(m::Optimizer)
         project = read(joinpath(dirname(@__DIR__), "Project.toml"), String)
         m_version = match(r"version \= \"(.+?)\"", project)
         println("  Alpine version = ", m_version[1])
-        if Alp.is_min_sense(m)
+        if is_min_sense(m)
             println(
                 "  Maximum iterations (lower-bounding MIPs) = ",
                 get_option(m, :max_iter),
