@@ -101,7 +101,6 @@ end
     @test ebdmap[8] == Set([9, 5, 1])
 end
 
-
 # TODO(odow): requires new Pavito release
 # @testset "Utility Function Tests: check_solution_history test" begin
 #     test_solver = optimizer_with_attributes(
