@@ -96,7 +96,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     bound_sol_pool::Dict{Any,Any}                        # A pool of solutions from solving model_mip
 
     # Linking constraints info for Multilinear terms
-    linking_constraints_info::Union{Nothing,Dict{Any,Any}}     # Stored multilinear linking constraints info 
+    linking_constraints_info::Union{Nothing,Dict{Any,Any}}     # Stored multilinear linking constraints info
 
     # Logging information and status
     logs::Dict{Symbol,Any}                          # Logging information
@@ -108,7 +108,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # Constructor for Alpine.Optimizer
     function Optimizer()
         m = new()
-        m.options = Alp.get_default_options()
+        m.options = get_default_options()
         MOI.empty!(m)
         return m
     end
@@ -254,10 +254,10 @@ MOI.get(::Optimizer, ::MOI.SolverName) = "Alpine"
 MOI.get(::Optimizer, ::MOI.SolverVersion) = _ALPINE_VERSION
 
 function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
-    return Alp.set_option(model, Symbol(param.name), value)
+    return set_option(model, Symbol(param.name), value)
 end
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
-    return Alp.get_option(model, Symbol(param.name))
+    return get_option(model, Symbol(param.name))
 end
 
 function MOI.add_variables(model::Optimizer, n::Int)
@@ -395,10 +395,10 @@ is_max_sense(model::Optimizer) = model.sense_orig == MOI.MAX_SENSE
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
     model.sense_orig = sense
-    if Alp.is_max_sense(model)
+    if is_max_sense(model)
         model.best_obj = -Inf
         model.best_bound = Inf
-    elseif Alp.is_min_sense(model)
+    elseif is_min_sense(model)
         model.best_obj = Inf
         model.best_bound = -Inf
     else

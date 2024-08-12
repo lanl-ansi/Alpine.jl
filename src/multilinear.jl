@@ -13,26 +13,26 @@ function amp_post_convhull(m::Optimizer; kwargs...)
         nl_type = m.nonconvex_terms[k][:nonlinear_type]
         if ((nl_type == :MULTILINEAR) || (nl_type == :BILINEAR)) &&
            (m.nonconvex_terms[k][:convexified] == false)
-            λ, α = Alp.amp_convexify_multilinear(m, k, λ, α, d)
+            λ, α = amp_convexify_multilinear(m, k, λ, α, d)
             contains_multilinear = true
         elseif nl_type == :MONOMIAL && !m.nonconvex_terms[k][:convexified]
-            λ, α = Alp.amp_convexify_quadratic_univariate(m, k, λ, α, d)
+            λ, α = amp_convexify_quadratic_univariate(m, k, λ, α, d)
         elseif nl_type == :BINLIN && !m.nonconvex_terms[k][:convexified]
-            β = Alp.amp_convexify_binlin(m, k, β)
+            β = amp_convexify_binlin(m, k, β)
         elseif nl_type == :BINPROD && !m.nonconvex_terms[k][:convexified]
-            β = Alp.amp_convexify_multilinear_binary(m, k, β)
+            β = amp_convexify_multilinear_binary(m, k, β)
         end
     end
 
     # Add lambda linking constraints
     if m.options.linking_constraints && contains_multilinear
-        Alp._add_multilinear_linking_constraints(m, λ)
+        _add_multilinear_linking_constraints(m, λ)
     end
 
     # Code for warm starting bounding MIP iterations
-    Alp.get_option(m, :convhull_warmstart) &&
+    get_option(m, :convhull_warmstart) &&
         !isempty(m.best_bound_sol) &&
-        Alp.amp_warmstart_α(m, α)
+        amp_warmstart_α(m, α)
 
     return
 end
@@ -46,9 +46,9 @@ function amp_convexify_multilinear(
 )
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
-    ml_indices, dim, extreme_point_cnt = Alp.amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
-    λ = Alp.amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
-    λ = Alp.populate_convhull_extreme_values(
+    ml_indices, dim, extreme_point_cnt = amp_convhull_prepare(m, discretization, k)   # convert key to easy read mode
+    λ = amp_convhull_λ(m, k, ml_indices, λ, extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(
         m,
         discretization,
         ml_indices,
@@ -56,16 +56,8 @@ function amp_convexify_multilinear(
         dim,
         ones(Int, length(dim)),
     )
-    α = Alp.amp_convhull_α(m, ml_indices, α, dim, discretization)
-    Alp.amp_post_convhull_constrs(
-        m,
-        λ,
-        α,
-        ml_indices,
-        dim,
-        extreme_point_cnt,
-        discretization,
-    )
+    α = amp_convhull_α(m, ml_indices, α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, ml_indices, dim, extreme_point_cnt, discretization)
 
     return λ, α
 end
@@ -80,11 +72,11 @@ function amp_convexify_quadratic_univariate(
     m.nonconvex_terms[k][:convexified] = true  # Bookeeping the convexified terms
 
     monomial_index, dim, extreme_point_cnt =
-        Alp.amp_convhull_prepare(m, discretization, k, monomial = true)
-    λ = Alp.amp_convhull_λ(m, k, monomial_index, λ, extreme_point_cnt, dim)
-    λ = Alp.populate_convhull_extreme_values(m, discretization, monomial_index, λ, 2)
-    α = Alp.amp_convhull_α(m, [monomial_index], α, dim, discretization)
-    Alp.amp_post_convhull_constrs(m, λ, α, monomial_index, discretization)
+        amp_convhull_prepare(m, discretization, k, monomial = true)
+    λ = amp_convhull_λ(m, k, monomial_index, λ, extreme_point_cnt, dim)
+    λ = populate_convhull_extreme_values(m, discretization, monomial_index, λ, 2)
+    α = amp_convhull_α(m, [monomial_index], α, dim, discretization)
+    amp_post_convhull_constrs(m, λ, α, monomial_index, discretization)
 
     return λ, α
 end
@@ -110,7 +102,7 @@ function amp_convexify_binlin(m::Optimizer, k::Any, β::Dict)
     bin_idx = bin_idx[1]
     cont_idx = cont_idx[1]
 
-    Alp.relaxation_bilinear(
+    relaxation_bilinear(
         m.model_mip,
         _index_to_variable_ref(m.model_mip, lift_idx),
         _index_to_variable_ref(m.model_mip, bin_idx),
@@ -138,7 +130,7 @@ function amp_convexify_multilinear_binary(m::Optimizer, k::Any, β::Dict)
     x = [_index_to_variable_ref(m.model_mip, i) for i in m.nonconvex_terms[k][:var_idxs]]
 
     if length(x) >= 1
-        Alp.relaxation_multilinear_binary(m.model_mip, z, x)
+        relaxation_multilinear_binary(m.model_mip, z, x)
     end
 
     return β
@@ -255,7 +247,7 @@ function populate_convhull_extreme_values(
     else
         for i in 1:dim[level]
             locator[level] = i
-            λ = Alp.populate_convhull_extreme_values(
+            λ = populate_convhull_extreme_values(
                 m,
                 discretization,
                 indices,
@@ -284,7 +276,7 @@ function amp_convhull_α(
         if !(i in keys(α))
             lambda_cnt = length(discretization[i])
             partition_cnt = length(discretization[i]) - 1
-            if Alp.get_option(m, :convhull_ebd) && partition_cnt > 2
+            if get_option(m, :convhull_ebd) && partition_cnt > 2
                 αCnt = Int(ceil(log(2, partition_cnt)))
                 α[i] = JuMP.@variable(
                     m.model_mip,
@@ -326,7 +318,7 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
 
     if m.bound_sol_pool[:cnt] >= 2 # can only warm-start the problem when pool is large enough
         ws_idx = -1
-        Alp.is_min_sense(m) ? ws_obj = Inf : ws_obj = -Inf
+        is_min_sense(m) ? ws_obj = Inf : ws_obj = -Inf
         comp_opr = Dict(MOI.MIN_SENSE => :<, MOI.MAX_SENSE => :>)
 
         # Search for the pool for incumbent warm starter
@@ -344,14 +336,14 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
             for v in m.bound_sol_pool[:vars]
                 partition_cnt = length(d[v]) - 1
                 active_j =
-                    Alp.get_active_partition_idx(d, m.bound_sol_pool[:sol][ws_idx][v], v)
+                    get_active_partition_idx(d, m.bound_sol_pool[:sol][ws_idx][v], v)
                 for j in 1:partition_cnt
                     j == active_j ? JuMP.set_start_value(α[v][j], 1.0) :
                     JuMP.set_start_value(α[v][j], 0.0)
                 end
             end
             m.bound_sol_pool[:stat][ws_idx] = :Warmstarter
-            Alp.get_option(m, :log_level) > 0 && println(
+            get_option(m, :log_level) > 0 && println(
                 "!! WARM START bounding MIP using POOL SOL $(ws_idx) OBJ=$(m.bound_sol_pool[:obj][ws_idx])",
             )
         end
@@ -385,12 +377,12 @@ function amp_post_convhull_constrs(
     for (cnt, i) in enumerate(indices)
         l_cnt = length(d[i])
         if m.var_type[i] == :Cont
-            Alp.amp_post_inequalities_cont(m, d, λ, α, indices, dim, i, cnt)        # Add links between λ and α
+            amp_post_inequalities_cont(m, d, λ, α, indices, dim, i, cnt)        # Add links between λ and α
         else
             error("EXCEPTION: unexpected variable type during integer related realxation")
         end
         sliced_indices =
-            [Alp.collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
+            [collect_indices(λ[indices][:indices], cnt, [k], dim) for k in 1:l_cnt] # Add x = f(λ) for convex representation of x value
         JuMP.@constraint(
             m.model_mip,
             _index_to_variable_ref(m.model_mip, i) == sum(
@@ -430,11 +422,11 @@ function amp_post_convhull_constrs(
     )
 
     # Add SOS-2 Constraints with basic encoding
-    if Alp.get_option(m, :convhull_ebd) && partition_cnt > 2
-        ebd_map = Alp.embedding_map(
+    if get_option(m, :convhull_ebd) && partition_cnt > 2
+        ebd_map = embedding_map(
             lambda_cnt,
-            Alp.get_option(m, :convhull_ebd_encode),
-            Alp.get_option(m, :convhull_ebd_ibs),
+            get_option(m, :convhull_ebd_encode),
+            get_option(m, :convhull_ebd_ibs),
         )
         YCnt = Int(ebd_map[:L])
         @assert YCnt == length(α[monomial_idx])
@@ -513,24 +505,20 @@ function amp_post_inequalities_cont(
     partition_cnt = lambda_cnt - 1
 
     # Embedding formulation
-    if Alp.get_option(m, :convhull_formulation) == "sos2" &&
-       Alp.get_option(m, :convhull_ebd) &&
+    if get_option(m, :convhull_formulation) == "sos2" &&
+       get_option(m, :convhull_ebd) &&
        partition_cnt > 2
-        ebd_map = Alp.embedding_map(
+        ebd_map = embedding_map(
             lambda_cnt,
-            Alp.get_option(m, :convhull_ebd_encode),
-            Alp.get_option(m, :convhull_ebd_ibs),
+            get_option(m, :convhull_ebd_encode),
+            get_option(m, :convhull_ebd_ibs),
         )
         YCnt = Int(ebd_map[:L])
         @assert YCnt == length(α[var_ind])
         for i in 1:YCnt
-            p_sliced_indices = Alp.collect_indices(
-                λ[ml_indices][:indices],
-                cnt,
-                collect(ebd_map[i]),
-                dim,
-            )
-            n_sliced_indices = Alp.collect_indices(
+            p_sliced_indices =
+                collect_indices(λ[ml_indices][:indices], cnt, collect(ebd_map[i]), dim)
+            n_sliced_indices = collect_indices(
                 λ[ml_indices][:indices],
                 cnt,
                 collect(ebd_map[i+YCnt]),
@@ -545,7 +533,7 @@ function amp_post_inequalities_cont(
                 sum(λ[ml_indices][:vars][n_sliced_indices]) <= 1 - α[var_ind][i]
             )
         end
-        Alp.get_option(m, :convhull_ebd_link) && Alp.ebd_link_xα(
+        get_option(m, :convhull_ebd_link) && ebd_link_xα(
             m,
             α[var_ind],
             lambda_cnt,
@@ -557,9 +545,9 @@ function amp_post_inequalities_cont(
     end
 
     # SOS-2 Formulation
-    if Alp.get_option(m, :convhull_formulation) == "sos2"
+    if get_option(m, :convhull_formulation) == "sos2"
         for j in 1:lambda_cnt
-            sliced_indices = Alp.collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [j], dim)
             if (j == 1)
                 JuMP.@constraint(
                     m.model_mip,
@@ -579,10 +567,9 @@ function amp_post_inequalities_cont(
             end
         end
         return
-    elseif Alp.get_option(m, :convhull_formulation) == "facet"
+    elseif get_option(m, :convhull_formulation) == "facet"
         for j in 1:(partition_cnt-1) # Constraint cluster of α >= f(λ)
-            sliced_indices =
-                Alp.collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
+            sliced_indices = collect_indices(λ[ml_indices][:indices], cnt, [1:j;], dim)
             JuMP.@constraint(
                 m.model_mip,
                 sum(α[var_ind][1:j]) >= sum(λ[ml_indices][:vars][sliced_indices])
@@ -590,7 +577,7 @@ function amp_post_inequalities_cont(
         end
         for j in 1:(partition_cnt-1) # Constraint cluster of α <= f(λ)
             sliced_indices =
-                Alp.collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
+                collect_indices(λ[ml_indices][:indices], cnt, [1:(j+1);], dim)
             JuMP.@constraint(
                 m.model_mip,
                 sum(α[var_ind][1:j]) <= sum(λ[ml_indices][:vars][sliced_indices])
@@ -642,7 +629,7 @@ http://www.optimization-online.org/DB_HTML/2022/07/8974.html
 """
 function _add_multilinear_linking_constraints(m::Optimizer, λ::Dict)
     if isnothing(m.linking_constraints_info)
-        m.linking_constraints_info = Alp._get_shared_multilinear_terms_info(
+        m.linking_constraints_info = _get_shared_multilinear_terms_info(
             λ,
             m.options.linking_constraints_degree_limit,
         )

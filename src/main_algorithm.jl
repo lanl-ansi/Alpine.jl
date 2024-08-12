@@ -28,12 +28,12 @@ end
 function load!(m::Optimizer)
 
     # Initialize NLP interface
-    requested_features = Alp.features_available(m)
+    requested_features = features_available(m)
     if m.d_orig !== nothing
         MOI.initialize(m.d_orig, requested_features::Vector{Symbol})
     end
     for feat in requested_features
-        if !(feat in Alp.features_available(m))
+        if !(feat in features_available(m))
             error("Unsupported feature $feat")
         end
     end
@@ -41,11 +41,11 @@ function load!(m::Optimizer)
     # Collect objective & constraint expressions
     if m.has_nl_objective
         m.obj_expr_orig =
-            Alp.expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
+            expr_isolate_const(_variable_index_to_index(MOI.objective_expr(m.d_orig))) # see in nlexpr.jl if this expr isolation has any issue
     elseif m.objective_function isa Nothing
         m.obj_expr_orig = Expr(:call, :+)
     else
-        m.obj_expr_orig = Alp._moi_function_to_expr(m.objective_function)
+        m.obj_expr_orig = _moi_function_to_expr(m.objective_function)
     end
 
     # Collect original variable type and build dynamic variable type space
@@ -54,7 +54,7 @@ function load!(m::Optimizer)
     m.bin_vars = [i for i in 1:m.num_var_orig if m.var_type[i] == :Bin]
 
     if !isempty(m.int_vars) || !isempty(m.bin_vars)
-        (Alp.get_option(m, :minlp_solver) === nothing) && (error(
+        (get_option(m, :minlp_solver) === nothing) && (error(
             "No MINLP local solver specified; use option 'minlp_solver' to specify a MINLP local solver",
         ))
     end
@@ -95,51 +95,51 @@ function load!(m::Optimizer)
     isa(m.obj_expr_orig, Number) && (m.obj_structure = :constant)
 
     # Populate data to create the bounding MIP model
-    Alp.recategorize_var(m)             # Initial round of variable re-categorization
+    recategorize_var(m)             # Initial round of variable re-categorization
 
     :Int in m.var_type_orig && error(
         "Alpine does not support MINLPs with generic integer (non-binary) variables yet!",
     )
 
     # Solver-dependent detection
-    Alp._fetch_mip_solver_identifier(m)
-    Alp._fetch_nlp_solver_identifier(m)
-    Alp._fetch_minlp_solver_identifier(m)
+    _fetch_mip_solver_identifier(m)
+    _fetch_nlp_solver_identifier(m)
+    _fetch_minlp_solver_identifier(m)
 
     # Main Algorithmic Initialization
-    Alp.process_expr(m)                         # Compact process of every expression
-    Alp.init_tight_bound(m)                     # Initialize bounds for algorithmic processes
-    Alp.resolve_var_bounds(m)                   # resolve lifted var bounds
-    Alp.pick_disc_vars(m)                       # Picking variables to be discretized
-    Alp.init_disc(m)                            # Initialize discretization dictionaries
+    process_expr(m)                         # Compact process of every expression
+    init_tight_bound(m)                     # Initialize bounds for algorithmic processes
+    resolve_var_bounds(m)                   # resolve lifted var bounds
+    pick_disc_vars(m)                       # Picking variables to be discretized
+    init_disc(m)                            # Initialize discretization dictionaries
 
     # Turn-on bt presolve if variables are not discrete
     if isempty(m.int_vars) &&
        length(m.bin_vars) <= 50 &&
        m.num_var_orig <= 10000 &&
        length(m.candidate_disc_vars) <= 300 &&
-       Alp.get_option(m, :presolve_bt) == nothing
-        Alp.set_option(m, :presolve_bt, true)
+       get_option(m, :presolve_bt) == nothing
+        set_option(m, :presolve_bt, true)
         println("Automatically turning on bound-tightening presolve")
-    elseif Alp.get_option(m, :presolve_bt) == nothing  # If no use indication
-        Alp.set_option(m, :presolve_bt, false)
+    elseif get_option(m, :presolve_bt) == nothing  # If no use indication
+        set_option(m, :presolve_bt, false)
     end
 
     if length(m.bin_vars) > 200 || m.num_var_orig > 2000
         println(
             "Automatically turning OFF 'partition_scaling_factor_branch' due to the size of the problem",
         )
-        Alp.set_option(m, :partition_scaling_factor_branch, false)
+        set_option(m, :partition_scaling_factor_branch, false)
     end
 
     # Initialize the solution pool
-    m.bound_sol_pool = Alp.initialize_solution_pool(m, 0)  # Initialize the solution pool
+    m.bound_sol_pool = initialize_solution_pool(m, 0)  # Initialize the solution pool
 
     # Check if any illegal term exist in the warm-solution
     any(isnan, m.best_sol) && (m.best_sol = zeros(length(m.best_sol)))
 
     # Initialize log
-    Alp.logging_summary(m)
+    logging_summary(m)
 
     return
 end
@@ -148,23 +148,23 @@ end
    High-level Function
 """
 function MOI.optimize!(m::Optimizer)
-    Alp.load!(m)
+    load!(m)
     if getproperty(m, :presolve_infeasible)
-        Alp.summary_status(m)
+        summary_status(m)
         return
     end
 
-    Alp.presolve(m)
+    presolve(m)
 
-    if !Alp.check_exit(m) && Alp.get_option(m, :apply_partitioning)
-        Alp.global_solve(m)
-        Alp.get_option(m, :log_level) > 0 && Alp.logging_row_entry(m, finish_entry = true)
+    if !check_exit(m) && get_option(m, :apply_partitioning)
+        global_solve(m)
+        get_option(m, :log_level) > 0 && logging_row_entry(m, finish_entry = true)
         println(
             "====================================================================================================",
         )
     end
 
-    Alp.summary_status(m)
+    summary_status(m)
 
     return
 end
@@ -179,19 +179,19 @@ Each [`local_solve`](@ref) provides an incumbent feasible solution. The algorith
 
 """
 function global_solve(m::Optimizer)
-    Alp.get_option(m, :log_level) > 0 && Alp.logging_head(m)
-    Alp.get_option(m, :presolve_track_time) || Alp.reset_timer(m)
-    while !Alp.check_exit(m)
+    get_option(m, :log_level) > 0 && logging_head(m)
+    get_option(m, :presolve_track_time) || reset_timer(m)
+    while !check_exit(m)
         m.logs[:n_iter] += 1
-        Alp.create_bounding_mip(m)                  # Build the relaxation model
-        Alp.bounding_solve(m)                       # Solve the relaxation model
-        Alp.update_opt_gap(m)                       # Update optimality gap
-        Alp.check_exit(m) && break                  # Feasibility check
-        Alp.get_option(m, :log_level) > 0 && Alp.logging_row_entry(m)  # Logging
-        Alp.local_solve(m)                          # Solve local model for feasible solution
-        Alp.update_opt_gap(m)                       # Update optimality gap
-        Alp.check_exit(m) && break                  # Detect optimality termination
-        Alp.algorithm_automation(m)                 # Automated adjustments
+        create_bounding_mip(m)                  # Build the relaxation model
+        bounding_solve(m)                       # Solve the relaxation model
+        update_opt_gap(m)                       # Update optimality gap
+        check_exit(m) && break                  # Feasibility check
+        get_option(m, :log_level) > 0 && logging_row_entry(m)  # Logging
+        local_solve(m)                          # Solve local model for feasible solution
+        update_opt_gap(m)                       # Update optimality gap
+        check_exit(m) && break                  # Detect optimality termination
+        algorithm_automation(m)                 # Automated adjustments
     end
 
     return
@@ -202,11 +202,11 @@ end
 """
 function presolve(m::Optimizer)
     start_presolve = time()
-    Alp.get_option(m, :log_level) > 0 &&
+    get_option(m, :log_level) > 0 &&
         printstyled("PRESOLVE \n", color = :cyan, bold = true)
-    Alp.get_option(m, :log_level) > 0 && println("  Doing local search")
+    get_option(m, :log_level) > 0 && println("  Doing local search")
 
-    if Alp.get_option(m, :use_start_as_incumbent)
+    if get_option(m, :use_start_as_incumbent)
         # Check for bound feasibility of the warm start value
         if !(m.l_var_orig <= m.warm_start_value <= m.u_var_orig)
             error(
@@ -222,44 +222,44 @@ function presolve(m::Optimizer)
                 m.objective_function,
             )
         end
-        Alp.update_incumbent(m, obj_warmval, m.warm_start_value)
+        update_incumbent(m, obj_warmval, m.warm_start_value)
         m.status[:local_solve] = MOI.OPTIMIZE_NOT_CALLED
-        Alp.get_option(m, :log_level) > 0 && println(
+        get_option(m, :log_level) > 0 && println(
             "  Using warm starting point as a local incumbent solution with value $(round(m.best_obj, digits=4))",
         )
     else
-        Alp.local_solve(m, presolve = true)
+        local_solve(m, presolve = true)
     end
 
     # Solver status
     if m.status[:local_solve] in union(STATUS_OPT, STATUS_LIMIT, STATUS_WARM_START)
-        if !Alp.get_option(m, :use_start_as_incumbent)
-            Alp.get_option(m, :log_level) > 0 && println(
+        if !get_option(m, :use_start_as_incumbent)
+            get_option(m, :log_level) > 0 && println(
                 "  Local solver returns a feasible point with value $(round(m.best_obj, digits=4))",
             )
         end
-        Alp.bound_tightening_wrapper(m, use_bound = true)    # performs bound-tightening with the local solve objective value
-        Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)            # Re-initialize discretization dictionary on tight bounds
-        Alp.get_option(m, :partition_scaling_factor_branch) && (Alp.set_option(
+        bound_tightening_wrapper(m, use_bound = true)    # performs bound-tightening with the local solve objective value
+        get_option(m, :presolve_bt) && init_disc(m)            # Re-initialize discretization dictionary on tight bounds
+        get_option(m, :partition_scaling_factor_branch) && (set_option(
             m,
             :partition_scaling_factor,
-            Alp.update_partition_scaling_factor(m, true),
+            update_partition_scaling_factor(m, true),
         ))
 
     elseif m.status[:local_solve] in STATUS_INF
-        (Alp.get_option(m, :log_level) > 0) &&
+        (get_option(m, :log_level) > 0) &&
             println("  Bound tightening without objective bounds (OBBT)")
-        Alp.bound_tightening_wrapper(m, use_bound = false)                      # do bound tightening without objective value
-        (Alp.get_option(m, :partition_scaling_factor_branch)) && (Alp.set_option(
+        bound_tightening_wrapper(m, use_bound = false)                      # do bound tightening without objective value
+        (get_option(m, :partition_scaling_factor_branch)) && (set_option(
             m,
             :partition_scaling_factor,
-            Alp.update_partition_scaling_factor(m, true),
+            update_partition_scaling_factor(m, true),
         ))
-        Alp.get_option(m, :presolve_bt) && Alp.init_disc(m)
+        get_option(m, :presolve_bt) && init_disc(m)
 
     elseif m.status[:local_solve] == MOI.INVALID_MODEL
         @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve]). \n This may come from Ipopt's `:Not_Enough_Degrees_Of_Freedom`."
-    elseif !Alp.get_option(m, :use_start_as_incumbent)
+    elseif !get_option(m, :use_start_as_incumbent)
         @warn " Warning: Presolve ends with local solver yielding $(m.status[:local_solve])."
     end
 
@@ -268,12 +268,12 @@ function presolve(m::Optimizer)
     m.logs[:total_time] = m.logs[:presolve_time]
     m.logs[:time_left] -= m.logs[:presolve_time]
 
-    if Alp.get_option(m, :presolve_bt)
-        (Alp.get_option(m, :log_level) > 0) && println(
+    if get_option(m, :presolve_bt)
+        (get_option(m, :log_level) > 0) && println(
             "  Post-presolve optimality gap: $(round(m.presolve_best_rel_gap; digits = 3))%",
         )
     end
-    (Alp.get_option(m, :log_level) > 0) &&
+    (get_option(m, :log_level) > 0) &&
         println("  Completed presolve in $(round.(m.logs[:total_time]; digits = 2))s")
 
     return
@@ -285,16 +285,12 @@ end
 function algorithm_automation(m::Optimizer)
 
     # Only if a feasible solution is detected
-    if (Alp.get_option(m, :disc_var_pick) == 3) && m.detected_incumbent
-        Alp.update_disc_cont_var(m)
+    if (get_option(m, :disc_var_pick) == 3) && m.detected_incumbent
+        update_disc_cont_var(m)
     end
 
-    if Alp.get_option(m, :partition_scaling_factor_branch)
-        Alp.set_option(
-            m,
-            :partition_scaling_factor,
-            Alp.update_partition_scaling_factor(m, true),
-        )    # Only perform for a maximum three times
+    if get_option(m, :partition_scaling_factor_branch)
+        set_option(m, :partition_scaling_factor, update_partition_scaling_factor(m, true))    # Only perform for a maximum three times
     end
 
     return
@@ -306,7 +302,7 @@ end
 function check_exit(m::Optimizer)
 
     # constant objective with feasible local solve check
-    if Alp.expr_isconst(m.obj_expr_orig) &&
+    if expr_isconst(m.obj_expr_orig) &&
        (m.status[:local_solve] == MOI.OPTIMAL || m.status == MOI.LOCALLY_SOLVED)
         # m.best_bound = eval(m.obj_expr_orig)
         m.best_bound = m.obj_expr_orig
@@ -325,15 +321,15 @@ function check_exit(m::Optimizer)
     m.status[:bounding_solve] == MOI.DUAL_INFEASIBLE && return true
 
     # Optimality check
-    if m.best_rel_gap <= Alp.get_option(m, :rel_gap)
+    if m.best_rel_gap <= get_option(m, :rel_gap)
         m.detected_bound = true
         return true
     end
-    m.logs[:n_iter] >= Alp.get_option(m, :max_iter) && return true
-    m.best_abs_gap <= Alp.get_option(m, :abs_gap) && return true
+    m.logs[:n_iter] >= get_option(m, :max_iter) && return true
+    m.best_abs_gap <= get_option(m, :abs_gap) && return true
 
     # User-limits check
-    m.logs[:time_left] < Alp.get_option(m, :tol) && return true
+    m.logs[:time_left] < get_option(m, :tol) && return true
 
     return false
 end
@@ -341,7 +337,7 @@ end
 function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
     x = MOI.add_variables(model, m.num_var_orig)
     for i in eachindex(x)
-        set = Alp._bound_set(l_var[i], u_var[i])
+        set = _bound_set(l_var[i], u_var[i])
         if set !== nothing
             MOI.add_constraint(model, x[i], set)
         end
@@ -380,7 +376,7 @@ function set_variable_type(model::MOI.ModelLike, xs, variable_types)
 end
 
 """
-   Alp.local_solve(m::Optimizer, presolve::Bool=false)
+   local_solve(m::Optimizer, presolve::Bool=false)
 
 Perform a local NLP or MINLP solve to obtain a feasible solution.
 The `presolve` option is set to `true` when the function is invoked in [`presolve`](@ref).
@@ -393,34 +389,28 @@ function local_solve(m::Optimizer; presolve = false)
     var_type_screener = [i for i in m.var_type_orig if i in [:Bin, :Int]]
 
     if presolve
-        if !isempty(var_type_screener) && Alp.get_option(m, :minlp_solver) !== nothing
-            local_solve_model = MOI.instantiate(
-                Alp.get_option(m, :minlp_solver),
-                with_bridge_type = Float64,
-            )
+        if !isempty(var_type_screener) && get_option(m, :minlp_solver) !== nothing
+            local_solve_model =
+                MOI.instantiate(get_option(m, :minlp_solver), with_bridge_type = Float64)
         elseif !isempty(var_type_screener)
-            local_solve_model = MOI.instantiate(
-                Alp.get_option(m, :nlp_solver),
-                with_bridge_type = Float64,
-            )
+            local_solve_model =
+                MOI.instantiate(get_option(m, :nlp_solver), with_bridge_type = Float64)
         else
-            local_solve_model = MOI.instantiate(
-                Alp.get_option(m, :nlp_solver),
-                with_bridge_type = Float64,
-            )
+            local_solve_model =
+                MOI.instantiate(get_option(m, :nlp_solver), with_bridge_type = Float64)
         end
     else
         local_solve_model =
-            MOI.instantiate(Alp.get_option(m, :nlp_solver), with_bridge_type = Float64)
+            MOI.instantiate(get_option(m, :nlp_solver), with_bridge_type = Float64)
     end
 
     if presolve == false
-        l_var, u_var = Alp.fix_domains(m)
+        l_var, u_var = fix_domains(m)
     else
         l_var, u_var = m.l_var_tight[1:m.num_var_orig], m.u_var_tight[1:m.num_var_orig]
     end
 
-    x = Alp.load_nonlinear_model(m, local_solve_model, l_var, u_var)
+    x = load_nonlinear_model(m, local_solve_model, l_var, u_var)
     if m.d_orig !== nothing
         MOI.initialize(m.d_orig, [:Grad, :Jac, :Hess, :HessVec, :ExprGraph]) # Safety scheme for sub-solvers re-initializing the NLPEvaluator
     end
@@ -436,11 +426,11 @@ function local_solve(m::Optimizer; presolve = false)
 
     # The only case when MINLP solver is actually used
     if presolve && !isempty(var_type_screener)
-        if Alp.get_option(m, :minlp_solver) === nothing
+        if get_option(m, :minlp_solver) === nothing
             error("Provide a valid MINLP solver")
             # do_heuristic = true
         else
-            Alp.set_variable_type(local_solve_model, x, m.var_type_orig)
+            set_variable_type(local_solve_model, x, m.var_type_orig)
         end
     end
 
@@ -454,7 +444,7 @@ function local_solve(m::Optimizer; presolve = false)
 
     cputime_local_solve = time() - start_local_solve
     m.logs[:total_time] += cputime_local_solve
-    m.logs[:time_left] = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
 
     # if do_heuristic
     # m.status[:local_solve] = heu_basic_rounding(m, MOI.get(local_solve_model, MOI.VariablePrimal(), x))
@@ -480,12 +470,12 @@ function local_solve(m::Optimizer; presolve = false)
         end
 
         @assert length(candidate_sol) == length(sol_temp)
-        Alp.update_incumbent(m, candidate_obj, candidate_sol)
+        update_incumbent(m, candidate_obj, candidate_sol)
         m.status[:local_solve] = local_nlp_status
         return
 
         # elseif local_nlp_status in STATUS_INF
-        #     Alp.heu_pool_multistart(m) == MOI.LOCALLY_SOLVED && return
+        #     heu_pool_multistart(m) == MOI.LOCALLY_SOLVED && return
         #     push!(m.logs[:obj], "INF")
         #     m.status[:local_solve] = MOI.LOCALLY_INFEASIBLE
         #     return
@@ -515,7 +505,7 @@ function local_solve(m::Optimizer; presolve = false)
 end
 
 """
-   Alp.bounding_solve(m::Optimizer; kwargs...)
+   bounding_solve(m::Optimizer; kwargs...)
 
 This step usually solves a convex MILP/MIQCP/MIQCQP problem for lower bounding the given minimization problem.
 It solves the problem built upon a piecewise convexification based on the discretization sictionary of some variables.
@@ -525,7 +515,7 @@ function bounding_solve(m::Optimizer)
     convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
 
     # Updates time metric and the termination bounds
-    Alp.set_mip_time_limit(m)
+    set_mip_time_limit(m)
     # update_boundstop_options(m)
 
     # ================= Solve Start ================ #
@@ -533,7 +523,7 @@ function bounding_solve(m::Optimizer)
     JuMP.optimize!(m.model_mip)
     status = JuMP.termination_status(m.model_mip)
     m.logs[:total_time] += time() - start_bounding_solve
-    m.logs[:time_left] = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
     # ================= Solve End ================ #
 
     if status in STATUS_OPT || status in STATUS_LIMIT
@@ -546,11 +536,11 @@ function bounding_solve(m::Optimizer)
         ]
 
         # Experimental code
-        Alp.measure_relaxed_deviation(m, sol = candidate_bound_sol)
-        if Alp.get_option(m, :disc_consecutive_forbid) > 0
+        measure_relaxed_deviation(m, sol = candidate_bound_sol)
+        if get_option(m, :disc_consecutive_forbid) > 0
             m.bound_sol_history[mod(
                 m.logs[:n_iter] - 1,
-                Alp.get_option(m, :disc_consecutive_forbid),
+                get_option(m, :disc_consecutive_forbid),
             )+1] = copy(candidate_bound_sol) # Requires proper offseting
         end
         push!(m.logs[:bound], candidate_bound)
@@ -590,17 +580,17 @@ This function helps pick the variables for discretization. The method chosen dep
 In case when `indices::Int` is provided, the method is chosen as built-in method. Currently,
 there are two built-in options for users as follows:
 
-* `max_cover (Alp.get_option(m, :disc_var_pick)=0, default)`: pick all variables involved in the non-linear term for discretization
-* `min_vertex_cover (Alp.get_option(m, :disc_var_pick)=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
+* `max_cover (get_option(m, :disc_var_pick)=0, default)`: pick all variables involved in the non-linear term for discretization
+* `min_vertex_cover (get_option(m, :disc_var_pick)=1)`: pick a minimum vertex cover for variables involved in non-linear terms so that each non-linear term is at least convexified
 
-For advanced usage, `Alp.get_option(m, :disc_var_pick)` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
+For advanced usage, `get_option(m, :disc_var_pick)` allows `::Function` inputs. User can provide his/her own function to choose the variables for discretization.
 
 """
 function pick_disc_vars(m::Optimizer)
-    disc_var_pick = Alp.get_option(m, :disc_var_pick)
+    disc_var_pick = get_option(m, :disc_var_pick)
 
     if isa(disc_var_pick, Function)
-        # eval(Alp.get_option(m, :disc_var_pick))(m)
+        # eval(get_option(m, :disc_var_pick))(m)
         disc_var_pick(m)
         length(m.disc_vars) == 0 &&
             length(m.nonconvex_terms) > 0 &&
@@ -609,15 +599,15 @@ function pick_disc_vars(m::Optimizer)
             )
     elseif isa(disc_var_pick, Int)
         if disc_var_pick == 0
-            Alp.get_candidate_disc_vars(m)
+            get_candidate_disc_vars(m)
         elseif disc_var_pick == 1
-            Alp.min_vertex_cover(m)
+            min_vertex_cover(m)
         elseif disc_var_pick == 2
-            (length(m.candidate_disc_vars) > 15) ? Alp.min_vertex_cover(m) :
-            Alp.get_candidate_disc_vars(m)
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) :
+            get_candidate_disc_vars(m)
         elseif disc_var_pick == 3 # Initial
-            (length(m.candidate_disc_vars) > 15) ? Alp.min_vertex_cover(m) :
-            Alp.get_candidate_disc_vars(m)
+            (length(m.candidate_disc_vars) > 15) ? min_vertex_cover(m) :
+            get_candidate_disc_vars(m)
         else
             error(
                 "Unsupported default indicator for picking variables for discretization",

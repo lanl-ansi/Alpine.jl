@@ -6,7 +6,6 @@ import Combinatorics
 import Statistics
 
 const ALPINE_DEBUG = false
-const Alp = Alpine
 
 include("const.jl")
 

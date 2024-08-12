@@ -5,14 +5,14 @@
 function embedding_map(λCnt::Int, encoding::Any = ebd_gray, ibs::Bool = false)
     map = Dict()
 
-    encoding = Alp.resolve_encoding_key(encoding)
+    encoding = resolve_encoding_key(encoding)
     L = Int(ceil(log(2, λCnt - 1)))
     for i in 1:L*2
         map[i] = Set()
     end
     H = [encoding(i, L) for i in 0:max(1, (2^L - 1))]
     map[:H_orig] = H
-    map[:H] = [Alp.ebd_support_binary_vec(H[i]) for i in 1:length(H)] # Store the map
+    map[:H] = [ebd_support_binary_vec(H[i]) for i in 1:length(H)] # Store the map
     map[:L] = L
 
     !is_compatible_encoding(H) && error("Encodign method is not SOS-2 compatible...")
@@ -57,7 +57,7 @@ end
 	This function is the same σ() function described in Vielma and Nemhauser 2011.
 """
 function ebd_σ(b::String)
-    sv = Alp.ebd_support_bool_vec(b)
+    sv = ebd_support_bool_vec(b)
     return [i for i in 1:length(sv) if sv[i]]
 end
 
@@ -82,10 +82,7 @@ end
 function is_compatible_encoding(code_seq::Vector)
     for i in 1:(length(code_seq)-1)
         sum(
-            abs.(
-                Alp.ebd_support_bool_vec(code_seq[i]) -
-                Alp.ebd_support_bool_vec(code_seq[i+1])
-            ),
+            abs.(ebd_support_bool_vec(code_seq[i]) - ebd_support_bool_vec(code_seq[i+1])),
         ) != 1 && return false
     end
     return true
@@ -132,8 +129,8 @@ function ebd_link_xα(
 
     # Expression expansion
     for i in 1:P
-        code_vec = Alp.ebd_support_bool_vec(code_seq[i])
-        lifters, exprs = Alp.ebd_link_expression(code_vec, lifters, exprs, i)
+        code_vec = ebd_support_bool_vec(code_seq[i])
+        lifters, exprs = ebd_link_expression(code_vec, lifters, exprs, i)
     end
 
     # Construct Variable Vector
@@ -145,11 +142,7 @@ function ebd_link_xα(
         base_name = "αA$(var_idx)"
     )
     for i in keys(lifters) # Build first-level evaluation
-        Alp.relaxation_multilinear_binary(
-            m.model_mip,
-            α_A[lifters[i]-L],
-            [α[j] for j in i],
-        )
+        relaxation_multilinear_binary(m.model_mip, α_A[lifters[i]-L], [α[j] for j in i])
     end
 
     α_R = [α; α_A] # Initialize/re-arrgange the variable sequence

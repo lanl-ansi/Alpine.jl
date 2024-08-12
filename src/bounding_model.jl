@@ -3,10 +3,10 @@
 
 Set up a MILP bounding model base on variable domain partitioning information stored in `use_disc`.
 By default, if `use_disc` is not provided, it will use `m.discretizations` store in the Alpine model.
-The basic idea of this MILP bounding model is to use piecewise polyhedral/convex relaxations to tighten the 
-basic relaxations of the original non-convex region. Among all presented partitions, the bounding model 
-will choose one specific partition as the lower bound solution. The more partitions there are, the 
-better or finer bounding model relax the original MINLP while the more efforts required to solve 
+The basic idea of this MILP bounding model is to use piecewise polyhedral/convex relaxations to tighten the
+basic relaxations of the original non-convex region. Among all presented partitions, the bounding model
+will choose one specific partition as the lower bound solution. The more partitions there are, the
+better or finer bounding model relax the original MINLP while the more efforts required to solve
 this MILP is required.
 """
 function create_bounding_mip(m::Optimizer; use_disc = nothing)
@@ -14,27 +14,27 @@ function create_bounding_mip(m::Optimizer; use_disc = nothing)
         if (m.logs[:n_iter] == 1) &&
            (m.status[:local_solve] in union(STATUS_OPT, STATUS_LIMIT, STATUS_WARM_START))
             # Setting up an initial partition
-            Alp.add_partition(m, use_solution = m.best_sol)
+            add_partition(m, use_solution = m.best_sol)
         elseif m.logs[:n_iter] >= 2
             # Add subsequent iteration partitions
-            Alp.add_partition(m)
+            add_partition(m)
         end
         discretization = m.discretization
     else
         discretization = use_disc
     end
 
-    m.model_mip = JuMP.Model(Alp.get_option(m, :mip_solver)) # Construct JuMP Model
+    m.model_mip = JuMP.Model(get_option(m, :mip_solver)) # Construct JuMP Model
     start_build = time()
     # ------- Model Construction ------ #
-    Alp.amp_post_vars(m)                                                # Post original and lifted variables
-    Alp.amp_post_lifted_constraints(m)                                  # Post original and lifted constraints
-    Alp.amp_post_lifted_objective(m)                                    # Post original and/or objective
-    Alp.amp_post_convexification(m, use_disc = discretization)          # Post convexification constraints
+    amp_post_vars(m)                                                # Post original and lifted variables
+    amp_post_lifted_constraints(m)                                  # Post original and lifted constraints
+    amp_post_lifted_objective(m)                                    # Post original and/or objective
+    amp_post_convexification(m, use_disc = discretization)          # Post convexification constraints
     # --------------------------------- #
     cputime_build = time() - start_build
     m.logs[:total_time] += cputime_build
-    m.logs[:time_left] = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
 
     return
 end
@@ -48,8 +48,8 @@ to finish the last step required during the construction of bounding model.
 function amp_post_convexification(m::Optimizer; use_disc = nothing)
     use_disc === nothing ? discretization = m.discretization : discretization = use_disc
 
-    Alp.amp_post_convhull(m, use_disc = discretization)  # convex hull representation
-    Alp._is_fully_convexified(m) # Ensure if all the non-linear terms are convexified
+    amp_post_convhull(m, use_disc = discretization)  # convex hull representation
+    _is_fully_convexified(m) # Ensure if all the non-linear terms are convexified
 
     return
 end
@@ -101,16 +101,16 @@ end
 function amp_post_lifted_constraints(m::Optimizer)
     for i in 1:m.num_constr_orig
         if m.constr_structure[i] == :affine
-            Alp.amp_post_affine_constraint(m.model_mip, m.bounding_constr_mip[i])
+            amp_post_affine_constraint(m.model_mip, m.bounding_constr_mip[i])
         elseif m.constr_structure[i] == :convex
-            Alp.amp_post_convex_constraint(m.model_mip, m.bounding_constr_mip[i])
+            amp_post_convex_constraint(m.model_mip, m.bounding_constr_mip[i])
         else
             error("Unknown constr_structure type $(m.constr_structure[i])")
         end
     end
 
     for i in keys(m.linear_terms)
-        Alp.amp_post_linear_lift_constraints(m.model_mip, m.linear_terms[i])
+        amp_post_linear_lift_constraints(m.model_mip, m.linear_terms[i])
     end
 
     return
@@ -234,21 +234,18 @@ function add_partition(m::Optimizer; kwargs...)
     haskey(options, :use_solution) ? point_vec = options[:use_solution] :
     point_vec = m.best_bound_sol
 
-    if isa(Alp.get_option(m, :disc_add_partition_method), Function)
-        # m.discretization = eval(Alp.get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
-        m.discretization = Alp.get_option(m, :disc_add_partition_method)(
+    if isa(get_option(m, :disc_add_partition_method), Function)
+        # m.discretization = eval(get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
+        m.discretization = get_option(m, :disc_add_partition_method)(
             m,
             use_disc = discretization,
             use_solution = point_vec,
         )
-    elseif Alp.get_option(m, :disc_add_partition_method) == "adaptive"
-        m.discretization = Alp.add_adaptive_partition(
-            m,
-            use_disc = discretization,
-            use_solution = point_vec,
-        )
-    elseif Alp.get_option(m, :disc_add_partition_method) == "uniform"
-        m.discretization = Alp.add_uniform_partition(m, use_disc = discretization)
+    elseif get_option(m, :disc_add_partition_method) == "adaptive"
+        m.discretization =
+            add_adaptive_partition(m, use_disc = discretization, use_solution = point_vec)
+    elseif get_option(m, :disc_add_partition_method) == "uniform"
+        m.discretization = add_uniform_partition(m, use_disc = discretization)
     else
         error("Unknown input on how to add partitions.")
     end
@@ -263,7 +260,7 @@ end
 
 A built-in method used to add a new partition on feasible domains of variables chosen for partitioning.
 
-This can be illustrated by the following example. Let the previous iteration's partition vector on 
+This can be illustrated by the following example. Let the previous iteration's partition vector on
 variable "x" be given by [0, 3, 7, 9]. And say, the lower bounding solution has a value of 4 for variable "x".
 In the case when `partition_scaling_factor = 4`, this function creates the new partition vector as follows: [0, 3, 3.5, 4, 4.5, 7, 9]
 
@@ -283,11 +280,11 @@ function add_adaptive_partition(m::Optimizer; kwargs...)
     haskey(options, :use_solution) ? point_vec = copy(options[:use_solution]) :
     point_vec = copy(m.best_bound_sol)
     haskey(options, :use_ratio) ? ratio = options[:use_ratio] :
-    ratio = Alp.get_option(m, :partition_scaling_factor)
+    ratio = get_option(m, :partition_scaling_factor)
     haskey(options, :branching) ? branching = options[:branching] : branching = false
 
     if length(point_vec) < m.num_var_orig + m.num_var_linear_mip + m.num_var_nonlinear_mip
-        point_vec = Alp.resolve_lifted_var_value(m, point_vec)  # Update the solution vector for lifted variable
+        point_vec = resolve_lifted_var_value(m, point_vec)  # Update the solution vector for lifted variable
     end
 
     if branching
@@ -304,11 +301,11 @@ function add_adaptive_partition(m::Optimizer; kwargs...)
         # Built-in method based-on variable type
         if m.var_type[i] == :Cont
             i in processed && continue
-            point = Alp.correct_point(m, discretization[i], point, i)
+            point = correct_point(m, discretization[i], point, i)
             for j in 1:λCnt
                 if point >= discretization[i][j] && point <= discretization[i][j+1]  # Locating the right location
-                    radius = Alp.calculate_radius(discretization[i], j, ratio)
-                    Alp.insert_partition_helper(m, i, j, point, radius, discretization[i])
+                    radius = calculate_radius(discretization[i], j, ratio)
+                    insert_partition_helper(m, i, j, point, radius, discretization[i])
                     push!(processed, i)
                     break
                 end
@@ -332,7 +329,7 @@ end
     This function targets to address unexpected numerical issues when adding partitions in tight regions.
 """
 function correct_point(m::Optimizer, partvec::Vector, point::Float64, var::Int)
-    tol = Alp.get_option(m, :tol)
+    tol = get_option(m, :tol)
 
     if point < partvec[1] - tol || point > partvec[end] + tol
         @warn "  Warning: VAR$(var) SOL=$(point) out of discretization [$(partvec[1]),$(partvec[end])]. Hence, taking the middle point."
@@ -370,7 +367,7 @@ function insert_partition_helper(
     partvec::Vector,
 )
     abstol, reltol =
-        Alp.get_option(m, :disc_abs_width_tol), Alp.get_option(m, :disc_rel_width_tol)
+        get_option(m, :disc_abs_width_tol), get_option(m, :disc_rel_width_tol)
 
     lb_local, ub_local = partvec[partidx], partvec[partidx+1]
     ub_touch, lb_touch = true, true
@@ -390,28 +387,28 @@ function insert_partition_helper(
         lb_touch = false
     end
 
-    if (ub_touch && lb_touch) || Alp.check_solution_history(m, var)
+    if (ub_touch && lb_touch) || check_solution_history(m, var)
         distvec = [(j, partvec[j+1] - partvec[j]) for j in 1:length(partvec)-1]
         sort!(distvec, by = x -> x[2])
         point_orig = point
         pos = distvec[end][1]
         lb_local = partvec[pos]
         ub_local = partvec[pos+1]
-        isapprox(lb_local, ub_local; atol = Alp.get_option(m, :tol)) && return
-        chunk = (ub_local - lb_local) / Alp.get_option(m, :disc_divert_chunks)
-        point = lb_local + (ub_local - lb_local) / Alp.get_option(m, :disc_divert_chunks)
-        for i in 2:Alp.get_option(m, :disc_divert_chunks)
+        isapprox(lb_local, ub_local; atol = get_option(m, :tol)) && return
+        chunk = (ub_local - lb_local) / get_option(m, :disc_divert_chunks)
+        point = lb_local + (ub_local - lb_local) / get_option(m, :disc_divert_chunks)
+        for i in 2:get_option(m, :disc_divert_chunks)
             insert!(
                 partvec,
                 pos + 1,
-                lb_local + chunk * (Alp.get_option(m, :disc_divert_chunks) - (i - 1)),
+                lb_local + chunk * (get_option(m, :disc_divert_chunks) - (i - 1)),
             )
         end
-        (Alp.get_option(m, :log_level) > 199) && println(
-            "[DEBUG] !D! VAR$(var): SOL=$(round(point_orig; digits = 4))=>$(point) |$(round(lb_local; digits = 4)) | $(Alp.get_option(m, :disc_divert_chunks)) SEGMENTS | $(round(ub_local; digits = 4))|",
+        (get_option(m, :log_level) > 199) && println(
+            "[DEBUG] !D! VAR$(var): SOL=$(round(point_orig; digits = 4))=>$(point) |$(round(lb_local; digits = 4)) | $(get_option(m, :disc_divert_chunks)) SEGMENTS | $(round(ub_local; digits = 4))|",
         )
     else
-        (Alp.get_option(m, :log_level) > 199) && println(
+        (get_option(m, :log_level) > 199) && println(
             "[DEBUG] VAR$(var): SOL=$(round(point; digits = 4)) RADIUS=$(radius), PARTITIONS=$(length(partvec)-1) |$(round(lb_local; digits = 4)) |$(round(lb_new; digits = 6)) <- * -> $(round(ub_new; digits = 6))| $(round(ub_local; digits = 4))|",
         )
     end
@@ -428,11 +425,11 @@ function add_uniform_partition(m::Optimizer; kwargs...)
         lb_local = discretization[i][1]
         ub_local = discretization[i][end]
         distance = ub_local - lb_local
-        # chunk = distance / ((m.logs[:n_iter] + 1) * Alp.get_option(m, :disc_uniform_rate))
-        chunk = distance / (m.logs[:n_iter] * Alp.get_option(m, :disc_uniform_rate))
+        # chunk = distance / ((m.logs[:n_iter] + 1) * get_option(m, :disc_uniform_rate))
+        chunk = distance / (m.logs[:n_iter] * get_option(m, :disc_uniform_rate))
         discretization[i] = [
             lb_local + chunk * (j - 1) for
-            j in 1:(m.logs[:n_iter])*Alp.get_option(m, :disc_uniform_rate)
+            j in 1:(m.logs[:n_iter])*get_option(m, :disc_uniform_rate)
         ]
         push!(discretization[i], ub_local)   # Safety Scheme
     end
@@ -441,20 +438,20 @@ function add_uniform_partition(m::Optimizer; kwargs...)
 end
 
 function update_partition_scaling_factor(m::Optimizer, presolve = false)
-    m.logs[:n_iter] > 2 && return Alp.get_option(m, :partition_scaling_factor) # Stop branching after the second iterations
+    m.logs[:n_iter] > 2 && return get_option(m, :partition_scaling_factor) # Stop branching after the second iterations
 
     ratio_pool = [8:2:20;]  # Built-in try range
     convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
     # revconvertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
 
     incumb_ratio = ratio_pool[1]
-    Alp.is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
+    is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
     res_collector = Float64[]
 
     for r in ratio_pool
         st = time()
         if !isempty(m.best_sol)
-            branch_disc = Alp.add_adaptive_partition(
+            branch_disc = add_adaptive_partition(
                 m,
                 use_disc = m.discretization,
                 branching = true,
@@ -462,15 +459,15 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
                 use_solution = m.best_sol,
             )
         else
-            branch_disc = Alp.add_adaptive_partition(
+            branch_disc = add_adaptive_partition(
                 m,
                 use_disc = m.discretization,
                 branching = true,
                 use_ratio = r,
             )
         end
-        Alp.create_bounding_mip(m, use_disc = branch_disc)
-        res = Alp.disc_branch_solve(m)
+        create_bounding_mip(m, use_disc = branch_disc)
+        res = disc_branch_solve(m)
         push!(res_collector, res)
         if eval(convertor[m.sense_orig])(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
             incumb_res = res
@@ -481,18 +478,18 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
             println("Expensive disc branching pass... Fixed at 8")
             return 8
         end
-        Alp.get_option(m, :log_level) > 0 &&
+        get_option(m, :log_level) > 0 &&
             println("BRANCH RATIO = $(r), METRIC = $(res) || TIME = $(time()-st)")
     end
 
     if Statistics.std(res_collector) >= 1e-2    # Detect if all solutions are similar to each other
-        Alp.get_option(m, :log_level) > 0 &&
+        get_option(m, :log_level) > 0 &&
             println("RATIO BRANCHING OFF due to solution variance test passed.")
-        Alp.set_option(m, :partition_scaling_factor_branch, false) # If an incumbent ratio is selected, then stop the branching scheme
+        set_option(m, :partition_scaling_factor_branch, false) # If an incumbent ratio is selected, then stop the branching scheme
     end
 
     if !isempty(m.best_sol)
-        m.discretization = Alp.add_adaptive_partition(
+        m.discretization = add_adaptive_partition(
             m,
             use_disc = m.discretization,
             branching = true,
@@ -500,7 +497,7 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
             use_solution = m.best_sol,
         )
     else
-        m.discretization = Alp.add_adaptive_partition(
+        m.discretization = add_adaptive_partition(
             m,
             use_disc = m.discretization,
             branching = true,
@@ -508,7 +505,7 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
         )
     end
 
-    Alp.get_option(m, :log_level) > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
+    get_option(m, :log_level) > 0 && println("INCUMB_RATIO = $(incumb_ratio)")
 
     return incumb_ratio
 end
@@ -516,13 +513,13 @@ end
 function disc_branch_solve(m::Optimizer)
 
     # ================= Solve Start ================ #
-    Alp.set_mip_time_limit(m)
+    set_mip_time_limit(m)
     start_bounding_solve = time()
     JuMP.optimize!(m.model_mip)
     status = MOI.get(m.model_mip, MOI.TerminationStatus())
     cputime_branch_bounding_solve = time() - start_bounding_solve
     m.logs[:total_time] += cputime_branch_bounding_solve
-    m.logs[:time_left] = max(0.0, Alp.get_option(m, :time_limit) - m.logs[:total_time])
+    m.logs[:time_left] = max(0.0, get_option(m, :time_limit) - m.logs[:total_time])
     # ================= Solve End ================ #
 
     if status in STATUS_OPT || status in STATUS_LIMIT
@@ -532,9 +529,9 @@ function disc_branch_solve(m::Optimizer)
     end
 
     # Safety scheme
-    if Alp.is_min_sense(m)
+    if is_min_sense(m)
         return -Inf
-    elseif Alp.is_max_sense(m)
+    elseif is_max_sense(m)
         return Inf
     end
 end
