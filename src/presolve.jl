@@ -368,10 +368,13 @@ This function adds the upper/lower bounding constraint on the objective function
 for the optimization models solved within the OBBT algorithm.
 """
 function post_objective_bound(m::Optimizer, bound::Number; kwargs...)
-    obj_expr = sum(
-        m.bounding_obj_mip[:coefs][j] *
-        _index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for
-        j in 1:m.bounding_obj_mip[:cnt]
+    obj_expr = JuMP.@expression(
+        m,
+        sum(
+            m.bounding_obj_mip[:coefs][j] *
+            _index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for
+            j in 1:m.bounding_obj_mip[:cnt]
+        ),
     )
 
     obj_bound_tol = get_option(m, :presolve_bt_obj_bound_tol)
