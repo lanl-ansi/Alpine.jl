@@ -211,7 +211,7 @@ function expr_constr_parsing(expr::Expr, m::Optimizer, idx::Int = 0)
 
     # First process user-defined structures in-cases of over-ride
     # for i in 1:length(get_option(m, :constr_patterns))
-    #    is_structural = eval(get_option(m, :constr_patterns)[i])(expr, m, idx)
+    #    is_structural = get_option(m, :constr_patterns)[i](expr, m, idx)
     #    return
     # end
 

@@ -18,7 +18,6 @@ function bound_tightening_wrapper(m::Optimizer; use_bound = true, kwargs...)
     elseif get_option(m, :presolve_bt_algo) == 2
         optimization_based_bound_tightening(m, use_bound = use_bound, use_tmc = true)
     elseif isa(get_option(m, :presolve_bt_algo), Function)
-        # eval(get_option(m, :presolve_bt_algo))(m)
         get_option(m, :presolve_bt_algo)(m)
     else
         error("Unrecognized bound tightening algorithm")

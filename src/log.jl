@@ -114,12 +114,12 @@ function logging_summary(m::Optimizer)
 end
 
 function logging_head(m::Optimizer)
-    if is_min_sense(m)
+    if !is_max_sense(m)
         printstyled("LOWER-BOUNDING ITERATIONS", color = :cyan, bold = true)
         UB_iter = "Incumbent"
         UB = "Best Incumbent"
         LB = "Lower Bound"
-    elseif is_max_sense(m)
+    else
         printstyled("UPPER-BOUNDING ITERATIONS", color = :cyan, bold = true)
         UB_iter = "Incumbent"
         UB = "Best Incumbent"
@@ -148,8 +148,11 @@ function logging_row_entry(m::Optimizer; kwargs...)
         spc = max(0, b_len - length(objstr))
     end
     UB_block = string(" ", objstr, " "^spc)
-
-    if expr_isconst(m.obj_expr_orig)
+    if m.obj_expr_orig == :(+())
+        bdstr = 0.0
+        spc = b_len - 1
+    elseif expr_isconst(m.obj_expr_orig)
+        # This eval is okay because expr_isconst is true
         bdstr = eval(m.obj_expr_orig)
         spc = b_len - length(bdstr)
     elseif isa(m.logs[:bound][end], Float64)
