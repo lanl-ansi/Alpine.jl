@@ -304,7 +304,6 @@ function check_exit(m::Optimizer)
     # constant objective with feasible local solve check
     if expr_isconst(m.obj_expr_orig) &&
        (m.status[:local_solve] == MOI.OPTIMAL || m.status == MOI.LOCALLY_SOLVED)
-        # m.best_bound = eval(m.obj_expr_orig)
         m.best_bound = m.obj_expr_orig
         m.best_rel_gap = 0.0
         m.best_abs_gap = 0.0
@@ -544,7 +543,12 @@ function bounding_solve(m::Optimizer)
             )+1] = copy(candidate_bound_sol) # Requires proper offseting
         end
         push!(m.logs[:bound], candidate_bound)
-        if eval(convertor[m.sense_orig])(candidate_bound, m.best_bound)
+        is_tighter = ifelse(
+            m.sense_orig == MOI.MAX_SENSE,
+            candidate_bound < m.best_bound,
+            candidate_bound > m.best_bound,
+        )
+        if is_tighter
             m.best_bound = candidate_bound
             m.best_bound_sol = copy(candidate_bound_sol)
             m.status[:bounding_solve] = status
@@ -590,7 +594,6 @@ function pick_disc_vars(m::Optimizer)
     disc_var_pick = get_option(m, :disc_var_pick)
 
     if isa(disc_var_pick, Function)
-        # eval(get_option(m, :disc_var_pick))(m)
         disc_var_pick(m)
         length(m.disc_vars) == 0 &&
             length(m.nonconvex_terms) > 0 &&

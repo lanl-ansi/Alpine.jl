@@ -195,7 +195,10 @@ end
 function amp_post_lifted_objective(m::Optimizer)
 
     #if isa(m.obj_expr_orig, Number)
-    if expr_isconst(m.obj_expr_orig)
+    if m.obj_expr_orig == :(+())
+        JuMP.@objective(m.model_mip, m.sense_orig, 0.0)
+    elseif expr_isconst(m.obj_expr_orig)
+        # This eval is okay because expr_isconst is true
         JuMP.@objective(m.model_mip, m.sense_orig, eval(m.obj_expr_orig))
     elseif m.obj_structure == :affine
         JuMP.@objective(
@@ -235,7 +238,6 @@ function add_partition(m::Optimizer; kwargs...)
     point_vec = m.best_bound_sol
 
     if isa(get_option(m, :disc_add_partition_method), Function)
-        # m.discretization = eval(get_option(m, :disc_add_partition_method))(m, use_disc=discretization, use_solution=point_vec)
         m.discretization = get_option(m, :disc_add_partition_method)(
             m,
             use_disc = discretization,
@@ -441,9 +443,6 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
     m.logs[:n_iter] > 2 && return get_option(m, :partition_scaling_factor) # Stop branching after the second iterations
 
     ratio_pool = [8:2:20;]  # Built-in try range
-    convertor = Dict(MOI.MAX_SENSE => :<, MOI.MIN_SENSE => :>)
-    # revconvertor = Dict(MOI.MAX_SENSE => :>, MOI.MIN_SENSE => :<)
-
     incumb_ratio = ratio_pool[1]
     is_min_sense(m) ? incumb_res = -Inf : incumb_res = Inf
     res_collector = Float64[]
@@ -469,7 +468,7 @@ function update_partition_scaling_factor(m::Optimizer, presolve = false)
         create_bounding_mip(m, use_disc = branch_disc)
         res = disc_branch_solve(m)
         push!(res_collector, res)
-        if eval(convertor[m.sense_orig])(res, incumb_res) # && abs(abs(collector[end]-res)/collector[end]) > 1e-1  # %1 of difference
+        if m.sense_orig == MOI.MAX_SENSE ? res < incumb_res : res > incumb_res
             incumb_res = res
             incumb_ratio = r
         end

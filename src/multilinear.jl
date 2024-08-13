@@ -325,8 +325,15 @@ function amp_warmstart_α(m::Optimizer, α::Dict)
         for i in 1:m.bound_sol_pool[:cnt]
             m.bound_sol_pool[:stat][i] == :Warmstarter &&
                 (m.bound_sol_pool[:stat][i] = :Alive)   # reset the status if not dead
-            if m.bound_sol_pool[:stat][i] != :Dead &&
-               eval(comp_opr[m.sense_orig])(m.bound_sol_pool[:obj][i], ws_obj)
+            if m.bound_sol_pool[:stat][i] == :Dead
+                continue
+            end
+            is_better = ifelse(
+                m.sense_orig == MOI.MAX_SENSE,
+                m.bound_sol_pool[:obj][i] > ws_obj,
+                m.bound_sol_pool[:obj][i] < ws_obj,
+            )
+            if is_better
                 ws_idx = i
                 ws_obj = m.bound_sol_pool[:obj][i]
             end
