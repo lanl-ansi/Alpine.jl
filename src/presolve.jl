@@ -305,10 +305,13 @@ end
 function relaxation_model_obbt(m::Optimizer, discretization, bound::Number)
     create_obbt_model(m, discretization, bound)
 
-    obj_expr = sum(
-        m.bounding_obj_mip[:coefs][j] *
-        _index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for
-        j in 1:m.bounding_obj_mip[:cnt]
+    obj_expr = JuMP.@expression(
+        m.model_mip,
+        sum(
+            m.bounding_obj_mip[:coefs][j] *
+            _index_to_variable_ref(m.model_mip, m.bounding_obj_mip[:vars][j].args[2]) for
+            j in 1:m.bounding_obj_mip[:cnt]
+        ),
     )
 
     if is_min_sense(m)
