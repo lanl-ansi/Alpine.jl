@@ -1043,3 +1043,74 @@ end
     @test isapprox(objective_value(m), 13; atol = 1e-4)
     @test MOI.get(m, Alpine.NumberOfIterations()) == 0
 end
+
+@testset "Test integer variable support via IntegerToZeroOneBridge" begin
+    test_solver = optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+    )
+    model = JuMP.Model(test_solver)
+    @variable(model, -10 <= x <= 20, Int)
+    @objective(model, Min, x)
+    JuMP.optimize!(model)
+    @test termination_status(model) == MOI.OPTIMAL
+    @test isapprox(objective_value(model), -10; atol = 1e-4)
+    @test isapprox(value(x), -10, atol = 1e-6)
+    @test MOI.get(model, Alpine.NumberOfIterations()) == 0
+end
+
+@testset "Test integer variable support 0" begin
+    test_solver = optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+    )
+    model = JuMP.Model(test_solver)
+    @variable(model, x, Int)
+    @objective(model, Min, x)
+    @test_throws(
+        ErrorException(
+            "Unable to use IntegerToZeroOneBridge because the variable MOI.VariableIndex(1) has a non-finite domain",
+        ),
+        JuMP.optimize!(model),
+    )
+end
+
+@testset "Test integer variable support 1" begin
+    test_solver = optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+    )
+    model = JuMP.Model(test_solver)
+    @variable(model, -10 <= x, Int)
+    @objective(model, Min, x)
+    @test_throws(
+        ErrorException(
+            "Unable to use IntegerToZeroOneBridge because the variable MOI.VariableIndex(1) has a non-finite domain",
+        ),
+        JuMP.optimize!(model),
+    )
+end
+
+@testset "Test integer variable support 2" begin
+    test_solver = optimizer_with_attributes(
+        Alpine.Optimizer,
+        "nlp_solver" => IPOPT,
+        "mip_solver" => HIGHS,
+        "minlp_solver" => JUNIPER,
+    )
+    model = JuMP.Model(test_solver)
+    @variable(model, x <= 20, Int)
+    @objective(model, Min, x)
+    @test_throws(
+        ErrorException(
+            "Unable to use IntegerToZeroOneBridge because the variable MOI.VariableIndex(1) has a non-finite domain",
+        ),
+        JuMP.optimize!(model),
+    )
+end

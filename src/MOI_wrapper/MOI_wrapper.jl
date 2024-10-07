@@ -325,18 +325,6 @@ end
 function MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VariableIndex},
-    ::Type{MOI.Integer},
-)
-    return true
-end
-
-function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::MOI.Integer)
-    model.var_type_orig[f.value] = :Int
-    return MOI.ConstraintIndex{typeof(f),typeof(set)}(f.value)
-end
-function MOI.supports_constraint(
-    ::Optimizer,
-    ::Type{MOI.VariableIndex},
     ::Type{MOI.ZeroOne},
 )
     return true
@@ -455,6 +443,32 @@ end
 
 function MOI.is_valid(model::Alpine.Optimizer, vi::MOI.VariableIndex)
     return 1 <= vi.value <= model.num_var_orig
+end
+
+function _get_bound_set(model::Alpine.Optimizer, vi::MOI.VariableIndex)
+    if !MOI.is_valid(model, vi)
+        throw(MOI.InvalidIndex(vi))
+    end
+    return _bound_set(model.l_var_orig[vi.value], model.u_var_orig[vi.value])
+end
+
+function MOI.is_valid(
+    model::Alpine.Optimizer,
+    ci::MOI.ConstraintIndex{MOI.VariableIndex,S},
+) where {S<:SCALAR_SET}
+    set = _get_bound_set(model, MOI.VariableIndex(ci.value))
+    return set isa S
+end
+
+function MOI.get(
+    model::Alpine.Optimizer,
+    ::MOI.ConstraintSet,
+    ci::MOI.ConstraintIndex{MOI.VariableIndex,S},
+) where {S<:SCALAR_SET}
+    if !MOI.is_valid(model, ci)
+        throw(MOI.InvalidIndex(ci))
+    end
+    return _get_bound_set(model, MOI.VariableIndex(ci.value))
 end
 
 # Taken from MatrixOptInterface.jl
