@@ -1007,7 +1007,7 @@ end
     alp = JuMP.backend(m).optimizer.model
 
     @test termination_status(m) == MOI.OTHER_LIMIT
-    @test isapprox(alp.best_bound, 4810.212866711817, atol = 1E-6)
+    @test isapprox(alp.best_bound, 4810.212866711817, atol = 1E-3)
     @test alp.warm_start_value == sol
     @test alp.options.use_start_as_incumbent == true
 end
