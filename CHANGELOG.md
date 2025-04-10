@@ -1,12 +1,22 @@
 # Alpine.jl Change Log
 
+## v0.5.7
+- Fix failing tests (#241), (#250)
+- Update `Project.toml` (#239), (#246), (#249)
+- Remove unnecessary Alp module reference (#247)
+- Remove unnecessary `Base.eval` calls (#251)
+- Fix empty summations (#252), (#253)
+- Fix support for `MOI.Integer` variables (#245)
+- Loosen tolerances in tests (#254)
+- Update versions in GitHub actions (#255)
+
 ## v0.5.6
 - Minor Readme updates (#235)
 - Implemented RawStatusString for solution summary (#238)
 - Dependency update for docs
 - Bug fix in LB exceeding UB outside relative tolerance bounds
 
-## v0.5.5 
+## v0.5.5
 - Removed use of e.g. for JuMP documentation in README (#230)
 - Dropped support for integer variable MINLPs in `examples` (#233)
 - Updated README in `examples` folder to clarify `minlp_solver` dependency (#232)
@@ -35,7 +45,7 @@
 
 ## v0.5.0
 - New feature: Linking constraints for multilinear terms with uniform and adaptive partitions (significant speed up in run times for multilinear problems: http://www.optimization-online.org/DB_HTML/2022/07/8974.html) (@jongeunkim)
-- Added dependency on Combinatorics package for linking constraints 
+- Added dependency on Combinatorics package for linking constraints
 - Added unit tests for linking constraints feature
 - Changed Cbc test dependency to HiGHS solver
 - Dropped a few redundant unit tests
