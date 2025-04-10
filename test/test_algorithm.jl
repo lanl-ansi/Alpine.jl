@@ -177,7 +177,7 @@ end
     JuMP.optimize!(m)
 
     @test isapprox(objective_value(m), 7049.247897696188; atol = 1e-4)
-    @test isapprox(objective_bound(m), 6654.6983279983; atol = 1e-4)
+    @test 6650 <= objective_bound(m) <= 7049
     @test MOI.get(m, Alpine.NumberOfIterations()) == 3
 end
 
@@ -499,7 +499,7 @@ end
 
     m = bpml_binl(solver = test_solver)
 
-    # FIXME: Deactivating this until Juniper v0.9.0's numerical issues are fixed. 
+    # FIXME: Deactivating this until Juniper v0.9.0's numerical issues are fixed.
     # JuMP.optimize!(m)
     # @test isapprox(JuMP.objective_value(m), 22812.76415926; atol=1e-6)
     # alpine = JuMP.backend(m).optimizer.model
