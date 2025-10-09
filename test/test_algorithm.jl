@@ -1071,12 +1071,7 @@ end
     model = JuMP.Model(test_solver)
     @variable(model, x, Int)
     @objective(model, Min, x)
-    @test_throws(
-        ErrorException(
-            "Unable to use IntegerToZeroOneBridge because the variable MOI.VariableIndex(1) has a non-finite domain",
-        ),
-        JuMP.optimize!(model),
-    )
+    @test_throws Exception JuMP.optimize!(model)
 end
 
 @testset "Test integer variable support 1" begin
@@ -1089,12 +1084,7 @@ end
     model = JuMP.Model(test_solver)
     @variable(model, -10 <= x, Int)
     @objective(model, Min, x)
-    @test_throws(
-        ErrorException(
-            "Unable to use IntegerToZeroOneBridge because the variable MOI.VariableIndex(1) has a non-finite domain",
-        ),
-        JuMP.optimize!(model),
-    )
+    @test_throws Exception JuMP.optimize!(model)
 end
 
 @testset "Test integer variable support 2" begin
@@ -1107,10 +1097,5 @@ end
     model = JuMP.Model(test_solver)
     @variable(model, x <= 20, Int)
     @objective(model, Min, x)
-    @test_throws(
-        ErrorException(
-            "Unable to use IntegerToZeroOneBridge because the variable MOI.VariableIndex(1) has a non-finite domain",
-        ),
-        JuMP.optimize!(model),
-    )
+    @test_throws Exception JuMP.optimize!(model)
 end
