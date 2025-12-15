@@ -67,3 +67,7 @@ function _moi_function_to_expr(f::MOI.ScalarQuadraticFunction)
     _add_constant(expr, f.constant)
     return expr
 end
+
+function _moi_function_to_expr(f::MOI.ScalarNonlinearFunction)
+    return Expr(:call, f.head, f.args...)
+end

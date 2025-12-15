@@ -371,10 +371,40 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{typeof(f),typeof(set)}(model.num_constr_orig)
 end
 
+function MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{<:MOI.ScalarNonlinearFunction},
+    ::Type{<:SCALAR_SET},
+)
+    return true
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    f::MOI.ScalarNonlinearFunction,
+    set::SCALAR_SET,
+)
+    model.num_constr_orig += 1
+    push!(
+        model.constraint_bounds_orig,
+        MOI.NLPBoundsPair(something(_lower(set), -Inf), something(_upper(set), Inf)),
+    )
+    push!(model.constr_expr_orig, _constraint_expr(_moi_function_to_expr(f), set))
+    model.num_nlconstr_orig += 1
+    push!(model.constr_structure, :generic_nonlinear)
+    return MOI.ConstraintIndex{typeof(f),typeof(set)}(model.num_constr_orig)
+end
+
 function MOI.supports(
     model::Optimizer,
     ::Union{MOI.ObjectiveSense,MOI.ObjectiveFunction{F}},
-) where {F<:Union{MOI.ScalarAffineFunction{Float64},MOI.ScalarQuadraticFunction{Float64}}}
+) where {
+    F<:Union{
+        MOI.ScalarAffineFunction{Float64},
+        MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
+    },
+}
     return true
 end
 
@@ -395,7 +425,8 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
 end
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction{F}, func::F) where {F}
-    return model.objective_function = func
+    model.objective_function = func
+    return
 end
 
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
