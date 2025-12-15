@@ -337,7 +337,7 @@ function load_nonlinear_model(m::Optimizer, model::MOI.ModelLike, l_var, u_var)
             MOI.add_constraint(model, x[i], set)
         end
     end
-    for (func, set) in m.lin_quad_constraints
+    for (func, set) in m.scalar_constraints
         MOI.add_constraint(model, func, set)
     end
     MOI.set(model, MOI.ObjectiveSense(), m.sense_orig)

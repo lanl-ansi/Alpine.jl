@@ -424,40 +424,36 @@ args
 ::Call || ::ref
 By separating the structure with some dummy treatments
 """
-function expr_resolve_sign(expr, level = 0; kwargs...)
-    isa(expr, Number) && return
-    resolver = Dict(:- => -1, :+ => 1)
-    for i in 2:length(expr.args)
-        if !isa(expr.args[i], Float64) && !isa(expr.args[i], Int) # Skip the coefficients
-            if length(expr.args[i].args) == 2 && expr.args[i].head == :call
-                if expr.args[i].args[1] == :- # Treatment for :(-x), replace with :(x*-1)
-                    if expr.args[1] in [:*] # Only perform the treatment when connected with *
-                        push!(expr.args, resolver[expr.args[i].args[1]])
-                        expr.args[i] = expr.args[i].args[2]
-                    elseif expr.args[1] in [:+, :-, :(==), :(<=), :(>=)]
-                        expr.args[i] = expr.args[i]
-                    else
-                        error("Unexpected operator $(expr.args[i]) during resolving sign")
-                    end
-                elseif expr.args[i].args[1] == :+ # Treatment for :(+x) replace with :x
-                    expr.args[i] = expr.args[i].args[2]
+function expr_resolve_sign(expr::Expr, level = 0; kwargs...)
+    for (i, arg) in enumerate(expr.args)
+        if !(arg isa Expr)
+            continue  # Skip the coefficients
+        elseif arg.head == :call && length(arg.args) == 2
+            if arg.args[1] == :- # Treatment for :(-x), replace with :(x*-1)
+                if expr.args[1] == :* # Only perform the treatment when connected with *
+                    push!(expr.args, -1)
+                    expr.args[i] = arg.args[2]
+                elseif !(expr.args[1] in (:+, :-, :(==), :(<=), :(>=)))
+                    error("Unexpected operator $(arg) during resolving sign")
                 end
-            elseif expr.args[i].head == :call
-                expr_resolve_sign(expr.args[i], level + 1)
+            elseif arg.args[1] == :+ # Treatment for :(+x) replace with :x
+                expr.args[i] = arg.args[2]
             end
+        elseif arg.head == :call
+            expr_resolve_sign(arg, level + 1)
         end
     end
-
     return
 end
+
+expr_resolve_sign(expr, level = 0; kwargs...) = nothing
 
 """
 Recursively pre-process the expression by treating the coefficients
 TODO: this function requires a lot of refining.
 Most issues can be caused by this function.
 """
-function expr_flatten(expr, level = 0; kwargs...)
-    isa(expr, Number) && return
+function expr_flatten(expr::Expr, level = 0; kwargs...)
     if level > 0  # No trivial constraint is allowed "3>5"
         flat = expr_arrangeargs(expr.args)
         if isa(flat, Number)
@@ -466,19 +462,18 @@ function expr_flatten(expr, level = 0; kwargs...)
             expr.args = flat
         end
     end
-
     for i in 2:length(expr.args)
         if isa(expr.args[i], Expr) && expr.args[i].head == :call
             expr.args[i] = expr_flatten(expr.args[i], level + 1)
         end
     end
-
     if level > 0  #Root level process, no additional processes
         expr.args = expr_arrangeargs(expr.args)
     end
-
     return expr
 end
+
+expr_flatten(expr, level = 0; kwargs...) = nothing
 
 """
 Re-arrange children by their type.
