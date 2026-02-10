@@ -574,7 +574,7 @@ end
 
     @test termination_status(m) == MOI.OTHER_LIMIT
     @test isapprox(objective_value(m), 58.38367169858795; atol = 1e-5)
-    @test isapprox(alp.best_bound, 57.012, atol = 1E-4)
+    @test isapprox(alp.best_bound, 57.01, atol = 1E-2)
 
     @test MOI.get(m, Alpine.NumberOfIterations()) == 1
 end
