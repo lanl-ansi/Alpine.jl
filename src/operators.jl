@@ -312,9 +312,10 @@ end
     Leads to BINLIN terms, with BINPROD, INTPROD, INTLIN if necessary
 """
 function detect_discretemulti_term(expr::Any, constr_id::Int, m::Optimizer)
-
     # Always construct the binlin term after lifting
-    @assert (expr.head == :call || expr.head == :ref)
+    if !(expr.head == :call || expr.head == :ref)
+        return false, expr
+    end
 
     if (expr.args[1] == :*)
         # Pattern: coefficients * x * y * z ..., where x, y, z are all binary variables
@@ -905,6 +906,7 @@ function resolve_convex_constr(
     power_bin = [],
     rhs = 0.0,
 )
+    expr_orig, subs = :empty, Any[]
     if expr.args[1] in [:(<=), :(>=)] && idx > 0
         expr_orig = :constr
         sense = expr.args[1]

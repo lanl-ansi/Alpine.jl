@@ -349,3 +349,21 @@ end
     alpine = JuMP.backend(m).optimizer.model
     @test !(:Hess in Alpine.features_available(alpine))
 end
+
+@testset "test_scalar_nonlinear_function" begin
+    model = Model(
+        optimizer_with_attributes(
+            Alpine.Optimizer,
+            "nlp_solver" => IPOPT,
+            "mip_solver" => HIGHS,
+        ),
+    )
+    @variable(model, -1 <= x[i in 1:3] <= 2)
+    @objective(model, Max, prod(x))
+    @constraint(model, x[1]^3 <= 1)
+    @constraint(model, x[2]^4 >= 1)
+    @constraint(model, x[3]^3 == 1)
+    optimize!(model)
+    @test isapprox(value.(x), [1, 2, 1]; atol = 1e-6)
+    @test isapprox(objective_value(model), 2; atol = 1e-6)
+end

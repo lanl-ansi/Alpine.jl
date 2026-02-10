@@ -24,7 +24,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     var_type_orig::Vector{Symbol}                            # Variable type vector on original variables (only :Bin, :Cont, :Int)
     var_start_orig::Vector{Float64}                          # Variable warm start vector on original variables
     constr_type_orig::Vector{Symbol}                         # Constraint type vector on original variables (only :(==), :(>=), :(<=))
-    lin_quad_constraints::Vector{Any}                        # Constraint `func`-in-`set` values
+    scalar_constraints::Vector{Any}                        # Constraint `func`-in-`set` values
     constr_expr_orig::Vector{Expr}                           # Constraint expressions
     obj_expr_orig::Union{Expr,Number}                        # Objective expression
 
@@ -41,6 +41,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         Nothing,
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
     }
 
     # Additional initial data
@@ -191,7 +192,7 @@ function MOI.empty!(m::Optimizer)
     m.var_type_orig = Symbol[]
     m.var_start_orig = Float64[]
     m.constr_type_orig = Symbol[]
-    m.lin_quad_constraints = Any[]
+    m.scalar_constraints = Any[]
     m.constr_expr_orig = Expr[]
     # m.num_lconstr_updated = 0
     # m.num_nlconstr_updated = 0
@@ -358,7 +359,7 @@ function MOI.add_constraint(
     iszero(f.constant) || throw(
         MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(set)}(f.constant),
     )
-    push!(model.lin_quad_constraints, (copy(f), copy(set)))
+    push!(model.scalar_constraints, (copy(f), copy(set)))
     push!(model.constr_expr_orig, _constraint_expr(_moi_function_to_expr(f), set))
     if f isa MOI.ScalarAffineFunction
         model.num_lconstr_orig += 1
@@ -371,10 +372,41 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{typeof(f),typeof(set)}(model.num_constr_orig)
 end
 
+function MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{<:MOI.ScalarNonlinearFunction},
+    ::Type{<:SCALAR_SET},
+)
+    return true
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    f::MOI.ScalarNonlinearFunction,
+    set::SCALAR_SET,
+)
+    model.num_constr_orig += 1
+    push!(
+        model.constraint_bounds_orig,
+        MOI.NLPBoundsPair(something(_lower(set), -Inf), something(_upper(set), Inf)),
+    )
+    push!(model.scalar_constraints, (copy(f), copy(set)))
+    push!(model.constr_expr_orig, _constraint_expr(_moi_function_to_expr(f), set))
+    model.num_nlconstr_orig += 1
+    push!(model.constr_structure, :generic_nonlinear)
+    return MOI.ConstraintIndex{typeof(f),typeof(set)}(model.num_constr_orig)
+end
+
 function MOI.supports(
     model::Optimizer,
     ::Union{MOI.ObjectiveSense,MOI.ObjectiveFunction{F}},
-) where {F<:Union{MOI.ScalarAffineFunction{Float64},MOI.ScalarQuadraticFunction{Float64}}}
+) where {
+    F<:Union{
+        MOI.ScalarAffineFunction{Float64},
+        MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
+    },
+}
     return true
 end
 
@@ -395,7 +427,8 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense)
 end
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction{F}, func::F) where {F}
-    return model.objective_function = func
+    model.objective_function = func
+    return
 end
 
 function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
@@ -411,7 +444,8 @@ function MOI.set(m::Optimizer, ::MOI.NLPBlock, block)
     # to add the bounds at the end too.
     # So we can consider that the nonlinear constraints are the
     # `length(m.nl_constraint_bounds_orig)` last ones.
-    return m.nl_constraint_bounds_orig = block.constraint_bounds
+    m.nl_constraint_bounds_orig = block.constraint_bounds
+    return
 end
 
 # In JuMP v0.18/MathProgBase, the 5th decision variable would be `:(x[5])`.
