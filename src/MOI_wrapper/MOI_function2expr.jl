@@ -67,9 +67,5 @@ function _moi_function_to_expr(f::MOI.ScalarQuadraticFunction)
 end
 
 function _moi_function_to_expr(f::MOI.ScalarNonlinearFunction)
-    return Expr(
-        :call,
-        f.head,
-        _moi_function_to_expr.(f.args)...,
-    )
+    return Expr(:call, f.head, _moi_function_to_expr.(f.args)...)
 end

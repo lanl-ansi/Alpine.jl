@@ -358,7 +358,7 @@ end
             "mip_solver" => HIGHS,
         ),
     )
-    @variable(model, -1 <= x[i in 1:2] <= 2)
+    @variable(model, -1 <= x[i in 1:3] <= 2)
     @objective(model, Max, prod(x))
     @constraint(model, x[1]^3 <= 1)
     @constraint(model, x[2]^4 >= 1)
