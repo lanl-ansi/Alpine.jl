@@ -350,7 +350,7 @@ end
     @test !(:Hess in Alpine.features_available(alpine))
 end
 
-@testset "test_scalar_nonlinear_function"
+@testset "test_scalar_nonlinear_function" begin
     model = Model(
         optimizer_with_attributes(
             Alpine.Optimizer,
