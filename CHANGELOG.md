@@ -1,5 +1,10 @@
 # Alpine.jl Change Log
 
+## v0.5.8
+- Relax tests for upcoming MOI release (#257)
+- Add support for `MOI.ScalarNonlinearFunction` (#258)
+- Relax tests that are flakey on Windows (#259)
+
 ## v0.5.7
 - Fix failing tests (#241), (#250)
 - Update `Project.toml` (#239), (#246), (#249)
