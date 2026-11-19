@@ -3521,7 +3521,8 @@ end
 
         @test alpine.linear_terms[lk1][:lifted_constr_ref] == :(x[20] == x[1] + x[17])
         @test alpine.linear_terms[lk2][:lifted_constr_ref] == :(x[13] == x[11] + x[12])
-        @test alpine.linear_terms[lk3][:lifted_constr_ref] == :(x[15] == 2 * x[6] + x[7])
+        @test alpine.linear_terms[lk3][:lifted_constr_ref] ==
+              :(x[15] == 2.0 * x[6] + x[7])
         @test alpine.linear_terms[lk4][:lifted_constr_ref] == :(x[21] == x[6] + x[19])
         @test alpine.linear_terms[lk5][:lifted_constr_ref] == :(x[26] == x[6] + x[25])
 
